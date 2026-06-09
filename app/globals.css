@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+:root {
+  --background: #000000;
+  --foreground: #ffffff;
+
+  /* Brand palette */
+  --color-midnight-navy: #0B1C2D;
+  --color-steel-blue: #3B84C9;
+  --color-teal: #0B6F81;
+  --color-success: #65C162;
+  --color-success-bright: #00F488;
+  --color-error: #FF5257;
+  --color-accent-dark: #231F20;
+
+  /* Gradients */
+  --gradient-cta: linear-gradient(225deg, rgba(255, 52, 191, 1) 12%, rgba(99, 139, 254, 1) 100%);
+  --gradient-blue: linear-gradient(180deg, #3B84C9 0%, #3B84C9 100%);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-sofia);
+  --font-mono: var(--font-geist-mono);
+
+  /* Brand */
+  --color-midnight-navy: #0B1C2D;
+  --color-steel-blue: #3B84C9;
+  --color-teal: #0B6F81;
+  --color-success: #65C162;
+  --color-success-bright: #00F488;
+  --color-error: #FF5257;
+  --color-accent-dark: #231F20;
+
+  /* Surfaces */
+  --color-surface-06: rgba(255, 255, 255, 0.06);
+  --color-surface-08: rgba(255, 255, 255, 0.08);
+  --color-surface-05: rgba(255, 255, 255, 0.05);
+  --color-surface-07: rgba(255, 255, 255, 0.07);
+  --color-surface-15: rgba(255, 255, 255, 0.15);
+  --color-surface-25: rgba(255, 255, 255, 0.25);
+
+  /* Borders */
+  --color-border-input: rgba(11, 28, 45, 0.11);
+  --color-border-divider: rgba(255, 255, 255, 0.1);
+  --color-border-dashed: rgba(255, 255, 255, 0.31);
+  --color-border-subtle: rgba(255, 255, 255, 0.2);
+}
+
+body {
+  background: #000000;
+  color: #ffffff;
+  font-family: var(--font-inter), Inter, sans-serif;
+}
