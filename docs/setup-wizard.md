@@ -6,7 +6,7 @@ The Setup Wizard is a 4-step onboarding flow for Fan Hub admins. It guides them 
 
 | Step | Route | Purpose |
 |------|-------|---------|
-| 1 | `/setup-wizard/hub-details` | Org info, contact details, brand colors, logo |
+| 1 | `/setup-wizard/organization-details` | Org info, contact details, brand colors, logo |
 | 2 | `/setup-wizard/import-schedule` | CSV upload, ICS calendar sync, API platform connections |
 | 3 | `/setup-wizard/choose-activations` | Select fan experience features across 3 categories |
 | 4 | `/setup-wizard/review-publish` | Review all settings, preview the hub, and publish |
@@ -17,7 +17,7 @@ The Setup Wizard is a 4-step onboarding flow for Fan Hub admins. It guides them 
 app/(setup)/
   layout.tsx                  ← shared shell: Header + Sidebar (Server Component)
   setup-wizard/
-    hub-details/page.tsx       ← Step 1 (Client Component)
+    organization-details/page.tsx ← Step 1 (Client Component)
     import-schedule/page.tsx   ← Step 2 (Client Component)
     choose-activations/page.tsx ← Step 3 (Client Component)
     review-publish/page.tsx    ← Step 4 (Client Component)
@@ -53,7 +53,7 @@ utils/
 | Design tokens & fonts | ✅ Done | globals.css + layout.tsx |
 | Common components | ✅ Done | All 10 components built |
 | Layout shell | ✅ Done | Header, Sidebar, route group |
-| Step 1 — Hub Details UI | ✅ Done | Form + preview + Yup validation |
+| Step 1 — Organization Details UI | ✅ Done | Form + preview + Yup validation |
 | Step 2 — Import Schedule UI | ✅ Done | CSV, ICS, API connections, modal |
 | Step 3 — Choose Activations UI | ✅ Done | 15 activations across 3 categories |
 | Step 4 — Review & Publish UI | ✅ Done | Summary cards + fan hub preview |
@@ -64,7 +64,7 @@ utils/
 
 ## Per-Step Integration Docs
 
-- [Step 1 — Hub Details](./setup-wizard/01-hub-details.md)
+- [Step 1 — Organization Details](./setup-wizard/01-organization-details.md)
 - [Step 2 — Import Schedule](./setup-wizard/02-import-schedule.md)
 - [Step 3 — Choose Activations](./setup-wizard/03-choose-activations.md)
 - [Step 4 — Review & Publish](./setup-wizard/04-review-publish.md)
@@ -72,7 +72,7 @@ utils/
 ## API Route Stubs (utils/routes/index.tsx)
 
 ```ts
-routes.api.saveHubDetails       // POST  "setup/hub-details"
+routes.api.saveOrganizationDetails  // POST  "setup/organization-details"
 routes.api.saveSchedule         // POST  "setup/schedule"
 routes.api.saveActivations      // POST  "setup/activations"
 routes.api.publishHub           // POST  "setup/publish"

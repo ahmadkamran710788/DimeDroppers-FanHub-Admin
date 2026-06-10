@@ -1,6 +1,6 @@
 # Pixel-Perfect Implementation Reference
 
-This document captures every design decision made while matching Step 1 (Hub Details) of the Setup Wizard to Figma file `A6q6iDHmlco1lsu4BGxcs6`. Use it as the ground truth when building Steps 2–4.
+This document captures every design decision made while matching Step 1 (Organization Details) of the Setup Wizard to Figma file `A6q6iDHmlco1lsu4BGxcs6`. Use it as the ground truth when building Steps 2–4.
 
 ---
 
@@ -75,7 +75,7 @@ style={{
 
 | Usage | Font | Weight | Size | Case | Line Height |
 |-------|------|--------|------|------|-------------|
-| Page heading (Configure Hub Details) | Sofia Sans Extra Condensed | 800 | 56px | UPPER | `leading-none` |
+| Page heading (Configure Organization Details) | Sofia Sans Extra Condensed | 800 | 56px | UPPER | `leading-none` |
 | Section card title (Organization & Team Info) | Sofia Sans Extra Condensed | 800 | 28px | UPPER | `leading-tight` |
 | Preview card title (PREVIEW) | Sofia Sans Extra Condensed | 800 | 28px | UPPER | 120% |
 | Preview org name | Sofia Sans Extra Condensed | 800 | 56px | UPPER | 121% |
@@ -226,7 +226,7 @@ Fixed 50px per Figma `Vector 5/6/7` spec.
 
 ---
 
-## Hub Details Page (`app/(setup)/setup-wizard/hub-details/page.tsx`)
+## Organization Details Page (`app/(setup)/setup-wizard/organization-details/page.tsx`)
 
 ### Page wrapper
 ```
@@ -271,7 +271,7 @@ Full-width fields: `className="col-span-2"`
 
 ---
 
-## Preview Card (`hub-details/page.tsx` right column)
+## Preview Card (`organization-details/page.tsx` right column)
 
 ### Outer wrapper
 **Figma node**: `30:140` (`Button C`)
@@ -496,7 +496,7 @@ flex gap-10 items-start
 Both use `className="bg-surface-07"` (= `rgba(255,255,255,0.07)` — note: **0.07**, not Step 1's 0.06).
 Title "Configuration Summary" comes from the standard `SectionCard` title (Sofia 800 / 28px / uppercase).
 
-**Card 1 — section rows** (Hub Details / Schedule / Activations):
+**Card 1 — section rows** (Organization Details / Schedule / Activations):
 - Rows have **no leading icon**. Title `text-base font-semibold text-white`; value lines
   `text-sm text-white/40` (Schedule has two lines).
 - Right side is a column `flex flex-col items-end gap-4`:

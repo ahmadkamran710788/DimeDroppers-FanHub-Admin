@@ -11,7 +11,7 @@ import Textarea from "@/components/common/Textarea";
 import WizardFooter from "@/components/common/WizardFooter";
 import { validateAndSetErrors } from "@/utils/validation";
 import { routes } from "@/utils/routes";
-import { Circle, MapPin, ShieldCheck, Users } from "lucide-react";
+import { Circle, MapPin, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -19,17 +19,28 @@ import * as yup from "yup";
 
 const schema = yup.object({
   organizationName: yup.string().required("Organization name is required"),
+  organizationType: yup.string().required("Organization type is required"),
   teamName: yup.string().required("Team name is required"),
   level: yup.string().required("Level is required"),
   sport: yup.string().required("Sport is required"),
-  location: yup.string().required("Location is required"),
-  conference: yup.string().required("Conference/League is required"),
-  primaryAudience: yup.string().required("Primary audience is required"),
+  streetAddress: yup.string().required("Street address is required"),
+  city: yup.string().required("City is required"),
+  state: yup.string().required("State is required"),
+  zipCode: yup
+    .string()
+    .required("Zip code is required")
+    .matches(/^\d{5}(-\d{4})?$/, "Enter a valid ZIP code"),
+  conference: yup.string().required("Conference/Division is required"),
   description: yup.string().required("Description is required").max(250, "Max 250 characters"),
   contactName: yup.string().required("Contact name is required"),
+  contactPosition: yup.string().required("Position is required"),
   phone: yup.string().required("Phone is required"),
   email: yup.string().required("Email is required").email("Enter a valid email"),
   website: yup.string().required("Website is required").url("Enter a valid URL"),
+  facebookUrl: yup.string().url("Enter a valid URL").notRequired(),
+  instagramUrl: yup.string().url("Enter a valid URL").notRequired(),
+  xUrl: yup.string().url("Enter a valid URL").notRequired(),
+  youtubeUrl: yup.string().url("Enter a valid URL").notRequired(),
 });
 
 const LEVEL_OPTIONS = [
@@ -51,26 +62,89 @@ const SPORT_OPTIONS = [
   { label: "Wrestling", value: "wrestling" },
 ];
 
-const AUDIENCE_OPTIONS = [
-  { label: "Students, Parents & Families", value: "students-parents-families" },
-  { label: "Students Only", value: "students" },
-  { label: "General Public", value: "general-public" },
-  { label: "Alumni & Community", value: "alumni-community" },
+const ORG_TYPE_OPTIONS = [
+  { label: "School", value: "school" },
+  { label: "League", value: "league" },
+  { label: "Club Team", value: "club-team" },
+  { label: "Tournament", value: "tournament" },
+];
+
+// Shows the full state name; submits the 2-letter abbreviation (e.g. "FL").
+const US_STATE_OPTIONS = [
+  { label: "Alabama", value: "AL" },
+  { label: "Alaska", value: "AK" },
+  { label: "Arizona", value: "AZ" },
+  { label: "Arkansas", value: "AR" },
+  { label: "California", value: "CA" },
+  { label: "Colorado", value: "CO" },
+  { label: "Connecticut", value: "CT" },
+  { label: "Delaware", value: "DE" },
+  { label: "District of Columbia", value: "DC" },
+  { label: "Florida", value: "FL" },
+  { label: "Georgia", value: "GA" },
+  { label: "Hawaii", value: "HI" },
+  { label: "Idaho", value: "ID" },
+  { label: "Illinois", value: "IL" },
+  { label: "Indiana", value: "IN" },
+  { label: "Iowa", value: "IA" },
+  { label: "Kansas", value: "KS" },
+  { label: "Kentucky", value: "KY" },
+  { label: "Louisiana", value: "LA" },
+  { label: "Maine", value: "ME" },
+  { label: "Maryland", value: "MD" },
+  { label: "Massachusetts", value: "MA" },
+  { label: "Michigan", value: "MI" },
+  { label: "Minnesota", value: "MN" },
+  { label: "Mississippi", value: "MS" },
+  { label: "Missouri", value: "MO" },
+  { label: "Montana", value: "MT" },
+  { label: "Nebraska", value: "NE" },
+  { label: "Nevada", value: "NV" },
+  { label: "New Hampshire", value: "NH" },
+  { label: "New Jersey", value: "NJ" },
+  { label: "New Mexico", value: "NM" },
+  { label: "New York", value: "NY" },
+  { label: "North Carolina", value: "NC" },
+  { label: "North Dakota", value: "ND" },
+  { label: "Ohio", value: "OH" },
+  { label: "Oklahoma", value: "OK" },
+  { label: "Oregon", value: "OR" },
+  { label: "Pennsylvania", value: "PA" },
+  { label: "Rhode Island", value: "RI" },
+  { label: "South Carolina", value: "SC" },
+  { label: "South Dakota", value: "SD" },
+  { label: "Tennessee", value: "TN" },
+  { label: "Texas", value: "TX" },
+  { label: "Utah", value: "UT" },
+  { label: "Vermont", value: "VT" },
+  { label: "Virginia", value: "VA" },
+  { label: "Washington", value: "WA" },
+  { label: "West Virginia", value: "WV" },
+  { label: "Wisconsin", value: "WI" },
+  { label: "Wyoming", value: "WY" },
 ];
 
 type FormState = {
   organizationName: string;
+  organizationType: string;
   teamName: string;
   level: string;
   sport: string;
-  location: string;
+  streetAddress: string;
+  city: string;
+  state: string;
+  zipCode: string;
   conference: string;
-  primaryAudience: string;
   description: string;
   contactName: string;
+  contactPosition: string;
   phone: string;
   email: string;
   website: string;
+  facebookUrl: string;
+  instagramUrl: string;
+  xUrl: string;
+  youtubeUrl: string;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
@@ -78,17 +152,25 @@ type FormState = {
 
 const INITIAL: FormState = {
   organizationName: "",
+  organizationType: "",
   teamName: "",
   level: "",
   sport: "",
-  location: "",
+  streetAddress: "",
+  city: "",
+  state: "",
+  zipCode: "",
   conference: "",
-  primaryAudience: "",
   description: "",
   contactName: "",
+  contactPosition: "",
   phone: "",
   email: "",
   website: "",
+  facebookUrl: "",
+  instagramUrl: "",
+  xUrl: "",
+  youtubeUrl: "",
   primaryColor: "#000000",
   secondaryColor: "#000000",
   accentColor: "#231F20",
@@ -101,14 +183,18 @@ type ChecklistItem = {
 
 const CHECKLIST: ChecklistItem[] = [
   { label: "Organization Name", done: (f) => !!f.organizationName },
+  { label: "Organization Type", done: (f) => !!f.organizationType },
   { label: "Team Name", done: (f) => !!f.teamName },
   { label: "Sport", done: (f) => !!f.sport },
   { label: "Level", done: (f) => !!f.level },
-  { label: "Location", done: (f) => !!f.location },
+  { label: "Address", done: (f) => !!(f.streetAddress && f.city && f.state && f.zipCode) },
   { label: "Conference\\League", done: (f) => !!f.conference },
   { label: "Description", done: (f) => !!f.description },
-  { label: "Primary Audience", done: (f) => !!f.primaryAudience },
-  { label: "Contact Information", done: (f) => !!(f.contactName && f.phone && f.email && f.website) },
+  { label: "Contact Information", done: (f) => !!(f.contactName && f.contactPosition && f.phone && f.email && f.website) },
+  {
+    label: "Social Media (Optional)",
+    done: (f) => !!(f.facebookUrl || f.instagramUrl || f.xUrl || f.youtubeUrl),
+  },
   {
     label: "Branding (Optional)",
     done: (f, logoUploaded) =>
@@ -127,7 +213,7 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
 }
 
-export default function HubDetailsPage() {
+export default function OrganizationDetailsPage() {
   const router = useRouter();
   const [form, setForm] = useState<FormState>(INITIAL);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -153,17 +239,25 @@ export default function HubDetailsPage() {
 
     const body = new FormData();
     body.append("name", form.organizationName);
+    body.append("organizationType", labelOf(ORG_TYPE_OPTIONS, form.organizationType));
     body.append("teamName", form.teamName);
     body.append("level", labelOf(LEVEL_OPTIONS, form.level));
     body.append("sportsType", form.sport);
-    body.append("address", form.location);
+    body.append("streetAddress", form.streetAddress);
+    body.append("city", form.city);
+    body.append("state", form.state);
+    body.append("zipCode", form.zipCode);
     body.append("league", form.conference);
-    body.append("primaryAudience", labelOf(AUDIENCE_OPTIONS, form.primaryAudience));
     body.append("description", form.description);
     body.append("contactName", form.contactName);
+    body.append("contactPosition", form.contactPosition);
     body.append("contactPhone", form.phone);
     body.append("contactEmail", form.email);
     body.append("website", form.website);
+    if (form.facebookUrl) body.append("facebookUrl", form.facebookUrl);
+    if (form.instagramUrl) body.append("instagramUrl", form.instagramUrl);
+    if (form.xUrl) body.append("xUrl", form.xUrl);
+    if (form.youtubeUrl) body.append("youtubeUrl", form.youtubeUrl);
     body.append("colors", form.primaryColor);
     body.append("secondaryColor", form.secondaryColor);
     body.append("accentColor", form.accentColor);
@@ -201,7 +295,7 @@ export default function HubDetailsPage() {
 
       <div className="flex flex-col gap-2 -mt-2">
         <h2 className="font-display font-black text-[56px] uppercase text-white leading-none">
-          Configure Hub Details
+          Configure Organization Details
         </h2>
         <p className="text-base text-white/80">
           Tell us about your organization and team to create your Fan Hub.
@@ -214,12 +308,15 @@ export default function HubDetailsPage() {
           <SectionCard title="Organization & Team Info">
             <div className="grid grid-cols-2 gap-6">
               <Input label="Organization Name" name="organizationName" value={form.organizationName} onChange={set("organizationName")} placeholder="Twin Lakes Academy Middle School" error={errors.organizationName} className="col-span-2" />
+              <Select label="Organization Type" name="organizationType" value={form.organizationType} onChange={set("organizationType")} options={ORG_TYPE_OPTIONS} placeholder="Select organization type" error={errors.organizationType} className="col-span-2" />
               <Input label="Team Name" name="teamName" value={form.teamName} onChange={set("teamName")} placeholder="TLAM" error={errors.teamName} className="col-span-2" />
               <Select label="Level" name="level" value={form.level} onChange={set("level")} options={LEVEL_OPTIONS} placeholder="Select level" error={errors.level} />
               <Select label="Sport" name="sport" value={form.sport} onChange={set("sport")} options={SPORT_OPTIONS} placeholder="Select sport" error={errors.sport} />
-              <Input label="Location" name="location" value={form.location} onChange={set("location")} placeholder="Fort Lauderdale, FL" icon={<MapPin className="w-5 h-5" />} error={errors.location} />
-              <Input label="Conference/League" name="conference" value={form.conference} onChange={set("conference")} placeholder="Eastern Lakes Conference" icon={<MapPin className="w-5 h-5" />} error={errors.conference} />
-              <Select label="Primary Audience" name="primaryAudience" value={form.primaryAudience} onChange={set("primaryAudience")} options={AUDIENCE_OPTIONS} placeholder="Select audience" icon={<Users className="w-5 h-5" />} error={errors.primaryAudience} className="col-span-2" />
+              <Input label="Street Address" name="streetAddress" value={form.streetAddress} onChange={set("streetAddress")} placeholder="1234 Lakeview Dr" icon={<MapPin className="w-5 h-5" />} error={errors.streetAddress} className="col-span-2" />
+              <Input label="City" name="city" value={form.city} onChange={set("city")} placeholder="Fort Lauderdale" error={errors.city} />
+              <Select label="State" name="state" value={form.state} onChange={set("state")} options={US_STATE_OPTIONS} placeholder="Select state" error={errors.state} />
+              <Input label="Zip Code" name="zipCode" value={form.zipCode} onChange={set("zipCode")} placeholder="33301" error={errors.zipCode} />
+              <Input label="Conference/Division" name="conference" value={form.conference} onChange={set("conference")} placeholder="Eastern Lakes Conference" icon={<MapPin className="w-5 h-5" />} error={errors.conference} />
               <Textarea label="Description" name="description" value={form.description} onChange={set("description")} maxLength={250} placeholder="The Official fan hub for your team..." error={errors.description} className="col-span-2" />
             </div>
           </SectionCard>
@@ -227,9 +324,19 @@ export default function HubDetailsPage() {
           <SectionCard title="Contact Information">
             <div className="grid grid-cols-2 gap-6">
               <Input label="Contact Name" name="contactName" value={form.contactName} onChange={set("contactName")} placeholder="John Doe" error={errors.contactName} />
+              <Input label="Position" name="contactPosition" value={form.contactPosition} onChange={set("contactPosition")} placeholder="Athletic Director" error={errors.contactPosition} />
               <Input label="Phone" name="phone" value={form.phone} onChange={set("phone")} placeholder="(555) 123-4567" type="tel" error={errors.phone} />
               <Input label="Email" name="email" value={form.email} onChange={set("email")} placeholder="johndoe@tlam.com" type="email" error={errors.email} />
               <Input label="Website" name="website" value={form.website} onChange={set("website")} placeholder="https://www.tlam.com" type="url" error={errors.website} />
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Social Media (optional)">
+            <div className="grid grid-cols-2 gap-6">
+              <Input label="Facebook" name="facebookUrl" value={form.facebookUrl} onChange={set("facebookUrl")} placeholder="https://facebook.com/tlam" type="url" error={errors.facebookUrl} />
+              <Input label="Instagram" name="instagramUrl" value={form.instagramUrl} onChange={set("instagramUrl")} placeholder="https://instagram.com/tlam" type="url" error={errors.instagramUrl} />
+              <Input label="X (Twitter)" name="xUrl" value={form.xUrl} onChange={set("xUrl")} placeholder="https://x.com/tlam" type="url" error={errors.xUrl} />
+              <Input label="YouTube" name="youtubeUrl" value={form.youtubeUrl} onChange={set("youtubeUrl")} placeholder="https://youtube.com/@tlam" type="url" error={errors.youtubeUrl} />
             </div>
           </SectionCard>
 
@@ -341,12 +448,23 @@ export default function HubDetailsPage() {
 
             {/* Info rows below inner card */}
             <div className="flex flex-col gap-4">
-              {form.location && (
+              {form.organizationType && (
+                <div className="flex items-start gap-2">
+                  <ShieldCheck className="w-6 h-6 text-white shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-2">
+                    <span className="text-base font-semibold text-white">Organization Type</span>
+                    <span className="text-base font-normal text-white">{labelOf(ORG_TYPE_OPTIONS, form.organizationType)}</span>
+                  </div>
+                </div>
+              )}
+              {(form.streetAddress || form.city || form.state || form.zipCode) && (
                 <div className="flex items-start gap-2">
                   <MapPin className="w-6 h-6 text-white shrink-0 mt-0.5" />
                   <div className="flex flex-col gap-2">
                     <span className="text-base font-semibold text-white">Location</span>
-                    <span className="text-base font-normal text-white">{form.location}</span>
+                    <span className="text-base font-normal text-white">
+                      {[form.streetAddress, form.city, form.state, form.zipCode].filter(Boolean).join(", ")}
+                    </span>
                   </div>
                 </div>
               )}
@@ -357,15 +475,6 @@ export default function HubDetailsPage() {
                   <div className="flex flex-col gap-2">
                     <span className="text-base font-semibold text-white">Conference\League</span>
                     <span className="text-base font-normal text-white">{form.conference}</span>
-                  </div>
-                </div>
-              )}
-              {form.primaryAudience && (
-                <div className="flex items-start gap-2">
-                  <Users className="w-6 h-6 text-white shrink-0 mt-0.5" />
-                  <div className="flex flex-col gap-2">
-                    <span className="text-base font-semibold text-white">Primary Audience</span>
-                    <span className="text-base font-normal text-white">{AUDIENCE_OPTIONS.find((o) => o.value === form.primaryAudience)?.label}</span>
                   </div>
                 </div>
               )}

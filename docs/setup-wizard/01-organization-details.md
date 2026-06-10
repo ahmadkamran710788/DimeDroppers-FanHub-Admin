@@ -1,7 +1,7 @@
-# Step 1 — Hub Details
+# Step 1 — Organization Details
 
-**Route**: `/setup-wizard/hub-details`
-**File**: `app/(setup)/setup-wizard/hub-details/page.tsx`
+**Route**: `/setup-wizard/organization-details`
+**File**: `app/(setup)/setup-wizard/organization-details/page.tsx`
 
 ## Purpose
 
@@ -47,7 +47,7 @@ Collect organization identity, contact info, and optional brand settings to conf
 ```ts
 // On "Next" click (after validation passes):
 const { success } = await apiCall({
-  endpoint: routes.api.saveHubDetails,  // "setup/hub-details"
+  endpoint: routes.api.saveOrganizationDetails,  // "setup/organization-details"
   method: "POST",
   data: {
     organizationName,
@@ -75,7 +75,7 @@ if (success) router.push(routes.ui.setupWizard.importSchedule);
 ## Payload Type
 
 ```ts
-type HubDetailsPayload = {
+type OrganizationDetailsPayload = {
   organizationName: string;
   teamName: string;
   level: string;

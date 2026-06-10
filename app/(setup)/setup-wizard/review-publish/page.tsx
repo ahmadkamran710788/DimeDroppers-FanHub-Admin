@@ -13,10 +13,10 @@ import toast from "react-hot-toast";
 
 const REVIEW_SECTIONS = [
   {
-    id: "hub-details",
-    title: "Hub Details",
+    id: "organization-details",
+    title: "Organization Details",
     lines: ["Twin Lakes High School", "Varsity Basketball"],
-    href: routes.ui.setupWizard.hubDetails,
+    href: routes.ui.setupWizard.organizationDetails,
   },
   {
     id: "schedule",
@@ -33,7 +33,7 @@ const REVIEW_SECTIONS = [
 ];
 
 const CHECKLIST = [
-  "Hub details are complete",
+  "Organization details are complete",
   "Schedule imported successfully",
   "Activations configured",
   "Hub branding and logo added",

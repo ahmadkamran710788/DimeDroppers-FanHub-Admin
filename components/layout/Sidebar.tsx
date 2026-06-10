@@ -21,14 +21,14 @@ const NAV_BOTTOM = [
 ];
 
 const WIZARD_STEPS = [
-  { number: 1, label: "Hub Details", href: routes.ui.setupWizard.hubDetails },
+  { number: 1, label: "Organization Details", href: routes.ui.setupWizard.organizationDetails },
   { number: 2, label: "Import Schedule", href: routes.ui.setupWizard.importSchedule },
   { number: 3, label: "Choose Activations", href: routes.ui.setupWizard.chooseActivations },
   { number: 4, label: "Review & Publish", href: routes.ui.setupWizard.reviewPublish },
 ];
 
 function getActiveStep(pathname: string): number {
-  if (pathname.includes("hub-details")) return 1;
+  if (pathname.includes("organization-details")) return 1;
   if (pathname.includes("import-schedule")) return 2;
   if (pathname.includes("choose-activations")) return 3;
   if (pathname.includes("review-publish")) return 4;
@@ -92,7 +92,7 @@ export default function Sidebar() {
 
         {/* Setup Wizard CTA */}
         <Link
-          href={routes.ui.setupWizard.hubDetails}
+          href={routes.ui.setupWizard.organizationDetails}
           className="flex items-center gap-2 pl-[12px] pr-4 py-4 rounded-[8px] text-base font-medium text-white"
           style={{ background: "var(--gradient-cta)" }}
         >

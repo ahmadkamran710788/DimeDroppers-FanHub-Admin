@@ -5,7 +5,7 @@
 
 ## Purpose
 
-Show a summary of all wizard steps (Hub Details, Schedule, Activations) for the admin to review before publishing the Fan Hub. Includes a live preview mockup of what fans will see.
+Show a summary of all wizard steps (Organization Details, Schedule, Activations) for the admin to review before publishing the Fan Hub. Includes a live preview mockup of what fans will see.
 
 ## Configuration Summary
 
@@ -17,7 +17,7 @@ Three collapsible review rows, each showing:
 
 | Section | Edit Links To |
 |---------|--------------|
-| Hub Details | `/setup-wizard/hub-details` |
+| Organization Details | `/setup-wizard/organization-details` |
 | Schedule | `/setup-wizard/import-schedule` |
 | Activations | `/setup-wizard/choose-activations` |
 
@@ -67,7 +67,7 @@ type PublishPayload = {
 };
 
 // Or, if publishing atomically:
-type FullWizardPayload = HubDetailsPayload & {
+type FullWizardPayload = OrganizationDetailsPayload & {
   schedule: SchedulePayload;
   activations: ActivationsPayload;
 };

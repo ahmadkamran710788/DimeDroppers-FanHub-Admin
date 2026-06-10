@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 type PlatformLogo = { type: "image"; src: string } | { type: "color"; bg: string };
 
@@ -70,6 +71,18 @@ const ICS_DEFAULTS = [
   "https://teamsnap.com/team/tlam/feed.ics",
   "https://sportsengine.com/team/tlam/feed.ics",
   "",
+];
+
+// Wired ICS platforms. Add a row here to enable preview→import for that source.
+// `keyword` drives the green-check validation; `platform` is the import label.
+const ICS_WIRED: {
+  sourceId: string;
+  keyword: string;
+  platform: string;
+  previewProxy: string;
+}[] = [
+  { sourceId: "sportsengine", keyword: "sportngin", platform: "SportsEngine", previewProxy: routes.api.proxyIcsSportsEngine },
+  { sourceId: "teamsnap", keyword: "teamsnap", platform: "TeamSnap", previewProxy: routes.api.proxyIcsTeamSnap },
 ];
 
 const SUMMARY_STATS = [
@@ -123,13 +136,85 @@ export default function ImportSchedulePage() {
   const [activePlatform, setActivePlatform] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [infoOpen, setInfoOpen] = useState(true);
+  const [icsConnecting, setIcsConnecting] = useState(false);
 
   const setIcsUrl = (i: number, val: string) => {
     setIcsUrls((prev) => prev.map((u, idx) => (idx === i ? val : u)));
   };
 
-  const isValidIcs = (url: string) =>
-    url.startsWith("https://") && url.endsWith(".ics");
+  // Per-row validation. A wired source (SportsEngine, TeamSnap) only needs to contain its
+  // keyword — e.g. webcal://...sportngin.com/... has no .ics suffix but is still valid.
+  // Unwired rows keep the generic .ics check until they're wired.
+  const isValidIcsFor = (sourceId: string, url: string) => {
+    const wired = ICS_WIRED.find((w) => w.sourceId === sourceId);
+    return wired
+      ? url.toLowerCase().includes(wired.keyword)
+      : url.startsWith("https://") && url.endsWith(".ics");
+  };
+
+  // ICS card "Connect". Loops over the wired platforms: for each filled, valid row, preview
+  // the feed upstream and on success import it into the school. Empty rows are skipped.
+  const handleIcsConnect = async () => {
+    // Map each wired platform to its current input URL (by row index in ICS_SOURCES).
+    const candidates = ICS_WIRED.map((w) => ({
+      ...w,
+      url: (icsUrls[ICS_SOURCES.findIndex((s) => s.id === w.sourceId)] ?? "").trim(),
+    })).filter((w) => w.url.length > 0); // skip empty rows silently
+
+    if (candidates.length === 0) {
+      toast.error("Enter a calendar URL to connect.");
+      return;
+    }
+
+    const invalid = candidates.find((c) => !isValidIcsFor(c.sourceId, c.url));
+    if (invalid) {
+      toast.error(`Enter a valid ${invalid.platform} calendar URL.`);
+      return;
+    }
+
+    const schoolId = sessionStorage.getItem("fanhub:schoolId");
+    if (!schoolId) {
+      toast.error("No school found. Please complete Step 1 first.");
+      return;
+    }
+
+    setIcsConnecting(true);
+    try {
+      const imported: string[] = [];
+      for (const c of candidates) {
+        // 1) Preview — validate the feed upstream.
+        const previewRes = await fetch(c.previewProxy, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: c.url }),
+        });
+        if (!previewRes.ok) {
+          const j = await previewRes.json().catch(() => null);
+          toast.error(j?.message || `Could not read that ${c.platform} calendar.`);
+          return;
+        }
+
+        // 2) Import into the school.
+        const importRes = await fetch(routes.api.proxyImportIcs, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ schoolId, url: c.url, platform: c.platform }),
+        });
+        if (!importRes.ok) {
+          const j = await importRes.json().catch(() => null);
+          toast.error(j?.message || `Failed to import the ${c.platform} schedule.`);
+          return;
+        }
+        imported.push(c.platform);
+      }
+
+      toast.success(`${imported.join(" & ")} schedule imported.`);
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIcsConnecting(false);
+    }
+  };
 
   const openConnect = (platformId: string) => {
     setActivePlatform(platformId);
@@ -215,7 +300,7 @@ export default function ImportSchedulePage() {
             <div className="flex flex-col gap-3">
               {ICS_SOURCES.map((source, i) => {
                 const url = icsUrls[i];
-                const valid = isValidIcs(url);
+                const valid = isValidIcsFor(source.id, url);
                 const hasValue = url.length > 0;
                 return (
                   <div key={source.id} className="flex items-center gap-6">
@@ -254,7 +339,12 @@ export default function ImportSchedulePage() {
               })}
             </div>
             <div className="flex items-center justify-between">
-              <Button variant="ghost" label="Connect" onClick={() => openConnect("")} />
+              <Button
+                variant="ghost"
+                label={icsConnecting ? "Connecting…" : "Connect"}
+                onClick={handleIcsConnect}
+                disabled={icsConnecting}
+              />
               <div className="flex items-center gap-2">
                 <HelpCircle className="w-6 h-6 text-white" strokeWidth={1.5} />
                 <Toggle label="Auto Sync" checked={autoSync} onChange={setAutoSync} labelPosition="right" />
@@ -431,7 +521,7 @@ export default function ImportSchedulePage() {
       </Modal>
 
       <WizardFooter
-        onBack={() => router.push(routes.ui.setupWizard.hubDetails)}
+        onBack={() => router.push(routes.ui.setupWizard.organizationDetails)}
         onSaveExit={() => {}}
         primaryLabel="Next"
         onPrimary={() => router.push(routes.ui.setupWizard.chooseActivations)}

@@ -3,7 +3,7 @@
 import { cn } from "@/utils/cn";
 
 const STEPS = [
-  { number: 1, label: "Hub Details" },
+  { number: 1, label: "Organization Details" },
   { number: 2, label: "Import Schedule" },
   { number: 3, label: "Choose Activations" },
   { number: 4, label: "Review & Publish" },

@@ -3,7 +3,7 @@ export const routes = {
     indexRoute: "/",
     userDetails: (id: string | number) => `users/${id}`,
     setupWizard: {
-      hubDetails: "/setup-wizard/hub-details",
+      organizationDetails: "/setup-wizard/organization-details",
       importSchedule: "/setup-wizard/import-schedule",
       chooseActivations: "/setup-wizard/choose-activations",
       reviewPublish: "/setup-wizard/review-publish",
@@ -18,6 +18,14 @@ export const routes = {
     // browser posts to (which injects the x-fanhub-key header server-side).
     createSchool: "fanhub/schools",
     proxyCreateSchool: "/api/fanhub/schools",
+    // FanHub — Step 2 "Import Schedule". Upstream paths appended to config.apiUrl on the
+    // server; proxy* are internal Next routes the browser posts to (inject x-fanhub-key).
+    icsSportsEngine: "fanhub/ics/sportsengine",
+    proxyIcsSportsEngine: "/api/fanhub/ics/sportsengine",
+    icsTeamSnap: "fanhub/ics/teamsnap",
+    proxyIcsTeamSnap: "/api/fanhub/ics/teamsnap",
+    importIcs: (schoolId: string) => `fanhub/schools/${schoolId}/import-ics`,
+    proxyImportIcs: "/api/fanhub/schools/import-ics",
     // Setup Wizard — wire these when backend is ready
     saveSchedule: "setup/schedule",
     saveActivations: "setup/activations",
