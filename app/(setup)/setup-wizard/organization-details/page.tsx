@@ -4,6 +4,7 @@ import CheckCircle from "@/components/common/CheckCircle";
 import ColorPicker from "@/components/common/ColorPicker";
 import FileUpload from "@/components/common/FileUpload";
 import Input from "@/components/common/Input";
+import PhoneInput from "@/components/common/PhoneInput";
 import SectionCard from "@/components/common/SectionCard";
 import Select from "@/components/common/Select";
 import StepIndicator from "@/components/common/StepIndicator";
@@ -16,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import * as yup from "yup";
+import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
 
 const schema = yup.object({
   organizationName: yup.string().required("Organization name is required"),
@@ -31,10 +33,13 @@ const schema = yup.object({
     .required("Zip code is required")
     .matches(/^\d{5}(-\d{4})?$/, "Enter a valid ZIP code"),
   conference: yup.string().required("Conference/Division is required"),
-  description: yup.string().required("Description is required").max(250, "Max 250 characters"),
+  description: yup.string().optional().max(250, "Max 250 characters"),
   contactName: yup.string().required("Contact name is required"),
   contactPosition: yup.string().required("Position is required"),
-  phone: yup.string().required("Phone is required"),
+  phone: yup
+    .string()
+    .required("Phone is required")
+    .test("us-phone", "Enter a valid US phone number", (v) => !!v && isValidPhoneNumber(v, "US")),
   email: yup.string().required("Email is required").email("Enter a valid email"),
   website: yup.string().required("Website is required").url("Enter a valid URL"),
   facebookUrl: yup.string().url("Enter a valid URL").notRequired(),
@@ -46,9 +51,9 @@ const schema = yup.object({
 const LEVEL_OPTIONS = [
   { label: "High School", value: "high-school" },
   { label: "Middle School", value: "middle-school" },
-  { label: "College", value: "college" },
-  { label: "Youth", value: "youth" },
-  { label: "Professional", value: "professional" },
+  { label: "League", value: "league" },
+  { label: "Tournament", value: "tournament" },
+  { label: "Club Team", value: "club-team" },
 ];
 
 const SPORT_OPTIONS = [
@@ -225,6 +230,9 @@ export default function OrganizationDetailsPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
+  const onPhoneChange = (value: string) =>
+    setForm((prev) => ({ ...prev, phone: value }));
+
   const setColor = (field: keyof FormState) => (value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
@@ -251,7 +259,7 @@ export default function OrganizationDetailsPage() {
     body.append("description", form.description);
     body.append("contactName", form.contactName);
     body.append("contactPosition", form.contactPosition);
-    body.append("contactPhone", form.phone);
+    body.append("contactPhone", parsePhoneNumber(form.phone, "US").number);
     body.append("contactEmail", form.email);
     body.append("website", form.website);
     if (form.facebookUrl) body.append("facebookUrl", form.facebookUrl);
@@ -275,6 +283,7 @@ export default function OrganizationDetailsPage() {
 
       const schoolId = json?.data?.[0]?.school?.id;
       if (schoolId) sessionStorage.setItem("fanhub:schoolId", String(schoolId));
+      if (form.teamName) sessionStorage.setItem("fanhub:teamName", form.teamName);
 
       toast.success("School created");
       router.push(routes.ui.setupWizard.importSchedule);
@@ -325,7 +334,7 @@ export default function OrganizationDetailsPage() {
             <div className="grid grid-cols-2 gap-6">
               <Input label="Contact Name" name="contactName" value={form.contactName} onChange={set("contactName")} placeholder="John Doe" error={errors.contactName} />
               <Input label="Position" name="contactPosition" value={form.contactPosition} onChange={set("contactPosition")} placeholder="Athletic Director" error={errors.contactPosition} />
-              <Input label="Phone" name="phone" value={form.phone} onChange={set("phone")} placeholder="(555) 123-4567" type="tel" error={errors.phone} />
+              <PhoneInput label="Phone" name="phone" value={form.phone} onValueChange={onPhoneChange} placeholder="(555) 123-4567" error={errors.phone} />
               <Input label="Email" name="email" value={form.email} onChange={set("email")} placeholder="johndoe@tlam.com" type="email" error={errors.email} />
               <Input label="Website" name="website" value={form.website} onChange={set("website")} placeholder="https://www.tlam.com" type="url" error={errors.website} />
             </div>

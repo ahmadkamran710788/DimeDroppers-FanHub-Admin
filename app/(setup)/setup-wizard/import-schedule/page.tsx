@@ -80,9 +80,10 @@ const ICS_WIRED: {
   keyword: string;
   platform: string;
   previewProxy: string;
+  requiresTeamNameMatch?: boolean;
 }[] = [
   { sourceId: "sportsengine", keyword: "sportngin", platform: "SportsEngine", previewProxy: routes.api.proxyIcsSportsEngine },
-  { sourceId: "teamsnap", keyword: "teamsnap", platform: "TeamSnap", previewProxy: routes.api.proxyIcsTeamSnap },
+  { sourceId: "teamsnap", keyword: "teamsnap", platform: "TeamSnap", previewProxy: routes.api.proxyIcsTeamSnap, requiresTeamNameMatch: true },
 ];
 
 const SUMMARY_STATS = [
@@ -102,6 +103,21 @@ const SUMMARY_STATS = [
 ] as const;
 
 type ConnectionStatus = "connected" | "not-connected";
+
+// True if any event title in the preview response has a side (split on "vs")
+// that exactly matches the team name (case-insensitive, trimmed). TeamSnap-only gate.
+function teamNameMatchesPreview(previewJson: unknown, teamName: string): boolean {
+  const target = teamName.trim().toLowerCase();
+  if (!target) return false;
+  const groups = (previewJson as { data?: { events?: { title?: string }[] }[] })?.data ?? [];
+  for (const g of groups) {
+    for (const ev of g.events ?? []) {
+      const sides = (ev.title ?? "").split(/\s+vs\.?\s+/i);
+      if (sides.some((s) => s.trim().toLowerCase() === target)) return true;
+    }
+  }
+  return false;
+}
 
 /** 48×48 / 64×64 logo circle used in the ICS rows and API cards. */
 function PlatformBadge({ logo, size }: { logo: PlatformLogo; size: 48 | 64 }) {
@@ -188,10 +204,19 @@ export default function ImportSchedulePage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: c.url }),
         });
+        const previewJson = await previewRes.json().catch(() => null);
         if (!previewRes.ok) {
-          const j = await previewRes.json().catch(() => null);
-          toast.error(j?.message || `Could not read that ${c.platform} calendar.`);
+          toast.error(previewJson?.message || `Could not read that ${c.platform} calendar.`);
           return;
+        }
+
+        // TeamSnap-only gate: import only if an event title matches the user's team name.
+        if (c.requiresTeamNameMatch) {
+          const teamName = sessionStorage.getItem("fanhub:teamName") ?? "";
+          if (!teamNameMatchesPreview(previewJson, teamName)) {
+            toast.error(`No ${c.platform} games match your team "${teamName || "—"}". Skipped.`);
+            continue; // skip ONLY this row; other rows keep processing
+          }
         }
 
         // 2) Import into the school.
@@ -208,7 +233,9 @@ export default function ImportSchedulePage() {
         imported.push(c.platform);
       }
 
-      toast.success(`${imported.join(" & ")} schedule imported.`);
+      if (imported.length > 0) {
+        toast.success(`${imported.join(" & ")} schedule imported.`);
+      }
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {

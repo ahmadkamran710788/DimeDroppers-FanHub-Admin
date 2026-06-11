@@ -49,7 +49,7 @@ export default function Select({
           value={value}
           onChange={onChange}
           className={cn(
-            "w-full h-12 rounded-[8px] bg-white text-midnight-navy text-base font-medium px-4 py-3 appearance-none",
+            "w-full h-12 rounded-[8px] bg-white text-midnight-navy text-base font-medium leading-normal px-4 appearance-none",
             "border-2 border-[rgba(11,28,45,0.11)] outline-none",
             "focus:border-steel-blue transition-colors cursor-pointer",
             "disabled:opacity-50",
