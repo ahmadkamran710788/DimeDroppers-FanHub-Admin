@@ -8,6 +8,7 @@ import { routes } from "@/utils/routes";
 import { Check, GripVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import toast from "react-hot-toast";
 
 interface Activation {
   id: string;
@@ -79,6 +80,25 @@ const RECOMMENDED_FOR_YOU: { id: string; title: string; subtitle: string }[] = [
   { id: "fan-wall", title: "Fan Wall", subtitle: "Boosts community." },
 ];
 
+// Maps each activation id to its backend feature-links payload key (camelCase).
+const FEATURE_LINK_KEY: Record<string, string> = {
+  "buy-tickets": "buyTickets",
+  "watch-game": "watchGame",
+  "partner-offers": "partnerOffers",
+  "highlights-stats": "highlightsStats",
+  "support-team": "supportTeam",
+  "shout-out-wall": "shoutOutWall",
+  "team-stores": "teamStores",
+  "record-game": "recordGame",
+  "score-game": "scoreGame",
+  predict: "predict",
+  vote: "vote",
+  arcade: "arcade",
+  "challenges-quests": "challengesQuests",
+  "fan-wall": "fanWall",
+  chat: "chat",
+};
+
 function Checkbox({ checked }: { checked: boolean }) {
   return (
     <span
@@ -95,6 +115,9 @@ function Checkbox({ checked }: { checked: boolean }) {
 export default function ChooseActivationsPage() {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Per-activation URL entered once an activation is selected.
+  const [urls, setUrls] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
 
   // Per-category display order (drag-to-reorder, purely visual).
   const [order, setOrder] = useState<Record<string, string[]>>(() =>
@@ -134,6 +157,45 @@ export default function ChooseActivationsPage() {
       RECOMMENDED_FOR_YOU.forEach((r) => next.add(r.id));
       return next;
     });
+  };
+
+  // PATCH the entered feature-link URLs for the selected activations. Returns true on
+  // success so the caller can decide where to navigate. Only selected activations with a
+  // non-empty URL are sent; blanks are omitted.
+  const saveFeatureLinks = async (): Promise<boolean> => {
+    const schoolId = sessionStorage.getItem("fanhub:schoolId");
+    if (!schoolId) {
+      toast.error("No school found. Please complete Step 1 first.");
+      return false;
+    }
+
+    const links: Record<string, string> = {};
+    selected.forEach((id) => {
+      const key = FEATURE_LINK_KEY[id];
+      const val = urls[id]?.trim();
+      if (key && val) links[key] = val;
+    });
+
+    setSaving(true);
+    try {
+      const res = await fetch(routes.api.proxyFeatureLinks, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schoolId, ...links }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(json?.message || "Couldn't save your activations. Please try again.");
+        return false;
+      }
+      toast.success("Activations saved.");
+      return true;
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+      return false;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDrop = (catId: string, targetId: string) => {
@@ -240,33 +302,48 @@ export default function ChooseActivationsPage() {
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={() => handleDrop(cat.id, id)}
                       className={cn(
-                        "flex items-center gap-2 rounded-[8px] transition-opacity",
+                        "flex flex-col gap-2 rounded-[8px] transition-opacity",
                         draggingId === id && "opacity-50"
                       )}
                     >
-                      <button
-                        type="button"
-                        onClick={() => toggle(id)}
-                        className="flex items-start gap-2 flex-1 text-left min-w-0"
-                      >
-                        <span className="mt-0.5">
-                          <Checkbox checked={isSelected} />
-                        </span>
-                        <span className="flex flex-col gap-1 min-w-0">
-                          <span className="flex items-center gap-2 flex-wrap">
-                            <span className="text-base font-semibold text-white">{activation.title}</span>
-                            {activation.recommended && (
-                              <span className="text-xs text-white bg-[rgba(0,0,0,0.2)] px-2 py-1 rounded-[70px] backdrop-blur-[104px] leading-none">
-                                Recommended
-                              </span>
-                            )}
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggle(id)}
+                          className="flex items-start gap-2 flex-1 text-left min-w-0"
+                        >
+                          <span className="mt-0.5">
+                            <Checkbox checked={isSelected} />
                           </span>
-                          <span className="text-sm text-white/40">{activation.description}</span>
+                          <span className="flex flex-col gap-1 min-w-0">
+                            <span className="flex items-center gap-2 flex-wrap">
+                              <span className="text-base font-semibold text-white">{activation.title}</span>
+                              {activation.recommended && (
+                                <span className="text-xs text-white bg-[rgba(0,0,0,0.2)] px-2 py-1 rounded-[70px] backdrop-blur-[104px] leading-none">
+                                  Recommended
+                                </span>
+                              )}
+                            </span>
+                            <span className="text-sm text-white/40">{activation.description}</span>
+                          </span>
+                        </button>
+                        <span className="cursor-grab active:cursor-grabbing shrink-0">
+                          <GripVertical className="w-6 h-6 text-white opacity-50" />
                         </span>
-                      </button>
-                      <span className="cursor-grab active:cursor-grabbing shrink-0">
-                        <GripVertical className="w-6 h-6 text-white opacity-50" />
-                      </span>
+                      </div>
+                      {isSelected && (
+                        <input
+                          type="url"
+                          inputMode="url"
+                          placeholder="https://…"
+                          value={urls[id] ?? ""}
+                          onChange={(e) => setUrls((p) => ({ ...p, [id]: e.target.value }))}
+                          onClick={(e) => e.stopPropagation()}
+                          draggable
+                          onDragStart={(e) => e.preventDefault()}
+                          className="ml-8 h-10 rounded-[8px] px-3 bg-[rgba(0,0,0,0.25)] border border-[rgba(255,255,255,0.2)] text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-steel-blue"
+                        />
+                      )}
                     </div>
                   );
                 })}
@@ -360,9 +437,14 @@ export default function ChooseActivationsPage() {
 
       <WizardFooter
         onBack={() => router.push(routes.ui.setupWizard.importSchedule)}
-        onSaveExit={() => {}}
+        onSaveExit={async () => {
+          if (await saveFeatureLinks()) router.push(routes.ui.indexRoute);
+        }}
         primaryLabel="Next"
-        onPrimary={() => router.push(routes.ui.setupWizard.reviewPublish)}
+        primaryDisabled={saving}
+        onPrimary={async () => {
+          if (await saveFeatureLinks()) router.push(routes.ui.setupWizard.reviewPublish);
+        }}
       />
     </div>
   );

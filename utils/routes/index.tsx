@@ -26,6 +26,15 @@ export const routes = {
     proxyIcsTeamSnap: "/api/fanhub/ics/teamsnap",
     importIcs: (schoolId: string) => `fanhub/schools/${schoolId}/import-ics`,
     proxyImportIcs: "/api/fanhub/schools/import-ics",
+    // FanHub — Step 2 "Upload schedule (pdf/jpg/png)". The browser posts multipart
+    // form-data (the schedule file) to proxyScrapeMaxpreps with ?schoolId=…; the server
+    // route appends scrapeMaxpreps(schoolId) to config.apiUrl and injects x-fanhub-key.
+    scrapeMaxpreps: (schoolId: string) => `fanhub/scrape/maxpreps/${schoolId}`,
+    proxyScrapeMaxpreps: "/api/fanhub/scrape/maxpreps",
+    // FanHub — Step 3 "Choose Activations". Upstream path appended to config.apiUrl on the
+    // server; proxy is the internal Next route the browser PATCHes to (injects x-fanhub-key).
+    featureLinks: (schoolId: string) => `fanhub/schools/${schoolId}/feature-links`,
+    proxyFeatureLinks: "/api/fanhub/schools/feature-links",
     // Setup Wizard — wire these when backend is ready
     saveSchedule: "setup/schedule",
     saveActivations: "setup/activations",

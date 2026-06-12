@@ -3,10 +3,14 @@
 import Button from "@/components/common/Button";
 import CheckCircle from "@/components/common/CheckCircle";
 import Modal from "@/components/common/Modal";
+import SchedulePreviewModal, {
+  type ScrapedSchool,
+} from "@/components/common/SchedulePreviewModal";
 import SectionCard from "@/components/common/SectionCard";
 import StepIndicator from "@/components/common/StepIndicator";
 import Toggle from "@/components/common/Toggle";
 import WizardFooter from "@/components/common/WizardFooter";
+import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import {
   Calendar,
@@ -21,13 +25,16 @@ import {
   HelpCircle,
   Lightbulb,
   ListChecks,
+  Loader2,
   MapPin,
   RefreshCw,
   XCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import toast from "react-hot-toast";
+
+const ACCEPTED_UPLOAD_EXTENSIONS = ["pdf", "jpg", "jpeg", "png"] as const;
 
 type PlatformLogo = { type: "image"; src: string } | { type: "color"; bg: string };
 
@@ -119,6 +126,30 @@ function teamNameMatchesPreview(previewJson: unknown, teamName: string): boolean
   return false;
 }
 
+// Build the Import Summary cards from a scraped school. Each item uses the `{ label,
+// value, icon }` variant of the SUMMARY_STATS union, so the existing summary `.map`
+// renders real data after an upload with no extra branching.
+type SummaryStat = { label: string; value: string; icon: typeof Database };
+
+function summaryFromSchool(school: ScrapedSchool): SummaryStat[] {
+  const times = school.scheduleEvents
+    .map((e) => new Date(e.start).getTime())
+    .filter((t) => !Number.isNaN(t));
+  const fmt = (t: number) =>
+    new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const dateRange =
+    times.length > 0 ? `${fmt(Math.min(...times))} - ${fmt(Math.max(...times))}` : "—";
+
+  return [
+    { label: "Schedule Source", value: "MaxPreps", icon: Database },
+    { label: "Sport Detected", value: school.sportsType || "—", icon: ListChecks },
+    { label: "Season Detected", value: school.season || "—", icon: Calendar },
+    { label: "Total Games", value: `${school.scheduleEvents.length} Games`, icon: ListChecks },
+    { label: "Date Range", value: dateRange, icon: CalendarDays },
+    { label: "Overall Record", value: school.overallRecord || "—", icon: RefreshCw },
+  ];
+}
+
 /** 48×48 / 64×64 logo circle used in the ICS rows and API cards. */
 function PlatformBadge({ logo, size }: { logo: PlatformLogo; size: 48 | 64 }) {
   const dim = size === 48 ? "w-12 h-12" : "w-16 h-16";
@@ -154,8 +185,73 @@ export default function ImportSchedulePage() {
   const [infoOpen, setInfoOpen] = useState(true);
   const [icsConnecting, setIcsConnecting] = useState(false);
 
+  // Section A — MaxPreps file upload (pdf/jpg/png).
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [scrapeDragging, setScrapeDragging] = useState(false);
+  const [scrapeFileName, setScrapeFileName] = useState<string | null>(null);
+  const [scraping, setScraping] = useState(false);
+  const [scrapedSchool, setScrapedSchool] = useState<ScrapedSchool | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+
   const setIcsUrl = (i: number, val: string) => {
     setIcsUrls((prev) => prev.map((u, idx) => (idx === i ? val : u)));
+  };
+
+  // Section A — upload a schedule image/PDF to the MaxPreps scrape endpoint, which
+  // parses it and attaches the games to the school. Mirrors handleIcsConnect: read the
+  // schoolId from sessionStorage (set in Step 1), POST to the internal proxy (which
+  // injects x-fanhub-key), and surface the result via toast + preview.
+  const handleScrapeUpload = async (file: File) => {
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    if (!ACCEPTED_UPLOAD_EXTENSIONS.includes(ext as (typeof ACCEPTED_UPLOAD_EXTENSIONS)[number])) {
+      toast.error("Upload a PDF, JPG, or PNG file.");
+      return;
+    }
+
+    const schoolId = sessionStorage.getItem("fanhub:schoolId");
+    if (!schoolId) {
+      toast.error("No school found. Please complete Step 1 first.");
+      return;
+    }
+
+    setScrapeFileName(file.name);
+    setScraping(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+
+      const res = await fetch(
+        `${routes.api.proxyScrapeMaxpreps}?schoolId=${encodeURIComponent(schoolId)}`,
+        { method: "POST", body }
+      );
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        toast.error(json?.message || "Couldn't read that schedule. Please try again.");
+        return;
+      }
+
+      const school = (json?.data?.[0]?.school ?? null) as ScrapedSchool | null;
+      if (!school) {
+        toast.error("No schedule could be extracted from that file.");
+        return;
+      }
+
+      setScrapedSchool(school);
+      toast.success(json?.message || "Schedule imported.");
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setScraping(false);
+    }
+  };
+
+  const handleScrapeDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setScrapeDragging(false);
+    if (scraping) return;
+    const file = e.dataTransfer.files[0];
+    if (file) handleScrapeUpload(file);
   };
 
   // Per-row validation. A wired source (SportsEngine, TeamSnap) only needs to contain its
@@ -278,25 +374,67 @@ export default function ImportSchedulePage() {
       <div className="flex gap-10 items-start">
         {/* LEFT COLUMN */}
         <div className="w-[639px] shrink-0 flex flex-col gap-10">
-          {/* A — CSV Upload */}
+          {/* A — Schedule file upload (pdf/jpg/png) → MaxPreps scrape */}
           <SectionCard
             badge="A"
-            title="Upload your (.csv) file"
+            title="Upload your (pdf, jpg, png) file"
             description="Best for schools, leagues, and tournaments with exported schedules."
           >
             <div
               role="button"
               tabIndex={0}
-              className="flex flex-col items-center justify-center gap-2 rounded-[8px] border-2 border-dashed border-border-dashed px-4 py-6 transition-colors hover:border-[rgba(255,255,255,0.5)] cursor-pointer"
+              aria-disabled={scraping}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (!scraping) setScrapeDragging(true);
+              }}
+              onDragLeave={() => setScrapeDragging(false)}
+              onDrop={handleScrapeDrop}
+              onClick={() => !scraping && fileInputRef.current?.click()}
+              onKeyDown={(e) => e.key === "Enter" && !scraping && fileInputRef.current?.click()}
+              className={cn(
+                "flex flex-col items-center justify-center gap-2 rounded-[8px] border-2 border-dashed border-border-dashed px-4 py-6 transition-colors",
+                scraping
+                  ? "cursor-wait opacity-80"
+                  : "cursor-pointer hover:border-[rgba(255,255,255,0.5)]",
+                scrapeDragging && "border-white bg-[rgba(255,255,255,0.04)]"
+              )}
               style={{ boxShadow: "inset 0px 1px 0px 0px rgba(255,255,255,0.16)", backdropFilter: "blur(64px)" }}
             >
-              <CloudUpload className="w-6 h-6 text-white" strokeWidth={1.5} />
-              <p className="text-base font-medium text-white text-center">
-                Drag &amp; Drop your CSV file here.
-              </p>
-              <p className="text-sm text-white/40 text-center">or</p>
-              <Button variant="ghost" label="Choose File" onClick={() => {}} className="w-[120px] h-8 px-3" />
+              {scraping ? (
+                <>
+                  <Loader2 className="w-6 h-6 text-white animate-spin" strokeWidth={1.5} />
+                  <p className="text-base font-medium text-white text-center">
+                    Reading your schedule…
+                  </p>
+                  {scrapeFileName && (
+                    <p className="text-sm text-white/40 text-center truncate max-w-full">
+                      {scrapeFileName}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <CloudUpload className="w-6 h-6 text-white" strokeWidth={1.5} />
+                  <p className="text-base font-medium text-white text-center">
+                    {scrapeFileName ?? "Drag & Drop your file here."}
+                  </p>
+                  <p className="text-sm text-white/40 text-center">or</p>
+                  <Button variant="ghost" label="Choose File" onClick={() => fileInputRef.current?.click()} className="w-[120px] h-8 px-3" />
+                </>
+              )}
             </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              className="sr-only"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleScrapeUpload(file);
+                e.target.value = "";
+              }}
+            />
             <div className="flex items-center gap-6">
               <button
                 type="button"
@@ -307,7 +445,9 @@ export default function ImportSchedulePage() {
               </button>
               <button
                 type="button"
-                className="flex items-center gap-2 text-base font-semibold text-white/80 hover:text-white transition-colors"
+                onClick={() => setShowPreview(true)}
+                disabled={!scrapedSchool}
+                className="flex items-center gap-2 text-base font-semibold text-white/80 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-white/80"
               >
                 <Eye className="w-6 h-6" strokeWidth={1.5} />
                 Preview Data
@@ -441,7 +581,7 @@ export default function ImportSchedulePage() {
               <p className="text-base text-white/80">Here&apos;s what we found from your schedule.</p>
             </div>
             <div className="flex flex-col gap-6">
-              {SUMMARY_STATS.map((stat) => {
+              {(scrapedSchool ? summaryFromSchool(scrapedSchool) : SUMMARY_STATS).map((stat) => {
                 const Icon = "icon" in stat ? stat.icon : null;
                 return (
                   <div
@@ -546,6 +686,13 @@ export default function ImportSchedulePage() {
           </button>
         </div>
       </Modal>
+
+      {/* Preview Data — scraped schedule */}
+      <SchedulePreviewModal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        school={scrapedSchool}
+      />
 
       <WizardFooter
         onBack={() => router.push(routes.ui.setupWizard.organizationDetails)}
