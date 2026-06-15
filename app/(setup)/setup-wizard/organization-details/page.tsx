@@ -11,10 +11,11 @@ import StepIndicator from "@/components/common/StepIndicator";
 import Textarea from "@/components/common/Textarea";
 import WizardFooter from "@/components/common/WizardFooter";
 import { validateAndSetErrors } from "@/utils/validation";
+import { getSavedSchool } from "@/utils/fanhub/getSavedSchool";
 import { routes } from "@/utils/routes";
 import { Circle, MapPin, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import * as yup from "yup";
 import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
@@ -46,6 +47,7 @@ const schema = yup.object({
   instagramUrl: yup.string().url("Enter a valid URL").notRequired(),
   xUrl: yup.string().url("Enter a valid URL").notRequired(),
   youtubeUrl: yup.string().url("Enter a valid URL").notRequired(),
+  tiktokUrl: yup.string().url("Enter a valid URL").notRequired(),
 });
 
 const LEVEL_OPTIONS = [
@@ -150,6 +152,7 @@ type FormState = {
   instagramUrl: string;
   xUrl: string;
   youtubeUrl: string;
+  tiktokUrl: string;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
@@ -176,6 +179,7 @@ const INITIAL: FormState = {
   instagramUrl: "",
   xUrl: "",
   youtubeUrl: "",
+  tiktokUrl: "",
   primaryColor: "#000000",
   secondaryColor: "#000000",
   accentColor: "#231F20",
@@ -198,7 +202,7 @@ const CHECKLIST: ChecklistItem[] = [
   { label: "Contact Information", done: (f) => !!(f.contactName && f.contactPosition && f.phone && f.email && f.website) },
   {
     label: "Social Media (Optional)",
-    done: (f) => !!(f.facebookUrl || f.instagramUrl || f.xUrl || f.youtubeUrl),
+    done: (f) => !!(f.facebookUrl || f.instagramUrl || f.xUrl || f.youtubeUrl || f.tiktokUrl),
   },
   {
     label: "Branding (Optional)",
@@ -241,6 +245,66 @@ export default function OrganizationDetailsPage() {
   const labelOf = (options: { label: string; value: string }[], value: string) =>
     options.find((o) => o.value === value)?.label ?? value;
 
+  // Inverse of labelOf — used when rehydrating from a saved school, whose select fields
+  // come back as labels (e.g. "High School"). Maps the label back to the form slug.
+  const valueOf = (options: { label: string; value: string }[], label: string | null) =>
+    options.find((o) => o.label === label)?.value ?? "";
+
+  // contactPhone is stored in E.164 (e.g. "+14155555013"); the masked PhoneInput expects
+  // the 10 national digits ("4155555013") — feeding it the raw E.164 makes the mask drop
+  // the "+1" and the last digit. Convert back to national digits here.
+  const toNationalDigits = (e164: string | null) => {
+    if (!e164) return "";
+    try {
+      return String(parsePhoneNumber(e164, "US").nationalNumber);
+    } catch {
+      return e164;
+    }
+  };
+
+  // On mount, if a school already exists for this session, prefill the form with its
+  // saved values so navigating Back to this step shows what the user previously entered.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const school = await getSavedSchool();
+      if (cancelled || !school) return;
+      setForm((prev) => ({
+        ...prev,
+        organizationName: school.name ?? prev.organizationName,
+        organizationType: valueOf(ORG_TYPE_OPTIONS, school.organizationType) || prev.organizationType,
+        teamName: school.teamName ?? prev.teamName,
+        level: valueOf(LEVEL_OPTIONS, school.level) || prev.level,
+        // sportsType is stored as the slug already (handleNext posts form.sport raw).
+        sport: SPORT_OPTIONS.find((o) => o.value === school.sportsType)?.value ?? prev.sport,
+        streetAddress: school.streetAddress ?? prev.streetAddress,
+        city: school.city ?? prev.city,
+        // state is the 2-letter abbr, which is also the option value.
+        state: school.state ?? prev.state,
+        zipCode: school.zipCode ?? prev.zipCode,
+        conference: school.league ?? prev.conference,
+        description: school.description ?? prev.description,
+        contactName: school.contactName ?? prev.contactName,
+        contactPosition: school.contactPosition ?? prev.contactPosition,
+        phone: toNationalDigits(school.contactPhone) || prev.phone,
+        email: school.contactEmail ?? prev.email,
+        website: school.website ?? prev.website,
+        facebookUrl: school.facebookUrl ?? prev.facebookUrl,
+        instagramUrl: school.instagramUrl ?? prev.instagramUrl,
+        xUrl: school.xUrl ?? prev.xUrl,
+        youtubeUrl: school.youtubeUrl ?? prev.youtubeUrl,
+        tiktokUrl: school.tiktokUrl ?? prev.tiktokUrl,
+        primaryColor: school.colors?.primaryColor ?? prev.primaryColor,
+        secondaryColor: school.colors?.secondaryColor ?? prev.secondaryColor,
+        accentColor: school.colors?.accentColor ?? prev.accentColor,
+      }));
+      if (school.logoUrl) setLogoUrl(school.logoUrl);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleNext = async () => {
     const valid = await validateAndSetErrors(schema as yup.ObjectSchema<Record<string, unknown>>, form, setErrors);
     if (!valid) return;
@@ -266,26 +330,40 @@ export default function OrganizationDetailsPage() {
     if (form.instagramUrl) body.append("instagramUrl", form.instagramUrl);
     if (form.xUrl) body.append("xUrl", form.xUrl);
     if (form.youtubeUrl) body.append("youtubeUrl", form.youtubeUrl);
+    if (form.tiktokUrl) body.append("tiktokUrl", form.tiktokUrl);
     body.append("colors", form.primaryColor);
     body.append("secondaryColor", form.secondaryColor);
     body.append("accentColor", form.accentColor);
     if (logoFile) body.append("logo", logoFile);
 
+    // Create the school on first submit; on a Back→Next re-submit (schoolId already in
+    // sessionStorage) PUT the same payload to update the existing school instead of
+    // creating a duplicate. The logo is only sent when the user picked a new file.
+    const existingSchoolId = sessionStorage.getItem("fanhub:schoolId");
+
     setIsSubmitting(true);
     try {
-      const res = await fetch(routes.api.proxyCreateSchool, { method: "POST", body });
+      const res = existingSchoolId
+        ? await fetch(
+            `${routes.api.proxyUpdateSchool}?schoolId=${encodeURIComponent(existingSchoolId)}`,
+            { method: "PUT", body }
+          )
+        : await fetch(routes.api.proxyCreateSchool, { method: "POST", body });
       const json = await res.json().catch(() => null);
 
       if (!res.ok) {
-        toast.error(json?.message || "Failed to create school. Please try again.");
+        toast.error(
+          json?.message ||
+            `Failed to ${existingSchoolId ? "update" : "create"} school. Please try again.`
+        );
         return;
       }
 
-      const schoolId = json?.data?.[0]?.school?.id;
+      const schoolId = json?.data?.[0]?.school?.id ?? existingSchoolId;
       if (schoolId) sessionStorage.setItem("fanhub:schoolId", String(schoolId));
       if (form.teamName) sessionStorage.setItem("fanhub:teamName", form.teamName);
 
-      toast.success("School created");
+      toast.success(existingSchoolId ? "School updated" : "School created");
       router.push(routes.ui.setupWizard.importSchedule);
     } catch {
       toast.error("Something went wrong. Please try again.");
@@ -340,12 +418,18 @@ export default function OrganizationDetailsPage() {
             </div>
           </SectionCard>
 
-          <SectionCard title="Social Media (optional)">
-            <div className="grid grid-cols-2 gap-6">
-              <Input label="Facebook" name="facebookUrl" value={form.facebookUrl} onChange={set("facebookUrl")} placeholder="https://facebook.com/tlam" type="url" error={errors.facebookUrl} />
-              <Input label="Instagram" name="instagramUrl" value={form.instagramUrl} onChange={set("instagramUrl")} placeholder="https://instagram.com/tlam" type="url" error={errors.instagramUrl} />
-              <Input label="X (Twitter)" name="xUrl" value={form.xUrl} onChange={set("xUrl")} placeholder="https://x.com/tlam" type="url" error={errors.xUrl} />
-              <Input label="YouTube" name="youtubeUrl" value={form.youtubeUrl} onChange={set("youtubeUrl")} placeholder="https://youtube.com/@tlam" type="url" error={errors.youtubeUrl} />
+          <SectionCard title="Social Networks (optional)">
+            <div className="flex flex-col gap-6">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <Input label="Facebook" name="facebookUrl" value={form.facebookUrl} onChange={set("facebookUrl")} placeholder="https://" type="url" error={errors.facebookUrl} icon={<img src="/icons/step1/fb.svg" alt="" className="w-6 h-6" />} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <Input label="Instagram" name="instagramUrl" value={form.instagramUrl} onChange={set("instagramUrl")} placeholder="https://" type="url" error={errors.instagramUrl} icon={<img src="/icons/step1/insta.svg" alt="" className="w-6 h-6" />} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <Input label="X (Former Twitter)" name="xUrl" value={form.xUrl} onChange={set("xUrl")} placeholder="https://" type="url" error={errors.xUrl} icon={<img src="/icons/step1/x.svg" alt="" className="w-6 h-6" />} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <Input label="Youtube" name="youtubeUrl" value={form.youtubeUrl} onChange={set("youtubeUrl")} placeholder="https://" type="url" error={errors.youtubeUrl} icon={<img src="/icons/step1/yt.svg" alt="" className="w-6 h-6" />} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <Input label="TikTok" name="tiktokUrl" value={form.tiktokUrl} onChange={set("tiktokUrl")} placeholder="https://" type="url" error={errors.tiktokUrl} icon={<img src="/icons/step1/tiktok.svg" alt="" className="w-6 h-6" />} />
             </div>
           </SectionCard>
 

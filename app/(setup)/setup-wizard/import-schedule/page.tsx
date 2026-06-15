@@ -11,6 +11,7 @@ import StepIndicator from "@/components/common/StepIndicator";
 import Toggle from "@/components/common/Toggle";
 import WizardFooter from "@/components/common/WizardFooter";
 import { cn } from "@/utils/cn";
+import { getSavedSchool } from "@/utils/fanhub/getSavedSchool";
 import { routes } from "@/utils/routes";
 import {
   Calendar,
@@ -31,7 +32,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 const ACCEPTED_UPLOAD_EXTENSIONS = ["pdf", "jpg", "jpeg", "png"] as const;
@@ -196,6 +197,33 @@ export default function ImportSchedulePage() {
   const setIcsUrl = (i: number, val: string) => {
     setIcsUrls((prev) => prev.map((u, idx) => (idx === i ? val : u)));
   };
+
+  // On mount, if the saved school already has imported games, show them in the Import
+  // Summary + Preview so navigating Back to this step reflects the previously-saved
+  // schedule. SavedSchool is a structural superset of ScrapedSchool.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const school = await getSavedSchool();
+      if (cancelled || !school || school.scheduleEvents.length === 0) return;
+      // Map SavedSchool → ScrapedSchool (the Import Summary/Preview shape). `name` is
+      // non-null in ScrapedSchool, so fall back to "" if the saved school lacks one.
+      setScrapedSchool({
+        id: school.id,
+        name: school.name ?? "",
+        teamName: school.teamName,
+        mascot: school.mascot,
+        sportsType: school.sportsType,
+        season: school.season,
+        overallRecord: school.overallRecord,
+        logoUrl: school.logoUrl,
+        scheduleEvents: school.scheduleEvents,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Section A — upload a schedule image/PDF to the MaxPreps scrape endpoint, which
   // parses it and attaches the games to the school. Mirrors handleIcsConnect: read the

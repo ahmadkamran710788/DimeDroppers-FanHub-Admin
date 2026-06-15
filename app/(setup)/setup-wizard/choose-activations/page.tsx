@@ -4,10 +4,12 @@ import ActivationDonut from "@/components/setup/ActivationDonut";
 import StepIndicator from "@/components/common/StepIndicator";
 import WizardFooter from "@/components/common/WizardFooter";
 import { cn } from "@/utils/cn";
+import { getSavedSchool } from "@/utils/fanhub/getSavedSchool";
 import { routes } from "@/utils/routes";
+import type { SavedSchool } from "@/utils/types/school";
 import { Check, GripVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 interface Activation {
@@ -99,6 +101,27 @@ const FEATURE_LINK_KEY: Record<string, string> = {
   chat: "chat",
 };
 
+// Maps each activation id to the school field the GET returns it under (for rehydrate).
+// Most are `<key>Link`, but the backend remaps two: buy-tickets → `gofanSchoolPage`,
+// watch-game → `nfhsNetworkLink` (verified against the live feature-links response).
+const SAVED_LINK_FIELD: Record<string, keyof SavedSchool> = {
+  "buy-tickets": "gofanSchoolPage",
+  "watch-game": "nfhsNetworkLink",
+  "partner-offers": "partnerOffersLink",
+  "highlights-stats": "highlightsStatsLink",
+  "support-team": "supportTeamLink",
+  "shout-out-wall": "shoutOutWallLink",
+  "team-stores": "teamStoresLink",
+  "record-game": "recordGameLink",
+  "score-game": "scoreGameLink",
+  predict: "predictLink",
+  vote: "voteLink",
+  arcade: "arcadeLink",
+  "challenges-quests": "challengesQuestsLink",
+  "fan-wall": "fanWallLink",
+  chat: "chatLink",
+};
+
 function Checkbox({ checked }: { checked: boolean }) {
   return (
     <span
@@ -125,6 +148,32 @@ export default function ChooseActivationsPage() {
   );
   const dragRef = useRef<{ catId: string; id: string } | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  // On mount, prefill from the saved school's feature links so navigating Back to this
+  // step restores the previously-selected activations and their URLs. SAVED_LINK_FIELD
+  // maps each activation id to the field the GET actually returns it under.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const school = await getSavedSchool();
+      if (cancelled || !school) return;
+      const restoredSelected = new Set<string>();
+      const restoredUrls: Record<string, string> = {};
+      for (const [id, field] of Object.entries(SAVED_LINK_FIELD)) {
+        const value = school[field];
+        if (typeof value === "string" && value) {
+          restoredSelected.add(id);
+          restoredUrls[id] = value;
+        }
+      }
+      if (restoredSelected.size === 0) return;
+      setSelected(restoredSelected);
+      setUrls(restoredUrls);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const toggle = (id: string) => {
     setSelected((prev) => {

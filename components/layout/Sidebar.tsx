@@ -20,11 +20,14 @@ const NAV_BOTTOM = [
   { icon: "/icons/icon-settings.svg", label: "Settings", href: "#" },
 ];
 
+// Display-only: the wizard steps are NOT navigable from the sidebar. Forward/back
+// is driven solely by the bottom WizardFooter (Back / Next) so each step's
+// validation and save run in order. The list here only renders progress.
 const WIZARD_STEPS = [
-  { number: 1, label: "Organization Details", href: routes.ui.setupWizard.organizationDetails },
-  { number: 2, label: "Import Schedule", href: routes.ui.setupWizard.importSchedule },
-  { number: 3, label: "Choose Activations", href: routes.ui.setupWizard.chooseActivations },
-  { number: 4, label: "Review & Publish", href: routes.ui.setupWizard.reviewPublish },
+  { number: 1, label: "Organization Details" },
+  { number: 2, label: "Import Schedule" },
+  { number: 3, label: "Choose Activations" },
+  { number: 4, label: "Review & Publish" },
 ];
 
 function getActiveStep(pathname: string): number {
@@ -101,15 +104,15 @@ export default function Sidebar() {
           Setup Wizard
         </Link>
 
-        {/* Wizard step sub-items */}
+        {/* Wizard step sub-items — display-only progress, not clickable. Navigation
+            between steps happens through the bottom WizardFooter (Back / Next). */}
         {WIZARD_STEPS.map((step) => {
           const isActive = step.number === activeStep;
           const isCompleted = step.number < activeStep;
           return (
-            <Link
+            <div
               key={step.number}
-              href={step.href}
-              className="flex items-center gap-3 pl-6 pr-2 py-4 rounded-[8px] group transition-all"
+              className="flex items-center gap-3 pl-6 pr-2 py-4 rounded-[8px] transition-all"
             >
               {/* 24px step circle */}
               <div className="relative shrink-0 flex items-center justify-center">
@@ -125,12 +128,12 @@ export default function Sidebar() {
               <span
                 className={cn(
                   "text-sm font-medium leading-tight transition-colors whitespace-nowrap",
-                  isActive ? "text-white" : "text-white/60 group-hover:text-white/80"
+                  isActive ? "text-white" : "text-white/60"
                 )}
               >
                 {step.label}
               </span>
-            </Link>
+            </div>
           );
         })}
 
