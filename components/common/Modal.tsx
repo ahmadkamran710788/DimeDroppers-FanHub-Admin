@@ -31,13 +31,13 @@ export default function Modal({ isOpen, onClose, title, children, className }: M
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
-        className="absolute inset-0 bg-[rgba(0,0,0,0.8)] backdrop-blur-[104px]"
+        className="absolute inset-0 bg-[rgba(0,0,0,0.55)] backdrop-blur-sm"
         onClick={onClose}
       />
       <div
         className={cn(
           "relative z-10 w-[402px] max-w-[calc(100vw-2rem)] rounded-[24px] p-6",
-          "flex flex-col items-center gap-6 bg-[rgba(255,255,255,0.8)] backdrop-blur-[104px]",
+          "flex flex-col items-center gap-6 bg-white",
           className
         )}
       >

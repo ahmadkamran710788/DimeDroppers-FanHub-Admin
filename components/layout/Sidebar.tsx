@@ -10,7 +10,7 @@ const NAV_MAIN = [
 ];
 
 const NAV_BOTTOM = [
-  { icon: "/icons/icon-calendar.svg", label: "Schedule", href: "#" },
+  { icon: "/icons/icon-calendar.svg", label: "Schedule", href: routes.ui.schedule },
   { icon: "/icons/icon-bolt.svg", label: "Activations", href: "#" },
   { icon: "/icons/icon-users.svg", label: "Teams", href: "#" },
   { icon: "/icons/icon-media.svg", label: "Media", href: "#" },

@@ -34,7 +34,7 @@ export default function Select({
 }: SelectProps) {
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <label htmlFor={name} className="text-base font-medium text-white">
+      <label htmlFor={name} className="text-base font-medium text-midnight-navy">
         {label}
       </label>
       <div className="relative flex items-center">
@@ -49,8 +49,8 @@ export default function Select({
           value={value}
           onChange={onChange}
           className={cn(
-            "w-full h-12 rounded-[8px] bg-white text-midnight-navy text-base font-medium leading-normal px-4 appearance-none",
-            "border-2 border-[rgba(11,28,45,0.11)] outline-none",
+            "w-full h-12 rounded-[8px] bg-[#F5F6F8] text-midnight-navy text-base font-medium leading-normal px-4 appearance-none",
+            "border border-[rgba(11,28,45,0.12)] outline-none",
             "focus:border-steel-blue transition-colors cursor-pointer",
             "disabled:opacity-50",
             icon && "pl-10",

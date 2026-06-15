@@ -1,6 +1,9 @@
 export const routes = {
   ui: {
     indexRoute: "/",
+    signIn: "/auth/sign-in",
+    signUp: "/auth/sign-up",
+    schedule: "/schedule",
     userDetails: (id: string | number) => `users/${id}`,
     setupWizard: {
       organizationDetails: "/setup-wizard/organization-details",
@@ -13,6 +16,17 @@ export const routes = {
   api: {
     getArea: "areas",
     editArea: (id: string | number) => `areas/${id}`,
+    // FanHub Org Auth. `auth*` are the upstream paths appended to config.apiUrl on the
+    // server (in the route handlers); `proxyAuth*` are the internal Next routes the browser
+    // posts to, which set the httpOnly accessToken/refreshToken cookies server-side.
+    authSignin: "fanhub/org-auth/signin",
+    proxyAuthSignin: "/api/auth/signin",
+    authSignup: "fanhub/org-auth/signup",
+    proxyAuthSignup: "/api/auth/signup",
+    authRefresh: "fanhub/org-auth/refresh",
+    proxyAuthRefresh: "/api/auth/refresh",
+    // Clears the auth cookies (no upstream call).
+    proxyAuthSignout: "/api/auth/signout",
     // FanHub — Step 1 "Create School". `createSchool` is the upstream path appended to
     // config.apiUrl on the server; `proxyCreateSchool` is the internal Next route the
     // browser posts to (which injects the x-fanhub-key header server-side).
@@ -46,6 +60,17 @@ export const routes = {
     // server; proxy is the internal Next route the browser PATCHes to (injects x-fanhub-key).
     featureLinks: (schoolId: string) => `fanhub/schools/${schoolId}/feature-links`,
     proxyFeatureLinks: "/api/fanhub/schools/feature-links",
+    // Schedule CRUD — upstream paths (used by server-side proxy route handlers)
+    listSchedules: "/fanhub/org/schedules",
+    createSchedule: "/fanhub/org/schedules",
+    getSchedule: (id: string) => `/fanhub/org/schedules/${id}`,
+    updateSchedule: (id: string) => `/fanhub/org/schedules/${id}`,
+    deleteSchedule: (id: string) => `/fanhub/org/schedules/${id}`,
+    // Schedule CRUD — proxy routes (browser calls these; server injects Bearer token)
+    proxyListSchedules: "/api/fanhub/org/schedules",
+    proxyCreateSchedule: "/api/fanhub/org/schedules",
+    proxyUpdateSchedule: (id: string) => `/api/fanhub/org/schedules/${id}`,
+    proxyDeleteSchedule: (id: string) => `/api/fanhub/org/schedules/${id}`,
     // Setup Wizard — wire these when backend is ready
     saveSchedule: "setup/schedule",
     saveActivations: "setup/activations",

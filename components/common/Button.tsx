@@ -3,7 +3,7 @@
 import { cn } from "@/utils/cn";
 import { type ReactNode } from "react";
 
-type ButtonVariant = "cta" | "primary" | "ghost" | "danger";
+type ButtonVariant = "cta" | "primary" | "ghost" | "secondary" | "danger";
 
 interface ButtonProps {
   variant?: ButtonVariant;
@@ -33,13 +33,14 @@ export default function Button({
       disabled={disabled}
       style={variant === "cta" ? { background: "var(--gradient-cta)" } : undefined}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-[8px] h-12 px-6 text-base font-medium text-white transition-opacity",
+        "inline-flex items-center justify-center gap-2 rounded-[8px] h-12 px-6 text-base font-medium transition-opacity",
         "backdrop-blur-[48px] disabled:opacity-50 disabled:cursor-not-allowed",
         variant !== "cta" && "w-[177px]",
         fullWidth && "w-full",
-        variant === "primary" && "bg-steel-blue",
-        variant === "ghost" && "bg-[rgba(235,235,235,0.25)]",
-        variant === "danger" && "bg-error",
+        variant === "primary" && "bg-steel-blue text-white",
+        variant === "ghost" && "bg-[rgba(235,235,235,0.25)] text-white",
+        variant === "secondary" && "bg-white text-midnight-navy border border-midnight-navy/20 hover:bg-gray-50",
+        variant === "danger" && "bg-error text-white",
         className
       )}
     >

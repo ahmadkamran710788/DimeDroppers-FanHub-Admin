@@ -64,10 +64,10 @@ export default async function apiCall<T = unknown>({
   }
 
   try {
-    const token = getCookie("authtoken");
+    const token = getCookie("accessToken");
 
     const axiosConfig: AxiosRequestConfig = {
-      url: `${BASE_URL}${endpoint}`,
+      url: endpoint.startsWith("/api/") ? endpoint : `${BASE_URL}${endpoint}`,
       method,
       headers: {
         "Content-Type": "application/ld+json",

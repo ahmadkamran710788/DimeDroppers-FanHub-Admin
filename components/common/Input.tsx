@@ -30,12 +30,12 @@ export default function Input({
 }: InputProps) {
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <label htmlFor={name} className="text-base font-medium text-white">
+      <label htmlFor={name} className="text-base font-medium text-midnight-navy">
         {label}
       </label>
       <div className="relative flex items-center">
         {icon && (
-          <span className="absolute left-3 w-6 h-6 text-[#0B1C2D] flex items-center justify-center pointer-events-none z-10">
+          <span className="absolute left-3 w-6 h-6 text-midnight-navy flex items-center justify-center pointer-events-none z-10">
             {icon}
           </span>
         )}
@@ -47,13 +47,9 @@ export default function Input({
           onChange={onChange}
           placeholder={placeholder}
           disabled={disabled}
-          style={{
-            boxShadow: "inset 0px 1px 0px 0px rgba(255,255,255,0.16)",
-            backdropFilter: "blur(64px)",
-          }}
           className={cn(
-            "w-full h-12 rounded-[8px] bg-white text-midnight-navy text-base font-medium px-4 py-3",
-            "border-2 border-[rgba(11,28,45,0.11)] outline-none",
+            "w-full h-12 rounded-[8px] bg-[#F5F6F8] text-midnight-navy text-base font-medium px-4 py-3",
+            "border border-[rgba(11,28,45,0.12)] outline-none",
             "focus:border-steel-blue transition-colors",
             "placeholder:text-[rgba(11,28,45,0.4)] disabled:opacity-50",
             icon && "pl-10",
