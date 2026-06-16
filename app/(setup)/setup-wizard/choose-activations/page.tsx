@@ -4,7 +4,7 @@ import ActivationDonut from "@/components/setup/ActivationDonut";
 import StepIndicator from "@/components/common/StepIndicator";
 import WizardFooter from "@/components/common/WizardFooter";
 import { cn } from "@/utils/cn";
-import { getSavedSchool } from "@/utils/fanhub/getSavedSchool";
+import { useSetup } from "@/context/setup";
 import { routes } from "@/utils/routes";
 import type { SavedSchool } from "@/utils/types/school";
 import { Check, GripVertical } from "lucide-react";
@@ -137,6 +137,7 @@ function Checkbox({ checked }: { checked: boolean }) {
 
 export default function ChooseActivationsPage() {
   const router = useRouter();
+  const { savedSchool, refreshSchool } = useSetup();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // Per-activation URL entered once an activation is selected.
   const [urls, setUrls] = useState<Record<string, string>>({});
@@ -148,38 +149,41 @@ export default function ChooseActivationsPage() {
   );
   const dragRef = useRef<{ catId: string; id: string } | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const hydratedRef = useRef(false);
 
-  // On mount, prefill from the saved school's feature links so navigating Back to this
-  // step restores the previously-selected activations and their URLs. SAVED_LINK_FIELD
-  // maps each activation id to the field the GET actually returns it under.
+  // Prefill from the saved school's feature links on first mount only. The ref guard
+  // prevents re-running when savedSchool updates (e.g. after refreshSchool() is called
+  // on save), which would overwrite the user's in-progress local changes.
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const school = await getSavedSchool();
-      if (cancelled || !school) return;
-      const restoredSelected = new Set<string>();
-      const restoredUrls: Record<string, string> = {};
-      for (const [id, field] of Object.entries(SAVED_LINK_FIELD)) {
-        const value = school[field];
-        if (typeof value === "string" && value) {
-          restoredSelected.add(id);
-          restoredUrls[id] = value;
-        }
+    if (hydratedRef.current || !savedSchool) return;
+    hydratedRef.current = true;
+    const restoredSelected = new Set<string>();
+    const restoredUrls: Record<string, string> = {};
+    for (const [id, field] of Object.entries(SAVED_LINK_FIELD)) {
+      const value = savedSchool[field];
+      if (typeof value === "string" && value) {
+        restoredSelected.add(id);
+        restoredUrls[id] = value;
       }
-      if (restoredSelected.size === 0) return;
-      setSelected(restoredSelected);
-      setUrls(restoredUrls);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    }
+    if (restoredSelected.size === 0) return;
+    setSelected(restoredSelected);
+    setUrls(restoredUrls);
+  }, [savedSchool]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        setUrls((u) => {
+          const copy = { ...u };
+          delete copy[id];
+          return copy;
+        });
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
@@ -197,6 +201,11 @@ export default function ChooseActivationsPage() {
       const next = new Set(prev);
       ids.forEach((id) => next.delete(id));
       return next;
+    });
+    setUrls((prev) => {
+      const copy = { ...prev };
+      ids.forEach((id) => delete copy[id]);
+      return copy;
     });
   };
 
@@ -219,11 +228,9 @@ export default function ChooseActivationsPage() {
     }
 
     const links: Record<string, string> = {};
-    selected.forEach((id) => {
-      const key = FEATURE_LINK_KEY[id];
-      const val = urls[id]?.trim();
-      if (key && val) links[key] = val;
-    });
+    for (const [id, key] of Object.entries(FEATURE_LINK_KEY)) {
+      links[key] = selected.has(id) ? (urls[id]?.trim() ?? "") : "";
+    }
 
     setSaving(true);
     try {
@@ -238,6 +245,7 @@ export default function ChooseActivationsPage() {
         return false;
       }
       toast.success("Activations saved.");
+      await refreshSchool();
       return true;
     } catch {
       toast.error("Something went wrong. Please try again.");
@@ -275,7 +283,7 @@ export default function ChooseActivationsPage() {
       <StepIndicator currentStep={3} />
 
       <div className="flex flex-col gap-2 -mt-2">
-        <h2 className="font-display font-black text-[56px] uppercase text-white leading-none">
+        <h2 className="font-display font-black text-[32px] sm:text-[40px] lg:text-[56px] uppercase text-white leading-none">
           Choose Activations
         </h2>
         <p className="text-base text-white/80">
@@ -284,7 +292,7 @@ export default function ChooseActivationsPage() {
       </div>
 
       {/* 4-column row: 3 category cards + right rail */}
-      <div className="flex gap-10 items-start">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-start">
         {CATEGORIES.map((cat) => {
           const ids = cat.activations.map((a) => a.id);
           const catSelected = ids.filter((id) => selected.has(id));

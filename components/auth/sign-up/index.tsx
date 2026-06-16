@@ -12,6 +12,9 @@ import Button from "@/components/common/Button";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
 import { setFanhubSchoolId } from "@/utils/auth/session";
+import { getSavedSchool } from "@/utils/fanhub/getSavedSchool";
+import { getResumeStep } from "@/utils/fanhub/getResumeStep";
+import { useAuth } from "@/context/auth";
 import type { AuthSession } from "@/utils/types/auth";
 import { signUpSchema } from "../schema";
 
@@ -33,6 +36,7 @@ const INITIAL_FORM: SignUpForm = {
 
 export default function SignUp() {
   const router = useRouter();
+  const { setAuth } = useAuth();
   const [form, setForm] = useState<SignUpForm>(INITIAL_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,13 +84,16 @@ export default function SignUp() {
       }
 
       // Signup creates the school row; org.id is its id (= JWT schoolId claim). Seed
-      // it so Step 1 updates that school instead of creating a duplicate.
+      // sessionStorage so Step 1 updates that school instead of creating a duplicate,
+      // and populate global AuthContext so the org is available app-wide.
       const session = json?.data?.[0] as AuthSession | undefined;
       if (session?.organization?.id) {
         setFanhubSchoolId(String(session.organization.id));
+        setAuth(session.organization);
       }
 
-      router.replace(routes.ui.setupWizard.organizationDetails);
+      const school = await getSavedSchool();
+      router.replace(getResumeStep(school));
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
@@ -114,6 +121,7 @@ export default function SignUp() {
           placeholder="Twin Lakes Academy"
           icon={<Building2 className="h-5 w-5" />}
           error={errors.name}
+          labelClassName="text-white"
         />
         <Input
           label="Email"
@@ -124,6 +132,7 @@ export default function SignUp() {
           placeholder="you@organization.com"
           icon={<Mail className="h-5 w-5" />}
           error={errors.email}
+          labelClassName="text-white"
         />
         <PhoneInput
           label="Phone"
@@ -141,6 +150,7 @@ export default function SignUp() {
           placeholder="At least 6 characters"
           icon={<Lock className="h-5 w-5" />}
           error={errors.password}
+          labelClassName="text-white"
         />
         <Input
           label="Confirm password"
@@ -151,6 +161,7 @@ export default function SignUp() {
           placeholder="Re-enter your password"
           icon={<Lock className="h-5 w-5" />}
           error={errors.confirmPassword}
+          labelClassName="text-white"
         />
       </div>
 

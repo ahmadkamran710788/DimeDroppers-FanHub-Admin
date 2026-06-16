@@ -25,12 +25,25 @@ export interface SchedulePagination {
   isLast: boolean;
 }
 
+export interface ScheduleSummary {
+  totalGames: number;
+  homeGames: number;
+  awayGames: number;
+  neutralGames: number;
+  events: number;
+  completed: number;
+  homePercent: number;
+  awayPercent: number;
+  neutralPercent: number;
+  eventsPercent: number;
+}
+
 export interface ScheduleListResponse {
   statusCode: number;
   success: boolean;
   message: string;
   errorCode: null | string;
-  data: [{ items: ScheduleItem[]; pagination: SchedulePagination }];
+  data: [{ items: ScheduleItem[]; pagination: SchedulePagination; summary: ScheduleSummary }];
 }
 
 export interface ScheduleItemResponse {

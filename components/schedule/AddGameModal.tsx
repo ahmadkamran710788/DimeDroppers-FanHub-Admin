@@ -7,7 +7,7 @@ import Select from "@/components/common/Select";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type { ScheduleItem, ScheduleItemResponse } from "@/utils/types/schedule";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface FormState {
   title: string;
@@ -74,6 +74,17 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const previewUrl = logoFile
+    ? URL.createObjectURL(logoFile)
+    : (editGame?.opponentLogoUrl ?? null);
+
+  useEffect(() => {
+    if (!logoFile) return;
+    const url = URL.createObjectURL(logoFile);
+    return () => URL.revokeObjectURL(url);
+  }, [logoFile]);
 
   // Sync form whenever editGame changes (e.g. opening edit for a different game)
   useEffect(() => {
@@ -182,7 +193,7 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
       isOpen={isOpen}
       onClose={handleClose}
       title={isEdit ? "Edit Game" : "Add Game"}
-      className="w-[540px] max-h-[90vh] overflow-y-auto"
+      className="w-full max-w-[540px] max-h-[90vh] overflow-y-auto"
     >
       <div className="w-full flex flex-col gap-4">
         <Input
@@ -207,7 +218,7 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
           onChange={set("location")}
           placeholder="Home Gym"
         />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Start *"
             name="start"
@@ -224,7 +235,7 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
             onChange={set("end")}
           />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select
             label="Home / Away"
             name="homeAway"
@@ -268,15 +279,51 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
         {/* Opponent logo upload */}
         <div className="flex flex-col gap-2">
           <span className="text-base font-medium text-midnight-navy">Opponent Logo</span>
-          <label className="flex items-center gap-3 cursor-pointer h-12 px-4 rounded-[8px] bg-[#F5F6F8] border border-[rgba(11,28,45,0.12)] text-midnight-navy/50 text-sm hover:bg-[#ECEEF1] transition-colors">
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
-            />
-            {logoFile ? logoFile.name : "Choose file (PNG, JPG — max 25 MB)"}
-          </label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png, image/jpeg"
+            className="hidden"
+            onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+          />
+          <div className="flex items-center gap-3">
+            {previewUrl ? (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="relative shrink-0 group"
+                title="Click to change logo"
+              >
+                <img
+                  src={previewUrl}
+                  alt="Opponent logo"
+                  className="size-16 rounded-full object-cover border border-[rgba(11,28,45,0.12)]"
+                />
+                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs font-medium">
+                  Change
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="size-16 shrink-0 rounded-full bg-[#F5F6F8] border border-[rgba(11,28,45,0.12)] flex items-center justify-center text-midnight-navy/30 hover:bg-[#ECEEF1] transition-colors"
+                title="Upload logo"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="3" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <path d="M21 15l-5-5L5 21" />
+                </svg>
+              </button>
+            )}
+            <label
+              className="flex-1 flex items-center gap-3 cursor-pointer h-12 px-4 rounded-[8px] bg-[#F5F6F8] border border-[rgba(11,28,45,0.12)] text-midnight-navy/50 text-sm hover:bg-[#ECEEF1] transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {logoFile ? logoFile.name : previewUrl ? "Click to change logo (PNG, JPG — max 25 MB)" : "Choose file (PNG, JPG — max 25 MB)"}
+            </label>
+          </div>
         </div>
 
         <div className="flex gap-3 pt-2">

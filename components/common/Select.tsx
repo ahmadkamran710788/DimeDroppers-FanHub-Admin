@@ -19,6 +19,7 @@ interface SelectProps {
   error?: string;
   placeholder?: string;
   className?: string;
+  labelClassName?: string;
 }
 
 export default function Select({
@@ -31,10 +32,11 @@ export default function Select({
   error,
   placeholder,
   className,
+  labelClassName,
 }: SelectProps) {
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <label htmlFor={name} className="text-base font-medium text-midnight-navy">
+      <label htmlFor={name} className={cn("text-base font-medium text-midnight-navy", labelClassName)}>
         {label}
       </label>
       <div className="relative flex items-center">

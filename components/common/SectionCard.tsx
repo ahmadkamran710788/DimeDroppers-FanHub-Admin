@@ -13,7 +13,7 @@ export default function SectionCard({ badge, title, description, children, class
   return (
     <div
       className={cn(
-        "rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px]",
+        "rounded-[8px] p-4 lg:p-6 flex flex-col gap-6 backdrop-blur-[48px]",
         "bg-[rgba(255,255,255,0.06)]",
         className
       )}
@@ -27,7 +27,7 @@ export default function SectionCard({ badge, title, description, children, class
                   {badge}
                 </span>
               )}
-              <h3 className="font-display font-black text-[28px] uppercase text-white leading-tight">
+              <h3 className="font-display font-black text-xl lg:text-[28px] uppercase text-white leading-tight">
                 {title}
               </h3>
             </div>

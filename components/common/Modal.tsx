@@ -36,7 +36,7 @@ export default function Modal({ isOpen, onClose, title, children, className }: M
       />
       <div
         className={cn(
-          "relative z-10 w-[402px] max-w-[calc(100vw-2rem)] rounded-[24px] p-6",
+          "relative z-10 w-full max-w-[min(402px,calc(100vw-2rem))] rounded-[24px] p-6",
           "flex flex-col items-center gap-6 bg-white",
           className
         )}

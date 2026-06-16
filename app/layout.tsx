@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Inter, Sofia_Sans_Extra_Condensed } from "next/font/google";
 import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "@/context/auth";
 import "./globals.css";
 
 const inter = Inter({
@@ -36,7 +37,9 @@ export default function RootLayout({
       className={`${inter.variable} ${sofia.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-black text-white">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <Toaster position="top-right" />
       </body>
     </html>

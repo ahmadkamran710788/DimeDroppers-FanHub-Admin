@@ -11,7 +11,7 @@ import StepIndicator from "@/components/common/StepIndicator";
 import Toggle from "@/components/common/Toggle";
 import WizardFooter from "@/components/common/WizardFooter";
 import { cn } from "@/utils/cn";
-import { getSavedSchool } from "@/utils/fanhub/getSavedSchool";
+import { useSetup } from "@/context/setup";
 import { routes } from "@/utils/routes";
 import {
   Calendar,
@@ -172,6 +172,7 @@ function PlatformBadge({ logo, size }: { logo: PlatformLogo; size: 48 | 64 }) {
 
 export default function ImportSchedulePage() {
   const router = useRouter();
+  const { savedSchool } = useSetup();
   const [icsUrls, setIcsUrls] = useState<string[]>(ICS_DEFAULTS);
   const [autoSync, setAutoSync] = useState(true);
   const [connections, setConnections] = useState<Record<string, ConnectionStatus>>({
@@ -198,32 +199,23 @@ export default function ImportSchedulePage() {
     setIcsUrls((prev) => prev.map((u, idx) => (idx === i ? val : u)));
   };
 
-  // On mount, if the saved school already has imported games, show them in the Import
-  // Summary + Preview so navigating Back to this step reflects the previously-saved
-  // schedule. SavedSchool is a structural superset of ScrapedSchool.
+  // If the saved school already has imported games, show them in the Import Summary +
+  // Preview so navigating Back to this step reflects the previously-saved schedule.
+  // Reads from SetupContext (fetched once for all wizard steps, no redundant network call).
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const school = await getSavedSchool();
-      if (cancelled || !school || school.scheduleEvents.length === 0) return;
-      // Map SavedSchool → ScrapedSchool (the Import Summary/Preview shape). `name` is
-      // non-null in ScrapedSchool, so fall back to "" if the saved school lacks one.
-      setScrapedSchool({
-        id: school.id,
-        name: school.name ?? "",
-        teamName: school.teamName,
-        mascot: school.mascot,
-        sportsType: school.sportsType,
-        season: school.season,
-        overallRecord: school.overallRecord,
-        logoUrl: school.logoUrl,
-        scheduleEvents: school.scheduleEvents,
-      });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (!savedSchool || savedSchool.scheduleEvents.length === 0) return;
+    setScrapedSchool({
+      id: savedSchool.id,
+      name: savedSchool.name ?? "",
+      teamName: savedSchool.teamName,
+      mascot: savedSchool.mascot,
+      sportsType: savedSchool.sportsType,
+      season: savedSchool.season,
+      overallRecord: savedSchool.overallRecord,
+      logoUrl: savedSchool.logoUrl,
+      scheduleEvents: savedSchool.scheduleEvents,
+    });
+  }, [savedSchool]);
 
   // Section A — upload a schedule image/PDF to the MaxPreps scrape endpoint, which
   // parses it and attaches the games to the school. Mirrors handleIcsConnect: read the
@@ -391,7 +383,7 @@ export default function ImportSchedulePage() {
       <StepIndicator currentStep={2} />
 
       <div className="flex flex-col gap-2 -mt-2">
-        <h2 className="font-display font-black text-[56px] uppercase text-white leading-none">
+        <h2 className="font-display font-black text-[32px] sm:text-[40px] lg:text-[56px] uppercase text-white leading-none">
           Import Schedule
         </h2>
         <p className="text-base text-white/80">
@@ -399,9 +391,9 @@ export default function ImportSchedulePage() {
         </p>
       </div>
 
-      <div className="flex gap-10 items-start">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-start">
         {/* LEFT COLUMN */}
-        <div className="w-[639px] shrink-0 flex flex-col gap-10">
+        <div className="w-full lg:w-[639px] lg:shrink-0 flex flex-col gap-6 lg:gap-10">
           {/* A — Schedule file upload (pdf/jpg/png) → MaxPreps scrape */}
           <SectionCard
             badge="A"
@@ -448,7 +440,7 @@ export default function ImportSchedulePage() {
                     {scrapeFileName ?? "Drag & Drop your file here."}
                   </p>
                   <p className="text-sm text-white/40 text-center">or</p>
-                  <Button variant="ghost" label="Choose File" onClick={() => fileInputRef.current?.click()} className="w-[120px] h-8 px-3" />
+                  <Button variant="ghost" label="Choose File" onClick={() => fileInputRef.current?.click()} className="w-auto h-8 px-3" />
                 </>
               )}
             </div>
@@ -553,7 +545,7 @@ export default function ImportSchedulePage() {
             title="Sync via API Connection"
             description="Connect your account and import teams and schedule."
           >
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {PLATFORMS.map((p) => {
                 const isConnected = connections[p.id] === "connected";
                 return (
@@ -590,7 +582,7 @@ export default function ImportSchedulePage() {
             <div className="h-[2px] bg-border-subtle" />
             <div className="flex items-center justify-between">
               <p className="text-base text-white">Connect a different platform not listed above.</p>
-              <Button variant="ghost" label="Connect" onClick={() => openConnect("")} className="w-[232px]" />
+              <Button variant="ghost" label="Connect" onClick={() => openConnect("")} className="w-auto" />
             </div>
           </SectionCard>
         </div>

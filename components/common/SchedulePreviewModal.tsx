@@ -84,7 +84,7 @@ export default function SchedulePreviewModal({
     .join(" · ");
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="w-[640px] items-stretch gap-5">
+    <Modal isOpen={isOpen} onClose={onClose} className="w-full max-w-[640px] items-stretch gap-5">
       {/* Header — school identity */}
       <div className="flex items-center gap-4">
         <span className="w-16 h-16 shrink-0 rounded-full overflow-hidden border border-midnight-navy/20 bg-midnight-navy/5 flex items-center justify-center">

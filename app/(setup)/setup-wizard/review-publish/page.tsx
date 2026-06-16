@@ -52,7 +52,7 @@ export default function ReviewPublishPage() {
       <StepIndicator currentStep={4} />
 
       <div className="flex flex-col gap-2">
-        <h2 className="font-display font-black text-[56px] uppercase text-white leading-none">
+        <h2 className="font-display font-black text-[32px] sm:text-[40px] lg:text-[56px] uppercase text-white leading-none">
           Review & Publish
         </h2>
         <p className="text-base text-white/80">
@@ -60,9 +60,9 @@ export default function ReviewPublishPage() {
         </p>
       </div>
 
-      <div className="flex gap-10 items-start">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-start">
         {/* LEFT — two configuration summary cards */}
-        <div className="w-[348px] shrink-0 flex flex-col gap-10">
+        <div className="w-full lg:w-[348px] lg:shrink-0 flex flex-col gap-6 lg:gap-10">
           {/* Card 1 — sections */}
           <SectionCard title="Configuration Summary" className="bg-surface-07">
             <div className="flex flex-col gap-4">

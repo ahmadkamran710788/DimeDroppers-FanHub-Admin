@@ -2,6 +2,8 @@
 
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
+import { useSetup } from "@/context/setup";
+import { getResumeStep } from "@/utils/fanhub/getResumeStep";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -30,11 +32,11 @@ const WIZARD_STEPS = [
   { number: 4, label: "Review & Publish" },
 ];
 
-function getActiveStep(pathname: string): number {
-  if (pathname.includes("organization-details")) return 1;
-  if (pathname.includes("import-schedule")) return 2;
-  if (pathname.includes("choose-activations")) return 3;
-  if (pathname.includes("review-publish")) return 4;
+function urlToStepNumber(url: string): number {
+  if (url.includes("organization-details")) return 1;
+  if (url.includes("import-schedule")) return 2;
+  if (url.includes("choose-activations")) return 3;
+  if (url.includes("review-publish")) return 4;
   return 1;
 }
 
@@ -64,23 +66,31 @@ function NavItem({
   );
 }
 
-export default function Sidebar() {
-  const pathname = usePathname();
-  const activeStep = getActiveStep(pathname);
+interface SidebarProps {
+  open: boolean;
+  onClose: () => void;
+}
 
-  return (
+export default function Sidebar({ open, onClose }: SidebarProps) {
+  const pathname = usePathname();
+  const { savedSchool } = useSetup();
+  const activeStep = pathname.includes("setup-wizard")
+    ? urlToStepNumber(pathname)
+    : urlToStepNumber(getResumeStep(savedSchool));
+
+  const sidebarContent = (
     <aside
       className={cn(
-        "w-[236px] shrink-0 flex flex-col h-screen overflow-y-auto",
+        "flex flex-col w-[236px] shrink-0 h-screen overflow-y-auto",
         "bg-[rgba(11,28,45,0.01)] backdrop-blur-[48px]",
         "shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.2)]"
       )}
     >
       {/* Logo */}
-      <div className="h-[104px] flex items-start pt-[27px] gap-2 px-10">
+      <div className="h-[104px] flex items-start pt-[27px] gap-2 px-6">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/icons/logo-union.svg" alt="" width={32} height={28} className="shrink-0" />
-        <span className="font-display font-black text-[28px] uppercase leading-none tracking-wide whitespace-nowrap">
+        <span className="font-display font-black text-xl uppercase leading-none tracking-wide whitespace-nowrap">
           <span className="text-white">DIME </span>
           <span style={{ backgroundImage: "var(--gradient-cta)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>FAN HUB</span>
         </span>
@@ -95,7 +105,7 @@ export default function Sidebar() {
 
         {/* Setup Wizard CTA */}
         <Link
-          href={routes.ui.setupWizard.organizationDetails}
+          href={getResumeStep(savedSchool)}
           className="flex items-center gap-2 pl-[12px] pr-4 py-4 rounded-[8px] text-base font-medium text-white"
           style={{ background: "var(--gradient-cta)" }}
         >
@@ -169,5 +179,34 @@ export default function Sidebar() {
         </div>
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* Desktop: always visible inline */}
+      <div className="hidden lg:flex">
+        {sidebarContent}
+      </div>
+
+      {/* Mobile: overlay drawer */}
+      <div className="lg:hidden">
+        {/* Backdrop */}
+        {open && (
+          <div
+            className="fixed inset-0 z-30 bg-black/50"
+            onClick={onClose}
+          />
+        )}
+        {/* Drawer */}
+        <div
+          className={cn(
+            "fixed inset-y-0 left-0 z-40 transform transition-transform duration-300",
+            open ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
+          {sidebarContent}
+        </div>
+      </div>
+    </>
   );
 }

@@ -35,7 +35,7 @@ export default function Button({
       className={cn(
         "inline-flex items-center justify-center gap-2 rounded-[8px] h-12 px-6 text-base font-medium transition-opacity",
         "backdrop-blur-[48px] disabled:opacity-50 disabled:cursor-not-allowed",
-        variant !== "cta" && "w-[177px]",
+        variant !== "cta" && "w-auto min-w-[120px]",
         fullWidth && "w-full",
         variant === "primary" && "bg-steel-blue text-white",
         variant === "ghost" && "bg-[rgba(235,235,235,0.25)] text-white",

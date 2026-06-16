@@ -11,7 +11,7 @@ import StepIndicator from "@/components/common/StepIndicator";
 import Textarea from "@/components/common/Textarea";
 import WizardFooter from "@/components/common/WizardFooter";
 import { validateAndSetErrors } from "@/utils/validation";
-import { getSavedSchool } from "@/utils/fanhub/getSavedSchool";
+import { useSetup } from "@/context/setup";
 import { routes } from "@/utils/routes";
 import { Circle, MapPin, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -224,6 +224,7 @@ function hexToRgba(hex: string, alpha: number): string {
 
 export default function OrganizationDetailsPage() {
   const router = useRouter();
+  const { savedSchool } = useSetup();
   const [form, setForm] = useState<FormState>(INITIAL);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -262,48 +263,40 @@ export default function OrganizationDetailsPage() {
     }
   };
 
-  // On mount, if a school already exists for this session, prefill the form with its
-  // saved values so navigating Back to this step shows what the user previously entered.
+  // Prefill the form once SetupContext has loaded the saved school. Runs when
+  // savedSchool becomes available (context fetches it once for all wizard steps).
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const school = await getSavedSchool();
-      if (cancelled || !school) return;
-      setForm((prev) => ({
-        ...prev,
-        organizationName: school.name ?? prev.organizationName,
-        organizationType: valueOf(ORG_TYPE_OPTIONS, school.organizationType) || prev.organizationType,
-        teamName: school.teamName ?? prev.teamName,
-        level: valueOf(LEVEL_OPTIONS, school.level) || prev.level,
-        // sportsType is stored as the slug already (handleNext posts form.sport raw).
-        sport: SPORT_OPTIONS.find((o) => o.value === school.sportsType)?.value ?? prev.sport,
-        streetAddress: school.streetAddress ?? prev.streetAddress,
-        city: school.city ?? prev.city,
-        // state is the 2-letter abbr, which is also the option value.
-        state: school.state ?? prev.state,
-        zipCode: school.zipCode ?? prev.zipCode,
-        conference: school.league ?? prev.conference,
-        description: school.description ?? prev.description,
-        contactName: school.contactName ?? prev.contactName,
-        contactPosition: school.contactPosition ?? prev.contactPosition,
-        phone: toNationalDigits(school.contactPhone) || prev.phone,
-        email: school.contactEmail ?? prev.email,
-        website: school.website ?? prev.website,
-        facebookUrl: school.facebookUrl ?? prev.facebookUrl,
-        instagramUrl: school.instagramUrl ?? prev.instagramUrl,
-        xUrl: school.xUrl ?? prev.xUrl,
-        youtubeUrl: school.youtubeUrl ?? prev.youtubeUrl,
-        tiktokUrl: school.tiktokUrl ?? prev.tiktokUrl,
-        primaryColor: school.colors?.primaryColor ?? prev.primaryColor,
-        secondaryColor: school.colors?.secondaryColor ?? prev.secondaryColor,
-        accentColor: school.colors?.accentColor ?? prev.accentColor,
-      }));
-      if (school.logoUrl) setLogoUrl(school.logoUrl);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (!savedSchool) return;
+    const school = savedSchool;
+    setForm((prev) => ({
+      ...prev,
+      organizationName: school.name ?? prev.organizationName,
+      organizationType: valueOf(ORG_TYPE_OPTIONS, school.organizationType) || prev.organizationType,
+      teamName: school.teamName ?? prev.teamName,
+      level: valueOf(LEVEL_OPTIONS, school.level) || prev.level,
+      sport: SPORT_OPTIONS.find((o) => o.value === school.sportsType)?.value ?? prev.sport,
+      streetAddress: school.streetAddress ?? prev.streetAddress,
+      city: school.city ?? prev.city,
+      state: school.state ?? prev.state,
+      zipCode: school.zipCode ?? prev.zipCode,
+      conference: school.league ?? prev.conference,
+      description: school.description ?? prev.description,
+      contactName: school.contactName ?? prev.contactName,
+      contactPosition: school.contactPosition ?? prev.contactPosition,
+      phone: toNationalDigits(school.contactPhone) || prev.phone,
+      email: school.contactEmail ?? prev.email,
+      website: school.website ?? prev.website,
+      facebookUrl: school.facebookUrl ?? prev.facebookUrl,
+      instagramUrl: school.instagramUrl ?? prev.instagramUrl,
+      xUrl: school.xUrl ?? prev.xUrl,
+      youtubeUrl: school.youtubeUrl ?? prev.youtubeUrl,
+      tiktokUrl: school.tiktokUrl ?? prev.tiktokUrl,
+      primaryColor: school.colors?.primaryColor ?? prev.primaryColor,
+      secondaryColor: school.colors?.secondaryColor ?? prev.secondaryColor,
+      accentColor: school.colors?.accentColor ?? prev.accentColor,
+    }));
+    if (school.logoUrl) setLogoUrl(school.logoUrl);
+  }, [savedSchool]);
 
   const handleNext = async () => {
     const valid = await validateAndSetErrors(schema as yup.ObjectSchema<Record<string, unknown>>, form, setErrors);
@@ -381,7 +374,7 @@ export default function OrganizationDetailsPage() {
       <StepIndicator currentStep={1} />
 
       <div className="flex flex-col gap-2 -mt-2">
-        <h2 className="font-display font-black text-[56px] uppercase text-white leading-none">
+        <h2 className="font-display font-black text-[32px] sm:text-[40px] lg:text-[56px] uppercase text-white leading-none">
           Configure Organization Details
         </h2>
         <p className="text-base text-white/80">
@@ -389,52 +382,52 @@ export default function OrganizationDetailsPage() {
         </p>
       </div>
 
-      <div className="flex gap-10 items-start">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-start">
         {/* LEFT — form sections */}
-        <div className="flex flex-col gap-10 flex-1 min-w-0">
+        <div className="flex flex-col gap-6 lg:gap-10 flex-1 min-w-0">
           <SectionCard title="Organization & Team Info">
-            <div className="grid grid-cols-2 gap-6">
-              <Input label="Organization Name" name="organizationName" value={form.organizationName} onChange={set("organizationName")} placeholder="Twin Lakes Academy Middle School" error={errors.organizationName} className="col-span-2" />
-              <Select label="Organization Type" name="organizationType" value={form.organizationType} onChange={set("organizationType")} options={ORG_TYPE_OPTIONS} placeholder="Select organization type" error={errors.organizationType} className="col-span-2" />
-              <Input label="Team Name" name="teamName" value={form.teamName} onChange={set("teamName")} placeholder="TLAM" error={errors.teamName} className="col-span-2" />
-              <Select label="Level" name="level" value={form.level} onChange={set("level")} options={LEVEL_OPTIONS} placeholder="Select level" error={errors.level} />
-              <Select label="Sport" name="sport" value={form.sport} onChange={set("sport")} options={SPORT_OPTIONS} placeholder="Select sport" error={errors.sport} />
-              <Input label="Street Address" name="streetAddress" value={form.streetAddress} onChange={set("streetAddress")} placeholder="1234 Lakeview Dr" icon={<MapPin className="w-5 h-5" />} error={errors.streetAddress} className="col-span-2" />
-              <Input label="City" name="city" value={form.city} onChange={set("city")} placeholder="Fort Lauderdale" error={errors.city} />
-              <Select label="State" name="state" value={form.state} onChange={set("state")} options={US_STATE_OPTIONS} placeholder="Select state" error={errors.state} />
-              <Input label="Zip Code" name="zipCode" value={form.zipCode} onChange={set("zipCode")} placeholder="33301" error={errors.zipCode} />
-              <Input label="Conference/Division" name="conference" value={form.conference} onChange={set("conference")} placeholder="Eastern Lakes Conference" icon={<MapPin className="w-5 h-5" />} error={errors.conference} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
+              <Input label="Organization Name" name="organizationName" value={form.organizationName} onChange={set("organizationName")} placeholder="Twin Lakes Academy Middle School" error={errors.organizationName} className="col-span-2" labelClassName="text-white" />
+              <Select label="Organization Type" name="organizationType" value={form.organizationType} onChange={set("organizationType")} options={ORG_TYPE_OPTIONS} placeholder="Select organization type" error={errors.organizationType} className="col-span-2" labelClassName="text-white" />
+              <Input label="Team Name" name="teamName" value={form.teamName} onChange={set("teamName")} placeholder="TLAM" error={errors.teamName} className="col-span-2" labelClassName="text-white" />
+              <Select label="Level" name="level" value={form.level} onChange={set("level")} options={LEVEL_OPTIONS} placeholder="Select level" error={errors.level} labelClassName="text-white" />
+              <Select label="Sport" name="sport" value={form.sport} onChange={set("sport")} options={SPORT_OPTIONS} placeholder="Select sport" error={errors.sport} labelClassName="text-white" />
+              <Input label="Street Address" name="streetAddress" value={form.streetAddress} onChange={set("streetAddress")} placeholder="1234 Lakeview Dr" icon={<MapPin className="w-5 h-5" />} error={errors.streetAddress} className="col-span-2" labelClassName="text-white" />
+              <Input label="City" name="city" value={form.city} onChange={set("city")} placeholder="Fort Lauderdale" error={errors.city} labelClassName="text-white" />
+              <Select label="State" name="state" value={form.state} onChange={set("state")} options={US_STATE_OPTIONS} placeholder="Select state" error={errors.state} labelClassName="text-white" />
+              <Input label="Zip Code" name="zipCode" value={form.zipCode} onChange={set("zipCode")} placeholder="33301" error={errors.zipCode} labelClassName="text-white" />
+              <Input label="Conference/Division" name="conference" value={form.conference} onChange={set("conference")} placeholder="Eastern Lakes Conference" icon={<MapPin className="w-5 h-5" />} error={errors.conference} labelClassName="text-white" />
               <Textarea label="Description" name="description" value={form.description} onChange={set("description")} maxLength={250} placeholder="The Official fan hub for your team..." error={errors.description} className="col-span-2" />
             </div>
           </SectionCard>
 
           <SectionCard title="Contact Information">
-            <div className="grid grid-cols-2 gap-6">
-              <Input label="Contact Name" name="contactName" value={form.contactName} onChange={set("contactName")} placeholder="John Doe" error={errors.contactName} />
-              <Input label="Position" name="contactPosition" value={form.contactPosition} onChange={set("contactPosition")} placeholder="Athletic Director" error={errors.contactPosition} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
+              <Input label="Contact Name" name="contactName" value={form.contactName} onChange={set("contactName")} placeholder="John Doe" error={errors.contactName} labelClassName="text-white" />
+              <Input label="Position" name="contactPosition" value={form.contactPosition} onChange={set("contactPosition")} placeholder="Athletic Director" error={errors.contactPosition} labelClassName="text-white" />
               <PhoneInput label="Phone" name="phone" value={form.phone} onValueChange={onPhoneChange} placeholder="(555) 123-4567" error={errors.phone} />
-              <Input label="Email" name="email" value={form.email} onChange={set("email")} placeholder="johndoe@tlam.com" type="email" error={errors.email} />
-              <Input label="Website" name="website" value={form.website} onChange={set("website")} placeholder="https://www.tlam.com" type="url" error={errors.website} />
+              <Input label="Email" name="email" value={form.email} onChange={set("email")} placeholder="johndoe@tlam.com" type="email" error={errors.email} labelClassName="text-white" />
+              <Input label="Website" name="website" value={form.website} onChange={set("website")} placeholder="https://www.tlam.com" type="url" error={errors.website} labelClassName="text-white" />
             </div>
           </SectionCard>
 
           <SectionCard title="Social Networks (optional)">
             <div className="flex flex-col gap-6">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <Input label="Facebook" name="facebookUrl" value={form.facebookUrl} onChange={set("facebookUrl")} placeholder="https://" type="url" error={errors.facebookUrl} icon={<img src="/icons/step1/fb.svg" alt="" className="w-6 h-6" />} />
+              <Input label="Facebook" name="facebookUrl" value={form.facebookUrl} onChange={set("facebookUrl")} placeholder="https://" type="url" error={errors.facebookUrl} icon={<img src="/icons/step1/fb.svg" alt="" className="w-6 h-6" />} labelClassName="text-white" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <Input label="Instagram" name="instagramUrl" value={form.instagramUrl} onChange={set("instagramUrl")} placeholder="https://" type="url" error={errors.instagramUrl} icon={<img src="/icons/step1/insta.svg" alt="" className="w-6 h-6" />} />
+              <Input label="Instagram" name="instagramUrl" value={form.instagramUrl} onChange={set("instagramUrl")} placeholder="https://" type="url" error={errors.instagramUrl} icon={<img src="/icons/step1/insta.svg" alt="" className="w-6 h-6" />} labelClassName="text-white" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <Input label="X (Former Twitter)" name="xUrl" value={form.xUrl} onChange={set("xUrl")} placeholder="https://" type="url" error={errors.xUrl} icon={<img src="/icons/step1/x.svg" alt="" className="w-6 h-6" />} />
+              <Input label="X (Former Twitter)" name="xUrl" value={form.xUrl} onChange={set("xUrl")} placeholder="https://" type="url" error={errors.xUrl} icon={<img src="/icons/step1/x.svg" alt="" className="w-6 h-6" />} labelClassName="text-white" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <Input label="Youtube" name="youtubeUrl" value={form.youtubeUrl} onChange={set("youtubeUrl")} placeholder="https://" type="url" error={errors.youtubeUrl} icon={<img src="/icons/step1/yt.svg" alt="" className="w-6 h-6" />} />
+              <Input label="Youtube" name="youtubeUrl" value={form.youtubeUrl} onChange={set("youtubeUrl")} placeholder="https://" type="url" error={errors.youtubeUrl} icon={<img src="/icons/step1/yt.svg" alt="" className="w-6 h-6" />} labelClassName="text-white" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <Input label="TikTok" name="tiktokUrl" value={form.tiktokUrl} onChange={set("tiktokUrl")} placeholder="https://" type="url" error={errors.tiktokUrl} icon={<img src="/icons/step1/tiktok.svg" alt="" className="w-6 h-6" />} />
+              <Input label="TikTok" name="tiktokUrl" value={form.tiktokUrl} onChange={set("tiktokUrl")} placeholder="https://" type="url" error={errors.tiktokUrl} icon={<img src="/icons/step1/tiktok.svg" alt="" className="w-6 h-6" />} labelClassName="text-white" />
             </div>
           </SectionCard>
 
           <SectionCard title="Brand Basics (optional)" description="Apply brand colors for your page to make it with a unique look.">
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <ColorPicker label="Primary Color" name="primaryColor" value={form.primaryColor} onChange={setColor("primaryColor")} />
               <ColorPicker label="Secondary Color" name="secondaryColor" value={form.secondaryColor} onChange={setColor("secondaryColor")} />
               <ColorPicker label="Accent Color" name="accentColor" value={form.accentColor} onChange={setColor("accentColor")} />
@@ -442,20 +435,21 @@ export default function OrganizationDetailsPage() {
             <FileUpload
               label="Team Logo"
               variant="image"
+              existingUrl={savedSchool?.logoUrl ?? undefined}
               onFile={(file, url) => {
                 setLogoFile(file);
                 setLogoUrl(url ?? null);
               }}
               onClear={() => {
                 setLogoFile(null);
-                setLogoUrl(null);
+                setLogoUrl(savedSchool?.logoUrl ?? null);
               }}
             />
           </SectionCard>
         </div>
 
         {/* RIGHT — looks good / preview / checklist */}
-        <div className="w-[480px] shrink-0 flex flex-col gap-6">
+        <div className="w-full lg:w-[480px] lg:shrink-0 flex flex-col gap-6">
           {/* 1. Looks Good card */}
           <div className="rounded-[8px] p-6 bg-[rgba(101,193,98,0.08)] flex flex-col gap-4">
             <div className="flex items-center gap-3">

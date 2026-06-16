@@ -1,6 +1,6 @@
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black px-4 py-10">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black px-4 py-6 sm:py-10">
       {/* Blurred ambient background image — mirrors the setup wizard shell. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -21,7 +21,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         }}
       />
 
-      <div className="relative z-10 w-full max-w-[440px]">
+      <div className="relative z-10 mx-auto w-full max-w-[440px] px-4 sm:px-0">
         {/* Brand */}
         <div className="mb-8 flex items-center justify-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -43,7 +43,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         {/* Glass card */}
         <div
-          className="rounded-[8px] bg-[rgba(255,255,255,0.06)] p-8 backdrop-blur-[48px]"
+          className="rounded-[8px] bg-[rgba(255,255,255,0.06)] p-5 sm:p-8 backdrop-blur-[48px]"
           style={{ boxShadow: "inset 0px 1px 0px 0px rgba(255,255,255,0.2)" }}
         >
           {children}

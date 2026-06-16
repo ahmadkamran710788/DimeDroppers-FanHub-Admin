@@ -15,6 +15,8 @@ interface FileUploadProps {
   onClear?: () => void;
   variant?: "image" | "csv";
   className?: string;
+  /** When set and no new file has been picked, shows this URL as the existing logo with a "Change Logo" button. */
+  existingUrl?: string;
 }
 
 export default function FileUpload({
@@ -25,6 +27,7 @@ export default function FileUpload({
   onClear,
   variant = "image",
   className,
+  existingUrl,
 }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -77,6 +80,7 @@ export default function FileUpload({
   const resolvedAccept = accept ?? (variant === "image" ? ".png,.jpg,.svg" : ".csv");
 
   const showImagePreview = variant === "image" && previewUrl;
+  const showExisting = variant === "image" && !previewUrl && !!existingUrl;
   const meta = [dimensions, fileType].filter(Boolean).join(", ");
 
   return (
@@ -113,6 +117,20 @@ export default function FileUpload({
             </div>
           </div>
           <Button label="Delete" variant="ghost" onClick={handleClear} className="w-24 h-12 shrink-0" />
+        </div>
+      ) : showExisting ? (
+        <div className="flex items-center justify-between gap-4 rounded-[8px] border-2 border-border-dashed px-4 py-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              className="w-[60px] h-[60px] rounded-full shrink-0 overflow-hidden"
+              style={{ background: "#231F20", outline: "2px solid rgba(255,255,255,0.5)", outlineOffset: "-2px" }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={existingUrl} alt="Current logo" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-sm font-medium text-white">Current logo</span>
+          </div>
+          <Button label="Change Logo" variant="ghost" onClick={() => inputRef.current?.click()} className="w-32 h-12 shrink-0 text-xs" />
         </div>
       ) : (
         <div

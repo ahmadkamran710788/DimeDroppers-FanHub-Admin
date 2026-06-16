@@ -13,6 +13,9 @@ interface ApiCallParams {
   headers?: Record<string, string>;
   showSuccessToast?: boolean;
   successMessage?: string;
+  // Scoped cache invalidation: only evict cache entries whose key contains one of
+  // these strings. Avoids wiping unrelated caches on every mutation.
+  invalidates?: string[];
 }
 
 interface ApiResponse<T = unknown> {
@@ -49,6 +52,21 @@ const formatBackendMessage = (msg: unknown): string => {
   return msg;
 };
 
+let isRefreshing = false;
+
+async function attemptTokenRefresh(): Promise<boolean> {
+  if (isRefreshing) return false;
+  isRefreshing = true;
+  try {
+    const res = await fetch("/api/auth/refresh", { method: "POST" });
+    return res.ok;
+  } catch {
+    return false;
+  } finally {
+    isRefreshing = false;
+  }
+}
+
 export default async function apiCall<T = unknown>({
   endpoint,
   method,
@@ -56,6 +74,7 @@ export default async function apiCall<T = unknown>({
   headers,
   showSuccessToast = false,
   successMessage,
+  invalidates,
 }: ApiCallParams): Promise<ApiResponse<T>> {
   const cacheKey = `${method}:${endpoint}:${JSON.stringify(data || {})}`;
 
@@ -102,9 +121,18 @@ export default async function apiCall<T = unknown>({
     if (method === "GET") {
       apiCache.set(cacheKey, result);
     }
-    // Clear cache on any mutation (create, update, delete) to ensure fresh data
+    // Scoped invalidation: evict only cache entries matching the invalidates list.
+    // Falls back to clearing all if no invalidates list is provided (legacy behaviour).
     else if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
-      apiCache.clear();
+      if (invalidates && invalidates.length > 0) {
+        for (const key of apiCache.keys()) {
+          if (invalidates.some((pattern) => key.includes(pattern))) {
+            apiCache.delete(key);
+          }
+        }
+      } else {
+        apiCache.clear();
+      }
     }
 
     return result;
@@ -125,9 +153,17 @@ export default async function apiCall<T = unknown>({
         case 400:
           errorMessage = "Invalid request. Please check your input.";
           break;
-        case 401:
-          errorMessage = "Session expired. Please login again.";
+        case 401: {
+          // Silently attempt a token refresh then retry the original request once.
+          const refreshed = await attemptTokenRefresh();
+          if (refreshed) {
+            // Retry without propagating the 401 further — don't pass invalidates to
+            // avoid a double-invalidation on the retry.
+            return apiCall({ endpoint, method, data, headers, showSuccessToast, successMessage });
+          }
+          errorMessage = "Session expired. Please sign in again.";
           break;
+        }
         case 403:
           errorMessage = "You don't have permission to perform this action.";
           break;

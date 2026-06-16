@@ -16,7 +16,7 @@ interface StepIndicatorProps {
 
 export default function StepIndicator({ currentStep, className }: StepIndicatorProps) {
   return (
-    <div className={cn("flex items-center gap-4 w-full", className)}>
+    <div className={cn("flex items-center gap-4 w-full overflow-x-auto", className)}>
       {STEPS.map((step, idx) => {
         const isActive = step.number === currentStep;
         const isCompleted = step.number < currentStep;
@@ -32,7 +32,7 @@ export default function StepIndicator({ currentStep, className }: StepIndicatorP
               )}
             >
               {/* Number circle — 40×40 with 20% white ellipse behind */}
-              <div className="relative w-10 h-10 shrink-0 flex items-center justify-center">
+              <div className="relative w-8 h-8 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center">
                 <span className="absolute inset-0 rounded-full bg-border-subtle" />
                 <span className="relative z-10 text-base font-semibold text-white leading-none">
                   {step.number}
@@ -44,7 +44,7 @@ export default function StepIndicator({ currentStep, className }: StepIndicatorP
             </div>
             {/* Connector — fixed 50px per Figma spec */}
             {idx < STEPS.length - 1 && (
-              <div key={`connector-${step.number}`} className="w-[50px] h-[2px] bg-border-subtle shrink-0" />
+              <div key={`connector-${step.number}`} className="w-6 sm:w-[50px] h-[2px] bg-border-subtle shrink-0" />
             )}
           </>
         );

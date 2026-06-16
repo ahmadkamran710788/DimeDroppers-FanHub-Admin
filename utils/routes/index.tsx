@@ -27,6 +27,9 @@ export const routes = {
     proxyAuthRefresh: "/api/auth/refresh",
     // Clears the auth cookies (no upstream call).
     proxyAuthSignout: "/api/auth/signout",
+    // Returns the org from the decoded accessToken cookie (no upstream call needed
+    // when the token carries the org claims; falls back to upstream if not).
+    proxyAuthMe: "/api/auth/me",
     // FanHub — Step 1 "Create School". `createSchool` is the upstream path appended to
     // config.apiUrl on the server; `proxyCreateSchool` is the internal Next route the
     // browser posts to (which injects the x-fanhub-key header server-side).

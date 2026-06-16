@@ -11,6 +11,9 @@ import Button from "@/components/common/Button";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
 import { setFanhubSchoolId } from "@/utils/auth/session";
+import { getSavedSchool } from "@/utils/fanhub/getSavedSchool";
+import { getResumeStep } from "@/utils/fanhub/getResumeStep";
+import { useAuth } from "@/context/auth";
 import type { AuthSession } from "@/utils/types/auth";
 import { signInSchema } from "../schema";
 
@@ -21,6 +24,7 @@ interface SignInForm {
 
 export default function SignIn() {
   const router = useRouter();
+  const { setAuth } = useAuth();
   const [form, setForm] = useState<SignInForm>({ email: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,14 +57,17 @@ export default function SignIn() {
         return;
       }
 
-      // org.id is the school id (= JWT schoolId claim). Seed it so Step 1 updates
-      // the auto-created school instead of creating a duplicate.
+      // org.id is the school id (= JWT schoolId claim). Seed sessionStorage so Step 1
+      // updates the auto-created school instead of creating a duplicate, and populate
+      // the global AuthContext so the org is available app-wide without re-fetching.
       const session = json?.data?.[0] as AuthSession | undefined;
       if (session?.organization?.id) {
         setFanhubSchoolId(String(session.organization.id));
+        setAuth(session.organization);
       }
 
-      router.replace(routes.ui.setupWizard.organizationDetails);
+      const school = await getSavedSchool();
+      router.replace(getResumeStep(school));
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
@@ -89,6 +96,7 @@ export default function SignIn() {
           placeholder="you@organization.com"
           icon={<Mail className="h-5 w-5" />}
           error={errors.email}
+          labelClassName="text-white"
         />
         <Input
           label="Password"
@@ -99,6 +107,7 @@ export default function SignIn() {
           placeholder="Enter your password"
           icon={<Lock className="h-5 w-5" />}
           error={errors.password}
+          labelClassName="text-white"
         />
       </div>
 
