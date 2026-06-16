@@ -44,27 +44,27 @@ const PLATFORMS: {
   name: string;
   logo: PlatformLogo;
 }[] = [
-  {
-    id: "exposure",
-    name: "Exposure Events",
-    logo: { type: "image", src: "/images/platforms/platform-exposure.png" },
-  },
-  {
-    id: "teamsnap",
-    name: "Team Snap",
-    logo: { type: "image", src: "/images/platforms/platform-teamsnap-v2.png" },
-  },
-  {
-    id: "sportsengine",
-    name: "Sports Engine",
-    logo: { type: "image", src: "/images/platforms/platform-sportsengine.png" },
-  },
-  {
-    id: "leagueapps",
-    name: "LeagueApps",
-    logo: { type: "image", src: "/images/platforms/platform-leagueapps.png" },
-  },
-];
+    {
+      id: "exposure",
+      name: "Exposure Events",
+      logo: { type: "image", src: "/images/platforms/platform-exposure.png" },
+    },
+    {
+      id: "teamsnap",
+      name: "Team Snap",
+      logo: { type: "image", src: "/images/platforms/platform-teamsnap-v2.png" },
+    },
+    {
+      id: "sportsengine",
+      name: "Sports Engine",
+      logo: { type: "image", src: "/images/platforms/platform-sportsengine.png" },
+    },
+    {
+      id: "leagueapps",
+      name: "LeagueApps",
+      logo: { type: "image", src: "/images/platforms/platform-leagueapps.png" },
+    },
+  ];
 
 // ICS calendar sources — pre-filled to match the Figma reference (editable).
 const ICS_SOURCES: { id: string; logo: PlatformLogo }[] = [
@@ -90,9 +90,9 @@ const ICS_WIRED: {
   previewProxy: string;
   requiresTeamNameMatch?: boolean;
 }[] = [
-  { sourceId: "sportsengine", keyword: "sportngin", platform: "SportsEngine", previewProxy: routes.api.proxyIcsSportsEngine },
-  { sourceId: "teamsnap", keyword: "teamsnap", platform: "TeamSnap", previewProxy: routes.api.proxyIcsTeamSnap, requiresTeamNameMatch: true },
-];
+    { sourceId: "sportsengine", keyword: "sportngin", platform: "SportsEngine", previewProxy: routes.api.proxyIcsSportsEngine },
+    { sourceId: "teamsnap", keyword: "teamsnap", platform: "TeamSnap", previewProxy: routes.api.proxyIcsTeamSnap, requiresTeamNameMatch: true },
+  ];
 
 const SUMMARY_STATS = [
   { label: "Data Quality Score", value: "98% Excelent", icon: Database, progress: 98 },
@@ -274,10 +274,13 @@ export default function ImportSchedulePage() {
     if (file) handleScrapeUpload(file);
   };
 
-  // Per-row validation. A wired source (SportsEngine, TeamSnap) only needs to contain its
+  // Per-row validation. A wired source (SportsEngine) only needs to contain its
   // keyword — e.g. webcal://...sportngin.com/... has no .ics suffix but is still valid.
-  // Unwired rows keep the generic .ics check until they're wired.
+  // TeamSnap accepts any URL (no keyword required). Unwired rows keep the generic .ics check.
   const isValidIcsFor = (sourceId: string, url: string) => {
+    if (sourceId === "teamsnap") {
+      return url.startsWith("https://") || url.endsWith(".ics");
+    }
     const wired = ICS_WIRED.find((w) => w.sourceId === sourceId);
     return wired
       ? url.toLowerCase().includes(wired.keyword)
@@ -716,7 +719,7 @@ export default function ImportSchedulePage() {
 
       <WizardFooter
         onBack={() => router.push(routes.ui.setupWizard.organizationDetails)}
-        onSaveExit={() => {}}
+        onSaveExit={() => { }}
         primaryLabel="Next"
         onPrimary={() => router.push(routes.ui.setupWizard.chooseActivations)}
       />
