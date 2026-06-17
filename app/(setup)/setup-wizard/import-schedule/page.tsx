@@ -88,10 +88,9 @@ const ICS_WIRED: {
   keyword: string;
   platform: string;
   previewProxy: string;
-  requiresTeamNameMatch?: boolean;
 }[] = [
     { sourceId: "sportsengine", keyword: "sportngin", platform: "SportsEngine", previewProxy: routes.api.proxyIcsSportsEngine },
-    { sourceId: "teamsnap", keyword: "teamsnap", platform: "TeamSnap", previewProxy: routes.api.proxyIcsTeamSnap, requiresTeamNameMatch: true },
+    { sourceId: "teamsnap", keyword: "teamsnap", platform: "TeamSnap", previewProxy: routes.api.proxyIcsTeamSnap },
   ];
 
 const SUMMARY_STATS = [
@@ -112,20 +111,6 @@ const SUMMARY_STATS = [
 
 type ConnectionStatus = "connected" | "not-connected";
 
-// True if any event title in the preview response has a side (split on "vs")
-// that exactly matches the team name (case-insensitive, trimmed). TeamSnap-only gate.
-function teamNameMatchesPreview(previewJson: unknown, teamName: string): boolean {
-  const target = teamName.trim().toLowerCase();
-  if (!target) return false;
-  const groups = (previewJson as { data?: { events?: { title?: string }[] }[] })?.data ?? [];
-  for (const g of groups) {
-    for (const ev of g.events ?? []) {
-      const sides = (ev.title ?? "").split(/\s+vs\.?\s+/i);
-      if (sides.some((s) => s.trim().toLowerCase() === target)) return true;
-    }
-  }
-  return false;
-}
 
 // Build the Import Summary cards from a scraped school. Each item uses the `{ label,
 // value, icon }` variant of the SUMMARY_STATS union, so the existing summary `.map`
@@ -329,14 +314,6 @@ export default function ImportSchedulePage() {
           return;
         }
 
-        // TeamSnap-only gate: import only if an event title matches the user's team name.
-        if (c.requiresTeamNameMatch) {
-          const teamName = sessionStorage.getItem("fanhub:teamName") ?? "";
-          if (!teamNameMatchesPreview(previewJson, teamName)) {
-            toast.error(`No ${c.platform} games match your team "${teamName || "—"}". Skipped.`);
-            continue; // skip ONLY this row; other rows keep processing
-          }
-        }
 
         // 2) Import into the school.
         const importRes = await fetch(routes.api.proxyImportIcs, {
