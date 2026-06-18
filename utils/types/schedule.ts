@@ -12,6 +12,9 @@ export interface ScheduleItem {
   homeAway: "home" | "away" | "neutral" | null;
   status: "confirmed" | "tentative" | "cancelled" | null;
   result: string | null;
+  gender: string | null;
+  season: string | null;
+  sports: string | null;
   sourcePlatform: string;
   createdAt: string;
   updatedAt: string;

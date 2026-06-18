@@ -6,6 +6,7 @@ import Modal from "@/components/common/Modal";
 import Select from "@/components/common/Select";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
+import { GENDER_OPTIONS, SEASON_OPTIONS, SPORTS_OPTIONS } from "@/utils/constants/schedule";
 import type { ScheduleItem, ScheduleItemResponse } from "@/utils/types/schedule";
 import { useState, useEffect, useRef } from "react";
 
@@ -19,6 +20,9 @@ interface FormState {
   isAllDay: boolean;
   homeAway: string;
   status: string;
+  gender: string;
+  season: string;
+  sports: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -31,6 +35,9 @@ const EMPTY_FORM: FormState = {
   isAllDay: false,
   homeAway: "",
   status: "confirmed",
+  gender: "",
+  season: "",
+  sports: "",
 };
 
 function toLocalDatetimeValue(iso: string): string {
@@ -68,6 +75,9 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
           isAllDay: editGame.isAllDay,
           homeAway: editGame.homeAway ?? "",
           status: editGame.status ?? "confirmed",
+          gender: editGame.gender ?? "",
+          season: editGame.season ?? "",
+          sports: editGame.sports ?? "",
         }
       : EMPTY_FORM
   );
@@ -100,6 +110,9 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
           isAllDay: editGame.isAllDay,
           homeAway: editGame.homeAway ?? "",
           status: editGame.status ?? "confirmed",
+          gender: editGame.gender ?? "",
+          season: editGame.season ?? "",
+          sports: editGame.sports ?? "",
         }
       : EMPTY_FORM;
     Promise.resolve().then(() => {
@@ -121,6 +134,9 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
           isAllDay: editGame.isAllDay,
           homeAway: editGame.homeAway ?? "",
           status: editGame.status ?? "confirmed",
+          gender: editGame.gender ?? "",
+          season: editGame.season ?? "",
+          sports: editGame.sports ?? "",
         }
       : EMPTY_FORM);
     setLogoFile(null);
@@ -158,6 +174,9 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
       isAllDay: form.isAllDay,
       ...(form.homeAway && { homeAway: form.homeAway }),
       ...(form.status && { status: form.status }),
+      ...(form.gender && { gender: form.gender }),
+      ...(form.season && { season: form.season }),
+      ...(form.sports && { sports: form.sports }),
     };
 
     let result;
@@ -260,6 +279,32 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
             ]}
           />
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Select
+            label="Gender"
+            name="gender"
+            value={form.gender}
+            onChange={set("gender")}
+            placeholder="Select..."
+            options={GENDER_OPTIONS}
+          />
+          <Select
+            label="Sports"
+            name="sports"
+            value={form.sports}
+            onChange={set("sports")}
+            placeholder="Select..."
+            options={SPORTS_OPTIONS}
+          />
+        </div>
+        <Select
+          label="Season"
+          name="season"
+          value={form.season}
+          onChange={set("season")}
+          placeholder="Select..."
+          options={SEASON_OPTIONS}
+        />
 
         {/* All day toggle */}
         <label className="flex items-center gap-3 cursor-pointer">

@@ -5,6 +5,7 @@ import DeleteGameModal from "@/components/schedule/DeleteGameModal";
 import { cn } from "@/utils/cn";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
+import { GENDER_OPTIONS, SEASON_OPTIONS, SPORTS_OPTIONS } from "@/utils/constants/schedule";
 import type { ScheduleItem, ScheduleListResponse, SchedulePagination, ScheduleSummary } from "@/utils/types/schedule";
 import {
   ChevronDown,
@@ -234,33 +235,35 @@ function GameRow({ game, onEdit, onDelete }: GameRowProps) {
         </div>
       </div>
       {/* ACTIONS */}
-      <div className="w-20 px-2 py-4 bg-white/5 flex justify-center items-center relative" ref={menuRef}>
-        <button
-          type="button"
-          onClick={() => setMenuOpen((v) => !v)}
-          className="size-10 px-2 bg-white/10 rounded-lg outline outline-1 outline-white/10 backdrop-blur-xl flex items-center justify-center hover:bg-white/20 transition-colors"
-          aria-label="Game actions"
-        >
-          <MoreVertical className="w-4 h-4 text-white" strokeWidth={2} />
-        </button>
-        {menuOpen && (
-          <div className="absolute right-2 top-full mt-1 z-20 bg-[#0B1C2D] border border-white/10 rounded-lg shadow-xl overflow-hidden">
-            <button
-              type="button"
-              onClick={() => { setMenuOpen(false); onEdit(game); }}
-              className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-white/10 transition-colors whitespace-nowrap"
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMenuOpen(false); onDelete(game); }}
-              className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-white/10 transition-colors whitespace-nowrap"
-            >
-              Delete
-            </button>
-          </div>
-        )}
+      <div className="w-20 px-2 py-4 bg-white/5 flex justify-center items-center">
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="size-10 px-2 bg-white/10 rounded-lg outline outline-1 outline-white/10 backdrop-blur-xl flex items-center justify-center hover:bg-white/20 transition-colors"
+            aria-label="Game actions"
+          >
+            <MoreVertical className="w-4 h-4 text-white" strokeWidth={2} />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-full mt-1 z-20 bg-[#0B1C2D] border border-white/10 rounded-lg shadow-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); onEdit(game); }}
+                className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-white/10 transition-colors whitespace-nowrap"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); onDelete(game); }}
+                className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-white/10 transition-colors whitespace-nowrap"
+              >
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -410,7 +413,7 @@ function ScheduleTools({ onAddGame }: { onAddGame: () => void }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const DEFAULT_FILTERS = { status: "", homeAway: "", from: "", to: "", sortOrder: "asc" };
+const DEFAULT_FILTERS = { status: "", homeAway: "", gender: "", season: "", sports: "", from: "", to: "", sortOrder: "asc" };
 
 export default function SchedulePage() {
   const [games, setGames] = useState<ScheduleItem[]>([]);
@@ -430,7 +433,7 @@ export default function SchedulePage() {
   const [pendingFilters, setPendingFilters] = useState(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS);
 
-  const activeFilterCount = [appliedFilters.status, appliedFilters.homeAway, appliedFilters.from, appliedFilters.to].filter(Boolean).length;
+  const activeFilterCount = [appliedFilters.status, appliedFilters.homeAway, appliedFilters.gender, appliedFilters.season, appliedFilters.sports, appliedFilters.from, appliedFilters.to].filter(Boolean).length;
 
   // Debounce search — also reset to page 1 so results reflect the new query
   useEffect(() => {
@@ -450,6 +453,9 @@ export default function SchedulePage() {
     if (debouncedSearch) params.search = debouncedSearch;
     if (appliedFilters.status)   params.status   = appliedFilters.status;
     if (appliedFilters.homeAway) params.homeAway  = appliedFilters.homeAway;
+    if (appliedFilters.gender)   params.gender    = appliedFilters.gender;
+    if (appliedFilters.season)   params.season    = appliedFilters.season;
+    if (appliedFilters.sports)   params.sports    = appliedFilters.sports;
     if (appliedFilters.from)     params.from      = appliedFilters.from;
     if (appliedFilters.to)       params.to        = appliedFilters.to;
 
@@ -600,6 +606,51 @@ export default function SchedulePage() {
                     <option value="home">Home</option>
                     <option value="away">Away</option>
                     <option value="neutral">Neutral</option>
+                  </select>
+                </div>
+
+                {/* Gender */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wide">Gender</label>
+                  <select
+                    value={pendingFilters.gender}
+                    onChange={(e) => setPendingFilters((f) => ({ ...f, gender: e.target.value }))}
+                    className="h-10 px-3 bg-white/10 rounded-lg outline outline-1 outline-white/20 text-white text-sm font-medium appearance-none cursor-pointer hover:bg-white/15 transition-colors"
+                  >
+                    <option value="">All genders</option>
+                    {GENDER_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Season */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wide">Season</label>
+                  <select
+                    value={pendingFilters.season}
+                    onChange={(e) => setPendingFilters((f) => ({ ...f, season: e.target.value }))}
+                    className="h-10 px-3 bg-white/10 rounded-lg outline outline-1 outline-white/20 text-white text-sm font-medium appearance-none cursor-pointer hover:bg-white/15 transition-colors"
+                  >
+                    <option value="">All seasons</option>
+                    {SEASON_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Sports */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wide">Sports</label>
+                  <select
+                    value={pendingFilters.sports}
+                    onChange={(e) => setPendingFilters((f) => ({ ...f, sports: e.target.value }))}
+                    className="h-10 px-3 bg-white/10 rounded-lg outline outline-1 outline-white/20 text-white text-sm font-medium appearance-none cursor-pointer hover:bg-white/15 transition-colors"
+                  >
+                    <option value="">All sports</option>
+                    {SPORTS_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
                   </select>
                 </div>
 
