@@ -5,7 +5,7 @@ import DeleteGameModal from "@/components/schedule/DeleteGameModal";
 import { cn } from "@/utils/cn";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
-import { GENDER_OPTIONS, SEASON_OPTIONS, SPORTS_OPTIONS } from "@/utils/constants/schedule";
+import { GENDER_OPTIONS, SEASON_OPTIONS, SPORTS_OPTIONS, LEVEL_OPTIONS } from "@/utils/constants/schedule";
 import type { ScheduleItem, ScheduleListResponse, SchedulePagination, ScheduleSummary } from "@/utils/types/schedule";
 import {
   ChevronDown,
@@ -413,7 +413,7 @@ function ScheduleTools({ onAddGame }: { onAddGame: () => void }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const DEFAULT_FILTERS = { status: "", homeAway: "", gender: "", season: "", sports: "", from: "", to: "", sortOrder: "asc" };
+const DEFAULT_FILTERS = { status: "", homeAway: "", gender: "", season: "", sports: "", level: "", from: "", to: "", sortOrder: "asc" };
 
 export default function SchedulePage() {
   const [games, setGames] = useState<ScheduleItem[]>([]);
@@ -433,7 +433,7 @@ export default function SchedulePage() {
   const [pendingFilters, setPendingFilters] = useState(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS);
 
-  const activeFilterCount = [appliedFilters.status, appliedFilters.homeAway, appliedFilters.gender, appliedFilters.season, appliedFilters.sports, appliedFilters.from, appliedFilters.to].filter(Boolean).length;
+  const activeFilterCount = [appliedFilters.status, appliedFilters.homeAway, appliedFilters.gender, appliedFilters.season, appliedFilters.sports, appliedFilters.level, appliedFilters.from, appliedFilters.to].filter(Boolean).length;
 
   // Debounce search — also reset to page 1 so results reflect the new query
   useEffect(() => {
@@ -456,6 +456,7 @@ export default function SchedulePage() {
     if (appliedFilters.gender)   params.gender    = appliedFilters.gender;
     if (appliedFilters.season)   params.season    = appliedFilters.season;
     if (appliedFilters.sports)   params.sports    = appliedFilters.sports;
+    if (appliedFilters.level)    params.level     = appliedFilters.level;
     if (appliedFilters.from)     params.from      = appliedFilters.from;
     if (appliedFilters.to)       params.to        = appliedFilters.to;
 
@@ -649,6 +650,21 @@ export default function SchedulePage() {
                   >
                     <option value="">All sports</option>
                     {SPORTS_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Level */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wide">Level</label>
+                  <select
+                    value={pendingFilters.level}
+                    onChange={(e) => setPendingFilters((f) => ({ ...f, level: e.target.value }))}
+                    className="h-10 px-3 bg-white/10 rounded-lg outline outline-1 outline-white/20 text-white text-sm font-medium appearance-none cursor-pointer hover:bg-white/15 transition-colors"
+                  >
+                    <option value="">All levels</option>
+                    {LEVEL_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
                     ))}
                   </select>

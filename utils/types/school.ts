@@ -18,6 +18,7 @@ export interface SavedSchool {
   overallRecord: string | null;
   level: string | null;
   organizationType: string | null;
+  eventType: string | null;
   league: string | null;
   streetAddress: string | null;
   city: string | null;

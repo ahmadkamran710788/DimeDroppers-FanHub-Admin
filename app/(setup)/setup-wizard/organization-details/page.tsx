@@ -23,6 +23,7 @@ import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
 const schema = yup.object({
   organizationName: yup.string().required("Organization name is required"),
   organizationType: yup.string().required("Organization type is required"),
+  eventType: yup.string().required("Event type is required"),
   teamName: yup.string().required("Team name is required"),
   level: yup.string().required("Level is required"),
   sport: yup.string().required("Sport is required"),
@@ -74,6 +75,13 @@ const ORG_TYPE_OPTIONS = [
   { label: "League", value: "league" },
   { label: "Club Team", value: "club-team" },
   { label: "Tournament", value: "tournament" },
+];
+
+const EVENT_TYPE_OPTIONS = [
+  { label: "Camp", value: "camp" },
+  { label: "Clinic", value: "clinic" },
+  { label: "Tournament", value: "tournament" },
+  { label: "Showcase", value: "showcase" },
 ];
 
 // Shows the full state name; submits the 2-letter abbreviation (e.g. "FL").
@@ -134,6 +142,7 @@ const US_STATE_OPTIONS = [
 type FormState = {
   organizationName: string;
   organizationType: string;
+  eventType: string;
   teamName: string;
   level: string;
   sport: string;
@@ -161,6 +170,7 @@ type FormState = {
 const INITIAL: FormState = {
   organizationName: "",
   organizationType: "",
+  eventType: "",
   teamName: "",
   level: "",
   sport: "",
@@ -224,7 +234,7 @@ function hexToRgba(hex: string, alpha: number): string {
 
 export default function OrganizationDetailsPage() {
   const router = useRouter();
-  const { savedSchool } = useSetup();
+  const { savedSchool, refreshSchool } = useSetup();
   const [form, setForm] = useState<FormState>(INITIAL);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -272,6 +282,7 @@ export default function OrganizationDetailsPage() {
       ...prev,
       organizationName: school.name ?? prev.organizationName,
       organizationType: valueOf(ORG_TYPE_OPTIONS, school.organizationType) || prev.organizationType,
+      eventType: valueOf(EVENT_TYPE_OPTIONS, school.eventType) || prev.eventType,
       teamName: school.teamName ?? prev.teamName,
       level: valueOf(LEVEL_OPTIONS, school.level) || prev.level,
       sport: SPORT_OPTIONS.find((o) => o.value === school.sportsType)?.value ?? prev.sport,
@@ -286,11 +297,11 @@ export default function OrganizationDetailsPage() {
       phone: toNationalDigits(school.contactPhone) || prev.phone,
       email: school.contactEmail ?? prev.email,
       website: school.website ?? prev.website,
-      facebookUrl: school.facebookUrl ?? prev.facebookUrl,
-      instagramUrl: school.instagramUrl ?? prev.instagramUrl,
-      xUrl: school.xUrl ?? prev.xUrl,
-      youtubeUrl: school.youtubeUrl ?? prev.youtubeUrl,
-      tiktokUrl: school.tiktokUrl ?? prev.tiktokUrl,
+      facebookUrl: school.facebookUrl ?? "",
+      instagramUrl: school.instagramUrl ?? "",
+      xUrl: school.xUrl ?? "",
+      youtubeUrl: school.youtubeUrl ?? "",
+      tiktokUrl: school.tiktokUrl ?? "",
       primaryColor: school.colors?.primaryColor ?? prev.primaryColor,
       secondaryColor: school.colors?.secondaryColor ?? prev.secondaryColor,
       accentColor: school.colors?.accentColor ?? prev.accentColor,
@@ -305,6 +316,7 @@ export default function OrganizationDetailsPage() {
     const body = new FormData();
     body.append("name", form.organizationName);
     body.append("organizationType", labelOf(ORG_TYPE_OPTIONS, form.organizationType));
+    body.append("eventType", labelOf(EVENT_TYPE_OPTIONS, form.eventType));
     body.append("teamName", form.teamName);
     body.append("level", labelOf(LEVEL_OPTIONS, form.level));
     body.append("sportsType", form.sport);
@@ -319,11 +331,11 @@ export default function OrganizationDetailsPage() {
     body.append("contactPhone", parsePhoneNumber(form.phone, "US").number);
     body.append("contactEmail", form.email);
     body.append("website", form.website);
-    if (form.facebookUrl) body.append("facebookUrl", form.facebookUrl);
-    if (form.instagramUrl) body.append("instagramUrl", form.instagramUrl);
-    if (form.xUrl) body.append("xUrl", form.xUrl);
-    if (form.youtubeUrl) body.append("youtubeUrl", form.youtubeUrl);
-    if (form.tiktokUrl) body.append("tiktokUrl", form.tiktokUrl);
+    body.append("facebookUrl", form.facebookUrl);
+    body.append("instagramUrl", form.instagramUrl);
+    body.append("xUrl", form.xUrl);
+    body.append("youtubeUrl", form.youtubeUrl);
+    body.append("tiktokUrl", form.tiktokUrl);
     body.append("colors", form.primaryColor);
     body.append("secondaryColor", form.secondaryColor);
     body.append("accentColor", form.accentColor);
@@ -355,6 +367,10 @@ export default function OrganizationDetailsPage() {
       const schoolId = json?.data?.[0]?.school?.id ?? existingSchoolId;
       if (schoolId) sessionStorage.setItem("fanhub:schoolId", String(schoolId));
       if (form.teamName) sessionStorage.setItem("fanhub:teamName", form.teamName);
+
+      // Refetch so a Back navigation rehydrates Step 1 from fresh data, not the
+      // stale snapshot SetupContext fetched at mount (mirrors Step 3's pattern).
+      await refreshSchool();
 
       toast.success(existingSchoolId ? "School updated" : "School created");
       router.push(routes.ui.setupWizard.importSchedule);
@@ -389,6 +405,7 @@ export default function OrganizationDetailsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
               <Input label="Organization Name" name="organizationName" value={form.organizationName} onChange={set("organizationName")} placeholder="Twin Lakes Academy Middle School" error={errors.organizationName} className="col-span-2" labelClassName="text-white" />
               <Select label="Organization Type" name="organizationType" value={form.organizationType} onChange={set("organizationType")} options={ORG_TYPE_OPTIONS} placeholder="Select organization type" error={errors.organizationType} className="col-span-2" labelClassName="text-white" />
+              <Select label="Event Type" name="eventType" value={form.eventType} onChange={set("eventType")} options={EVENT_TYPE_OPTIONS} placeholder="Select event type" error={errors.eventType} className="col-span-2" labelClassName="text-white" />
               <Input label="Team Name" name="teamName" value={form.teamName} onChange={set("teamName")} placeholder="TLAM" error={errors.teamName} className="col-span-2" labelClassName="text-white" />
               <Select label="Level" name="level" value={form.level} onChange={set("level")} options={LEVEL_OPTIONS} placeholder="Select level" error={errors.level} labelClassName="text-white" />
               <Select label="Sport" name="sport" value={form.sport} onChange={set("sport")} options={SPORT_OPTIONS} placeholder="Select sport" error={errors.sport} labelClassName="text-white" />

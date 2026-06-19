@@ -14,3 +14,9 @@ export const SPORTS_OPTIONS = [
   "Basketball", "Football", "Soccer", "Baseball",
   "Volleyball", "Track & Field", "Swimming", "Wrestling",
 ].map((s) => ({ label: s, value: s }));
+
+export const LEVEL_OPTIONS = [
+  { label: "9th Grade", value: "9th Grade" },
+  { label: "JV", value: "JV" },
+  { label: "Varsity", value: "Varsity" },
+];

@@ -15,6 +15,7 @@ export interface ScheduleItem {
   gender: string | null;
   season: string | null;
   sports: string | null;
+  level: string | null;
   sourcePlatform: string;
   createdAt: string;
   updatedAt: string;

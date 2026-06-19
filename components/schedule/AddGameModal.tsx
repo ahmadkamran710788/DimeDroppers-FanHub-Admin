@@ -6,7 +6,7 @@ import Modal from "@/components/common/Modal";
 import Select from "@/components/common/Select";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
-import { GENDER_OPTIONS, SEASON_OPTIONS, SPORTS_OPTIONS } from "@/utils/constants/schedule";
+import { GENDER_OPTIONS, SEASON_OPTIONS, SPORTS_OPTIONS, LEVEL_OPTIONS } from "@/utils/constants/schedule";
 import type { ScheduleItem, ScheduleItemResponse } from "@/utils/types/schedule";
 import { useState, useEffect, useRef } from "react";
 
@@ -23,6 +23,7 @@ interface FormState {
   gender: string;
   season: string;
   sports: string;
+  level: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -38,6 +39,7 @@ const EMPTY_FORM: FormState = {
   gender: "",
   season: "",
   sports: "",
+  level: "",
 };
 
 function toLocalDatetimeValue(iso: string): string {
@@ -78,6 +80,7 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
           gender: editGame.gender ?? "",
           season: editGame.season ?? "",
           sports: editGame.sports ?? "",
+          level: editGame.level ?? "",
         }
       : EMPTY_FORM
   );
@@ -113,6 +116,7 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
           gender: editGame.gender ?? "",
           season: editGame.season ?? "",
           sports: editGame.sports ?? "",
+          level: editGame.level ?? "",
         }
       : EMPTY_FORM;
     Promise.resolve().then(() => {
@@ -137,6 +141,7 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
           gender: editGame.gender ?? "",
           season: editGame.season ?? "",
           sports: editGame.sports ?? "",
+          level: editGame.level ?? "",
         }
       : EMPTY_FORM);
     setLogoFile(null);
@@ -177,6 +182,7 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
       ...(form.gender && { gender: form.gender }),
       ...(form.season && { season: form.season }),
       ...(form.sports && { sports: form.sports }),
+      ...(form.level && { level: form.level }),
     };
 
     let result;
@@ -297,14 +303,24 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
             options={SPORTS_OPTIONS}
           />
         </div>
-        <Select
-          label="Season"
-          name="season"
-          value={form.season}
-          onChange={set("season")}
-          placeholder="Select..."
-          options={SEASON_OPTIONS}
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Select
+            label="Season"
+            name="season"
+            value={form.season}
+            onChange={set("season")}
+            placeholder="Select..."
+            options={SEASON_OPTIONS}
+          />
+          <Select
+            label="Level"
+            name="level"
+            value={form.level}
+            onChange={set("level")}
+            placeholder="Select..."
+            options={LEVEL_OPTIONS}
+          />
+        </div>
 
         {/* All day toggle */}
         <label className="flex items-center gap-3 cursor-pointer">
