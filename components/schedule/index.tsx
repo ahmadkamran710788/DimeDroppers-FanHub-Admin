@@ -2,11 +2,13 @@
 
 import AddGameModal from "@/components/schedule/AddGameModal";
 import DeleteGameModal from "@/components/schedule/DeleteGameModal";
+import ExposureEventModal from "@/components/schedule/ExposureEventModal";
 import { cn } from "@/utils/cn";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import { GENDER_OPTIONS, SEASON_OPTIONS, SPORTS_OPTIONS, LEVEL_OPTIONS } from "@/utils/constants/schedule";
 import type { ScheduleItem, ScheduleListResponse, SchedulePagination, ScheduleSummary } from "@/utils/types/schedule";
+import type { ExposureEvent, ExposureEventsResponse, ExposureEventView } from "@/utils/types/exposure-event";
 import {
   ChevronDown,
   ChevronLeft,
@@ -27,7 +29,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const TABS = ["Games", "Calendar", "Locations", "Opponents"];
+const TABS = ["Games", "Calendar", "Locations", "Opponents", "Events"];
 
 const SCHEDULE_TOOLS = [
   { icon: Plus, label: "Add Game", description: "Manually add a single game" },
@@ -269,6 +271,123 @@ function GameRow({ game, onEdit, onDelete }: GameRowProps) {
   );
 }
 
+// Formats an event's date range, e.g. "Jul 10–12, 2026" / "Jul 30 – Aug 2, 2026".
+// Dates arrive as UTC midnight, so format in UTC to avoid an off-by-one day.
+function formatEventDates(start: string, end: string | null): string {
+  const s = new Date(start);
+  if (Number.isNaN(s.getTime())) return "—";
+  const full: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" };
+  const e = end ? new Date(end) : null;
+  if (!e || Number.isNaN(e.getTime()) || e.getTime() === s.getTime()) {
+    return s.toLocaleDateString("en-US", full);
+  }
+  const sameYear = s.getUTCFullYear() === e.getUTCFullYear();
+  if (sameYear && s.getUTCMonth() === e.getUTCMonth()) {
+    const month = s.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+    return `${month} ${s.getUTCDate()}–${e.getUTCDate()}, ${s.getUTCFullYear()}`;
+  }
+  if (sameYear) {
+    const md: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", timeZone: "UTC" };
+    return `${s.toLocaleDateString("en-US", md)} – ${e.toLocaleDateString("en-US", md)}, ${s.getUTCFullYear()}`;
+  }
+  return `${s.toLocaleDateString("en-US", full)} – ${e.toLocaleDateString("en-US", full)}`;
+}
+
+const EVENT_MENU: { label: string; view: ExposureEventView }[] = [
+  { label: "Brackets", view: "brackets" },
+  { label: "Game Schedule", view: "games" },
+  { label: "Teams", view: "teams" },
+  { label: "Standings", view: "standings" },
+  { label: "Venues", view: "venues" },
+];
+
+function ExposureEventRow({
+  event,
+  onOpenView,
+}: {
+  event: ExposureEvent;
+  onOpenView: (event: ExposureEvent, view: ExposureEventView) => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
+
+  const location = [event.city, event.state].filter(Boolean).join(", ") || "—";
+
+  return (
+    <div className="flex justify-start items-stretch border-b border-white/20">
+      {/* EVENT */}
+      <div className="flex-1 px-2 py-4 bg-white/5 flex items-center overflow-hidden">
+        <div className="text-white text-xs font-semibold leading-4 truncate">{event.name}</div>
+      </div>
+      {/* DATES */}
+      <div className="w-40 px-2 py-4 bg-white/5 flex items-center overflow-hidden">
+        <div className="text-white/80 text-xs font-medium leading-4 truncate">
+          {formatEventDates(event.startDate, event.endDate)}
+        </div>
+      </div>
+      {/* LOCATION */}
+      <div className="w-36 px-2 py-4 bg-white/5 flex items-center overflow-hidden">
+        <div className="text-white/80 text-xs font-medium leading-4 truncate">{location}</div>
+      </div>
+      {/* SPORT */}
+      <div className="w-24 px-2 py-4 bg-white/5 flex items-center overflow-hidden">
+        <div className="text-white/80 text-xs font-medium uppercase leading-4 truncate">{event.sport ?? "—"}</div>
+      </div>
+      {/* GAMES */}
+      <div className="w-16 px-2 py-4 bg-white/5 flex justify-center items-center overflow-hidden">
+        <div className="text-white text-xs font-medium leading-4">{event.gameCount}</div>
+      </div>
+      {/* TEAMS */}
+      <div className="w-16 px-2 py-4 bg-white/5 flex justify-center items-center overflow-hidden">
+        <div className="text-white text-xs font-medium leading-4">{event.teamCount}</div>
+      </div>
+      {/* DIVISIONS */}
+      <div className="w-16 px-2 py-4 bg-white/5 flex justify-center items-center overflow-hidden">
+        <div className="text-white text-xs font-medium leading-4">{event.divisionCount}</div>
+      </div>
+      {/* ACTIONS */}
+      <div className="w-20 px-2 py-4 bg-white/5 flex justify-center items-center">
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="size-10 px-2 bg-white/10 rounded-lg outline outline-1 outline-white/10 backdrop-blur-xl flex items-center justify-center hover:bg-white/20 transition-colors"
+            aria-label="Event actions"
+          >
+            <MoreVertical className="w-4 h-4 text-white" strokeWidth={2} />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-full mt-1 z-20 min-w-[160px] bg-[#0B1C2D] border border-white/10 rounded-lg shadow-xl overflow-hidden">
+              {EVENT_MENU.map((m) => (
+                <button
+                  key={m.view}
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onOpenView(event, m.view);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-white/10 transition-colors whitespace-nowrap"
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MiniCalendar({ games }: { games: ScheduleItem[] }) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -430,6 +549,12 @@ export default function SchedulePage() {
   const [deleteTarget, setDeleteTarget] = useState<ScheduleItem | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
+  // Synced Exposure events (lazy-loaded when the Events tab is first opened)
+  const [events, setEvents] = useState<ExposureEvent[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  // Which event + view the details modal is showing (null = closed).
+  const [eventView, setEventView] = useState<{ event: ExposureEvent; view: ExposureEventView } | null>(null);
+
   const [pendingFilters, setPendingFilters] = useState(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS);
 
@@ -480,6 +605,23 @@ export default function SchedulePage() {
     return () => { cancelled = true; };
   }, [page, debouncedSearch, refreshKey, appliedFilters]);
 
+  // Lazy-load synced Exposure events the first time the Events tab is opened (and on re-open).
+  useEffect(() => {
+    if (activeTab !== "Events") return;
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setEventsLoading(true);
+    apiCall<ExposureEventsResponse>({
+      endpoint: routes.api.proxyListExposureEvents,
+      method: "GET",
+    }).then((result) => {
+      if (cancelled) return;
+      if (result.success && result.data) setEvents(result.data.data ?? []);
+      setEventsLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [activeTab]);
+
   const nextGame = games.find((g) => new Date(g.start) > new Date()) ?? null;
   const stats = summary ? buildStatsFromSummary(summary) : buildStatsFromGames(games);
 
@@ -497,6 +639,15 @@ export default function SchedulePage() {
         game={deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onDeleted={fetchGames}
+      />
+      {/* Exposure event details modal (Brackets / Games / Teams / Standings / Venues).
+          Keyed so it remounts (and resets to the clicked view) each time a row opens it;
+          in-modal tab switches don't change eventView, so they don't remount. */}
+      <ExposureEventModal
+        key={eventView ? `${eventView.event.id}-${eventView.view}` : "closed"}
+        event={eventView?.event ?? null}
+        initialView={eventView?.view ?? "brackets"}
+        onClose={() => setEventView(null)}
       />
 
       {/* Left — main content */}
@@ -814,7 +965,60 @@ export default function SchedulePage() {
             </div>
           )}
 
-          {activeTab !== "Games" && (
+          {activeTab === "Events" && (
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-white text-3xl font-extrabold font-display uppercase">
+                  Synced Events ({events.length})
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                {/* Table header */}
+                <div className="flex items-center border-b border-white/20">
+                  {[
+                    { label: "EVENT", cls: "flex-1" },
+                    { label: "DATES", cls: "w-40" },
+                    { label: "LOCATION", cls: "w-36" },
+                    { label: "SPORT", cls: "w-24" },
+                    { label: "GAMES", cls: "w-16 justify-center" },
+                    { label: "TEAMS", cls: "w-16 justify-center" },
+                    { label: "DIV", cls: "w-16 justify-center" },
+                    { label: "ACTIONS", cls: "w-20 justify-center" },
+                  ].map(({ label, cls }) => (
+                    <div key={label} className={cn("h-10 px-2 bg-white/10 flex items-center gap-1", cls)}>
+                      <span className="text-white text-xs font-semibold uppercase leading-4">{label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Loading */}
+                {eventsLoading && (
+                  <div className="flex justify-center items-center py-12">
+                    <Loader2 className="w-6 h-6 text-white/50 animate-spin" />
+                  </div>
+                )}
+
+                {/* Empty */}
+                {!eventsLoading && events.length === 0 && (
+                  <div className="flex justify-center items-center py-12 text-white/40 text-sm">
+                    No synced events yet.
+                  </div>
+                )}
+
+                {/* Rows */}
+                {!eventsLoading && events.map((event) => (
+                  <ExposureEventRow
+                    key={event.id}
+                    event={event}
+                    onOpenView={(ev, view) => setEventView({ event: ev, view })}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab !== "Games" && activeTab !== "Events" && (
             <div className="flex items-center justify-center py-20 text-white/30 text-sm font-medium">
               {activeTab} — coming soon
             </div>

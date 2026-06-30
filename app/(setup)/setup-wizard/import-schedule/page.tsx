@@ -32,7 +32,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 const ACCEPTED_UPLOAD_EXTENSIONS = ["pdf", "jpg", "jpeg", "png"] as const;
@@ -66,7 +66,7 @@ const PLATFORMS: {
     },
   ];
 
-// ICS calendar sources — pre-filled to match the Figma reference (editable).
+// ICS calendar sources — the user pastes their own feed URL into each row.
 const ICS_SOURCES: { id: string; logo: PlatformLogo }[] = [
   { id: "gamechanger", logo: { type: "image", src: "/images/platforms/platform-gamechanger.svg" } },
   { id: "teamsnap", logo: { type: "image", src: "/images/platforms/platform-teamsnap-v2.png" } },
@@ -74,12 +74,7 @@ const ICS_SOURCES: { id: string; logo: PlatformLogo }[] = [
   { id: "leagueapps", logo: { type: "image", src: "/images/platforms/platform-leagueapps.png" } },
 ];
 
-const ICS_DEFAULTS = [
-  "https://gamechanger.com/team/tlam/feed.ics",
-  "https://teamsnap.com/team/tlam/feed.ics",
-  "https://sportsengine.com/team/tlam/feed.ics",
-  "",
-];
+const ICS_DEFAULTS = ["", "", "", ""];
 
 // Wired ICS platforms. Add a row here to enable preview→import for that source.
 // `keyword` drives the green-check validation; `platform` is the import label.
@@ -110,6 +105,24 @@ const SUMMARY_STATS = [
 ] as const;
 
 type ConnectionStatus = "connected" | "not-connected";
+
+type ExposureSyncStatus = "IDLE" | "IN_PROGRESS" | "SUCCESS" | "FAILED";
+
+interface ExposureState {
+  hasCredentials: boolean;
+  syncStatus: ExposureSyncStatus;
+  syncMessage: string | null;
+  lastSyncedAt: string | null;
+}
+
+// Shape of each item in the `data` array returned by GET /exposure/sync/status.
+interface ExposureStatusPayload {
+  syncStatus?: ExposureSyncStatus;
+  syncMessage?: string | null;
+  lastSyncedAt?: string | null;
+  hasCredentials?: boolean;
+  organizationType?: string;
+}
 
 
 // Build the Import Summary cards from a scraped school. Each item uses the `{ label,
@@ -169,8 +182,28 @@ export default function ImportSchedulePage() {
   const [showModal, setShowModal] = useState(false);
   const [activePlatform, setActivePlatform] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [apiSecret, setApiSecret] = useState("");
+  const [connecting, setConnecting] = useState(false);
+  const [exposureErrors, setExposureErrors] = useState<{ apiKey?: string; apiSecret?: string }>({});
+  const [exposure, setExposure] = useState<ExposureState>({
+    hasCredentials: false,
+    syncStatus: "IDLE",
+    syncMessage: null,
+    lastSyncedAt: null,
+  });
   const [infoOpen, setInfoOpen] = useState(true);
   const [icsConnecting, setIcsConnecting] = useState(false);
+
+  // Guards background sync polling from setting state after the component unmounts.
+  // Set in the body (runs on every mount) and cleared in cleanup so it survives Strict
+  // Mode's mount→unmount→mount — otherwise the flag stays false and polling never runs.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Section A — MaxPreps file upload (pdf/jpg/png).
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -339,13 +372,144 @@ export default function ImportSchedulePage() {
     }
   };
 
+  // Poll the Exposure sync status until it reaches a terminal state. Bounded (~100s) and
+  // guarded by mountedRef so it stops cleanly if the user navigates away mid-sync.
+  const pollExposureStatus = useCallback(async () => {
+    for (let i = 0; i < 40; i++) {
+      if (!mountedRef.current) return;
+      try {
+        const res = await fetch(routes.api.proxyExposureSyncStatus);
+        if (res.ok) {
+          const json = await res.json().catch(() => null);
+          const d = json?.data?.[0] as ExposureStatusPayload | undefined;
+          if (d) {
+            setExposure((p) => ({
+              hasCredentials: d.hasCredentials ?? p.hasCredentials,
+              syncStatus: d.syncStatus ?? p.syncStatus,
+              syncMessage: d.syncMessage ?? null,
+              lastSyncedAt: d.lastSyncedAt ?? p.lastSyncedAt,
+            }));
+            if (d.syncStatus === "SUCCESS") {
+              toast.success(d.syncMessage || "Sync complete");
+              return;
+            }
+            if (d.syncStatus === "FAILED") {
+              toast.error(d.syncMessage || "Sync failed");
+              return;
+            }
+          }
+        }
+      } catch {
+        // transient network error — keep polling
+      }
+      await new Promise((r) => setTimeout(r, 2500));
+    }
+  }, []);
+
+  // Hydrate the Exposure connection state on load so "Connected" + the last sync result
+  // persist across reloads. Resume polling if a sync was still in progress.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(routes.api.proxyExposureSyncStatus);
+        if (!res.ok) return;
+        const json = await res.json().catch(() => null);
+        const d = json?.data?.[0] as ExposureStatusPayload | undefined;
+        if (cancelled || !d) return;
+        setExposure({
+          hasCredentials: !!d.hasCredentials,
+          syncStatus: d.syncStatus ?? "IDLE",
+          syncMessage: d.syncMessage ?? null,
+          lastSyncedAt: d.lastSyncedAt ?? null,
+        });
+        if (d.syncStatus === "IN_PROGRESS") pollExposureStatus();
+      } catch {
+        // leave Exposure as Not Connected on any hydration failure
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pollExposureStatus]);
+
   const openConnect = (platformId: string) => {
     setActivePlatform(platformId);
     setApiKey("");
+    setApiSecret("");
+    setExposureErrors({});
     setShowModal(true);
   };
 
-  const handleConnect = () => {
+  // Exposure connect flow: save credentials → start sync → poll status. Uses raw fetch
+  // (not apiCall) so the backend's exact 403 "tournament organizations only" message
+  // reaches the toast instead of apiCall's generic permission error.
+  const handleExposureConnect = async () => {
+    const errs: { apiKey?: string; apiSecret?: string } = {};
+    if (!apiKey.trim()) errs.apiKey = "API Key is required";
+    if (!apiSecret.trim()) errs.apiSecret = "Secret Key is required";
+    setExposureErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
+    setConnecting(true);
+    try {
+      // 1) Save credentials.
+      const settingsRes = await fetch(routes.api.proxyExposureSettings, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: apiKey.trim(), apiSecret: apiSecret.trim() }),
+      });
+      const settingsJson = await settingsRes.json().catch(() => null);
+      if (!settingsRes.ok) {
+        toast.error(settingsJson?.message || "Couldn't save your Exposure credentials.");
+        return;
+      }
+
+      // 2) Start the sync.
+      const syncRes = await fetch(routes.api.proxyExposureSync, { method: "POST" });
+      if (!syncRes.ok) {
+        const syncJson = await syncRes.json().catch(() => null);
+        toast.error(syncJson?.message || "Couldn't start the Exposure sync.");
+        // Credentials were saved — reflect the connection even if the sync didn't start.
+        setExposure((p) => ({ ...p, hasCredentials: true }));
+        return;
+      }
+
+      // 3) Connected — close the modal and poll for the sync result.
+      setExposure((p) => ({ ...p, hasCredentials: true, syncStatus: "IN_PROGRESS", syncMessage: null }));
+      setShowModal(false);
+      toast.success(settingsJson?.message || "Exposure connected");
+      pollExposureStatus();
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  // Re-sync from the connected Exposure card (reuses POST /sync + polling).
+  const handleExposureSync = async () => {
+    setExposure((p) => ({ ...p, syncStatus: "IN_PROGRESS", syncMessage: null }));
+    try {
+      const syncRes = await fetch(routes.api.proxyExposureSync, { method: "POST" });
+      if (!syncRes.ok) {
+        const syncJson = await syncRes.json().catch(() => null);
+        toast.error(syncJson?.message || "Couldn't start the Exposure sync.");
+        setExposure((p) => ({ ...p, syncStatus: "FAILED", syncMessage: syncJson?.message ?? null }));
+        return;
+      }
+      pollExposureStatus();
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+      setExposure((p) => ({ ...p, syncStatus: "FAILED", syncMessage: null }));
+    }
+  };
+
+  const handleConnect = async () => {
+    if (activePlatform === "exposure") {
+      await handleExposureConnect();
+      return;
+    }
     if (activePlatform) {
       setConnections((prev) => ({ ...prev, [activePlatform]: "connected" }));
     }
@@ -527,7 +691,13 @@ export default function ImportSchedulePage() {
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {PLATFORMS.map((p) => {
-                const isConnected = connections[p.id] === "connected";
+                // Exposure is fully wired; the other platforms remain local-state stubs.
+                const isExposure = p.id === "exposure";
+                const isConnected = isExposure
+                  ? exposure.hasCredentials
+                  : connections[p.id] === "connected";
+                const isSyncing = isExposure && exposure.syncStatus === "IN_PROGRESS";
+                const isFailed = isExposure && exposure.syncStatus === "FAILED";
                 return (
                   <div
                     key={p.id}
@@ -539,18 +709,45 @@ export default function ImportSchedulePage() {
                       <div className="flex flex-col gap-2.5 min-w-0">
                         <p className="text-base font-semibold text-white truncate">{p.name}</p>
                         <div className="flex items-center gap-2">
-                          {isConnected ? (
+                          {isSyncing ? (
+                            <Loader2 className="w-6 h-6 text-white shrink-0 animate-spin" strokeWidth={1.5} />
+                          ) : isFailed ? (
+                            <XCircle className="w-6 h-6 text-error shrink-0" />
+                          ) : isConnected ? (
                             <CheckCircle size={24} />
                           ) : (
                             <Circle className="w-6 h-6 text-white shrink-0" strokeWidth={1.5} />
                           )}
-                          <span className={`text-base ${isConnected ? "text-success" : "text-white"}`}>
-                            {isConnected ? "Connected" : "Not Connected"}
+                          <span
+                            className={`text-base truncate ${isFailed ? "text-error" : isConnected ? "text-success" : "text-white"
+                              }`}
+                          >
+                            {isSyncing
+                              ? "Syncing…"
+                              : isFailed
+                                ? exposure.syncMessage || "Sync failed"
+                                : isExposure && isConnected && exposure.syncMessage
+                                  ? exposure.syncMessage
+                                  : isConnected
+                                    ? "Connected"
+                                    : "Not Connected"}
                           </span>
                         </div>
                       </div>
                     </div>
-                    {isConnected ? (
+                    {isExposure ? (
+                      isConnected ? (
+                        <Button
+                          variant="ghost"
+                          label={isSyncing ? "Syncing…" : "Re-sync"}
+                          onClick={handleExposureSync}
+                          disabled={isSyncing}
+                          fullWidth
+                        />
+                      ) : (
+                        <Button variant="ghost" label="Connect" onClick={() => openConnect(p.id)} fullWidth />
+                      )
+                    ) : isConnected ? (
                       <Button variant="danger" label="Delete" onClick={() => handleDisconnect(p.id)} fullWidth />
                     ) : (
                       <Button variant="ghost" label="Connect" onClick={() => openConnect(p.id)} fullWidth />
@@ -655,34 +852,65 @@ export default function ImportSchedulePage() {
 
       {/* Connect Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={`Connect ${activePlatformName} API`}>
-        <div className="w-full flex flex-col gap-2">
-          <label htmlFor="apiKey" className="text-base font-medium text-midnight-navy">
-            API Key
-          </label>
-          <input
-            id="apiKey"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="API Key"
-            style={{ boxShadow: "inset 0px 1px 0px 0px rgba(255,255,255,0.16)", backdropFilter: "blur(64px)" }}
-            className="w-full h-12 rounded-[8px] bg-white text-midnight-navy text-base font-medium px-4 py-3 border-2 border-border-input outline-none focus:border-steel-blue transition-colors placeholder:text-[rgba(11,28,45,0.4)]"
-          />
+        <div className="w-full flex flex-col gap-4">
+          <div className="w-full flex flex-col gap-2">
+            <label htmlFor="apiKey" className="text-base font-medium text-midnight-navy">
+              API Key
+            </label>
+            <input
+              id="apiKey"
+              value={apiKey}
+              onChange={(e) => {
+                setApiKey(e.target.value);
+                if (exposureErrors.apiKey) setExposureErrors((prev) => ({ ...prev, apiKey: "" }));
+              }}
+              placeholder="API Key"
+              style={{ boxShadow: "inset 0px 1px 0px 0px rgba(255,255,255,0.16)", backdropFilter: "blur(64px)" }}
+              className={`w-full h-12 rounded-[8px] bg-white text-midnight-navy text-base font-medium px-4 py-3 border-2 outline-none transition-colors placeholder:text-[rgba(11,28,45,0.4)] ${exposureErrors.apiKey ? "border-error" : "border-border-input focus:border-steel-blue"
+                }`}
+            />
+            {exposureErrors.apiKey && <p className="text-sm text-error">{exposureErrors.apiKey}</p>}
+          </div>
+
+          {activePlatform === "exposure" && (
+            <div className="w-full flex flex-col gap-2">
+              <label htmlFor="apiSecret" className="text-base font-medium text-midnight-navy">
+                Secret Key
+              </label>
+              <input
+                id="apiSecret"
+                type="password"
+                value={apiSecret}
+                onChange={(e) => {
+                  setApiSecret(e.target.value);
+                  if (exposureErrors.apiSecret) setExposureErrors((prev) => ({ ...prev, apiSecret: "" }));
+                }}
+                placeholder="Secret Key"
+                style={{ boxShadow: "inset 0px 1px 0px 0px rgba(255,255,255,0.16)", backdropFilter: "blur(64px)" }}
+                className={`w-full h-12 rounded-[8px] bg-white text-midnight-navy text-base font-medium px-4 py-3 border-2 outline-none transition-colors placeholder:text-[rgba(11,28,45,0.4)] ${exposureErrors.apiSecret ? "border-error" : "border-border-input focus:border-steel-blue"
+                  }`}
+              />
+              {exposureErrors.apiSecret && <p className="text-sm text-error">{exposureErrors.apiSecret}</p>}
+            </div>
+          )}
         </div>
         <div className="w-full flex items-center gap-4">
           <button
             type="button"
             onClick={() => setShowModal(false)}
-            className="flex-1 h-12 rounded-[8px] bg-[rgba(235,235,235,0.8)] text-midnight-navy text-base font-medium transition-opacity hover:opacity-90"
+            disabled={connecting}
+            className="flex-1 h-12 rounded-[8px] bg-[rgba(235,235,235,0.8)] text-midnight-navy text-base font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleConnect}
+            disabled={connecting}
             style={{ background: "var(--gradient-cta)" }}
-            className="flex-1 h-12 rounded-[8px] text-white text-base font-medium transition-opacity hover:opacity-90"
+            className="flex-1 h-12 rounded-[8px] text-white text-base font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Connect
+            {connecting ? "Connecting…" : "Connect"}
           </button>
         </div>
       </Modal>

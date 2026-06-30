@@ -74,6 +74,34 @@ export const routes = {
     proxyCreateSchedule: "/api/fanhub/org/schedules",
     proxyUpdateSchedule: (id: string) => `/api/fanhub/org/schedules/${id}`,
     proxyDeleteSchedule: (id: string) => `/api/fanhub/org/schedules/${id}`,
+    // Exposure Events API integration (tournament orgs only). Upstream paths appended to
+    // config.apiUrl on the server; proxy* are internal Next routes the browser calls (the
+    // server route injects the Bearer accessToken cookie).
+    exposureSettings: "/fanhub/org/exposure/settings",
+    proxyExposureSettings: "/api/fanhub/org/exposure/settings",
+    exposureSync: "/fanhub/org/exposure/sync",
+    proxyExposureSync: "/api/fanhub/org/exposure/sync",
+    exposureSyncStatus: "/fanhub/org/exposure/sync/status",
+    proxyExposureSyncStatus: "/api/fanhub/org/exposure/sync/status",
+    // List synced Exposure events (the FanHubSchoolEvent rows)
+    listExposureEvents: "/fanhub/org/exposure/events",
+    proxyListExposureEvents: "/api/fanhub/org/exposure/events",
+    // Per-event sub-resources. The :id is the FanHubSchoolEvent id (e.g. evt-uuid-1111),
+    // NOT the numeric exposureEventId. Upstream paths + browser proxy routes (inject Bearer).
+    exposureEventDivisions: (id: string) => `/fanhub/org/exposure/events/${id}/divisions`,
+    proxyExposureEventDivisions: (id: string) => `/api/fanhub/org/exposure/events/${id}/divisions`,
+    exposureEventGames: (id: string) => `/fanhub/org/exposure/events/${id}/games`,
+    proxyExposureEventGames: (id: string) => `/api/fanhub/org/exposure/events/${id}/games`,
+    exposureEventTeams: (id: string) => `/fanhub/org/exposure/events/${id}/teams`,
+    proxyExposureEventTeams: (id: string) => `/api/fanhub/org/exposure/events/${id}/teams`,
+    exposureEventStandings: (id: string) => `/fanhub/org/exposure/events/${id}/standings`,
+    proxyExposureEventStandings: (id: string) => `/api/fanhub/org/exposure/events/${id}/standings`,
+    exposureEventVenues: (id: string) => `/fanhub/org/exposure/events/${id}/venues`,
+    proxyExposureEventVenues: (id: string) => `/api/fanhub/org/exposure/events/${id}/venues`,
+    // Players for a team. The :teamId is the FanHubTeam id (e.g. team-uuid-001).
+    // Note: this lives under exposure/teams/:teamId, NOT under events/:id.
+    exposureTeamPlayers: (teamId: string) => `/fanhub/org/exposure/teams/${teamId}/players`,
+    proxyExposureTeamPlayers: (teamId: string) => `/api/fanhub/org/exposure/teams/${teamId}/players`,
     // Setup Wizard — wire these when backend is ready
     saveSchedule: "setup/schedule",
     saveActivations: "setup/activations",
