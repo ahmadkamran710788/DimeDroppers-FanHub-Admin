@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { cn } from "@/utils/cn";
 
 const STEPS = [
@@ -22,10 +23,9 @@ export default function StepIndicator({ currentStep, className }: StepIndicatorP
         const isCompleted = step.number < currentStep;
 
         return (
-          <>
+          <Fragment key={step.number}>
             {/* Pill: flex-1 so pills fill available space equally */}
             <div
-              key={step.number}
               className={cn(
                 "flex items-center gap-2 rounded-full px-2 py-2 backdrop-blur-[48px] flex-1",
                 (isActive || isCompleted) ? "bg-steel-blue" : "bg-border-subtle"
@@ -44,9 +44,9 @@ export default function StepIndicator({ currentStep, className }: StepIndicatorP
             </div>
             {/* Connector — fixed 50px per Figma spec */}
             {idx < STEPS.length - 1 && (
-              <div key={`connector-${step.number}`} className="w-6 sm:w-[50px] h-[2px] bg-border-subtle shrink-0" />
+              <div className="w-6 sm:w-[50px] h-[2px] bg-border-subtle shrink-0" />
             )}
-          </>
+          </Fragment>
         );
       })}
     </div>

@@ -132,8 +132,8 @@ const dash = (v: string | number | null | undefined) => (v === null || v === und
 
 function BracketsTable({ divisions }: { divisions: ExposureDivision[] }) {
   // Flatten to one row per bracket; divisions with no brackets still get a row.
-  const rows = divisions.flatMap((division) =>
-    division.brackets.length
+  const rows = (divisions ?? []).flatMap((division) =>
+    division.brackets?.length
       ? division.brackets.map((bracket) => ({ division, bracket }))
       : [{ division, bracket: null as ExposureBracket | null }]
   );
@@ -417,8 +417,11 @@ export default function ExposureEventModal({ event, initialView, onClose }: Expo
                     key={t.view}
                     type="button"
                     onClick={() => {
+                      if (t.view === view) return;
                       setView(t.view);
                       setPlayersTeam(null);
+                      setRows([]); // drop previous view's rows (wrong shape → Brackets crashes)
+                      setLoading(true); // show loader until the new view's fetch resolves
                     }}
                     className="px-3 flex flex-col items-center gap-3 relative h-full justify-end"
                   >
