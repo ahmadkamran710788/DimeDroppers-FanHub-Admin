@@ -1,6 +1,8 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import toast from "react-hot-toast";
 import { config } from "@/config";
+import { routes } from "@/utils/routes";
+import { clearFanhubSession } from "@/utils/auth/session";
 
 const BASE_URL = config.apiUrl;
 
@@ -52,19 +54,43 @@ const formatBackendMessage = (msg: unknown): string => {
   return msg;
 };
 
-let isRefreshing = false;
+// Single-flight refresh: concurrent 401s share ONE in-flight refresh and all
+// receive its real result. The old boolean guard made every caller BUT the first
+// return `false` (a spurious "refresh failed"), which surfaced a bogus "Session
+// expired" toast even though the refresh actually succeeded.
+let refreshPromise: Promise<boolean> | null = null;
 
-async function attemptTokenRefresh(): Promise<boolean> {
-  if (isRefreshing) return false;
-  isRefreshing = true;
-  try {
-    const res = await fetch("/api/auth/refresh", { method: "POST" });
-    return res.ok;
-  } catch {
-    return false;
-  } finally {
-    isRefreshing = false;
+function attemptTokenRefresh(): Promise<boolean> {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        const res = await fetch("/api/auth/refresh", { method: "POST" });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    })();
+    // Reset after settle so a later expiry triggers a fresh refresh.
+    void refreshPromise.finally(() => {
+      refreshPromise = null;
+    });
   }
+  return refreshPromise;
+}
+
+// Genuine expiry (refresh token truly dead / offline): clear the client session
+// and hard-redirect to sign-in. `apiCall` is a plain util — not a hook — so it
+// can't reach the router/auth context; a full reload also resets that context.
+// Guarded so concurrent failures only trigger one sign-out.
+let isLoggingOut = false;
+
+function forceSignOut() {
+  if (typeof window === "undefined" || isLoggingOut) return;
+  isLoggingOut = true;
+  clearFanhubSession();
+  void fetch(routes.api.proxyAuthSignout, { method: "POST" }).finally(() => {
+    window.location.assign(routes.ui.signIn);
+  });
 }
 
 export default async function apiCall<T = unknown>({
@@ -161,7 +187,10 @@ export default async function apiCall<T = unknown>({
             // avoid a double-invalidation on the retry.
             return apiCall({ endpoint, method, data, headers, showSuccessToast, successMessage });
           }
+          // Genuine expiry: refresh really failed. Sign the user out gracefully
+          // instead of leaving them stuck on a toast with stale UI.
           errorMessage = "Session expired. Please sign in again.";
+          forceSignOut();
           break;
         }
         case 403:
