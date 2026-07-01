@@ -287,7 +287,6 @@ function renderView(
 
 export default function ExposureEventModal({ event, initialView, onClose }: ExposureEventModalProps) {
   const [view, setView] = useState<ExposureEventView>(initialView);
-  const [display, setDisplay] = useState<"Pool" | "Bracket">("Pool");
   const [rows, setRows] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -334,7 +333,7 @@ export default function ExposureEventModal({ event, initialView, onClose }: Expo
     apiCall<ExposureListResponse<unknown>>({
       endpoint,
       method: "GET",
-      data: view === "standings" ? { display } : undefined,
+      data: view === "standings" ? { display: "Pool" } : undefined,
     }).then((result) => {
       if (cancelled) return;
       if (result.success && result.data) {
@@ -350,7 +349,7 @@ export default function ExposureEventModal({ event, initialView, onClose }: Expo
     return () => {
       cancelled = true;
     };
-  }, [eventId, view, display]);
+  }, [eventId, view]);
 
   // Fetch a team's players when the user drills in from the Teams table.
   const playersTeamId = playersTeam?.id;
@@ -474,26 +473,6 @@ export default function ExposureEventModal({ event, initialView, onClose }: Expo
             </div>
           ) : (
             <>
-              {view === "standings" && (
-                <div className="flex items-center gap-2 mb-4">
-                  {(["Pool", "Bracket"] as const).map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => setDisplay(d)}
-                      className={cn(
-                        "h-9 px-4 rounded-lg outline outline-1 text-sm font-medium transition-colors",
-                        display === d
-                          ? "bg-white/20 outline-white/40 text-white"
-                          : "bg-white/5 outline-white/10 text-white/60 hover:bg-white/10"
-                      )}
-                    >
-                      {d}
-                    </button>
-                  ))}
-                </div>
-              )}
-
               {loading && (
                 <div className="flex justify-center items-center py-16">
                   <Loader2 className="w-6 h-6 text-white/50 animate-spin" />
