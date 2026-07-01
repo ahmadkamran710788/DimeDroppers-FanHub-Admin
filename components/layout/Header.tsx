@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
 import { LogOut, Menu, User } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
@@ -16,7 +15,6 @@ interface HeaderProps {
 }
 
 export default function Header({ className, title = "Setup Wizard", onMenuClick }: HeaderProps) {
-  const router = useRouter();
   const { org, clearAuth } = useAuth();
   const [open, setOpen] = useState(false);
   const avatarRef = useRef<HTMLButtonElement>(null);
@@ -52,7 +50,10 @@ export default function Header({ className, title = "Setup Wizard", onMenuClick 
     clearFanhubSession();
     clearAuth();
     await fetch(routes.api.proxyAuthSignout, { method: "POST" });
-    router.replace(routes.ui.signIn);
+    // Full-page navigation (not router.replace) so the whole client state is torn
+    // down and rebuilt fresh on the sign-in page. `replace` drops the current
+    // (now signed-out) entry from history.
+    window.location.replace(routes.ui.signIn);
   }
 
   const dropdown = open
