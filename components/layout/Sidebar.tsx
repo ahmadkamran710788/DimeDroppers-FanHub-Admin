@@ -3,7 +3,9 @@
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { useSetup } from "@/context/setup";
+import { useAuth } from "@/context/auth";
 import { getResumeStep } from "@/utils/fanhub/getResumeStep";
+import { User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -74,6 +76,7 @@ interface SidebarProps {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { savedSchool } = useSetup();
+  const { org } = useAuth();
   const activeStep = pathname.includes("setup-wizard")
     ? urlToStepNumber(pathname)
     : urlToStepNumber(getResumeStep(savedSchool));
@@ -87,13 +90,9 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       )}
     >
       {/* Logo */}
-      <div className="h-[104px] flex items-start pt-[27px] gap-2 px-6">
+      <div className="h-[104px] flex items-start pt-[27px] px-6">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/icons/logo-union.svg" alt="" width={32} height={28} className="shrink-0" />
-        <span className="font-display font-black text-xl uppercase leading-none tracking-wide whitespace-nowrap">
-          <span className="text-white">DIME </span>
-          <span style={{ backgroundImage: "var(--gradient-cta)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>FAN HUB</span>
-        </span>
+        <img src="/DDLogo.svg" alt="Dime Dropper" width={162} height={32} className="shrink-0" />
       </div>
 
       {/* Nav */}
@@ -160,20 +159,13 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       <div className="px-4 py-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
         <div className="flex items-center gap-3">
           <div
-            className="w-12 h-12 rounded-full overflow-hidden shrink-0"
+            className="w-12 h-12 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-white/10"
             style={{ border: "2px solid rgba(255,255,255,0.5)", backdropFilter: "blur(24px)" }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/avatar-photo.png"
-              alt="Profile"
-              width={48}
-              height={48}
-              className="w-full h-full object-cover"
-            />
+            <User className="w-6 h-6 text-white/60" aria-hidden />
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-base font-medium text-white leading-tight">Twin Lakes HS</span>
+            <span className="text-base font-medium text-white leading-tight">{savedSchool?.name ?? org?.name ?? "Organization"}</span>
             <span className="text-xs font-medium text-white/60">Admin</span>
           </div>
         </div>

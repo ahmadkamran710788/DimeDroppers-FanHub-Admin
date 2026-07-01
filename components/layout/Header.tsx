@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { LogOut, Menu } from "lucide-react";
+import { LogOut, Menu, User } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { clearFanhubSession } from "@/utils/auth/session";
@@ -135,10 +135,10 @@ export default function Header({ className, title = "Setup Wizard", onMenuClick 
               aria-haspopup="menu"
               aria-expanded={open}
               onClick={() => setOpen((v) => !v)}
-              className="w-12 h-12 rounded-full overflow-hidden shrink-0 focus:outline-none flex items-center justify-center bg-white/10 text-white font-bold text-sm uppercase"
+              className="w-12 h-12 rounded-full overflow-hidden shrink-0 focus:outline-none flex items-center justify-center bg-white/10"
               style={{ border: "2px solid rgba(255,255,255,0.5)", backdropFilter: "blur(24px)" }}
             >
-              {org?.name ? org.name.charAt(0) : "?"}
+              <User className="w-6 h-6 text-white/60" aria-hidden />
             </button>
           </div>
         </div>
