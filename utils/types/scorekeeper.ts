@@ -31,3 +31,18 @@ export interface ScorekeeperPoolResponse {
   errorCode?: string | null;
   data: ScorekeeperPoolMember[];
 }
+
+// ─── Bulk assign (PUT /fanhub/org/scorekeeper/bulk-assign) ──────────────────────
+
+export interface ScorekeeperBulkAssignResult {
+  fan: { id: string; name: string | null };
+  assignedCount: number;
+}
+
+export interface ScorekeeperBulkAssignResponse {
+  statusCode: number;
+  success?: boolean;
+  message: string;
+  errorCode?: string | null;
+  data: ScorekeeperBulkAssignResult[];
+}

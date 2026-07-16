@@ -91,6 +91,10 @@ export const routes = {
       `/api/fanhub/org/scorekeeper-pool/${memberId}/accept`,
     proxyRejectScorekeeper: (memberId: string) =>
       `/api/fanhub/org/scorekeeper-pool/${memberId}/reject`,
+    // Scorekeeper — bulk-assign a fan to schedule games (PUT). Note the path is /scorekeeper
+    // (singular), a sibling of /scorekeeper-pool. Body: { fanId, scheduleEventIds }.
+    bulkAssignScorekeeper: "/fanhub/org/scorekeeper/bulk-assign",
+    proxyBulkAssignScorekeeper: "/api/fanhub/org/scorekeeper/bulk-assign",
     // Exposure Events API integration (tournament orgs only). Upstream paths appended to
     // config.apiUrl on the server; proxy* are internal Next routes the browser calls (the
     // server route injects the Bearer accessToken cookie).

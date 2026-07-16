@@ -4,7 +4,7 @@ import { cn } from "@/utils/cn";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import GenericTable, { type Column } from "@/components/common/GenericTable";
-import StatusPill from "@/components/common/StatusPill";
+import GameScheduleView from "@/components/schedule/GameScheduleView";
 import type {
   ExposureEvent,
   ExposureEventView,
@@ -51,20 +51,6 @@ function ExternalAnchor({ href, label }: { href: string; label: string }) {
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const s = status.toLowerCase();
-  const color = s === "cancelled" ? "bg-red-400" : s === "tentative" ? "bg-yellow-400" : "bg-green-400";
-  return (
-    <StatusPill label={status} color={color} className="h-5 px-2" textClassName="text-[11px] capitalize" />
-  );
-}
-
-function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-}
-
 const dash = (v: string | number | null | undefined) => (v === null || v === undefined || v === "" ? "—" : v);
 
 // ─── Per-view tables ────────────────────────────────────────────────────────────
@@ -94,18 +80,6 @@ function BracketsTable({ divisions }: { divisions: ExposureDivision[] }) {
       empty="No brackets found for this event."
     />
   );
-}
-
-function GamesTable({ games }: { games: ExposureGame[] }) {
-  const columns: Column<ExposureGame>[] = [
-    { header: "Date", cls: "w-32", cell: (g) => formatDateTime(g.start) },
-    { header: "Matchup", cls: "flex-1", cell: (g) => dash(g.title ?? g.opponent) },
-    { header: "Division", cls: "w-28", cell: (g) => dash(g.sports) },
-    { header: "Location", cls: "flex-1", cell: (g) => dash(g.location) },
-    { header: "Result", cls: "w-20 justify-center", cell: (g) => dash(g.result) },
-    { header: "Status", cls: "w-24 justify-center", cell: (g) => (g.status ? <StatusBadge status={g.status} /> : "—") },
-  ];
-  return <GenericTable columns={columns} rows={games} getKey={(g) => g.id} empty="No games found for this event." />;
 }
 
 function TeamsTable({
@@ -212,7 +186,7 @@ function renderView(
     case "brackets":
       return <BracketsTable divisions={rows as ExposureDivision[]} />;
     case "games":
-      return <GamesTable games={rows as ExposureGame[]} />;
+      return <GameScheduleView games={rows as ExposureGame[]} />;
     case "teams":
       return <TeamsTable teams={rows as ExposureTeam[]} onViewPlayers={onViewPlayers} />;
     case "standings":
