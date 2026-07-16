@@ -81,6 +81,7 @@ export interface ExposureGame {
   sports: string | null;
   sourcePlatform: string | null;
   sourceUrl: string | null;
+  officialScorekeeperFanId: string | null; // linked scorekeeper's fan id (null = unassigned)
 }
 
 // ─── Teams (GET /events/:id/teams) ──────────────────────────────────────────────

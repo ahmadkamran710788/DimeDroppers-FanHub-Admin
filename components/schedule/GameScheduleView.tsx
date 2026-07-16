@@ -11,8 +11,8 @@ import type {
   ScorekeeperPoolMember,
   ScorekeeperPoolResponse,
 } from "@/utils/types/scorekeeper";
-import { Loader2, UserPlus, X } from "lucide-react";
-import { useState } from "react";
+import { ChevronDown, Loader2, UserPlus, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 // ─── Local presentational helpers (kept self-contained; the modal has private copies) ──
 
@@ -38,34 +38,45 @@ export default function GameScheduleView({ games }: { games: ExposureGame[] }) {
   // (`selectedFanId`) reveals the per-row checkboxes.
   const [assigning, setAssigning] = useState(false);
   const [pool, setPool] = useState<ScorekeeperPoolMember[]>([]);
-  const [poolLoading, setPoolLoading] = useState(false);
+  const [poolLoading, setPoolLoading] = useState(true); // fetched eagerly on mount
   const [poolLoaded, setPoolLoaded] = useState(false);
   const [selectedFanId, setSelectedFanId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [linking, setLinking] = useState(false);
+  // Local, optimistic assignments (gameId → fanId) applied after a successful link, so the
+  // "Official Scorekeeper" column updates without waiting for the modal to refetch `games`.
+  const [assignedOverrides, setAssignedOverrides] = useState<Record<string, string>>({});
 
   const inSelection = assigning && selectedFanId !== null;
   const allSelected = games.length > 0 && selectedIds.size === games.length;
   const someSelected = selectedIds.size > 0 && !allSelected;
 
-  const fetchPool = async () => {
-    setPoolLoading(true);
-    const res = await apiCall<ScorekeeperPoolResponse>({
+  // Fetch the ACTIVE pool eagerly so the Official Scorekeeper column can resolve names on
+  // first render (and the assign dropdown reuses the same data).
+  useEffect(() => {
+    let cancelled = false;
+    apiCall<ScorekeeperPoolResponse>({
       endpoint: routes.api.proxyListScorekeeperPool,
       method: "GET",
       data: { status: "ACTIVE" }, // → ?status=ACTIVE, forwarded verbatim by the proxy
+    }).then((res) => {
+      if (cancelled) return;
+      // Only members with a linkable fanId can be assigned / resolved to a name.
+      const members = res.success && res.data ? (res.data.data ?? []).filter((m) => m.fanId) : [];
+      setPool(members);
+      setPoolLoaded(res.success);
+      setPoolLoading(false);
     });
-    // Only members with a linkable fanId can be assigned.
-    const members = res.success && res.data ? (res.data.data ?? []).filter((m) => m.fanId) : [];
-    setPool(members);
-    setPoolLoaded(res.success);
-    setPoolLoading(false);
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  const openAssign = () => {
-    setAssigning(true);
-    if (!poolLoaded && !poolLoading) void fetchPool();
-  };
+  // fanId → display name, for the Official Scorekeeper column and dropdown.
+  const nameByFanId: Record<string, string> = {};
+  for (const m of pool) if (m.fanId) nameByFanId[m.fanId] = getScorekeeperName(m);
+
+  const openAssign = () => setAssigning(true);
 
   const cancel = () => {
     setAssigning(false);
@@ -88,16 +99,26 @@ export default function GameScheduleView({ games }: { games: ExposureGame[] }) {
 
   const link = async () => {
     if (!selectedFanId || selectedIds.size === 0) return;
+    // Capture before cancel() resets the selection state.
+    const fanId = selectedFanId;
+    const ids = [...selectedIds];
     setLinking(true);
     const res = await apiCall<ScorekeeperBulkAssignResponse>({
       endpoint: routes.api.proxyBulkAssignScorekeeper,
       method: "PUT",
-      data: { fanId: selectedFanId, scheduleEventIds: [...selectedIds] },
+      data: { fanId, scheduleEventIds: ids },
       showSuccessToast: true,
       successMessage: "Scorekeeper assigned to the selected games",
     });
     setLinking(false);
-    if (res.success) cancel();
+    if (res.success) {
+      setAssignedOverrides((prev) => {
+        const next = { ...prev };
+        for (const id of ids) next[id] = fanId;
+        return next;
+      });
+      cancel();
+    }
   };
 
   const columns: Column<ExposureGame>[] = [];
@@ -122,7 +143,18 @@ export default function GameScheduleView({ games }: { games: ExposureGame[] }) {
     { header: "Division", cls: "w-28", cell: (g) => dash(g.sports) },
     { header: "Location", cls: "flex-1", cell: (g) => dash(g.location) },
     { header: "Result", cls: "w-20 justify-center", cell: (g) => dash(g.result) },
-    { header: "Status", cls: "w-24 justify-center", cell: (g) => (g.status ? <StatusBadge status={g.status} /> : "—") }
+    { header: "Status", cls: "w-24 justify-center", cell: (g) => (g.status ? <StatusBadge status={g.status} /> : "—") },
+    {
+      header: "Official Scorekeeper",
+      cls: "w-44",
+      cell: (g) => {
+        const fanId = assignedOverrides[g.id] ?? g.officialScorekeeperFanId;
+        if (!fanId) return "—";
+        const name = nameByFanId[fanId];
+        if (name) return name;
+        return poolLoading ? "…" : "Assigned";
+      },
+    }
   );
 
   return (
@@ -173,25 +205,28 @@ export default function GameScheduleView({ games }: { games: ExposureGame[] }) {
                   {poolLoaded ? "No active scorekeepers." : "Couldn't load scorekeepers."}
                 </span>
               ) : (
-                <select
-                  value={selectedFanId ?? ""}
-                  onChange={(e) => setSelectedFanId(e.target.value || null)}
-                  aria-label="Select scorekeeper"
-                  className="h-9 rounded-lg bg-white/10 text-white text-xs font-medium px-2 border border-white/15 outline-none focus:border-sky-400 transition-colors cursor-pointer max-w-56"
-                >
-                  <option value="" disabled className="text-slate-900">
-                    Select scorekeeper…
-                  </option>
-                  {pool.map((m) => {
-                    const email = getScorekeeperEmail(m);
-                    return (
-                      <option key={m.id} value={m.fanId as string} className="text-slate-900">
-                        {getScorekeeperName(m)}
-                        {email ? ` — ${email}` : ""}
-                      </option>
-                    );
-                  })}
-                </select>
+                <div className="relative inline-flex items-center">
+                  <select
+                    value={selectedFanId ?? ""}
+                    onChange={(e) => setSelectedFanId(e.target.value || null)}
+                    aria-label="Select scorekeeper"
+                    className="h-9 w-56 appearance-none truncate rounded-lg bg-white/10 text-white text-xs font-medium pl-3 pr-8 border border-white/15 outline-none focus:border-sky-400 transition-colors cursor-pointer"
+                  >
+                    <option value="" disabled className="text-slate-900">
+                      Select scorekeeper…
+                    </option>
+                    {pool.map((m) => {
+                      const email = getScorekeeperEmail(m);
+                      return (
+                        <option key={m.id} value={m.fanId as string} className="text-slate-900">
+                          {getScorekeeperName(m)}
+                          {email ? ` — ${email}` : ""}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <ChevronDown className="absolute right-2 w-4 h-4 text-white/60 pointer-events-none" />
+                </div>
               )}
 
               {inSelection && (
