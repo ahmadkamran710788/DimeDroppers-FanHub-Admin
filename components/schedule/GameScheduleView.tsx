@@ -97,6 +97,15 @@ export default function GameScheduleView({ games }: { games: ExposureGame[] }) {
     setSelectedIds((prev) => (prev.size === games.length ? new Set() : new Set(games.map((g) => g.id))));
   };
 
+  // The scorekeeper currently assigned to a game (in-session override wins over the server value).
+  const assignedFanId = (g: ExposureGame) => assignedOverrides[g.id] ?? g.officialScorekeeperFanId;
+
+  // Picking a scorekeeper pre-checks the games already linked to them; switching recomputes.
+  const selectScorekeeper = (fanId: string | null) => {
+    setSelectedFanId(fanId);
+    setSelectedIds(fanId ? new Set(games.filter((g) => assignedFanId(g) === fanId).map((g) => g.id)) : new Set());
+  };
+
   const link = async () => {
     if (!selectedFanId || selectedIds.size === 0) return;
     // Capture before cancel() resets the selection state.
@@ -148,7 +157,7 @@ export default function GameScheduleView({ games }: { games: ExposureGame[] }) {
       header: "Official Scorekeeper",
       cls: "w-44",
       cell: (g) => {
-        const fanId = assignedOverrides[g.id] ?? g.officialScorekeeperFanId;
+        const fanId = assignedFanId(g);
         if (!fanId) return "—";
         const name = nameByFanId[fanId];
         if (name) return name;
@@ -208,7 +217,7 @@ export default function GameScheduleView({ games }: { games: ExposureGame[] }) {
                 <div className="relative inline-flex items-center">
                   <select
                     value={selectedFanId ?? ""}
-                    onChange={(e) => setSelectedFanId(e.target.value || null)}
+                    onChange={(e) => selectScorekeeper(e.target.value || null)}
                     aria-label="Select scorekeeper"
                     className="h-9 w-56 appearance-none truncate rounded-lg bg-white/10 text-white text-xs font-medium pl-3 pr-8 border border-white/15 outline-none focus:border-sky-400 transition-colors cursor-pointer"
                   >
