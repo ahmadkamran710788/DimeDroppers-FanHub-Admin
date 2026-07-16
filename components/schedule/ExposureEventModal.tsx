@@ -3,6 +3,8 @@
 import { cn } from "@/utils/cn";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
+import GenericTable, { type Column } from "@/components/common/GenericTable";
+import StatusPill from "@/components/common/StatusPill";
 import type {
   ExposureEvent,
   ExposureEventView,
@@ -32,67 +34,6 @@ const VIEW_TABS: { view: ExposureEventView; label: string }[] = [
   { view: "venues", label: "Venues" },
 ];
 
-// ─── Generic dark table ─────────────────────────────────────────────────────────
-
-interface Column<T> {
-  header: string;
-  cls?: string; // width / alignment utilities, applied to header AND cells for alignment
-  cell: (row: T) => ReactNode;
-}
-
-function ModalTable<T>({
-  columns,
-  rows,
-  getKey,
-  empty,
-}: {
-  columns: Column<T>[];
-  rows: T[];
-  getKey: (row: T, index: number) => string;
-  empty: string;
-}) {
-  return (
-    <div className="overflow-x-auto">
-      {/* Header */}
-      <div className="flex items-center border-b border-white/20">
-        {columns.map((col) => (
-          <div key={col.header} className={cn("h-10 px-2 bg-white/10 flex items-center gap-1", col.cls)}>
-            <span className="text-white text-xs font-semibold uppercase leading-4">{col.header}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Rows */}
-      {rows.length === 0 ? (
-        <div className="flex justify-center items-center py-12 text-white/40 text-sm">{empty}</div>
-      ) : (
-        rows.map((row, index) => (
-          <div key={getKey(row, index)} className="flex items-stretch border-b border-white/20">
-            {columns.map((col) => {
-              const content = col.cell(row);
-              return (
-                <div
-                  key={col.header}
-                  className={cn(
-                    "px-2 py-3 bg-white/5 flex items-center overflow-hidden text-white text-xs font-medium leading-4",
-                    col.cls
-                  )}
-                >
-                  {typeof content === "string" || typeof content === "number" ? (
-                    <span className="truncate">{content}</span>
-                  ) : (
-                    content
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ))
-      )}
-    </div>
-  );
-}
-
 // ─── Small presentational helpers ───────────────────────────────────────────────
 
 function ExternalAnchor({ href, label }: { href: string; label: string }) {
@@ -114,9 +55,7 @@ function StatusBadge({ status }: { status: string }) {
   const s = status.toLowerCase();
   const color = s === "cancelled" ? "bg-red-400" : s === "tentative" ? "bg-yellow-400" : "bg-green-400";
   return (
-    <span className={cn("inline-flex h-5 px-2 rounded-full items-center", color)}>
-      <span className="text-slate-900 text-[11px] font-medium capitalize">{status}</span>
-    </span>
+    <StatusPill label={status} color={color} className="h-5 px-2" textClassName="text-[11px] capitalize" />
   );
 }
 
@@ -148,7 +87,7 @@ function BracketsTable({ divisions }: { divisions: ExposureDivision[] }) {
     },
   ];
   return (
-    <ModalTable
+    <GenericTable
       columns={columns}
       rows={rows}
       getKey={(r, i) => r.bracket?.id ?? `${r.division.id}-${i}`}
@@ -166,7 +105,7 @@ function GamesTable({ games }: { games: ExposureGame[] }) {
     { header: "Result", cls: "w-20 justify-center", cell: (g) => dash(g.result) },
     { header: "Status", cls: "w-24 justify-center", cell: (g) => (g.status ? <StatusBadge status={g.status} /> : "—") },
   ];
-  return <ModalTable columns={columns} rows={games} getKey={(g) => g.id} empty="No games found for this event." />;
+  return <GenericTable columns={columns} rows={games} getKey={(g) => g.id} empty="No games found for this event." />;
 }
 
 function TeamsTable({
@@ -198,7 +137,7 @@ function TeamsTable({
       ),
     },
   ];
-  return <ModalTable columns={columns} rows={teams} getKey={(t) => t.id} empty="No teams found for this event." />;
+  return <GenericTable columns={columns} rows={teams} getKey={(t) => t.id} empty="No teams found for this event." />;
 }
 
 function PlayersTable({ players }: { players: ExposurePlayer[] }) {
@@ -211,7 +150,7 @@ function PlayersTable({ players }: { players: ExposurePlayer[] }) {
     { header: "Wt", cls: "w-16", cell: (p) => dash(p.weight) },
     { header: "School", cls: "flex-1", cell: (p) => dash(p.playerSchool) },
   ];
-  return <ModalTable columns={columns} rows={players} getKey={(p) => p.id} empty="No players found for this team." />;
+  return <GenericTable columns={columns} rows={players} getKey={(p) => p.id} empty="No players found for this team." />;
 }
 
 function StandingsTable({ standings }: { standings: ExposureStanding[] }) {
@@ -233,7 +172,7 @@ function StandingsTable({ standings }: { standings: ExposureStanding[] }) {
       })
     ),
   ];
-  return <ModalTable columns={columns} rows={standings} getKey={(s) => s.id} empty="No standings found for this event." />;
+  return <GenericTable columns={columns} rows={standings} getKey={(s) => s.id} empty="No standings found for this event." />;
 }
 
 function VenuesTable({ venues }: { venues: ExposureVenue[] }) {
@@ -261,7 +200,7 @@ function VenuesTable({ venues }: { venues: ExposureVenue[] }) {
         ),
     },
   ];
-  return <ModalTable columns={columns} rows={venues} getKey={(v) => v.id} empty="No venues found for this event." />;
+  return <GenericTable columns={columns} rows={venues} getKey={(v) => v.id} empty="No venues found for this event." />;
 }
 
 function renderView(

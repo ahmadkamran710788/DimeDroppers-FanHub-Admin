@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { LogOut, Menu, User } from "lucide-react";
+import Link from "next/link";
+import { ClipboardList, LogOut, Menu, User } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { clearFanhubSession } from "@/utils/auth/session";
@@ -61,7 +62,7 @@ export default function Header({ className, title = "Setup Wizard", onMenuClick 
         <div
           ref={dropdownRef}
           role="menu"
-          className="fixed min-w-[160px] rounded-[8px] py-1"
+          className="fixed min-w-[200px] rounded-[8px] py-1"
           style={{
             top: dropdownStyle.top,
             right: dropdownStyle.right,
@@ -71,6 +72,16 @@ export default function Header({ className, title = "Setup Wizard", onMenuClick 
             boxShadow: "0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)",
           }}
         >
+          <Link
+            href={routes.ui.scorekeepers}
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors duration-150"
+          >
+            <ClipboardList className="w-4 h-4 shrink-0" />
+            List Score Keeper
+          </Link>
+          <div className="h-px bg-white/10 mx-2 my-1" />
           <button
             type="button"
             role="menuitem"

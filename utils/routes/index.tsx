@@ -4,6 +4,7 @@ export const routes = {
     signIn: "/auth/sign-in",
     signUp: "/auth/sign-up",
     schedule: "/schedule",
+    scorekeepers: "/scorekeepers",
     userDetails: (id: string | number) => `users/${id}`,
     setupWizard: {
       organizationDetails: "/setup-wizard/organization-details",
@@ -74,6 +75,22 @@ export const routes = {
     proxyCreateSchedule: "/api/fanhub/org/schedules",
     proxyUpdateSchedule: (id: string) => `/api/fanhub/org/schedules/${id}`,
     proxyDeleteSchedule: (id: string) => `/api/fanhub/org/schedules/${id}`,
+    // Scorekeeper pool — upstream paths (used by the server-side proxy route handlers).
+    // A pool member is either org-invited (status INVITED) or fan-requested (REQUESTED);
+    // the org then accepts/rejects the REQUESTED ones.
+    listScorekeeperPool: "/fanhub/org/scorekeeper-pool",
+    inviteScorekeeper: "/fanhub/org/scorekeeper-pool",
+    acceptScorekeeper: (memberId: string) =>
+      `/fanhub/org/scorekeeper-pool/${memberId}/accept`,
+    rejectScorekeeper: (memberId: string) =>
+      `/fanhub/org/scorekeeper-pool/${memberId}/reject`,
+    // Scorekeeper pool — proxy routes (browser calls these; server injects Bearer token)
+    proxyListScorekeeperPool: "/api/fanhub/org/scorekeeper-pool",
+    proxyInviteScorekeeper: "/api/fanhub/org/scorekeeper-pool",
+    proxyAcceptScorekeeper: (memberId: string) =>
+      `/api/fanhub/org/scorekeeper-pool/${memberId}/accept`,
+    proxyRejectScorekeeper: (memberId: string) =>
+      `/api/fanhub/org/scorekeeper-pool/${memberId}/reject`,
     // Exposure Events API integration (tournament orgs only). Upstream paths appended to
     // config.apiUrl on the server; proxy* are internal Next routes the browser calls (the
     // server route injects the Bearer accessToken cookie).

@@ -1,12 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
+import { routes } from "@/utils/routes";
 import { SetupProvider } from "@/context/setup";
+
+const PAGE_TITLES: Record<string, string> = {
+  [routes.ui.schedule]: "Schedule",
+  [routes.ui.scorekeepers]: "Score Keepers",
+};
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = usePathname();
+  const title = PAGE_TITLES[pathname] ?? "Schedule";
 
   return (
     <SetupProvider>
@@ -31,7 +40,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               zIndex: 0,
             }}
           />
-          <Header title="Schedule" onMenuClick={() => setSidebarOpen(true)} />
+          <Header title={title} onMenuClick={() => setSidebarOpen(true)} />
           <main className="relative z-10 flex-1 overflow-y-auto px-4 py-4 lg:px-10 lg:py-8">{children}</main>
         </div>
       </div>
