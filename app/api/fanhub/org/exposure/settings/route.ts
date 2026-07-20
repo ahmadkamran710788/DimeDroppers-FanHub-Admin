@@ -1,6 +1,6 @@
 import { config } from "@/config";
 import { routes } from "@/utils/routes";
-import { getAccessToken } from "@/utils/auth/cookies";
+import { upstreamFetch } from "@/utils/auth/upstream";
 
 export const runtime = "nodejs";
 
@@ -13,19 +13,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const accessToken = await getAccessToken();
-  if (!accessToken) {
-    return Response.json({ message: "Unauthorized." }, { status: 401 });
-  }
-
   try {
     const payload = await request.json();
-    const upstream = await fetch(`${config.apiUrl}${routes.api.exposureSettings}`, {
+    const upstream = await upstreamFetch(`${config.apiUrl}${routes.api.exposureSettings}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 

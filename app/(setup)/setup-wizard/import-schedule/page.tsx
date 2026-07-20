@@ -125,6 +125,33 @@ interface ExposureStatusPayload {
   organizationType?: string;
 }
 
+// Poll cadence for the Exposure sync, as `[afterElapsedMs, everyMs]`. The loop itself is
+// unbounded in duration — this widens the gap between requests so a multi-minute sync
+// costs a few calls per minute instead of one every 2.5s for as long as it runs.
+const POLL_BACKOFF: readonly (readonly [number, number])[] = [
+  [0, 2_500],
+  [30_000, 5_000],
+  [90_000, 10_000],
+  [300_000, 15_000],
+];
+
+// Consecutive failed polls tolerated before giving up. "No timeout" must not mean polling
+// a dead endpoint forever in silence; a single blip resets the count.
+const MAX_CONSECUTIVE_POLL_FAILURES = 5;
+
+// Surface a "taking longer than usual" note past this mark. Advisory only — polling continues.
+const SLOW_SYNC_NOTICE_MS = 120_000;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function pollDelayFor(elapsedMs: number): number {
+  let delay = POLL_BACKOFF[0][1];
+  for (const [afterMs, everyMs] of POLL_BACKOFF) {
+    if (elapsedMs >= afterMs) delay = everyMs;
+  }
+  return delay;
+}
+
 
 // Build the Import Summary cards from a scraped school. Each item uses the `{ label,
 // value, icon }` variant of the SUMMARY_STATS union, so the existing summary `.map`
@@ -195,6 +222,11 @@ export default function ImportSchedulePage() {
   });
   const [infoOpen, setInfoOpen] = useState(true);
   const [icsConnecting, setIcsConnecting] = useState(false);
+  // True once a sync passes SLOW_SYNC_NOTICE_MS — drives an advisory line only.
+  const [slowSync, setSlowSync] = useState(false);
+  // In-flight POST /sync, kept separate from `syncStatus` so the button can disable
+  // without claiming a sync started that the backend may still refuse.
+  const [resyncing, setResyncing] = useState(false);
 
   // Guards background sync polling from setting state after the component unmounts.
   // Set in the body (runs on every mount) and cleared in cleanup so it survives Strict
@@ -206,6 +238,11 @@ export default function ImportSchedulePage() {
       mountedRef.current = false;
     };
   }, []);
+
+  // Incremented per poll run so a newer run supersedes an older one. Polling is unbounded
+  // now, so two concurrent loops (hydration resume + a Re-sync click) would otherwise both
+  // run forever, double-writing state at different cadences.
+  const pollRunIdRef = useRef(0);
 
   // Section A — MaxPreps file upload (pdf/jpg/png).
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -374,39 +411,94 @@ export default function ImportSchedulePage() {
     }
   };
 
-  // Poll the Exposure sync status until it reaches a terminal state. Bounded (~100s) and
-  // guarded by mountedRef so it stops cleanly if the user navigates away mid-sync.
+  const failSync = useCallback((message: string) => {
+    setSlowSync(false);
+    setExposure((p) => ({ ...p, syncStatus: "FAILED", syncMessage: message }));
+    toast.error(message);
+  }, []);
+
+  // Poll the Exposure sync status until it reaches a terminal state. Intentionally
+  // UNBOUNDED in duration — a sync for a large org can run for many minutes, and the old
+  // 40-iteration (~100s) cap silently stopped polling while leaving syncStatus on
+  // IN_PROGRESS, so the card spun forever with a disabled Re-sync button and no recovery
+  // short of a page reload. POLL_BACKOFF bounds the request rate instead of the runtime.
   const pollExposureStatus = useCallback(async () => {
-    for (let i = 0; i < 40; i++) {
-      if (!mountedRef.current) return;
+    const runId = ++pollRunIdRef.current;
+    const startedAt = Date.now();
+    let consecutiveFailures = 0;
+
+    setSlowSync(false);
+
+    const isStale = () => !mountedRef.current || pollRunIdRef.current !== runId;
+
+    while (!isStale()) {
+      const elapsed = Date.now() - startedAt;
+      const delay = pollDelayFor(elapsed);
+
+      // Don't poll from a background tab — idle until it's foregrounded. Checked per
+      // iteration rather than via a visibilitychange listener so the loop keeps hitting
+      // its isStale() check and can't outlive the component while hidden.
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        await sleep(delay);
+        continue;
+      }
+
+      if (elapsed >= SLOW_SYNC_NOTICE_MS) setSlowSync(true);
+
       try {
         const res = await fetch(routes.api.proxyExposureSyncStatus);
-        if (res.ok) {
-          const json = await res.json().catch(() => null);
-          const d = json?.data?.[0] as ExposureStatusPayload | undefined;
-          if (d) {
-            setExposure((p) => ({
-              hasCredentials: d.hasCredentials ?? p.hasCredentials,
-              syncStatus: d.syncStatus ?? p.syncStatus,
-              syncMessage: d.syncMessage ?? null,
-              lastSyncedAt: d.lastSyncedAt ?? p.lastSyncedAt,
-            }));
-            if (d.syncStatus === "SUCCESS") {
-              toast.success(d.syncMessage || "Sync complete");
-              return;
-            }
-            if (d.syncStatus === "FAILED") {
-              toast.error(d.syncMessage || "Sync failed");
-              return;
-            }
-          }
+
+        // Terminal, not transient: the status route goes through `upstreamFetch`, which
+        // already renews the access token proactively and retries once on a 401. Reaching
+        // here means that refresh failed, so the session is genuinely over — retrying
+        // client-side would only re-run the refresh that just failed.
+        if (res.status === 401) {
+          if (!isStale()) failSync("Your session expired. Please sign in again.");
+          return;
+        }
+
+        if (!res.ok) throw new Error(`Status check failed (${res.status})`);
+
+        const json = await res.json().catch(() => null);
+        // Accept either envelope shape — reading `data[0]` unconditionally used to degrade
+        // into a silent no-op loop if upstream ever returned a bare object.
+        const d = (Array.isArray(json?.data) ? json.data[0] : json?.data) as
+          | ExposureStatusPayload
+          | undefined;
+        if (!d) throw new Error("Unexpected status payload.");
+
+        consecutiveFailures = 0;
+        if (isStale()) return;
+
+        setExposure((p) => ({
+          hasCredentials: d.hasCredentials ?? p.hasCredentials,
+          syncStatus: d.syncStatus ?? p.syncStatus,
+          syncMessage: d.syncMessage ?? null,
+          lastSyncedAt: d.lastSyncedAt ?? p.lastSyncedAt,
+        }));
+
+        if (d.syncStatus === "SUCCESS") {
+          setSlowSync(false);
+          toast.success(d.syncMessage || "Sync complete");
+          return;
+        }
+        if (d.syncStatus === "FAILED") {
+          setSlowSync(false);
+          toast.error(d.syncMessage || "Sync failed");
+          return;
         }
       } catch {
-        // transient network error — keep polling
+        // Ride out transient blips, but don't poll a dead endpoint indefinitely.
+        consecutiveFailures += 1;
+        if (consecutiveFailures >= MAX_CONSECUTIVE_POLL_FAILURES) {
+          if (!isStale()) failSync("Lost contact with the sync service. Please try again.");
+          return;
+        }
       }
-      await new Promise((r) => setTimeout(r, 2500));
+
+      await sleep(delay);
     }
-  }, []);
+  }, [failSync]);
 
   // Hydrate the Exposure connection state on load so "Connected" + the last sync result
   // persist across reloads. Resume polling if a sync was still in progress.
@@ -489,9 +581,11 @@ export default function ImportSchedulePage() {
     }
   };
 
-  // Re-sync from the connected Exposure card (reuses POST /sync + polling).
+  // Re-sync from the connected Exposure card (reuses POST /sync + polling). The
+  // IN_PROGRESS flip happens only after the backend accepts the start — setting it
+  // up-front showed "Syncing…" for syncs the backend had rejected as duplicates.
   const handleExposureSync = async () => {
-    setExposure((p) => ({ ...p, syncStatus: "IN_PROGRESS", syncMessage: null }));
+    setResyncing(true);
     try {
       const syncRes = await fetch(routes.api.proxyExposureSync, { method: "POST" });
       if (!syncRes.ok) {
@@ -500,10 +594,13 @@ export default function ImportSchedulePage() {
         setExposure((p) => ({ ...p, syncStatus: "FAILED", syncMessage: syncJson?.message ?? null }));
         return;
       }
+      setExposure((p) => ({ ...p, syncStatus: "IN_PROGRESS", syncMessage: null }));
       pollExposureStatus();
     } catch {
       toast.error("Something went wrong. Please try again.");
       setExposure((p) => ({ ...p, syncStatus: "FAILED", syncMessage: null }));
+    } finally {
+      setResyncing(false);
     }
   };
 
@@ -735,15 +832,21 @@ export default function ImportSchedulePage() {
                                     : "Not Connected"}
                           </span>
                         </div>
+                        {/* Advisory only — polling is still running, nothing has failed. */}
+                        {isSyncing && slowSync && (
+                          <p className="text-sm text-white/60">
+                            This is taking longer than usual, still checking…
+                          </p>
+                        )}
                       </div>
                     </div>
                     {isExposure ? (
                       isConnected ? (
                         <Button
                           variant="ghost"
-                          label={isSyncing ? "Syncing…" : "Re-sync"}
+                          label={isSyncing || resyncing ? "Syncing…" : "Re-sync"}
                           onClick={handleExposureSync}
-                          disabled={isSyncing}
+                          disabled={isSyncing || resyncing}
                           fullWidth
                         />
                       ) : (

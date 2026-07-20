@@ -1,6 +1,6 @@
 import { config } from "@/config";
 import { routes } from "@/utils/routes";
-import { getAccessToken } from "@/utils/auth/cookies";
+import { upstreamFetch } from "@/utils/auth/upstream";
 
 export const runtime = "nodejs";
 
@@ -16,18 +16,11 @@ export async function PATCH(
     );
   }
 
-  const accessToken = await getAccessToken();
-  if (!accessToken) {
-    return Response.json({ message: "Unauthorized." }, { status: 401 });
-  }
-
   try {
     const { id } = await params;
     const contentType = request.headers.get("content-type") ?? "";
     let upstreamBody: BodyInit;
-    const upstreamHeaders: Record<string, string> = {
-      Authorization: `Bearer ${accessToken}`,
-    };
+    const upstreamHeaders: Record<string, string> = {};
 
     if (contentType.includes("multipart/form-data")) {
       upstreamBody = await request.formData();
@@ -36,7 +29,7 @@ export async function PATCH(
       upstreamHeaders["Content-Type"] = "application/json";
     }
 
-    const upstream = await fetch(
+    const upstream = await upstreamFetch(
       `${config.apiUrl}${routes.api.updateSchedule(id)}`,
       { method: "PATCH", headers: upstreamHeaders, body: upstreamBody }
     );
@@ -65,18 +58,12 @@ export async function DELETE(
     );
   }
 
-  const accessToken = await getAccessToken();
-  if (!accessToken) {
-    return Response.json({ message: "Unauthorized." }, { status: 401 });
-  }
-
   try {
     const { id } = await params;
-    const upstream = await fetch(
+    const upstream = await upstreamFetch(
       `${config.apiUrl}${routes.api.deleteSchedule(id)}`,
       {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${accessToken}` },
       }
     );
 

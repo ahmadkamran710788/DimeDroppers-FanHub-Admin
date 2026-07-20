@@ -18,6 +18,9 @@ interface ApiCallParams {
   // Scoped cache invalidation: only evict cache entries whose key contains one of
   // these strings. Avoids wiping unrelated caches on every mutation.
   invalidates?: string[];
+  // Internal. Set on the single post-refresh retry so an endpoint that keeps
+  // returning 401 signs the user out instead of recursing forever.
+  _isRetry?: boolean;
 }
 
 interface ApiResponse<T = unknown> {
@@ -26,14 +29,6 @@ interface ApiResponse<T = unknown> {
   status: number | null;
   message: string;
 }
-
-const getCookie = (name: string) => {
-  if (typeof document === "undefined") return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift();
-  return null;
-};
 
 const formatBackendMessage = (msg: unknown): string => {
   if (!msg || typeof msg !== "string") return "";
@@ -101,6 +96,7 @@ export default async function apiCall<T = unknown>({
   showSuccessToast = false,
   successMessage,
   invalidates,
+  _isRetry = false,
 }: ApiCallParams): Promise<ApiResponse<T>> {
   const cacheKey = `${method}:${endpoint}:${JSON.stringify(data || {})}`;
 
@@ -109,15 +105,15 @@ export default async function apiCall<T = unknown>({
   }
 
   try {
-    const token = getCookie("accessToken");
-
+    // No Authorization header here by design: the auth cookies are httpOnly, so the
+    // browser cannot read them. Every endpoint used with `apiCall` is an /api/*
+    // route handler, which attaches the Bearer token server-side via `upstreamFetch`.
     const axiosConfig: AxiosRequestConfig = {
       url: endpoint.startsWith("/api/") ? endpoint : `${BASE_URL}${endpoint}`,
       method,
       headers: {
         "Content-Type": "application/ld+json",
         Accept: "application/ld+json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers,
       },
     };
@@ -181,11 +177,14 @@ export default async function apiCall<T = unknown>({
           break;
         case 401: {
           // Silently attempt a token refresh then retry the original request once.
-          const refreshed = await attemptTokenRefresh();
+          // `_isRetry` bounds this to exactly one attempt: the retry already carries
+          // a freshly refreshed token, so a second 401 means the session is dead
+          // rather than stale.
+          const refreshed = !_isRetry && (await attemptTokenRefresh());
           if (refreshed) {
             // Retry without propagating the 401 further — don't pass invalidates to
             // avoid a double-invalidation on the retry.
-            return apiCall({ endpoint, method, data, headers, showSuccessToast, successMessage });
+            return apiCall({ endpoint, method, data, headers, showSuccessToast, successMessage, _isRetry: true });
           }
           // Genuine expiry: refresh really failed. Sign the user out gracefully
           // instead of leaving them stuck on a toast with stale UI.

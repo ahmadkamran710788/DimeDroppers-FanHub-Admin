@@ -1,6 +1,6 @@
 import { config } from "@/config";
 import { routes } from "@/utils/routes";
-import { getAccessToken } from "@/utils/auth/cookies";
+import { upstreamFetch } from "@/utils/auth/upstream";
 
 export const runtime = "nodejs";
 
@@ -13,21 +13,13 @@ export async function GET(request: Request) {
     );
   }
 
-  const accessToken = await getAccessToken();
-  if (!accessToken) {
-    return Response.json({ message: "Unauthorized." }, { status: 401 });
-  }
-
   try {
     const search = new URL(request.url).search;
-    const upstream = await fetch(
+    const upstream = await upstreamFetch(
       `${config.apiUrl}${routes.api.listSchedules}${search}`,
       {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
+        headers: { "Content-Type": "application/json" },
       }
     );
 
@@ -52,17 +44,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const accessToken = await getAccessToken();
-  if (!accessToken) {
-    return Response.json({ message: "Unauthorized." }, { status: 401 });
-  }
-
   try {
     const contentType = request.headers.get("content-type") ?? "";
     let upstreamBody: BodyInit;
-    const upstreamHeaders: Record<string, string> = {
-      Authorization: `Bearer ${accessToken}`,
-    };
+    const upstreamHeaders: Record<string, string> = {};
 
     if (contentType.includes("multipart/form-data")) {
       upstreamBody = await request.formData();
@@ -72,7 +57,7 @@ export async function POST(request: Request) {
       upstreamHeaders["Content-Type"] = "application/json";
     }
 
-    const upstream = await fetch(
+    const upstream = await upstreamFetch(
       `${config.apiUrl}${routes.api.createSchedule}`,
       { method: "POST", headers: upstreamHeaders, body: upstreamBody }
     );

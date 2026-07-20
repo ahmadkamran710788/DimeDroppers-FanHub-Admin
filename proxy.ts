@@ -5,17 +5,25 @@ import type { NextRequest } from "next/server";
 // auth guard before routes render: unauthenticated users are sent to sign-in,
 // and signed-in users are kept out of the auth pages.
 //
-// The accessToken cookie is httpOnly; presence is a coarse signal only. Real
-// authorization is enforced upstream by the API (and `apiRequest` calls
-// `unauthorized()` on a 401). An expired access token still passes this check —
-// the API rejects the request and the client can refresh.
+// The gate is the *refresh* token, not the access token. The refresh token is the
+// real session (30 days); the access token is a short-lived credential that goes
+// stale routinely and is renewed transparently by `upstreamFetch`
+// (utils/auth/upstream.ts) inside the /api route handlers.
+//
+// Gating on the access token instead would log the user out every time it expired,
+// because this check runs before Next renders anything — so the client-side code
+// that could refresh never gets to run.
+//
+// Presence is a coarse signal only: cookies are httpOnly and real authorization is
+// enforced upstream. A dead refresh token still reaches the API, which rejects it;
+// `upstreamFetch` then clears the cookies so the next navigation lands here.
 
 const SETUP_WIZARD_DEFAULT = "/setup-wizard/organization-details";
 const SIGN_IN = "/auth/sign-in";
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hasSession = request.cookies.has("accessToken");
+  const hasSession = request.cookies.has("refreshToken");
   const isAuthPage = pathname.startsWith("/auth");
 
   if (!hasSession && !isAuthPage) {

@@ -29,7 +29,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // keeps the user logged in without an extra sign-in.
   useEffect(() => {
     fetch(routes.api.proxyAuthMe)
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => {
+        if (res.ok) return res.json();
+        // A 401 here means `upstreamFetch` already tried to refresh and failed, so
+        // the session is genuinely over. Send the user to sign-in instead of
+        // rendering a signed-in shell with a blank org name. Never redirect from
+        // the auth pages themselves — AuthProvider is mounted in the root layout,
+        // so that would loop.
+        if (
+          res.status === 401 &&
+          !window.location.pathname.startsWith("/auth")
+        ) {
+          window.location.assign(routes.ui.signIn);
+        }
+        return null;
+      })
       .then((json) => {
         const organization = json?.data as AuthOrganization | undefined;
         if (organization?.id) {

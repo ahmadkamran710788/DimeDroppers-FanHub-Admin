@@ -1,5 +1,5 @@
 import { config } from "@/config";
-import { getAccessToken } from "@/utils/auth/cookies";
+import { upstreamFetch } from "@/utils/auth/upstream";
 import type { AuthOrganization } from "@/utils/types/auth";
 
 export const runtime = "nodejs";
@@ -12,11 +12,6 @@ export const runtime = "nodejs";
  * accessToken cookie — the client never touches the token directly.
  */
 export async function GET() {
-  const token = await getAccessToken();
-  if (!token) {
-    return Response.json({ message: "Not authenticated." }, { status: 401 });
-  }
-
   if (!config.apiUrl) {
     return Response.json(
       { message: "Server is missing NEXT_PUBLIC_API_URL configuration." },
@@ -25,8 +20,7 @@ export async function GET() {
   }
 
   try {
-    const upstream = await fetch(`${config.apiUrl}/fanhub/org-auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+    const upstream = await upstreamFetch(`${config.apiUrl}/fanhub/org-auth/me`, {
       cache: "no-store",
     });
 

@@ -128,7 +128,11 @@ export default function RowActionsMenu({ items, ariaLabel, className }: RowActio
             ref={panelRef}
             role="menu"
             aria-label={ariaLabel}
-            className="fixed min-w-[160px] bg-[#0B1C2D] border border-white/10 rounded-lg shadow-xl overflow-hidden"
+            // `flex flex-col` blockifies the items. Without it they stay
+            // `display: inline-block` (preflight never sets a display on
+            // `button`), and a shrink-to-fit fixed box sizes to the SUM of its
+            // inline children rather than the widest one.
+            className="fixed min-w-[160px] flex flex-col bg-[#0B1C2D] border border-white/10 rounded-lg shadow-xl overflow-hidden"
             style={{
               top: coords?.top ?? 0,
               left: coords?.left ?? 0,

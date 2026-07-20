@@ -1,6 +1,6 @@
 import { config } from "@/config";
 import { routes } from "@/utils/routes";
-import { getAccessToken } from "@/utils/auth/cookies";
+import { upstreamFetch } from "@/utils/auth/upstream";
 
 export const runtime = "nodejs";
 
@@ -16,22 +16,14 @@ export async function GET(
     );
   }
 
-  const accessToken = await getAccessToken();
-  if (!accessToken) {
-    return Response.json({ message: "Unauthorized." }, { status: 401 });
-  }
-
   try {
     const { id } = await params;
     const search = new URL(request.url).search;
-    const upstream = await fetch(
+    const upstream = await upstreamFetch(
       `${config.apiUrl}${routes.api.exposureEventVenues(id)}${search}`,
       {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
+        headers: { "Content-Type": "application/json" },
       }
     );
 
