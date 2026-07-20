@@ -29,21 +29,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // keeps the user logged in without an extra sign-in.
   useEffect(() => {
     fetch(routes.api.proxyAuthMe)
-      .then((res) => {
-        if (res.ok) return res.json();
-        // A 401 here means `upstreamFetch` already tried to refresh and failed, so
-        // the session is genuinely over. Send the user to sign-in instead of
-        // rendering a signed-in shell with a blank org name. Never redirect from
-        // the auth pages themselves — AuthProvider is mounted in the root layout,
-        // so that would loop.
-        if (
-          res.status === 401 &&
-          !window.location.pathname.startsWith("/auth")
-        ) {
-          window.location.assign(routes.ui.signIn);
-        }
-        return null;
-      })
+      // A 401 is deliberately NOT treated as "session over" here. The upstream
+      // `fanhub/org-auth/me` endpoint does not exist (404), so this route always
+      // fails and `org` is always null — a pre-existing bug, unrelated to token
+      // expiry. Redirecting on it would sign everyone out on every page load.
+      // Session expiry is handled by `proxy` (refresh-token gate) and by
+      // `upstreamFetch`, which renews the access token transparently.
+      .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         const organization = json?.data as AuthOrganization | undefined;
         if (organization?.id) {
