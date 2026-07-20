@@ -1,7 +1,8 @@
 "use client";
 
 import { cn } from "@/utils/cn";
-import { type ReactNode } from "react";
+import { Eye, EyeOff } from "lucide-react";
+import { useState, type ReactNode } from "react";
 
 interface InputProps {
   label: string;
@@ -30,6 +31,9 @@ export default function Input({
   className,
   labelClassName,
 }: InputProps) {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === "password";
+
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <label htmlFor={name} className={cn("text-base font-medium text-midnight-navy", labelClassName)}>
@@ -44,7 +48,7 @@ export default function Input({
         <input
           id={name}
           name={name}
-          type={type}
+          type={isPassword && showPassword ? "text" : type}
           value={value}
           onChange={onChange}
           placeholder={placeholder}
@@ -55,9 +59,22 @@ export default function Input({
             "focus:border-steel-blue transition-colors",
             "placeholder:text-[rgba(11,28,45,0.4)] disabled:opacity-50",
             icon && "pl-10",
+            isPassword && "pr-11",
             error && "border-error focus:border-error"
           )}
         />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            disabled={disabled}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-pressed={showPassword}
+            className="absolute right-3 w-6 h-6 flex items-center justify-center text-midnight-navy/60 hover:text-midnight-navy transition-colors disabled:opacity-50"
+          >
+            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
+        )}
       </div>
       {error && <p className="text-sm text-error">{error}</p>}
     </div>

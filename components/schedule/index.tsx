@@ -3,6 +3,7 @@
 import AddGameModal from "@/components/schedule/AddGameModal";
 import DeleteGameModal from "@/components/schedule/DeleteGameModal";
 import ExposureEventModal from "@/components/schedule/ExposureEventModal";
+import RowActionsMenu from "@/components/common/RowActionsMenu";
 import { cn } from "@/utils/cn";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
@@ -14,7 +15,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  MoreVertical,
   Plus,
   Search,
   SlidersHorizontal,
@@ -25,7 +25,7 @@ import {
   Printer,
   Layers,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -155,19 +155,8 @@ interface GameRowProps {
 }
 
 function GameRow({ game, onEdit, onDelete }: GameRowProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const { day, month, weekday } = parseGameDate(game.start);
   const { time, tz } = formatTime(game.start, game.isAllDay);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [menuOpen]);
 
   const statusColor = game.status === "cancelled" ? "bg-red-400" : game.status === "tentative" ? "bg-yellow-400" : "bg-green-400";
   const statusText = game.status === "cancelled" ? "Cancelled" : game.status === "tentative" ? "Tentative" : "Scheduled";
@@ -238,34 +227,13 @@ function GameRow({ game, onEdit, onDelete }: GameRowProps) {
       </div>
       {/* ACTIONS */}
       <div className="w-20 px-2 py-4 bg-white/5 flex justify-center items-center">
-        <div className="relative" ref={menuRef}>
-          <button
-            type="button"
-            onClick={() => setMenuOpen((v) => !v)}
-            className="size-10 px-2 bg-white/10 rounded-lg outline outline-1 outline-white/10 backdrop-blur-xl flex items-center justify-center hover:bg-white/20 transition-colors"
-            aria-label="Game actions"
-          >
-            <MoreVertical className="w-4 h-4 text-white" strokeWidth={2} />
-          </button>
-          {menuOpen && (
-            <div className="absolute right-0 top-full mt-1 z-20 bg-[#0B1C2D] border border-white/10 rounded-lg shadow-xl overflow-hidden">
-              <button
-                type="button"
-                onClick={() => { setMenuOpen(false); onEdit(game); }}
-                className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-white/10 transition-colors whitespace-nowrap"
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={() => { setMenuOpen(false); onDelete(game); }}
-                className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-white/10 transition-colors whitespace-nowrap"
-              >
-                Delete
-              </button>
-            </div>
-          )}
-        </div>
+        <RowActionsMenu
+          ariaLabel="Game actions"
+          items={[
+            { label: "Edit", onSelect: () => onEdit(game) },
+            { label: "Delete", onSelect: () => onDelete(game), variant: "destructive" },
+          ]}
+        />
       </div>
     </div>
   );
@@ -308,18 +276,6 @@ function ExposureEventRow({
   event: ExposureEvent;
   onOpenView: (event: ExposureEvent, view: ExposureEventView) => void;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [menuOpen]);
-
   const location = [event.city, event.state].filter(Boolean).join(", ") || "—";
 
   return (
@@ -356,33 +312,13 @@ function ExposureEventRow({
       </div>
       {/* ACTIONS */}
       <div className="w-20 px-2 py-4 bg-white/5 flex justify-center items-center">
-        <div className="relative" ref={menuRef}>
-          <button
-            type="button"
-            onClick={() => setMenuOpen((v) => !v)}
-            className="size-10 px-2 bg-white/10 rounded-lg outline outline-1 outline-white/10 backdrop-blur-xl flex items-center justify-center hover:bg-white/20 transition-colors"
-            aria-label="Event actions"
-          >
-            <MoreVertical className="w-4 h-4 text-white" strokeWidth={2} />
-          </button>
-          {menuOpen && (
-            <div className="absolute right-0 top-full mt-1 z-20 min-w-[160px] bg-[#0B1C2D] border border-white/10 rounded-lg shadow-xl overflow-hidden">
-              {EVENT_MENU.map((m) => (
-                <button
-                  key={m.view}
-                  type="button"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onOpenView(event, m.view);
-                  }}
-                  className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-white/10 transition-colors whitespace-nowrap"
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <RowActionsMenu
+          ariaLabel="Event actions"
+          items={EVENT_MENU.map((m) => ({
+            label: m.label,
+            onSelect: () => onOpenView(event, m.view),
+          }))}
+        />
       </div>
     </div>
   );

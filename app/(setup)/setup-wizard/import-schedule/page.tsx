@@ -23,6 +23,7 @@ import {
   Database,
   Download,
   Eye,
+  EyeOff,
   HelpCircle,
   Lightbulb,
   ListChecks,
@@ -183,6 +184,7 @@ export default function ImportSchedulePage() {
   const [activePlatform, setActivePlatform] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
+  const [showApiSecret, setShowApiSecret] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [exposureErrors, setExposureErrors] = useState<{ apiKey?: string; apiSecret?: string }>({});
   const [exposure, setExposure] = useState<ExposureState>({
@@ -877,19 +879,30 @@ export default function ImportSchedulePage() {
               <label htmlFor="apiSecret" className="text-base font-medium text-midnight-navy">
                 Secret Key
               </label>
-              <input
-                id="apiSecret"
-                type="password"
-                value={apiSecret}
-                onChange={(e) => {
-                  setApiSecret(e.target.value);
-                  if (exposureErrors.apiSecret) setExposureErrors((prev) => ({ ...prev, apiSecret: "" }));
-                }}
-                placeholder="Secret Key"
-                style={{ boxShadow: "inset 0px 1px 0px 0px rgba(255,255,255,0.16)", backdropFilter: "blur(64px)" }}
-                className={`w-full h-12 rounded-[8px] bg-white text-midnight-navy text-base font-medium px-4 py-3 border-2 outline-none transition-colors placeholder:text-[rgba(11,28,45,0.4)] ${exposureErrors.apiSecret ? "border-error" : "border-border-input focus:border-steel-blue"
-                  }`}
-              />
+              <div className="relative flex items-center">
+                <input
+                  id="apiSecret"
+                  type={showApiSecret ? "text" : "password"}
+                  value={apiSecret}
+                  onChange={(e) => {
+                    setApiSecret(e.target.value);
+                    if (exposureErrors.apiSecret) setExposureErrors((prev) => ({ ...prev, apiSecret: "" }));
+                  }}
+                  placeholder="Secret Key"
+                  style={{ boxShadow: "inset 0px 1px 0px 0px rgba(255,255,255,0.16)", backdropFilter: "blur(64px)" }}
+                  className={`w-full h-12 rounded-[8px] bg-white text-midnight-navy text-base font-medium px-4 py-3 pr-11 border-2 outline-none transition-colors placeholder:text-[rgba(11,28,45,0.4)] ${exposureErrors.apiSecret ? "border-error" : "border-border-input focus:border-steel-blue"
+                    }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowApiSecret((prev) => !prev)}
+                  aria-label={showApiSecret ? "Hide secret key" : "Show secret key"}
+                  aria-pressed={showApiSecret}
+                  className="absolute right-3 w-6 h-6 flex items-center justify-center text-midnight-navy/60 hover:text-midnight-navy transition-colors"
+                >
+                  {showApiSecret ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
               {exposureErrors.apiSecret && <p className="text-sm text-error">{exposureErrors.apiSecret}</p>}
             </div>
           )}

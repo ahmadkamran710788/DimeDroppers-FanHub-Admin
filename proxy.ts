@@ -31,7 +31,16 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   // Run on everything except API routes, Next internals, and static assets.
+  //
+  // Exclude all of `_next` and `__nextjs`, not just `_next/static` and
+  // `_next/image`. The dev server's HMR socket (`/_next/webpack-hmr`) and the
+  // error-overlay endpoints (`/__nextjs_original-stack-frame`) are otherwise
+  // matched here and, while signed out, redirected to sign-in — which kills
+  // Fast Refresh and makes the dev client eventually force a full reload.
+  //
+  // Note that Next still runs proxy for `_next/data` routes even though they
+  // are excluded here, so page-level protection is not weakened.
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|images|icons|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!api|_next|__nextjs|favicon.ico|images|icons|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
