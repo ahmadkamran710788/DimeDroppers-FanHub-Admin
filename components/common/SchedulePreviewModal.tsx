@@ -27,7 +27,8 @@ export interface ScrapedSchool {
   season: string | null;
   overallRecord: string | null;
   logoUrl: string | null;
-  scheduleEvents: ScrapedEvent[];
+  // Absent when the response carries no games — always read through `?? []`.
+  scheduleEvents?: ScrapedEvent[] | null;
 }
 
 interface SchedulePreviewModalProps {
@@ -75,6 +76,8 @@ export default function SchedulePreviewModal({
 }: SchedulePreviewModalProps) {
   if (!school) return null;
 
+  const events = school.scheduleEvents ?? [];
+
   const subtitle = [
     school.teamName ?? school.mascot,
     school.sportsType,
@@ -112,13 +115,12 @@ export default function SchedulePreviewModal({
 
       {/* Count */}
       <p className="text-sm font-medium text-midnight-navy/60">
-        {school.scheduleEvents.length}{" "}
-        {school.scheduleEvents.length === 1 ? "game" : "games"} found
+        {events.length} {events.length === 1 ? "game" : "games"} found
       </p>
 
       {/* Events — scrollable list */}
       <div className="flex flex-col gap-2 max-h-[420px] overflow-y-auto pr-1">
-        {school.scheduleEvents.map((ev) => {
+        {events.map((ev) => {
           const homeAway = ev.homeAway ? HOME_AWAY_LABEL[ev.homeAway] : null;
           return (
             <div

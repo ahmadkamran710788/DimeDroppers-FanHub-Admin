@@ -66,6 +66,7 @@ export interface SavedSchool {
   fanWallLink: string | null;
   chatLink: string | null;
 
-  // Step 2 — Schedule
-  scheduleEvents: ScrapedEvent[];
+  // Step 2 — Schedule. Omitted entirely by the API when the school has no imported
+  // games, so callers must treat it as possibly absent rather than an empty array.
+  scheduleEvents?: ScrapedEvent[] | null;
 }

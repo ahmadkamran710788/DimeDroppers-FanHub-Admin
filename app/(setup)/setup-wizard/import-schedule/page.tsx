@@ -159,7 +159,8 @@ function pollDelayFor(elapsedMs: number): number {
 type SummaryStat = { label: string; value: string; icon: typeof Database };
 
 function summaryFromSchool(school: ScrapedSchool): SummaryStat[] {
-  const times = school.scheduleEvents
+  const events = school.scheduleEvents ?? [];
+  const times = events
     .map((e) => new Date(e.start).getTime())
     .filter((t) => !Number.isNaN(t));
   const fmt = (t: number) =>
@@ -171,7 +172,7 @@ function summaryFromSchool(school: ScrapedSchool): SummaryStat[] {
     { label: "Schedule Source", value: "MaxPreps", icon: Database },
     { label: "Sport Detected", value: school.sportsType || "—", icon: ListChecks },
     { label: "Season Detected", value: school.season || "—", icon: Calendar },
-    { label: "Total Games", value: `${school.scheduleEvents.length} Games`, icon: ListChecks },
+    { label: "Total Games", value: `${events.length} Games`, icon: ListChecks },
     { label: "Date Range", value: dateRange, icon: CalendarDays },
     { label: "Overall Record", value: school.overallRecord || "—", icon: RefreshCw },
   ];
@@ -260,7 +261,8 @@ export default function ImportSchedulePage() {
   // Preview so navigating Back to this step reflects the previously-saved schedule.
   // Reads from SetupContext (fetched once for all wizard steps, no redundant network call).
   useEffect(() => {
-    if (!savedSchool || savedSchool.scheduleEvents.length === 0) return;
+    const events = savedSchool?.scheduleEvents ?? [];
+    if (!savedSchool || events.length === 0) return;
     setScrapedSchool({
       id: savedSchool.id,
       name: savedSchool.name ?? "",
@@ -270,7 +272,7 @@ export default function ImportSchedulePage() {
       season: savedSchool.season,
       overallRecord: savedSchool.overallRecord,
       logoUrl: savedSchool.logoUrl,
-      scheduleEvents: savedSchool.scheduleEvents,
+      scheduleEvents: events,
     });
   }, [savedSchool]);
 
