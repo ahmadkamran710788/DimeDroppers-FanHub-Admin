@@ -12,6 +12,7 @@ import Toggle from "@/components/common/Toggle";
 import WizardFooter from "@/components/common/WizardFooter";
 import { cn } from "@/utils/cn";
 import { useSetup } from "@/context/setup";
+import { extractApiErrorMessage } from "@/utils/api-error";
 import { routes } from "@/utils/routes";
 import {
   Calendar,
@@ -557,15 +558,22 @@ export default function ImportSchedulePage() {
       });
       const settingsJson = await settingsRes.json().catch(() => null);
       if (!settingsRes.ok) {
-        toast.error(settingsJson?.message || "Couldn't save your Exposure credentials.");
+        toast.error(
+          extractApiErrorMessage(settingsJson, "Couldn't save your Exposure credentials.")
+        );
         return;
       }
 
-      // 2) Start the sync.
-      const syncRes = await fetch(routes.api.proxyExposureSync, { method: "POST" });
+      // 2) Start the sync. The empty JSON body is deliberate — the upstream schema
+      // validates the body itself, so a bodyless POST is rejected outright.
+      const syncRes = await fetch(routes.api.proxyExposureSync, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
       if (!syncRes.ok) {
         const syncJson = await syncRes.json().catch(() => null);
-        toast.error(syncJson?.message || "Couldn't start the Exposure sync.");
+        toast.error(extractApiErrorMessage(syncJson, "Couldn't start the Exposure sync."));
         // Credentials were saved — reflect the connection even if the sync didn't start.
         setExposure((p) => ({ ...p, hasCredentials: true }));
         return;
@@ -589,11 +597,16 @@ export default function ImportSchedulePage() {
   const handleExposureSync = async () => {
     setResyncing(true);
     try {
-      const syncRes = await fetch(routes.api.proxyExposureSync, { method: "POST" });
+      const syncRes = await fetch(routes.api.proxyExposureSync, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
       if (!syncRes.ok) {
         const syncJson = await syncRes.json().catch(() => null);
-        toast.error(syncJson?.message || "Couldn't start the Exposure sync.");
-        setExposure((p) => ({ ...p, syncStatus: "FAILED", syncMessage: syncJson?.message ?? null }));
+        const message = extractApiErrorMessage(syncJson, "Couldn't start the Exposure sync.");
+        toast.error(message);
+        setExposure((p) => ({ ...p, syncStatus: "FAILED", syncMessage: message }));
         return;
       }
       setExposure((p) => ({ ...p, syncStatus: "IN_PROGRESS", syncMessage: null }));
