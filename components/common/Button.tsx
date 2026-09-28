@@ -10,6 +10,8 @@ interface ButtonProps {
   label: string;
   onClick?: () => void;
   icon?: ReactNode;
+  // Which side of the label the icon renders on.
+  iconPosition?: "start" | "end";
   disabled?: boolean;
   type?: "button" | "submit" | "reset";
   fullWidth?: boolean;
@@ -21,6 +23,7 @@ export default function Button({
   label,
   onClick,
   icon,
+  iconPosition = "start",
   disabled = false,
   type = "button",
   fullWidth = false,
@@ -44,8 +47,9 @@ export default function Button({
         className
       )}
     >
-      {icon && <span className="w-5 h-5 flex items-center justify-center">{icon}</span>}
+      {icon && iconPosition === "start" && <span className="w-5 h-5 flex items-center justify-center">{icon}</span>}
       {label}
+      {icon && iconPosition === "end" && <span className="w-5 h-5 flex items-center justify-center">{icon}</span>}
     </button>
   );
 }

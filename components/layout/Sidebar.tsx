@@ -15,7 +15,7 @@ const NAV_MAIN = [
 
 const NAV_BOTTOM = [
   { icon: "/icons/icon-calendar.svg", label: "Schedule", href: routes.ui.schedule },
-  { icon: "/icons/icon-bolt.svg", label: "Activations", href: "#" },
+  { icon: "/icons/icon-bolt.svg", label: "Activations", href: routes.ui.activations },
   { icon: "/icons/icon-users.svg", label: "Teams", href: "#" },
   { icon: "/icons/icon-media.svg", label: "Media", href: "#" },
   { icon: "/icons/icon-business.svg", label: "Sponsors", href: "#" },
@@ -58,8 +58,9 @@ function NavItem({
       href={href}
       className={cn(
         "flex items-center gap-2 pl-[12px] pr-4 py-4 rounded-[8px] text-base font-medium text-white transition-all",
-        active ? "bg-[rgba(255,255,255,0.08)]" : "text-white/80 hover:bg-[rgba(255,255,255,0.08)] hover:text-white"
+        !active && "text-white/80 hover:bg-[rgba(255,255,255,0.08)] hover:text-white"
       )}
+      style={active ? { background: "var(--gradient-cta)" } : undefined}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={icon} alt="" width={24} height={24} className="shrink-0" />
@@ -77,9 +78,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { savedSchool } = useSetup();
   const { org } = useAuth();
-  const activeStep = pathname.includes("setup-wizard")
-    ? urlToStepNumber(pathname)
-    : urlToStepNumber(getResumeStep(savedSchool));
+  const isWizardRoute = pathname.includes("setup-wizard");
+  const activeStep = urlToStepNumber(pathname);
 
   const sidebarContent = (
     <aside
@@ -103,19 +103,16 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         ))}
 
         {/* Setup Wizard CTA */}
-        <Link
+        <NavItem
+          icon="/icons/icon-wand-stars.svg"
+          label="Setup Wizard"
           href={getResumeStep(savedSchool)}
-          className="flex items-center gap-2 pl-[12px] pr-4 py-4 rounded-[8px] text-base font-medium text-white"
-          style={{ background: "var(--gradient-cta)" }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/icon-wand-stars.svg" alt="" width={24} height={24} className="shrink-0" />
-          Setup Wizard
-        </Link>
+          active={isWizardRoute}
+        />
 
         {/* Wizard step sub-items — display-only progress, not clickable. Navigation
             between steps happens through the bottom WizardFooter (Back / Next). */}
-        {WIZARD_STEPS.map((step) => {
+        {isWizardRoute && WIZARD_STEPS.map((step) => {
           const isActive = step.number === activeStep;
           const isCompleted = step.number < activeStep;
           return (
@@ -148,7 +145,11 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
         {/* Main nav items */}
         {NAV_BOTTOM.map((item) => (
-          <NavItem key={item.label} {...item} active={pathname === item.href} />
+          <NavItem
+            key={item.label}
+            {...item}
+            active={item.href !== "#" && pathname.startsWith(item.href)}
+          />
         ))}
 
         {/* Help Center */}
