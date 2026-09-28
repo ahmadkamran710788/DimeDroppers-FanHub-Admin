@@ -16,7 +16,7 @@ const NAV_MAIN = [
 const NAV_BOTTOM = [
   { icon: "/icons/icon-calendar.svg", label: "Schedule", href: routes.ui.schedule },
   { icon: "/icons/icon-bolt.svg", label: "Activations", href: routes.ui.activations },
-  { icon: "/icons/icon-users.svg", label: "Teams", href: "#" },
+  { icon: "/icons/icon-users.svg", label: "Teams", href: routes.ui.teams },
   { icon: "/icons/icon-media.svg", label: "Media", href: "#" },
   { icon: "/icons/icon-business.svg", label: "Sponsors", href: "#" },
   { icon: "/icons/icon-donations.svg", label: "Donations", href: "#" },
