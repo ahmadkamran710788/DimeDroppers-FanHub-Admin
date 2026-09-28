@@ -373,7 +373,7 @@ export default function OrganizationDetailsPage() {
       await refreshSchool();
 
       toast.success(existingSchoolId ? "School updated" : "School created");
-      router.push(routes.ui.setupWizard.importSchedule);
+      router.push(routes.ui.setupWizard.chooseActivations);
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {

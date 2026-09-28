@@ -5,8 +5,9 @@ import Button from "@/components/common/Button";
 interface WizardFooterProps {
   onBack?: () => void;
   onSaveExit?: () => void;
-  primaryLabel: string;
-  onPrimary: () => void;
+  // Optional so a page can show just Back / Save & Exit (e.g. Schedule → Import Schedule).
+  primaryLabel?: string;
+  onPrimary?: () => void;
   primaryDisabled?: boolean;
 }
 
@@ -21,8 +22,10 @@ export default function WizardFooter({
     <div className="fixed bottom-0 left-0 lg:left-[236px] right-0 h-20 flex items-center justify-between px-4 lg:px-10 bg-[rgba(11,28,45,0.01)] backdrop-blur-[48px] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)]">
       {onBack ? <Button variant="ghost" label="Back" onClick={onBack} /> : <span />}
       <div className="flex gap-4">
-        {onSaveExit && <Button variant="ghost" label="Save & Exit" onClick={onSaveExit} />}
-        <Button variant="cta" label={primaryLabel} onClick={onPrimary} disabled={primaryDisabled} />
+        {onSaveExit && <Button className="cursor-pointer" variant="ghost" label="Save & Exit" onClick={onSaveExit} />}
+        {primaryLabel && onPrimary && (
+          <Button variant="cta" label={primaryLabel} onClick={onPrimary} disabled={primaryDisabled} />
+        )}
       </div>
     </div>
   );

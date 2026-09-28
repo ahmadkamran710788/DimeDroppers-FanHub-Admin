@@ -7,9 +7,7 @@ import SchedulePreviewModal, {
   type ScrapedSchool,
 } from "@/components/common/SchedulePreviewModal";
 import SectionCard from "@/components/common/SectionCard";
-import StepIndicator from "@/components/common/StepIndicator";
 import Toggle from "@/components/common/Toggle";
-import WizardFooter from "@/components/common/WizardFooter";
 import { cn } from "@/utils/cn";
 import { useSetup } from "@/context/setup";
 import { extractApiErrorMessage } from "@/utils/api-error";
@@ -33,7 +31,6 @@ import {
   RefreshCw,
   XCircle,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -198,8 +195,12 @@ function PlatformBadge({ logo, size }: { logo: PlatformLogo; size: 48 | 64 }) {
   );
 }
 
-export default function ImportSchedulePage() {
-  const router = useRouter();
+/**
+ * Import Schedule body — upload (A), .ics sync (B), API connections (C), Import Summary
+ * and Information rail, plus the connect / preview modals. Used by the dashboard
+ * Schedule → Import Schedule page, which supplies the heading and footer.
+ */
+export default function ImportScheduleContent() {
   const { savedSchool } = useSetup();
   const [icsUrls, setIcsUrls] = useState<string[]>(ICS_DEFAULTS);
   const [autoSync, setAutoSync] = useState(true);
@@ -261,10 +262,14 @@ export default function ImportSchedulePage() {
   // If the saved school already has imported games, show them in the Import Summary +
   // Preview so navigating Back to this step reflects the previously-saved schedule.
   // Reads from SetupContext (fetched once for all wizard steps, no redundant network call).
-  useEffect(() => {
+  // Synced during render whenever savedSchool changes (React's "adjust state on prop
+  // change" pattern) rather than in an effect.
+  // Starts undefined so a school that's already loaded on mount is picked up too.
+  const [syncedSchool, setSyncedSchool] = useState<typeof savedSchool | undefined>(undefined);
+  if (savedSchool !== syncedSchool) {
+    setSyncedSchool(savedSchool);
     const events = savedSchool?.scheduleEvents ?? [];
-    if (!savedSchool || events.length === 0) return;
-    setScrapedSchool({
+    if (savedSchool && events.length > 0) setScrapedSchool({
       id: savedSchool.id,
       name: savedSchool.name ?? "",
       teamName: savedSchool.teamName,
@@ -275,7 +280,7 @@ export default function ImportSchedulePage() {
       logoUrl: savedSchool.logoUrl,
       scheduleEvents: events,
     });
-  }, [savedSchool]);
+  }
 
   // Section A — upload a schedule image/PDF to the MaxPreps scrape endpoint, which
   // parses it and attaches the games to the school. Mirrors handleIcsConnect: read the
@@ -637,18 +642,7 @@ export default function ImportSchedulePage() {
   const activePlatformName = PLATFORMS.find((p) => p.id === activePlatform)?.name ?? "Platform";
 
   return (
-    <div className="flex flex-col gap-6 pb-24">
-      <StepIndicator currentStep={2} />
-
-      <div className="flex flex-col gap-2 -mt-2">
-        <h2 className="font-display font-black text-[32px] sm:text-[40px] lg:text-[56px] uppercase text-white leading-none">
-          Import Schedule
-        </h2>
-        <p className="text-base text-white/80">
-          Bring in your games and events to power your Fan Hub.
-        </p>
-      </div>
-
+    <>
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-start">
         {/* LEFT COLUMN */}
         <div className="w-full lg:w-[639px] lg:shrink-0 flex flex-col gap-6 lg:gap-10">
@@ -1052,13 +1046,6 @@ export default function ImportSchedulePage() {
         onClose={() => setShowPreview(false)}
         school={scrapedSchool}
       />
-
-      <WizardFooter
-        onBack={() => router.push(routes.ui.setupWizard.organizationDetails)}
-        onSaveExit={() => { }}
-        primaryLabel="Next"
-        onPrimary={() => router.push(routes.ui.setupWizard.chooseActivations)}
-      />
-    </div>
+    </>
   );
 }

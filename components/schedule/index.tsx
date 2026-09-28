@@ -3,7 +3,9 @@
 import AddGameModal from "@/components/schedule/AddGameModal";
 import DeleteGameModal from "@/components/schedule/DeleteGameModal";
 import ExposureEventModal from "@/components/schedule/ExposureEventModal";
+import Button from "@/components/common/Button";
 import RowActionsMenu from "@/components/common/RowActionsMenu";
+import { useRouter } from "next/navigation";
 import { cn } from "@/utils/cn";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
@@ -14,6 +16,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  CloudUpload,
   Loader2,
   Plus,
   Search,
@@ -471,6 +474,7 @@ function ScheduleTools({ onAddGame }: { onAddGame: () => void }) {
 const DEFAULT_FILTERS = { status: "", homeAway: "", gender: "", season: "", sports: "", level: "", from: "", to: "", sortOrder: "asc" };
 
 export default function SchedulePage() {
+  const router = useRouter();
   const [games, setGames] = useState<ScheduleItem[]>([]);
   const [pagination, setPagination] = useState<SchedulePagination | null>(null);
   const [summary, setSummary] = useState<ScheduleSummary | null>(null);
@@ -594,15 +598,24 @@ export default function SchedulePage() {
             <h2 className="text-white text-3xl sm:text-4xl lg:text-6xl font-extrabold font-display uppercase leading-none">Schedule</h2>
             <p className="text-white text-base font-normal mt-1">Manage your games, events, and schedule information.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowAddModal(true)}
-            className="h-12 px-6 rounded-lg flex items-center gap-2 text-white text-base font-medium transition-opacity hover:opacity-90"
-            style={{ background: "var(--gradient-cta)" }}
-          >
-            <Plus className="w-4 h-4" strokeWidth={2.5} />
-            Add Game
-          </button>
+          <div className="flex flex-wrap items-center justify-end gap-4">
+            <Button
+              className="cursor-pointer"
+              variant="ghost"
+              label="Import Schedule"
+              icon={<CloudUpload className="w-5 h-5" strokeWidth={2} />}
+              onClick={() => router.push(routes.ui.importSchedule)}
+            />
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="h-12 px-6 rounded-lg flex items-center gap-2 text-white text-base font-medium transition-opacity hover:opacity-90"
+              style={{ background: "var(--gradient-cta)" }}
+            >
+              <Plus className="w-4 h-4" strokeWidth={2.5} />
+              Add Game
+            </button>
+          </div>
         </div>
 
         {/* Stats row */}

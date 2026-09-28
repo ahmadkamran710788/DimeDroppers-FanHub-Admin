@@ -2,16 +2,10 @@
 
 import { Fragment } from "react";
 import { cn } from "@/utils/cn";
-
-const STEPS = [
-  { number: 1, label: "Organization Details" },
-  { number: 2, label: "Import Schedule" },
-  { number: 3, label: "Choose Activations" },
-  { number: 4, label: "Review & Publish" },
-];
+import { WIZARD_STEPS as STEPS, type WizardStepNumber } from "@/utils/constants/setupWizard";
 
 interface StepIndicatorProps {
-  currentStep: 1 | 2 | 3 | 4;
+  currentStep: WizardStepNumber;
   className?: string;
 }
 

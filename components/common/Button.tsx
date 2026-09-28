@@ -3,7 +3,7 @@
 import { cn } from "@/utils/cn";
 import { type ReactNode } from "react";
 
-type ButtonVariant = "cta" | "primary" | "ghost" | "secondary" | "danger";
+type ButtonVariant = "cta" | "primary" | "ghost" | "secondary" | "danger" | "outline";
 
 interface ButtonProps {
   variant?: ButtonVariant;
@@ -44,6 +44,7 @@ export default function Button({
         variant === "ghost" && "bg-[rgba(235,235,235,0.25)] text-white",
         variant === "secondary" && "bg-white text-midnight-navy border border-midnight-navy/20 hover:bg-gray-50",
         variant === "danger" && "bg-error text-white",
+        variant === "outline" && "bg-transparent text-white border border-[#638BFE]/80 hover:bg-white/5",
         className
       )}
     >

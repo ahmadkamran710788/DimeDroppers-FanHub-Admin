@@ -5,6 +5,7 @@ import { routes } from "@/utils/routes";
 import { useSetup } from "@/context/setup";
 import { useAuth } from "@/context/auth";
 import { getResumeStep } from "@/utils/fanhub/getResumeStep";
+import { WIZARD_STEPS, wizardStepFromUrl } from "@/utils/constants/setupWizard";
 import { User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -15,6 +16,7 @@ const NAV_MAIN = [
 
 const NAV_BOTTOM = [
   { icon: "/icons/icon-calendar.svg", label: "Schedule", href: routes.ui.schedule },
+  { icon: "/icons/icon-link.svg", label: "External Links", href: routes.ui.externalLinks },
   { icon: "/icons/icon-bolt.svg", label: "Activations", href: routes.ui.activations },
   { icon: "/icons/icon-users.svg", label: "Teams", href: "#" },
   { icon: "/icons/icon-media.svg", label: "Media", href: "#" },
@@ -24,23 +26,9 @@ const NAV_BOTTOM = [
   { icon: "/icons/icon-settings.svg", label: "Settings", href: "#" },
 ];
 
-// Display-only: the wizard steps are NOT navigable from the sidebar. Forward/back
-// is driven solely by the bottom WizardFooter (Back / Next) so each step's
+// Display-only: the wizard steps (WIZARD_STEPS) are NOT navigable from the sidebar.
+// Forward/back is driven solely by the bottom WizardFooter (Back / Next) so each step's
 // validation and save run in order. The list here only renders progress.
-const WIZARD_STEPS = [
-  { number: 1, label: "Organization Details" },
-  { number: 2, label: "Import Schedule" },
-  { number: 3, label: "Choose Activations" },
-  { number: 4, label: "Review & Publish" },
-];
-
-function urlToStepNumber(url: string): number {
-  if (url.includes("organization-details")) return 1;
-  if (url.includes("import-schedule")) return 2;
-  if (url.includes("choose-activations")) return 3;
-  if (url.includes("review-publish")) return 4;
-  return 1;
-}
 
 function NavItem({
   icon,
@@ -79,7 +67,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const { savedSchool } = useSetup();
   const { org } = useAuth();
   const isWizardRoute = pathname.includes("setup-wizard");
-  const activeStep = urlToStepNumber(pathname);
+  const activeStep = wizardStepFromUrl(pathname);
 
   const sidebarContent = (
     <aside

@@ -5,11 +5,12 @@ export const routes = {
     signUp: "/auth/sign-up",
     schedule: "/schedule",
     scorekeepers: "/scorekeepers",
+    importSchedule: "/schedule/import",
+    externalLinks: "/external-links",
     activations: "/activations",
     userDetails: (id: string | number) => `users/${id}`,
     setupWizard: {
       organizationDetails: "/setup-wizard/organization-details",
-      importSchedule: "/setup-wizard/import-schedule",
       chooseActivations: "/setup-wizard/choose-activations",
       reviewPublish: "/setup-wizard/review-publish",
     },
@@ -65,6 +66,8 @@ export const routes = {
     // server; proxy is the internal Next route the browser PATCHes to (injects x-fanhub-key).
     featureLinks: (schoolId: string) => `fanhub/schools/${schoolId}/feature-links`,
     proxyFeatureLinks: "/api/fanhub/schools/feature-links",
+    // External Links → "Test Connection" (server-side reachability check).
+    proxyCheckExternalLink: "/api/external-links/check",
     // Schedule CRUD — upstream paths (used by server-side proxy route handlers)
     listSchedules: "/fanhub/org/schedules",
     createSchedule: "/fanhub/org/schedules",
