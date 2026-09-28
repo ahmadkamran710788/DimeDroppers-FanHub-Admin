@@ -5,6 +5,7 @@ export const routes = {
     signUp: "/auth/sign-up",
     schedule: "/schedule",
     scorekeepers: "/scorekeepers",
+    activations: "/activations",
     userDetails: (id: string | number) => `users/${id}`,
     setupWizard: {
       organizationDetails: "/setup-wizard/organization-details",

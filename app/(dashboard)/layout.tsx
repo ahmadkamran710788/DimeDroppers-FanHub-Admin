@@ -10,6 +10,7 @@ import { SetupProvider } from "@/context/setup";
 const PAGE_TITLES: Record<string, string> = {
   [routes.ui.schedule]: "Schedule",
   [routes.ui.scorekeepers]: "Score Keepers",
+  [routes.ui.activations]: "Activations",
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
