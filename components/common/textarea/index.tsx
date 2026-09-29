@@ -12,6 +12,8 @@ interface TextareaProps {
   rows?: number;
   error?: string;
   className?: string;
+  // "onDark" (default): white label on a dark page. "onLight": navy label inside a white dialog.
+  variant?: "onDark" | "onLight";
 }
 
 export default function Textarea({
@@ -24,10 +26,12 @@ export default function Textarea({
   rows = 4,
   error,
   className,
+  variant = "onDark",
 }: TextareaProps) {
+  const onLight = variant === "onLight";
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <label htmlFor={name} className="text-base font-medium text-white">
+      <label htmlFor={name} className={cn("text-base font-medium", onLight ? "text-midnight-navy" : "text-white")}>
         {label}
       </label>
       <textarea
@@ -52,7 +56,7 @@ export default function Textarea({
         ) : (
           <span />
         )}
-        <span className="text-sm text-[rgba(255,255,255,0.4)]">
+        <span className={cn("text-sm", onLight ? "text-midnight-navy/50" : "text-[rgba(255,255,255,0.4)]")}>
           {value.length}/{maxLength} Characters
         </span>
       </div>

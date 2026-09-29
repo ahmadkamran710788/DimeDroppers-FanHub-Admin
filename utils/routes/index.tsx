@@ -5,6 +5,8 @@ export const routes = {
     signUp: "/auth/sign-up",
     schedule: "/schedule",
     scorekeepers: "/scorekeepers",
+    videographers: "/videographers",
+    requests: "/requests",
     importSchedule: "/schedule/import",
     externalLinks: "/external-links",
     activations: "/activations",
@@ -98,6 +100,37 @@ export const routes = {
       `/api/fanhub/org/scorekeeper-pool/${memberId}/accept`,
     proxyRejectScorekeeper: (memberId: string) =>
       `/api/fanhub/org/scorekeeper-pool/${memberId}/reject`,
+    // Scorekeeper game requests — a fan asks to keep score for one game; the org reviews
+    // (docs/fanhub-scorekeeper-game-request-admin.md). Upstream paths:
+    listScorekeeperRequests: "fanhub/org/scorekeeper-requests",
+    acceptScorekeeperRequest: (requestId: string) => `fanhub/org/scorekeeper-requests/${requestId}/accept`,
+    rejectScorekeeperRequest: (requestId: string) => `fanhub/org/scorekeeper-requests/${requestId}/reject`,
+    // Proxy routes (browser calls these via apiCall):
+    proxyListScorekeeperRequests: "/api/fanhub/org/scorekeeper-requests",
+    proxyAcceptScorekeeperRequest: (requestId: string) => `/api/fanhub/org/scorekeeper-requests/${requestId}/accept`,
+    proxyRejectScorekeeperRequest: (requestId: string) => `/api/fanhub/org/scorekeeper-requests/${requestId}/reject`,
+    // Videographer game requests — same shape as scorekeeper game requests
+    // (docs/fanhub-videographer-game-request-admin.md). Upstream paths:
+    listVideographerRequests: "fanhub/org/videographer-requests",
+    acceptVideographerRequest: (requestId: string) => `fanhub/org/videographer-requests/${requestId}/accept`,
+    rejectVideographerRequest: (requestId: string) => `fanhub/org/videographer-requests/${requestId}/reject`,
+    // Proxy routes (browser calls these via apiCall):
+    proxyListVideographerRequests: "/api/fanhub/org/videographer-requests",
+    proxyAcceptVideographerRequest: (requestId: string) => `/api/fanhub/org/videographer-requests/${requestId}/accept`,
+    proxyRejectVideographerRequest: (requestId: string) => `/api/fanhub/org/videographer-requests/${requestId}/reject`,
+    // Videographer pool — mirror of the scorekeeper pool (docs/fanhub-videographer-pool-api.md).
+    // Upstream paths (appended to config.apiUrl by the proxy route handlers):
+    listVideographerPool: "fanhub/org/videographer-pool",
+    inviteVideographer: "fanhub/org/videographer-pool",
+    acceptVideographer: (memberId: string) => `fanhub/org/videographer-pool/${memberId}/accept`,
+    rejectVideographer: (memberId: string) => `fanhub/org/videographer-pool/${memberId}/reject`,
+    revokeVideographer: (memberId: string) => `fanhub/org/videographer-pool/${memberId}`,
+    // Proxy routes (browser calls these via apiCall; server injects the Bearer token):
+    proxyListVideographerPool: "/api/fanhub/org/videographer-pool",
+    proxyInviteVideographer: "/api/fanhub/org/videographer-pool",
+    proxyAcceptVideographer: (memberId: string) => `/api/fanhub/org/videographer-pool/${memberId}/accept`,
+    proxyRejectVideographer: (memberId: string) => `/api/fanhub/org/videographer-pool/${memberId}/reject`,
+    proxyRevokeVideographer: (memberId: string) => `/api/fanhub/org/videographer-pool/${memberId}`,
     // Scorekeeper — bulk-assign a fan to schedule games (PUT). Note the path is /scorekeeper
     // (singular), a sibling of /scorekeeper-pool. Body: { fanId, scheduleEventIds }.
     bulkAssignScorekeeper: "/fanhub/org/scorekeeper/bulk-assign",

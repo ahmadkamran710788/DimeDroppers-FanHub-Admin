@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { ClipboardList, LogOut, Menu, User } from "lucide-react";
+import { ClipboardList, Inbox, LogOut, Menu, User, Video } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { clearFanhubSession } from "@/utils/auth/session";
@@ -80,6 +80,24 @@ export default function Header({ className, title = "Setup Wizard", onMenuClick 
           >
             <ClipboardList className="w-4 h-4 shrink-0" />
             List Score Keeper
+          </Link>
+          <Link
+            href={routes.ui.videographers}
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors duration-150"
+          >
+            <Video className="w-4 h-4 shrink-0" />
+            List Video Grapher
+          </Link>
+          <Link
+            href={routes.ui.requests}
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors duration-150"
+          >
+            <Inbox className="w-4 h-4 shrink-0" />
+            Requests
           </Link>
           <div className="h-px bg-white/10 mx-2 my-1" />
           <button
