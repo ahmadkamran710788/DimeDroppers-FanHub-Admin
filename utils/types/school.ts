@@ -1,4 +1,4 @@
-import type { ScrapedEvent } from "@/components/common/SchedulePreviewModal";
+import type { ScrapedEvent } from "@/components/common/schedule-preview-modal";
 
 /**
  * The saved school returned by `GET /fanhub/schools/{id}?schedule=N`

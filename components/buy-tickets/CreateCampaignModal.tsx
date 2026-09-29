@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { DollarSign, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
-import Button from "@/components/common/Button";
-import Input from "@/components/common/Input";
-import Modal from "@/components/common/Modal";
-import QuantityStepper from "@/components/common/QuantityStepper";
+import Button from "@/components/common/button";
+import Input from "@/components/common/input";
+import Modal from "@/components/common/modal";
+import QuantityStepper from "@/components/common/quantity-stepper";
 import { createCampaignSchema } from "@/components/buy-tickets/schema";
 import { validateAndSetErrors } from "@/utils/validation";
 

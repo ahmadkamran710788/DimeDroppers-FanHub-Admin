@@ -3,7 +3,7 @@
 import { cn } from "@/utils/cn";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
-import GenericTable, { type Column } from "@/components/common/GenericTable";
+import GenericTable, { type Column } from "@/components/common/generic-table";
 import GameScheduleView from "@/components/schedule/GameScheduleView";
 import type {
   ExposureEvent,

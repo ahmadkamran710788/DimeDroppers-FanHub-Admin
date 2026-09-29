@@ -1,8 +1,8 @@
 "use client";
 
 import ActivationDonut from "@/components/setup/ActivationDonut";
-import Button from "@/components/common/Button";
-import Checkbox from "@/components/common/Checkbox";
+import Button from "@/components/common/button";
+import Checkbox from "@/components/common/checkbox";
 import { ACTIVATION_BY_ID, CATEGORIES, RECOMMENDED_FOR_YOU } from "@/components/activations/data";
 import { useActivationSelection } from "@/components/activations/useActivationSelection";
 import { cn } from "@/utils/cn";

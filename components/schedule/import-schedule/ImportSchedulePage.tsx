@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import WizardFooter from "@/components/common/WizardFooter";
+import WizardFooter from "@/components/common/wizard-footer";
 import ImportScheduleContent from "@/components/schedule/import-schedule";
 import { routes } from "@/utils/routes";
 

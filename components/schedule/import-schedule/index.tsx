@@ -1,13 +1,13 @@
 "use client";
 
-import Button from "@/components/common/Button";
-import CheckCircle from "@/components/common/CheckCircle";
-import Modal from "@/components/common/Modal";
+import Button from "@/components/common/button";
+import CheckCircle from "@/components/common/check-circle";
+import Modal from "@/components/common/modal";
 import SchedulePreviewModal, {
   type ScrapedSchool,
-} from "@/components/common/SchedulePreviewModal";
-import SectionCard from "@/components/common/SectionCard";
-import Toggle from "@/components/common/Toggle";
+} from "@/components/common/schedule-preview-modal";
+import SectionCard from "@/components/common/section-card";
+import Toggle from "@/components/common/toggle";
 import { cn } from "@/utils/cn";
 import { useSetup } from "@/context/setup";
 import { extractApiErrorMessage } from "@/utils/api-error";

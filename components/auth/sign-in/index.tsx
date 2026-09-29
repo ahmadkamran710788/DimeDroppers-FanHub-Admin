@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Mail, Lock } from "lucide-react";
 
-import Input from "@/components/common/Input";
-import Button from "@/components/common/Button";
+import Input from "@/components/common/input";
+import Button from "@/components/common/button";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
 import { setFanhubSchoolId } from "@/utils/auth/session";

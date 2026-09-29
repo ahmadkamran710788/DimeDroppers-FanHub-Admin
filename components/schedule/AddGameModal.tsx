@@ -1,9 +1,9 @@
 "use client";
 
-import Button from "@/components/common/Button";
-import Input from "@/components/common/Input";
-import Modal from "@/components/common/Modal";
-import Select from "@/components/common/Select";
+import Button from "@/components/common/button";
+import Input from "@/components/common/input";
+import Modal from "@/components/common/modal";
+import Select from "@/components/common/select";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import { GENDER_OPTIONS, SEASON_OPTIONS, SPORTS_OPTIONS, LEVEL_OPTIONS } from "@/utils/constants/schedule";

@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { Mail } from "lucide-react";
-import Button from "@/components/common/Button";
-import Input from "@/components/common/Input";
-import Modal from "@/components/common/Modal";
+import Button from "@/components/common/button";
+import Input from "@/components/common/input";
+import Modal from "@/components/common/modal";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
