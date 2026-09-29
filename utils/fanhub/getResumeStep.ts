@@ -26,9 +26,6 @@ const FEATURE_LINK_FIELDS: (keyof SavedSchool)[] = [
 export function getResumeStep(school: SavedSchool | null): string {
   if (!school?.name) return routes.ui.setupWizard.organizationDetails;
 
-  const hasSchedule = (school.scheduleEvents?.length ?? 0) > 0;
-  if (!hasSchedule) return routes.ui.setupWizard.importSchedule;
-
   const hasActivations = FEATURE_LINK_FIELDS.some(
     (f) => typeof school[f] === "string" && (school[f] as string).length > 0
   );

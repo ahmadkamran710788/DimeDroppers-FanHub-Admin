@@ -34,7 +34,7 @@ export default function ChooseActivationsPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-24">
-      <StepIndicator currentStep={3} />
+      <StepIndicator currentStep={2} />
 
       <div className="flex flex-col gap-2 -mt-2">
         <h2 className="font-display font-black text-[32px] sm:text-[40px] lg:text-[56px] uppercase text-white leading-none">
@@ -241,7 +241,7 @@ export default function ChooseActivationsPage() {
       </div>
 
       <WizardFooter
-        onBack={() => router.push(routes.ui.setupWizard.importSchedule)}
+        onBack={() => router.push(routes.ui.setupWizard.organizationDetails)}
         onSaveExit={async () => {
           if (await saveFeatureLinks()) router.push(routes.ui.indexRoute);
         }}

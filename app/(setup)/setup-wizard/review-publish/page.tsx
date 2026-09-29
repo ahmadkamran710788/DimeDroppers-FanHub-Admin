@@ -22,7 +22,7 @@ const REVIEW_SECTIONS = [
     id: "schedule",
     title: "Schedule",
     lines: ["2024 - 2025 Season", "42 Events Imported"],
-    href: routes.ui.setupWizard.importSchedule,
+    href: routes.ui.importSchedule,
   },
   {
     id: "activations",
@@ -49,7 +49,7 @@ export default function ReviewPublishPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-24">
-      <StepIndicator currentStep={4} />
+      <StepIndicator currentStep={3} />
 
       <div className="flex flex-col gap-2">
         <h2 className="font-display font-black text-[32px] sm:text-[40px] lg:text-[56px] uppercase text-white leading-none">
