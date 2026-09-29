@@ -1,6 +1,6 @@
 "use client";
 
-import Button from "@/components/common/Button";
+import Button from "@/components/common/button";
 import { cn } from "@/utils/cn";
 import { CloudUpload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";

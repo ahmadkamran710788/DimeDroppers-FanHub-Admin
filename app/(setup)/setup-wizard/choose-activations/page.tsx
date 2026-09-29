@@ -1,9 +1,9 @@
 "use client";
 
 import ActivationDonut from "@/components/setup/ActivationDonut";
-import Checkbox from "@/components/common/Checkbox";
-import StepIndicator from "@/components/common/StepIndicator";
-import WizardFooter from "@/components/common/WizardFooter";
+import Checkbox from "@/components/common/checkbox";
+import StepIndicator from "@/components/common/step-indicator";
+import WizardFooter from "@/components/common/wizard-footer";
 import { ACTIVATION_BY_ID, CATEGORIES, RECOMMENDED_FOR_YOU } from "@/components/activations/data";
 import { useActivationSelection } from "@/components/activations/useActivationSelection";
 import { cn } from "@/utils/cn";

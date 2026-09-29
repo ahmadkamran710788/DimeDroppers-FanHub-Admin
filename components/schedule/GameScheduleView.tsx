@@ -2,8 +2,8 @@
 
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
-import GenericTable, { type Column } from "@/components/common/GenericTable";
-import StatusPill from "@/components/common/StatusPill";
+import GenericTable, { type Column } from "@/components/common/generic-table";
+import StatusPill from "@/components/common/status-pill";
 import { getScorekeeperEmail, getScorekeeperName } from "@/utils/helper";
 import type { ExposureGame } from "@/utils/types/exposure-event";
 import type {

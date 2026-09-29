@@ -1,14 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { CloudUpload, EllipsisVertical, Filter, Upload } from "lucide-react";
 import toast from "react-hot-toast";
-import Button from "@/components/common/Button";
-import GenericTable, { type Column } from "@/components/common/GenericTable";
-import Pagination from "@/components/common/Pagination";
-import RowActionsMenu from "@/components/common/RowActionsMenu";
-import SearchInput from "@/components/common/SearchInput";
-import StatusPill from "@/components/common/StatusPill";
+import Button from "@/components/common/button";
+import GenericTable, { type Column } from "@/components/common/generic-table";
+import Pagination from "@/components/common/pagination";
+import RowActionsMenu from "@/components/common/row-actions-menu";
+import SearchInput from "@/components/common/search-input";
+import StatusPill from "@/components/common/status-pill";
 import { ATHLETES, type Athlete } from "@/components/teams/data";
 
 const PAGE_SIZE = 10;
@@ -40,8 +41,7 @@ export default function AthletesTab() {
       cls: "flex-1 min-w-[180px] py-5",
       cell: (a) => (
         <div className="flex items-center gap-3 min-w-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={a.avatar} alt="" className="size-10 shrink-0 rounded-full object-cover" />
+          <Image src={a.avatar} alt="" width={40} height={40} className="size-10 shrink-0 rounded-full object-cover" />
           <div className="flex flex-col gap-1 min-w-0">
             <span className="text-sm font-semibold text-white truncate">{a.name}</span>
             <span className="text-xs text-white/40 truncate">{a.email}</span>

@@ -1,7 +1,7 @@
 "use client";
 
-import Button from "@/components/common/Button";
-import Modal from "@/components/common/Modal";
+import Button from "@/components/common/button";
+import Modal from "@/components/common/modal";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type { ScheduleItem } from "@/utils/types/schedule";

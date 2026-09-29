@@ -1,4 +1,4 @@
-import CheckCircle from "@/components/common/CheckCircle";
+import CheckCircle from "@/components/common/check-circle";
 import { cn } from "@/utils/cn";
 
 type BadgeVariant = "recommended" | "complete" | "connected" | "error" | "disconnected";

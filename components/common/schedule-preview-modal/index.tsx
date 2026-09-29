@@ -1,6 +1,6 @@
 "use client";
 
-import Modal from "@/components/common/Modal";
+import Modal from "@/components/common/modal";
 import { cn } from "@/utils/cn";
 import { CalendarDays, MapPin } from "lucide-react";
 

@@ -3,8 +3,8 @@
 import AddGameModal from "@/components/schedule/AddGameModal";
 import DeleteGameModal from "@/components/schedule/DeleteGameModal";
 import ExposureEventModal from "@/components/schedule/ExposureEventModal";
-import Button from "@/components/common/Button";
-import RowActionsMenu from "@/components/common/RowActionsMenu";
+import Button from "@/components/common/button";
+import RowActionsMenu from "@/components/common/row-actions-menu";
 import { useRouter } from "next/navigation";
 import { cn } from "@/utils/cn";
 import apiCall from "@/utils/api-call";

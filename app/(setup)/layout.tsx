@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Header from "@/components/layout/Header";
-import Sidebar from "@/components/layout/Sidebar";
+import Header from "@/components/layout/header";
+import Sidebar from "@/components/layout/sidebar";
 import { SetupProvider } from "@/context/setup";
 
 export default function SetupLayout({ children }: { children: React.ReactNode }) {

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Info, Link2, Play, RefreshCw, Ticket } from "lucide-react";
 import toast from "react-hot-toast";
-import Button from "@/components/common/Button";
-import Input from "@/components/common/Input";
+import Button from "@/components/common/button";
+import Input from "@/components/common/input";
 import ConnectionStatus, { type ConnectionState } from "@/components/external-links/ConnectionStatus";
 import { THEME, type ExternalLinkConfig } from "@/components/external-links/data";
 import { useSetup } from "@/context/setup";
@@ -134,8 +135,13 @@ export default function ExternalLinkCard({ config }: ExternalLinkCardProps) {
       {/* Body */}
       <div className="grid grid-cols-1 lg:grid-cols-[226px_minmax(0,1fr)_253px] gap-x-6 gap-y-4 px-1 lg:px-3 pb-2">
         <div className="lg:row-span-2 self-start h-[120px] rounded-[8px] border border-white/15 bg-black/60 flex items-center justify-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={config.logo} alt={config.logoAlt} className="max-h-[92px] max-w-[190px] object-contain" />
+          <Image
+            src={config.logo}
+            alt={config.logoAlt}
+            width={190}
+            height={92}
+            className="max-h-[92px] max-w-[190px] w-auto h-auto object-contain"
+          />
         </div>
 
         <Input

@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Plus } from "lucide-react";
-import Button from "@/components/common/Button";
-import GenericTable, { type Column } from "@/components/common/GenericTable";
-import StatusPill from "@/components/common/StatusPill";
+import Button from "@/components/common/button";
+import GenericTable, { type Column } from "@/components/common/generic-table";
+import StatusPill from "@/components/common/status-pill";
 import apiCall from "@/utils/api-call";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";

@@ -2,10 +2,10 @@
 "use client";
 
 import FanHubPhonePreview from "@/components/setup/FanHubPhonePreview";
-import CheckCircle from "@/components/common/CheckCircle";
-import SectionCard from "@/components/common/SectionCard";
-import StepIndicator from "@/components/common/StepIndicator";
-import WizardFooter from "@/components/common/WizardFooter";
+import CheckCircle from "@/components/common/check-circle";
+import SectionCard from "@/components/common/section-card";
+import StepIndicator from "@/components/common/step-indicator";
+import WizardFooter from "@/components/common/wizard-footer";
 import { routes } from "@/utils/routes";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

@@ -1,15 +1,15 @@
 "use client";
 
-import CheckCircle from "@/components/common/CheckCircle";
-import ColorPicker from "@/components/common/ColorPicker";
-import FileUpload from "@/components/common/FileUpload";
-import Input from "@/components/common/Input";
-import PhoneInput from "@/components/common/PhoneInput";
-import SectionCard from "@/components/common/SectionCard";
-import Select from "@/components/common/Select";
-import StepIndicator from "@/components/common/StepIndicator";
-import Textarea from "@/components/common/Textarea";
-import WizardFooter from "@/components/common/WizardFooter";
+import CheckCircle from "@/components/common/check-circle";
+import ColorPicker from "@/components/common/color-picker";
+import FileUpload from "@/components/common/file-upload";
+import Input from "@/components/common/input";
+import PhoneInput from "@/components/common/phone-input";
+import SectionCard from "@/components/common/section-card";
+import Select from "@/components/common/select";
+import StepIndicator from "@/components/common/step-indicator";
+import Textarea from "@/components/common/textarea";
+import WizardFooter from "@/components/common/wizard-footer";
 import { validateAndSetErrors } from "@/utils/validation";
 import { useSetup } from "@/context/setup";
 import { routes } from "@/utils/routes";
