@@ -4,6 +4,8 @@ import Button from "@/components/common/Button";
 
 interface WizardFooterProps {
   onBack?: () => void;
+  // Label for the left-hand button (e.g. "Cancel" on the Add Team form).
+  backLabel?: string;
   onSaveExit?: () => void;
   // Optional so a page can show just Back / Save & Exit (e.g. Schedule → Import Schedule).
   primaryLabel?: string;
@@ -13,6 +15,7 @@ interface WizardFooterProps {
 
 export default function WizardFooter({
   onBack,
+  backLabel = "Back",
   onSaveExit,
   primaryLabel,
   onPrimary,
@@ -20,7 +23,7 @@ export default function WizardFooter({
 }: WizardFooterProps) {
   return (
     <div className="fixed bottom-0 left-0 lg:left-[236px] right-0 h-20 flex items-center justify-between px-4 lg:px-10 bg-[rgba(11,28,45,0.01)] backdrop-blur-[48px] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)]">
-      {onBack ? <Button variant="ghost" label="Back" onClick={onBack} /> : <span />}
+      {onBack ? <Button variant="ghost" label={backLabel} onClick={onBack} /> : <span />}
       <div className="flex gap-4">
         {onSaveExit && <Button className="cursor-pointer" variant="ghost" label="Save & Exit" onClick={onSaveExit} />}
         {primaryLabel && onPrimary && (
