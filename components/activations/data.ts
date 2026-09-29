@@ -5,8 +5,7 @@ export interface Activation {
   title: string;
   description: string;
   recommended?: boolean;
-  // Shown on the dashboard Activations page only (not the Setup Wizard). These have no
-  // backend feature-link field yet, so they're absent from FEATURE_LINK_KEY and not saved.
+  // No backend feature-link field yet, so these are absent from FEATURE_LINK_KEY and not saved.
   dashboardOnly?: boolean;
 }
 
@@ -24,7 +23,7 @@ export interface Category {
 export const CATEGORIES: Category[] = [
   {
     id: "game-day",
-    label: "Game Day",
+    label: "Fan Zone",
     description: "Essential game information, access and live experiences.",
     color: "rgba(99,139,254,0.5)",
     accent: "#638BFE",
@@ -39,7 +38,7 @@ export const CATEGORIES: Category[] = [
   },
   {
     id: "support",
-    label: "Support",
+    label: "Community",
     description: "Drive support and raise funds for your teams.",
     color: "rgba(101,193,98,0.4)",
     accent: "#65C162",
@@ -53,7 +52,7 @@ export const CATEGORIES: Category[] = [
   },
   {
     id: "engage",
-    label: "Engage",
+    label: "Play",
     description: "Interactive fun that keeps fans coming back.",
     color: "rgba(157,98,193,0.4)",
     accent: "#9D62C1",

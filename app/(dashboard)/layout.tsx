@@ -8,6 +8,7 @@ import { routes } from "@/utils/routes";
 import { SetupProvider } from "@/context/setup";
 
 const PAGE_TITLES: Record<string, string> = {
+  [routes.ui.profile]: "Organization Profile",
   [routes.ui.schedule]: "Schedule",
   [routes.ui.scorekeepers]: "Score Keepers",
   [routes.ui.importSchedule]: "Schedule",

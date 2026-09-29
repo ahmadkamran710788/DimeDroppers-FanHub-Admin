@@ -4,17 +4,14 @@ import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { useSetup } from "@/context/setup";
 import { useAuth } from "@/context/auth";
-import { getResumeStep } from "@/utils/fanhub/getResumeStep";
-import { WIZARD_STEPS, wizardStepFromUrl } from "@/utils/constants/setupWizard";
 import { User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const NAV_MAIN = [
-  { icon: "/icons/icon-home.svg", label: "Home", href: "/", padding: "pl-[12px]" },
-];
-
-const NAV_BOTTOM = [
+// Setup Wizard is not in the sidebar: first-time setup is a full-screen flow after
+// sign-in, and afterwards the organization is edited from Profile.
+const NAV_ITEMS = [
+  { icon: "/icons/icon-user.svg", label: "Profile", href: routes.ui.profile },
   { icon: "/icons/icon-calendar.svg", label: "Schedule", href: routes.ui.schedule },
   { icon: "/icons/icon-link.svg", label: "External Links", href: routes.ui.externalLinks },
   { icon: "/icons/icon-bolt.svg", label: "Activations", href: routes.ui.activations },
@@ -26,10 +23,6 @@ const NAV_BOTTOM = [
   { icon: "/icons/icon-analytics.svg", label: "Analytics", href: "#" },
   { icon: "/icons/icon-settings.svg", label: "Settings", href: "#" },
 ];
-
-// Display-only: the wizard steps (WIZARD_STEPS) are NOT navigable from the sidebar.
-// Forward/back is driven solely by the bottom WizardFooter (Back / Next) so each step's
-// validation and save run in order. The list here only renders progress.
 
 function NavItem({
   icon,
@@ -67,8 +60,6 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { savedSchool } = useSetup();
   const { org } = useAuth();
-  const isWizardRoute = pathname.includes("setup-wizard");
-  const activeStep = wizardStepFromUrl(pathname);
 
   const sidebarContent = (
     <aside
@@ -86,54 +77,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 py-2 flex flex-col px-4">
-        {/* Home */}
-        {NAV_MAIN.map((item) => (
-          <NavItem key={item.label} {...item} active={pathname === item.href} />
-        ))}
-
-        {/* Setup Wizard CTA */}
-        <NavItem
-          icon="/icons/icon-wand-stars.svg"
-          label="Setup Wizard"
-          href={getResumeStep(savedSchool)}
-          active={isWizardRoute}
-        />
-
-        {/* Wizard step sub-items — display-only progress, not clickable. Navigation
-            between steps happens through the bottom WizardFooter (Back / Next). */}
-        {isWizardRoute && WIZARD_STEPS.map((step) => {
-          const isActive = step.number === activeStep;
-          const isCompleted = step.number < activeStep;
-          return (
-            <div
-              key={step.number}
-              className="flex items-center gap-3 pl-6 pr-2 py-4 rounded-[8px] transition-all"
-            >
-              {/* 24px step circle */}
-              <div className="relative shrink-0 flex items-center justify-center">
-                <div
-                  className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold text-white relative z-10",
-                    (isActive || isCompleted) ? "bg-steel-blue" : "bg-[rgba(255,255,255,0.2)]"
-                  )}
-                >
-                  {step.number}
-                </div>
-              </div>
-              <span
-                className={cn(
-                  "text-sm font-medium leading-tight transition-colors whitespace-nowrap",
-                  isActive ? "text-white" : "text-white/60"
-                )}
-              >
-                {step.label}
-              </span>
-            </div>
-          );
-        })}
-
-        {/* Main nav items */}
-        {NAV_BOTTOM.map((item) => (
+        {NAV_ITEMS.map((item) => (
           <NavItem
             key={item.label}
             {...item}

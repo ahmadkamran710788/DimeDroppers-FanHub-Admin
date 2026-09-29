@@ -6,9 +6,7 @@ import Checkbox from "@/components/common/checkbox";
 import { ACTIVATION_BY_ID, CATEGORIES, RECOMMENDED_FOR_YOU } from "@/components/activations/data";
 import { useActivationSelection } from "@/components/activations/useActivationSelection";
 import { cn } from "@/utils/cn";
-import { routes } from "@/utils/routes";
-import { ArrowRight, Equal } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Equal } from "lucide-react";
 
 interface Stat {
   label: string;
@@ -35,7 +33,6 @@ function StatCard({ label, value, caption }: Stat) {
 const pct = (part: number, whole: number) => (whole > 0 ? `${Math.round((part / whole) * 1000) / 10}%` : "0%");
 
 export default function ActivationsPage() {
-  const router = useRouter();
   const {
     selected,
     urls,
@@ -280,13 +277,9 @@ export default function ActivationsPage() {
       <div className="flex justify-end border-t border-border-divider pt-6">
         <Button
           variant="cta"
-          label="Review & Publish"
-          icon={<ArrowRight className="w-5 h-5" />}
-          iconPosition="end"
+          label={saving ? "Saving…" : "Save Activations"}
           disabled={saving}
-          onClick={async () => {
-            if (await saveFeatureLinks()) router.push(routes.ui.setupWizard.reviewPublish);
-          }}
+          onClick={saveFeatureLinks}
         />
       </div>
     </div>
