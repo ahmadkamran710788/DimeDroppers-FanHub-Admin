@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 import { CATEGORIES, FEATURE_LINK_KEY, RECOMMENDED_FOR_YOU, SAVED_LINK_FIELD } from "@/components/activations/data";
 
 // Shared selection / URL / ordering / save state for the activation board. Used by the
-// Setup Wizard "Choose Activations" step and the dashboard Activations page.
+// dashboard Activations page.
 export function useActivationSelection() {
   const { savedSchool, refreshSchool } = useSetup();
   const [selected, setSelected] = useState<Set<string>>(new Set());

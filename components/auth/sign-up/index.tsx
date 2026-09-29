@@ -13,7 +13,7 @@ import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
 import { setFanhubSchoolId } from "@/utils/auth/session";
 import { getSavedSchool } from "@/utils/fanhub/getSavedSchool";
-import { getResumeStep } from "@/utils/fanhub/getResumeStep";
+import { getPostAuthRoute } from "@/utils/fanhub/getResumeStep";
 import { useAuth } from "@/context/auth";
 import type { AuthSession } from "@/utils/types/auth";
 import { signUpSchema } from "../schema";
@@ -93,7 +93,7 @@ export default function SignUp() {
       }
 
       const school = await getSavedSchool();
-      router.replace(getResumeStep(school));
+      router.replace(getPostAuthRoute(school));
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {

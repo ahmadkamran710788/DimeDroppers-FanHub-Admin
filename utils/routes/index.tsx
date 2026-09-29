@@ -1,6 +1,7 @@
 export const routes = {
   ui: {
     indexRoute: "/",
+    profile: "/profile",
     signIn: "/auth/sign-in",
     signUp: "/auth/sign-up",
     schedule: "/schedule",
@@ -16,8 +17,6 @@ export const routes = {
     userDetails: (id: string | number) => `users/${id}`,
     setupWizard: {
       organizationDetails: "/setup-wizard/organization-details",
-      chooseActivations: "/setup-wizard/choose-activations",
-      reviewPublish: "/setup-wizard/review-publish",
     },
   },
 
