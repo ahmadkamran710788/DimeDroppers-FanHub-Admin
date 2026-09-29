@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, Filter } from "lucide-react";
 import toast from "react-hot-toast";
+import BadgeStatCard, { STAT_TINTS, type BadgeStat } from "@/components/common/BadgeStatCard";
 import Button from "@/components/common/Button";
 import GenericTable, { type Column } from "@/components/common/GenericTable";
 import Pagination from "@/components/common/Pagination";
@@ -17,30 +18,6 @@ import { SPORT_ICON, TEAMS, TEAM_STATS, type Team } from "@/components/teams/dat
 
 const PAGE_SIZE = 10;
 
-interface Stat {
-  label: string;
-  value: number;
-  caption: string;
-  // Tinted background of the value badge.
-  tint: string;
-}
-
-function StatCard({ label, value, caption, tint }: Stat) {
-  return (
-    <div className="rounded-[8px] p-6 flex flex-col gap-4 backdrop-blur-[48px] bg-surface-07">
-      <div className="flex items-start justify-between gap-4">
-        <h3 className="font-display font-black text-[28px] uppercase text-white leading-tight">{label}</h3>
-        <span
-          className="size-16 shrink-0 rounded-[8px] flex items-center justify-center font-display font-black text-[28px] text-white leading-none"
-          style={{ background: tint }}
-        >
-          {value}
-        </span>
-      </div>
-      <span className="text-xs text-white/80">{caption}</span>
-    </div>
-  );
-}
 
 // Backend actions for teams aren't available yet (Add / View / Edit / Delete come in 3.2+).
 const comingSoon = () => toast("Coming soon.");
@@ -66,25 +43,25 @@ export default function TeamsPage() {
   const from = filtered.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const to = Math.min(currentPage * PAGE_SIZE, filtered.length);
 
-  const stats: Stat[] = [
-    { label: "Total Teams", value: TEAMS.length, caption: "All Sports", tint: "rgba(99,139,254,0.5)" },
+  const stats: BadgeStat[] = [
+    { label: "Total Teams", value: TEAMS.length, caption: "All Sports", tint: STAT_TINTS.blue },
     {
       label: "Active Teams",
       value: TEAMS.filter((t) => t.status === "Active").length,
       caption: "This Season",
-      tint: "rgba(101,193,98,0.4)",
+      tint: STAT_TINTS.green,
     },
     {
       label: "Total Athletes",
       value: TEAMS.reduce((sum, t) => sum + t.athletes, 0),
       caption: TEAM_STATS.athletesPct,
-      tint: "rgba(157,98,193,0.4)",
+      tint: STAT_TINTS.purple,
     },
     {
       label: "Coaches & Staff",
       value: TEAM_STATS.coachesAndStaff,
       caption: TEAM_STATS.coachesAndStaffPct,
-      tint: "rgba(193,127,82,0.45)",
+      tint: STAT_TINTS.brown,
     },
   ];
 
@@ -164,7 +141,7 @@ export default function TeamsPage() {
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-10">
         {stats.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
+          <BadgeStatCard key={stat.label} {...stat} />
         ))}
       </div>
 

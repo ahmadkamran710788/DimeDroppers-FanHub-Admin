@@ -8,6 +8,7 @@ export const routes = {
     activations: "/activations",
     teams: "/teams",
     addTeam: "/teams/add",
+    buyTickets: "/buy-tickets",
     userDetails: (id: string | number) => `users/${id}`,
     setupWizard: {
       organizationDetails: "/setup-wizard/organization-details",
