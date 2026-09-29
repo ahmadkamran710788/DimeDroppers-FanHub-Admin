@@ -10,6 +10,8 @@ import { SetupProvider } from "@/context/setup";
 const PAGE_TITLES: Record<string, string> = {
   [routes.ui.schedule]: "Schedule",
   [routes.ui.scorekeepers]: "Score Keepers",
+  [routes.ui.videographers]: "Video Graphers",
+  [routes.ui.requests]: "Requests",
   [routes.ui.importSchedule]: "Schedule",
   [routes.ui.externalLinks]: "Organization Settings",
   [routes.ui.activations]: "Activations",
