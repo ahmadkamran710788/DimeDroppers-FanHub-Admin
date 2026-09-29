@@ -5,22 +5,20 @@ import { Mail } from "lucide-react";
 import Button from "@/components/common/button";
 import Input from "@/components/common/input";
 import Modal from "@/components/common/modal";
+import type { StaffPoolConfig } from "@/components/staff-pool/config";
+import { inviteMemberSchema } from "@/components/staff-pool/schema";
 import apiCall from "@/utils/api-call";
-import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
-import { inviteScorekeeperSchema } from "@/components/scorekeepers/schema";
 
-interface InviteScorekeeperModalProps {
+interface InviteMemberModalProps {
+  config: StaffPoolConfig;
   isOpen: boolean;
   onClose: () => void;
   onInvited: () => void;
 }
 
-export default function InviteScorekeeperModal({
-  isOpen,
-  onClose,
-  onInvited,
-}: InviteScorekeeperModalProps) {
+// Invite a fan to a staff pool by email (7-day invite link sent by the backend).
+export default function InviteMemberModal({ config, isOpen, onClose, onInvited }: InviteMemberModalProps) {
   const [email, setEmail] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -33,16 +31,16 @@ export default function InviteScorekeeperModal({
   };
 
   const handleSubmit = async () => {
-    if (!(await validateAndSetErrors(inviteScorekeeperSchema, { email }, setErrors))) return;
+    if (!(await validateAndSetErrors(inviteMemberSchema, { email }, setErrors))) return;
 
     setLoading(true);
     const result = await apiCall({
-      endpoint: routes.api.proxyInviteScorekeeper,
+      endpoint: config.endpoints.invite,
       method: "POST",
       data: { email },
       showSuccessToast: true,
       successMessage: "Invite sent",
-      invalidates: ["scorekeeper-pool"],
+      invalidates: [config.cacheTag],
     });
     setLoading(false);
 
@@ -55,7 +53,7 @@ export default function InviteScorekeeperModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Invite Scorekeeper">
+    <Modal isOpen={isOpen} onClose={handleClose} title={`Invite ${config.role}`}>
       <div className="w-full flex flex-col gap-6">
         <Input
           label="Email"

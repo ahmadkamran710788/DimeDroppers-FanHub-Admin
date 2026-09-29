@@ -1,6 +1,6 @@
 import * as yup from "yup";
 
-export const inviteScorekeeperSchema = yup.object({
+export const inviteMemberSchema = yup.object({
   email: yup
     .string()
     .required("Email is required")
