@@ -11,9 +11,11 @@ import RowActionsMenu from "@/components/common/row-actions-menu";
 import SearchInput from "@/components/common/search-input";
 import StatusPill from "@/components/common/status-pill";
 import Tabs from "@/components/common/tabs";
-import GivingOverview from "@/components/fundraising/GivingOverview";
-import { HelpCard, QuickLinks, TopDonors, type QuickLink } from "@/components/fundraising/SidePanels";
-import StatCard from "@/components/fundraising/StatCard";
+import GivingOverview from "@/components/fundraising/giving-overview";
+import HelpCard from "@/components/fundraising/help-card";
+import QuickLinks, { type QuickLink } from "@/components/fundraising/quick-links";
+import StatCard from "@/components/fundraising/stat-card";
+import TopDonors from "@/components/fundraising/top-donors";
 import {
   CAMPAIGN_STATUS_COLOR,
   CAMPAIGN_TYPE_COLOR,

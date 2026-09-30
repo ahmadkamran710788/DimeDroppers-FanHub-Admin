@@ -266,3 +266,16 @@ export function orgFormToFormData(form: OrgFormState, logoFile: File | null): Fo
   if (logoFile) body.append("logo", logoFile);
   return body;
 }
+
+// Shared by the organization field-group components (org-team-fields, contact-fields, …).
+// Each group renders on a dark surface and is reused by the Setup Wizard step and the
+// Profile edit dialogs.
+export interface FieldGroupProps {
+  form: OrgFormState;
+  errors: Record<string, string>;
+  set: (field: keyof OrgFormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  setValue: (field: keyof OrgFormState) => (value: string) => void;
+}
+
+export const FIELD_LABEL = "text-white";
+export const FIELD_GRID = "grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6";

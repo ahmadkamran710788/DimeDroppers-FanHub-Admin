@@ -1,8 +1,8 @@
 "use client";
 
-import AddGameModal from "@/components/schedule/AddGameModal";
-import DeleteGameModal from "@/components/schedule/DeleteGameModal";
-import ExposureEventModal from "@/components/schedule/ExposureEventModal";
+import AddGameModal from "@/components/schedule/add-game-modal";
+import DeleteGameModal from "@/components/schedule/delete-game-modal";
+import ExposureEventModal from "@/components/schedule/exposure-event-modal";
 import Button from "@/components/common/button";
 import RowActionsMenu from "@/components/common/row-actions-menu";
 import { useRouter } from "next/navigation";

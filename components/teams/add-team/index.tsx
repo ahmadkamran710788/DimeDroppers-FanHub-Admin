@@ -9,7 +9,7 @@ import Input from "@/components/common/input";
 import SectionCard from "@/components/common/section-card";
 import Select from "@/components/common/select";
 import WizardFooter from "@/components/common/wizard-footer";
-import AthletesTab from "@/components/teams/add-team/AthletesTab";
+import AthletesTab from "@/components/teams/add-team/athletes-tab";
 import { addTeamSchema } from "@/components/teams/add-team/schema";
 import { useSetup } from "@/context/setup";
 import { cn } from "@/utils/cn";

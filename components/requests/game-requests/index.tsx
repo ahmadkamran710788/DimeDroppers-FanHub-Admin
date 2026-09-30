@@ -6,7 +6,7 @@ import GenericTable, { type Column } from "@/components/common/generic-table";
 import Pagination from "@/components/common/pagination";
 import StatusPill from "@/components/common/status-pill";
 import type { GameRequestConfig } from "@/components/requests/config";
-import ReviewRequestModal, { type ReviewAction } from "@/components/requests/ReviewRequestModal";
+import ReviewRequestModal, { type ReviewAction } from "@/components/requests/review-request-modal";
 import apiCall from "@/utils/api-call";
 import { cn } from "@/utils/cn";
 import type { GameRequest, GameRequestStatus, GameRequestsResponse } from "@/utils/types/game-request";

@@ -5,19 +5,16 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import { Building2, CircleCheck, Eye, FileText, MapPin, Palette, Phone, Share2, Trophy } from "lucide-react";
 import Button from "@/components/common/button";
-import EditSectionModal from "@/components/profile/EditSectionModal";
-import ProfileSection, { DetailRows } from "@/components/profile/ProfileSection";
-import {
-  BrandingFields,
-  ContactFields,
-  DescriptionField,
-  LocationFields,
-  OrgTeamFields,
-  SOCIAL_FIELDS,
-  SocialFields,
-  SportLevelFields,
-  type FieldGroupProps,
-} from "@/components/organization/fields";
+import EditSectionModal from "@/components/profile/edit-section-modal";
+import DetailRows from "@/components/profile/detail-rows";
+import ProfileSection from "@/components/profile/profile-section";
+import BrandingFields from "@/components/organization/branding-fields";
+import ContactFields from "@/components/organization/contact-fields";
+import DescriptionField from "@/components/organization/description-field";
+import LocationFields from "@/components/organization/location-fields";
+import OrgTeamFields from "@/components/organization/org-team-fields";
+import SocialFields, { SOCIAL_FIELDS } from "@/components/organization/social-fields";
+import SportLevelFields from "@/components/organization/sport-level-fields";
 import {
   EVENT_TYPE_OPTIONS,
   LEVEL_OPTIONS,
@@ -25,11 +22,12 @@ import {
   SPORT_OPTIONS,
   US_STATE_OPTIONS,
   labelOf,
+  type FieldGroupProps,
   type OrgFormState,
 } from "@/components/organization/form";
-import PreviewCard from "@/components/organization/PreviewCard";
-import { useOrganizationForm } from "@/components/organization/useOrganizationForm";
-import { getResumeStep, isSetupComplete } from "@/utils/fanhub/getResumeStep";
+import PreviewCard from "@/components/organization/preview-card";
+import { useOrganizationForm } from "@/components/organization/use-organization-form";
+import { getResumeStep, isSetupComplete } from "@/utils/fanhub/get-resume-step";
 
 type SectionKey = "orgTeam" | "sportLevel" | "location" | "description" | "contact" | "social" | "branding";
 

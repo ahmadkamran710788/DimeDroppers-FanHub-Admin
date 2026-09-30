@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Tabs from "@/components/common/tabs";
-import GameRequests from "@/components/requests/GameRequests";
+import GameRequests from "@/components/requests/game-requests";
 import { SCOREKEEPER_REQUESTS, VIDEOGRAPHER_REQUESTS } from "@/components/requests/config";
 
 const TABS = ["Score Keepers", "Video Graphers"] as const;

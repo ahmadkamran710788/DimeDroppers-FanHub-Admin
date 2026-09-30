@@ -1,7 +1,7 @@
 import { ExternalLink, Ticket } from "lucide-react";
 import Button from "@/components/common/button";
 import StatusPill from "@/components/common/status-pill";
-import type { CampaignTier } from "@/components/buy-tickets/CreateCampaignModal";
+import type { CampaignTier } from "@/components/buy-tickets/create-campaign-modal";
 import { CAMPAIGN_STATUS_COLOR, type TicketCampaign } from "@/components/buy-tickets/data";
 
 interface CampaignCardProps {

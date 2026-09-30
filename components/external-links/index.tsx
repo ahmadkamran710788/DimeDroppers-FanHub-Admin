@@ -1,6 +1,6 @@
 "use client";
 
-import ExternalLinkCard from "@/components/external-links/ExternalLinkCard";
+import ExternalLinkCard from "@/components/external-links/external-link-card";
 import { EXTERNAL_LINKS } from "@/components/external-links/data";
 
 export default function ExternalLinksPage() {
