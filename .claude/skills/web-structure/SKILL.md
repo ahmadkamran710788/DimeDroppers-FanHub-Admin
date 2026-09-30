@@ -22,7 +22,8 @@ project-root/
 ├── utils/                    # Pure utilities, API helpers, routing, validation
 ├── public/
 │   └── assets/               # Static assets (images, fonts, icons)
-├── config.ts                 # App-wide config (e.g. apiUrl from env)
+├── config/
+│   └── index.ts              # App-wide config (e.g. apiUrl from env)
 ├── next.config.ts
 ├── tsconfig.json
 └── .env.local                # Environment variables (never committed)
@@ -69,7 +70,8 @@ Each feature gets its own sub-directory. Common/shared components live in `commo
 components/
 ├── <feature>/                         # e.g. orders/, category/, area/, users/
 │   ├── index.tsx                      # Main entry component for the feature (list view, container)
-│   ├── schema.ts                      # Yup/Zod validation schema for forms in this feature
+│   ├── schema/
+│   │   └── index.ts                   # Yup/Zod validation schema for forms in this feature
 │   └── <feature>-details/             # Detail/inner view sub-components
 │       ├── index.tsx
 │       └── <sub-section>/
@@ -77,7 +79,8 @@ components/
 ├── auth/
 │   ├── sign-in/
 │   │   └── index.tsx
-│   └── schema.ts
+│   └── schema/
+│       └── index.ts
 ├── layout/
 │   └── header/
 │       └── index.tsx
@@ -106,7 +109,8 @@ components/
 - Feature folders are lowercase kebab-case: `order-details`, `category-details`
 - Each component lives in its own folder with an `index.tsx` entry point
 - Common components use PascalCase folder names: `Button/`, `GenericTable/`
-- Each feature that has forms gets a `schema.ts` alongside its `index.tsx`
+- Each feature that has forms gets a `schema/index.ts` alongside its `index.tsx`
+- Plain `.ts` modules (data, schema, config, hooks, types, helpers) follow the same rule: a kebab-case folder with an `index.ts` (e.g. `data/index.ts`, `use-organization-form/index.ts`), never a flat `data.ts`. Only files Next.js requires by name stay flat (`page.tsx`, `layout.tsx`, `route.ts`, `next.config.ts`, `proxy.ts`, `next-env.d.ts`).
 
 ---
 
@@ -124,17 +128,18 @@ utils/
 │   └── index.ts              # Pure helper functions (e.g. unit conversions, formatters)
 ├── validation/
 │   └── index.ts              # Shared validation helpers / custom Yup rules
-└── cn.ts                     # Tailwind className merge utility
+└── cn/
+    └── index.ts              # Tailwind className merge utility
 ```
 
 ---
 
-## `config.ts` (root-level)
+## `config/index.ts` (root-level)
 
 Exports a single `config` object that reads from environment variables:
 
 ```typescript
-// config.ts
+// config/index.ts
 export const config = {
   apiUrl: process.env.NEXT_PUBLIC_API_URL,
 };
@@ -151,11 +156,11 @@ All environment-dependent values are read here and imported from this file — n
 2. **Feature = folder** — when adding a new domain feature (call it `<feature>`), create:
    - `app/(app)/<feature>/page.tsx` (or under whatever route group the project uses, or directly under `app/` if there's no shell)
    - `components/<feature>/index.tsx`
-   - `components/<feature>/schema.ts` (if it has forms)
+   - `components/<feature>/schema/index.ts` (if it has forms)
    - Add its API endpoints to `utils/routes/index.tsx` under `routes.api`
    - Add its UI paths to `utils/routes/index.tsx` under `routes.ui`
 
-3. **Schema files stay next to their feature component** — `schema.ts` lives inside the same feature folder, not in a global schemas directory.
+3. **Schema files stay next to their feature component** — `schema/index.ts` lives inside the same feature folder, not in a global schemas directory.
 
 4. **Static assets** go in `public/assets/` and are referenced as `/assets/filename.ext`.
 

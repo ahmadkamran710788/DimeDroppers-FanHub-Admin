@@ -12,7 +12,7 @@ import SocialFields from "@/components/organization/social-fields";
 import SportLevelFields from "@/components/organization/sport-level-fields";
 import type { OrgFormState } from "@/components/organization/form";
 import PreviewCard from "@/components/organization/preview-card";
-import { useOrganizationForm } from "@/components/organization/useOrganizationForm";
+import { useOrganizationForm } from "@/components/organization/use-organization-form";
 import { routes } from "@/utils/routes";
 import { Circle, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";

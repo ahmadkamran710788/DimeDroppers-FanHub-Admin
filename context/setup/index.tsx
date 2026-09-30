@@ -8,7 +8,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { getSavedSchool } from "@/utils/fanhub/getSavedSchool";
+import { getSavedSchool } from "@/utils/fanhub/get-saved-school";
 import type { SavedSchool } from "@/utils/types/school";
 
 interface SetupContextValue {

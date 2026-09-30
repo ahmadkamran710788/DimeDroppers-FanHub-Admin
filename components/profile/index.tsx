@@ -26,8 +26,8 @@ import {
   type OrgFormState,
 } from "@/components/organization/form";
 import PreviewCard from "@/components/organization/preview-card";
-import { useOrganizationForm } from "@/components/organization/useOrganizationForm";
-import { getResumeStep, isSetupComplete } from "@/utils/fanhub/getResumeStep";
+import { useOrganizationForm } from "@/components/organization/use-organization-form";
+import { getResumeStep, isSetupComplete } from "@/utils/fanhub/get-resume-step";
 
 type SectionKey = "orgTeam" | "sportLevel" | "location" | "description" | "contact" | "social" | "branding";
 
