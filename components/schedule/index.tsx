@@ -6,6 +6,7 @@ import ExposureEventModal from "@/components/schedule/ExposureEventModal";
 import Button from "@/components/common/button";
 import RowActionsMenu from "@/components/common/row-actions-menu";
 import { useRouter } from "next/navigation";
+import { useSetup } from "@/context/setup";
 import { cn } from "@/utils/cn";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
@@ -403,7 +404,27 @@ function MiniCalendar({ games }: { games: ScheduleItem[] }) {
   );
 }
 
+// One side of the Next Game matchup: crest (or a placeholder) with the school name under it.
+function TeamSide({ name, logoUrl }: { name: string; logoUrl?: string | null }) {
+  return (
+    <div className="w-20 shrink-0 flex flex-col items-center gap-1 min-w-0">
+      {logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={logoUrl} alt="" className="size-12 rounded-full border border-white/30 object-cover" />
+      ) : (
+        <div className="size-12 bg-white/20 rounded-full border border-white/30 flex items-center justify-center">
+          <CalendarDays className="w-6 h-6 text-white/60" strokeWidth={1.5} />
+        </div>
+      )}
+      <span title={name} className="w-full text-white text-xs font-semibold text-center truncate">
+        {name}
+      </span>
+    </div>
+  );
+}
+
 function NextGameCard({ game }: { game: ScheduleItem | null }) {
+  const { savedSchool } = useSetup();
   if (!game) return null;
   const dateLabel = formatNextGameDate(game.start);
   const { time } = formatTime(game.start, game.isAllDay);
@@ -411,29 +432,13 @@ function NextGameCard({ game }: { game: ScheduleItem | null }) {
   return (
     <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 backdrop-blur-xl flex flex-col gap-4">
       <div className="text-white text-base font-bold uppercase font-display tracking-wide">Next Game</div>
-      <div className="flex items-center justify-between gap-3 p-4 bg-white/5 rounded-lg outline outline-1 outline-white/10">
-        <div className="flex flex-col items-center gap-1 shrink-0">
-          <div className="size-12 bg-white/20 rounded-full border border-white/30 flex items-center justify-center overflow-hidden">
-            <CalendarDays className="w-6 h-6 text-white/60" strokeWidth={1.5} />
-          </div>
-          <span className="text-white text-xs font-semibold text-center">My Team</span>
+      <div className="flex items-center justify-between gap-2 p-4 bg-white/5 rounded-lg outline outline-1 outline-white/10">
+        <TeamSide name={savedSchool?.name || "My Team"} logoUrl={savedSchool?.logoUrl} />
+        <div className="flex-1 min-w-0 flex flex-col items-center gap-1 text-center">
+          <div className="text-white/60 text-xs font-medium uppercase whitespace-nowrap">{dateLabel}</div>
+          <div className="text-white text-2xl font-extrabold font-display whitespace-nowrap">{time}</div>
         </div>
-        <div className="flex-1 flex flex-col items-center gap-1">
-          <div className="text-white/60 text-xs font-medium uppercase">{dateLabel}</div>
-          <div className="text-white text-2xl font-extrabold font-display">{time}</div>
-          <div className="text-white/60 text-xs font-medium text-center truncate max-w-full">{game.location ?? "TBD"}</div>
-        </div>
-        <div className="flex flex-col items-center gap-1 shrink-0">
-          {game.opponentLogoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={game.opponentLogoUrl} alt="" className="size-12 rounded-full border border-white/30 object-cover" />
-          ) : (
-            <div className="size-12 bg-white/20 rounded-full border border-white/30 flex items-center justify-center">
-              <CalendarDays className="w-6 h-6 text-white/60" strokeWidth={1.5} />
-            </div>
-          )}
-          <span className="text-white text-xs font-semibold text-center truncate max-w-[80px]">{game.opponent ?? "TBD"}</span>
-        </div>
+        <TeamSide name={game.opponent ?? "TBD"} logoUrl={game.opponentLogoUrl} />
       </div>
     </div>
   );
