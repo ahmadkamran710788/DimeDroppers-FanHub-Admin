@@ -14,6 +14,8 @@ export const routes = {
     teams: "/teams",
     addTeam: "/teams/add",
     buyTickets: "/buy-tickets",
+    fundraising: "/fundraising",
+    createFundraisingCampaign: "/fundraising/create",
     userDetails: (id: string | number) => `users/${id}`,
     setupWizard: {
       organizationDetails: "/setup-wizard/organization-details",
@@ -162,6 +164,11 @@ export const routes = {
     // Note: this lives under exposure/teams/:teamId, NOT under events/:id.
     exposureTeamPlayers: (teamId: string) => `/fanhub/org/exposure/teams/${teamId}/players`,
     proxyExposureTeamPlayers: (teamId: string) => `/api/fanhub/org/exposure/teams/${teamId}/players`,
+    // Fundraising campaigns — a campaign belongs to one of the school's teams (teamId).
+    // Upstream path (appended to config.apiUrl by the proxy route handler):
+    createCampaign: "fanhub/org/campaigns",
+    // Proxy route (browser calls this via apiCall; server injects the Bearer token):
+    proxyCreateCampaign: "/api/fanhub/org/campaigns",
     // Setup Wizard — wire these when backend is ready
     saveSchedule: "setup/schedule",
     saveActivations: "setup/activations",

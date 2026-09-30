@@ -18,6 +18,10 @@ interface GenericTableProps<T> {
   empty: string;
   /** When true, replaces the body with a centered spinner. */
   loading?: boolean;
+  /** Extra utilities for every header cell (e.g. a different fill). */
+  headerCellClassName?: string;
+  /** Extra utilities for every body cell (e.g. a different fill or padding). */
+  cellClassName?: string;
   className?: string;
 }
 
@@ -31,6 +35,8 @@ export default function GenericTable<T>({
   getKey,
   empty,
   loading = false,
+  headerCellClassName,
+  cellClassName,
   className,
 }: GenericTableProps<T>) {
   return (
@@ -40,7 +46,7 @@ export default function GenericTable<T>({
         {columns.map((col) => (
           <div
             key={col.header}
-            className={cn("h-10 px-2 bg-white/10 flex items-center gap-1", col.cls)}
+            className={cn("h-10 px-2 bg-white/10 flex items-center gap-1", headerCellClassName, col.cls)}
           >
             <span className="text-white text-xs font-semibold uppercase leading-4">
               {col.header}
@@ -68,6 +74,7 @@ export default function GenericTable<T>({
                   key={col.header}
                   className={cn(
                     "px-2 py-3 bg-white/5 flex items-center overflow-hidden text-white text-xs font-medium leading-4",
+                    cellClassName,
                     col.cls
                   )}
                 >

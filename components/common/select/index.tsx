@@ -20,6 +20,9 @@ interface SelectProps {
   placeholder?: string;
   className?: string;
   labelClassName?: string;
+  // Extra utilities for the <select> itself (e.g. a white fill).
+  selectClassName?: string;
+  disabled?: boolean;
 }
 
 export default function Select({
@@ -33,6 +36,8 @@ export default function Select({
   placeholder,
   className,
   labelClassName,
+  selectClassName,
+  disabled,
 }: SelectProps) {
   return (
     <div className={cn("flex flex-col gap-2", className)}>
@@ -50,12 +55,14 @@ export default function Select({
           name={name}
           value={value}
           onChange={onChange}
+          disabled={disabled}
           className={cn(
             "w-full h-12 rounded-[8px] bg-[#F5F6F8] text-midnight-navy text-base font-medium leading-normal px-4 appearance-none",
             "border border-[rgba(11,28,45,0.12)] outline-none",
             "focus:border-steel-blue transition-colors cursor-pointer",
             "disabled:opacity-50",
             icon && "pl-10",
+            selectClassName,
             error && "border-error focus:border-error"
           )}
         >

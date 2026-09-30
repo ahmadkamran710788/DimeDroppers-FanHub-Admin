@@ -16,6 +16,8 @@ interface InputProps {
   disabled?: boolean;
   className?: string;
   labelClassName?: string;
+  // Extra utilities for the <input> itself (e.g. a white fill or right-aligned text).
+  inputClassName?: string;
   // "light" (default): light-grey field. "dark": translucent field with white text on dark cards.
   variant?: "light" | "dark";
   // Muted helper line under the field (hidden while an error is shown).
@@ -34,6 +36,7 @@ export default function Input({
   disabled = false,
   className,
   labelClassName,
+  inputClassName,
   variant = "light",
   hint,
 }: InputProps) {
@@ -73,6 +76,7 @@ export default function Input({
               : "bg-[#F5F6F8] text-midnight-navy border-[rgba(11,28,45,0.12)] placeholder:text-[rgba(11,28,45,0.4)]",
             icon && (dark ? "pl-16" : "pl-10"),
             isPassword && "pr-11",
+            inputClassName,
             error && "border-error focus:border-error"
           )}
         />
