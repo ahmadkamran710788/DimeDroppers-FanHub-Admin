@@ -4,10 +4,15 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Inbox, LogOut, Menu, User } from "lucide-react";
+import Tooltip from "@/components/common/tooltip";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { clearFanhubSession } from "@/utils/auth/session";
 import { useAuth } from "@/context/auth";
+
+// SAMPLE DATA — pending requests count shown on the header Requests icon.
+// TODO: load from the requests API (pending scorekeeper + videographer requests).
+const PENDING_REQUESTS_COUNT = 2;
 
 interface HeaderProps {
   className?: string;
@@ -72,16 +77,6 @@ export default function Header({ className, title = "Setup Wizard", onMenuClick 
             boxShadow: "0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)",
           }}
         >
-          <Link
-            href={routes.ui.requests}
-            role="menuitem"
-            onClick={() => setOpen(false)}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors duration-150"
-          >
-            <Inbox className="w-4 h-4 shrink-0" />
-            Requests
-          </Link>
-          <div className="h-px bg-white/10 mx-2 my-1" />
           <button
             type="button"
             role="menuitem"
@@ -100,7 +95,8 @@ export default function Header({ className, title = "Setup Wizard", onMenuClick 
     <>
       <header
         className={cn(
-          "h-20 flex items-center justify-between px-4 lg:px-10 shrink-0",
+          // z-20 keeps header tooltips above the page content (main is z-10).
+          "relative z-20 h-20 flex items-center justify-between px-4 lg:px-10 shrink-0",
           "bg-[rgba(11,28,45,0.01)] backdrop-blur-[48px]",
           "shadow-[inset_0_-1px_0_0_rgba(255,255,255,0.2)]",
           className
@@ -122,12 +118,29 @@ export default function Header({ className, title = "Setup Wizard", onMenuClick 
           </h1>
         </div>
 
-        {/* Right side: help, bell, avatar */}
+        {/* Right side: help, requests, bell, avatar */}
         <div className="flex items-center gap-6">
           <button type="button" className="w-6 h-6 flex items-center justify-center" aria-label="Help">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/icons/icon-help.svg" alt="" width={24} height={24} />
           </button>
+          <Tooltip label="Requests">
+            <Link
+              href={routes.ui.requests}
+              aria-label={PENDING_REQUESTS_COUNT > 0 ? `Requests (${PENDING_REQUESTS_COUNT} pending)` : "Requests"}
+              className="relative w-6 h-6 flex items-center justify-center text-white hover:opacity-80 transition-opacity"
+            >
+              <Inbox className="w-6 h-6" strokeWidth={1.5} />
+              {PENDING_REQUESTS_COUNT > 0 && (
+                <span
+                  aria-hidden
+                  className="absolute -top-1.5 -right-2 min-w-4 h-4 px-1 rounded-full bg-error text-white text-[10px] font-semibold leading-none flex items-center justify-center"
+                >
+                  {PENDING_REQUESTS_COUNT > 9 ? "9+" : PENDING_REQUESTS_COUNT}
+                </span>
+              )}
+            </Link>
+          </Tooltip>
           <button type="button" className="w-6 h-6 flex items-center justify-center relative" aria-label="Notifications">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/icons/icon-bell.svg" alt="" width={24} height={24} />
