@@ -6,7 +6,7 @@ import { Info, Link2, Play, RefreshCw, Ticket } from "lucide-react";
 import toast from "react-hot-toast";
 import Button from "@/components/common/button";
 import Input from "@/components/common/input";
-import ConnectionStatus, { type ConnectionState } from "@/components/external-links/ConnectionStatus";
+import ConnectionStatus, { type ConnectionState } from "@/components/external-links/connection-status";
 import { THEME, type ExternalLinkConfig } from "@/components/external-links/data";
 import { useSetup } from "@/context/setup";
 import { cn } from "@/utils/cn";

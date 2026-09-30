@@ -2,7 +2,7 @@
 
 import GenericTable, { type Column } from "@/components/common/generic-table";
 import StatusPill from "@/components/common/status-pill";
-import type { StaffPoolAction } from "@/components/staff-pool/ConfirmActionModal";
+import type { StaffPoolAction } from "@/components/staff-pool/confirm-action-modal";
 import { cn } from "@/utils/cn";
 import type { StaffPoolMember, StaffPoolStatus } from "@/utils/types/staff-pool";
 

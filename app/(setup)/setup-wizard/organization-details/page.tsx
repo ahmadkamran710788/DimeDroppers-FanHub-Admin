@@ -3,17 +3,15 @@
 import CheckCircle from "@/components/common/check-circle";
 import SectionCard from "@/components/common/section-card";
 import WizardFooter from "@/components/common/wizard-footer";
-import {
-  BrandingFields,
-  ContactFields,
-  DescriptionField,
-  LocationFields,
-  OrgTeamFields,
-  SocialFields,
-  SportLevelFields,
-} from "@/components/organization/fields";
+import BrandingFields from "@/components/organization/branding-fields";
+import ContactFields from "@/components/organization/contact-fields";
+import DescriptionField from "@/components/organization/description-field";
+import LocationFields from "@/components/organization/location-fields";
+import OrgTeamFields from "@/components/organization/org-team-fields";
+import SocialFields from "@/components/organization/social-fields";
+import SportLevelFields from "@/components/organization/sport-level-fields";
 import type { OrgFormState } from "@/components/organization/form";
-import PreviewCard from "@/components/organization/PreviewCard";
+import PreviewCard from "@/components/organization/preview-card";
 import { useOrganizationForm } from "@/components/organization/useOrganizationForm";
 import { routes } from "@/utils/routes";
 import { Circle, ShieldCheck } from "lucide-react";
