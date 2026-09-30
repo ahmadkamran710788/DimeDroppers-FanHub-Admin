@@ -19,7 +19,7 @@ const NAV_ITEMS = [
   { icon: "/icons/icon-ticket.svg", label: "Buy Tickets", href: routes.ui.buyTickets },
   { icon: "/icons/icon-media.svg", label: "Media", href: "#" },
   { icon: "/icons/icon-business.svg", label: "Sponsors", href: "#" },
-  { icon: "/icons/icon-donations.svg", label: "Donations", href: "#" },
+  { icon: "/icons/icon-donations.svg", label: "Fundraising", href: routes.ui.fundraising },
   { icon: "/icons/icon-analytics.svg", label: "Analytics", href: "#" },
   { icon: "/icons/icon-settings.svg", label: "Settings", href: "#" },
 ];

@@ -14,6 +14,8 @@ interface TextareaProps {
   className?: string;
   // "onDark" (default): white label on a dark page. "onLight": navy label inside a white dialog.
   variant?: "onDark" | "onLight";
+  // Show the character counter on the label row instead of under the field.
+  counterInLabel?: boolean;
 }
 
 export default function Textarea({
@@ -27,13 +29,22 @@ export default function Textarea({
   error,
   className,
   variant = "onDark",
+  counterInLabel = false,
 }: TextareaProps) {
   const onLight = variant === "onLight";
+  const counter = (
+    <span className={cn("text-sm", onLight ? "text-midnight-navy/50" : "text-[rgba(255,255,255,0.4)]")}>
+      {value.length}/{maxLength} Characters
+    </span>
+  );
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <label htmlFor={name} className={cn("text-base font-medium", onLight ? "text-midnight-navy" : "text-white")}>
-        {label}
-      </label>
+      <div className="flex items-center justify-between gap-4">
+        <label htmlFor={name} className={cn("text-base font-medium", onLight ? "text-midnight-navy" : "text-white")}>
+          {label}
+        </label>
+        {counterInLabel && counter}
+      </div>
       <textarea
         id={name}
         name={name}
@@ -50,16 +61,14 @@ export default function Textarea({
           error && "border-error focus:border-error"
         )}
       />
-      <div className="flex items-center justify-between">
-        {error ? (
-          <p className="text-sm text-error">{error}</p>
-        ) : (
-          <span />
-        )}
-        <span className={cn("text-sm", onLight ? "text-midnight-navy/50" : "text-[rgba(255,255,255,0.4)]")}>
-          {value.length}/{maxLength} Characters
-        </span>
-      </div>
+      {counterInLabel ? (
+        error && <p className="text-sm text-error">{error}</p>
+      ) : (
+        <div className="flex items-center justify-between">
+          {error ? <p className="text-sm text-error">{error}</p> : <span />}
+          {counter}
+        </div>
+      )}
     </div>
   );
 }

@@ -9,3 +9,12 @@ export const getScorekeeperName = (m: ScorekeeperPoolMember): string =>
 
 export const getScorekeeperEmail = (m: ScorekeeperPoolMember): string =>
   m.fan?.email?.trim() || m.email?.trim() || "";
+
+// US-dollar amount; cents are shown only when the value has them ($25,000 / $9,425.53).
+export const formatMoney = (amount: number): string =>
+  amount.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
