@@ -21,6 +21,7 @@ import {
   ORG_TYPE_OPTIONS,
   SPORT_OPTIONS,
   US_STATE_OPTIONS,
+  isClubTeam,
   labelOf,
   type FieldGroupProps,
   type OrgFormState,
@@ -89,14 +90,21 @@ export default function ProfilePage() {
     if (await org.save(SECTIONS[editing].fields)) setEditing(null);
   };
 
+  const isClub = isClubTeam(form.organizationType);
+
   const content: Record<SectionKey, ReactNode> = {
     orgTeam: (
       <DetailRows
         rows={[
           { label: "Organization Name", value: form.organizationName },
           { label: "Organization Type", value: form.organizationType && labelOf(ORG_TYPE_OPTIONS, form.organizationType) },
-          { label: "Event Type", value: form.eventType && labelOf(EVENT_TYPE_OPTIONS, form.eventType) },
-          { label: "Team Name", value: form.teamName },
+          // Event Type and Team Name only apply to club teams.
+          ...(isClub
+            ? [
+                { label: "Event Type", value: form.eventType && labelOf(EVENT_TYPE_OPTIONS, form.eventType) },
+                { label: "Team Name", value: form.teamName },
+              ]
+            : []),
         ]}
       />
     ),
@@ -214,7 +222,8 @@ export default function ProfilePage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-6 lg:gap-8 items-start">
         <div className="flex flex-col gap-4">
-          {SECTION_ORDER.map((key) => (
+          {/* Sport & Level only applies to club teams. */}
+          {SECTION_ORDER.filter((key) => key !== "sportLevel" || isClub).map((key) => (
             <ProfileSection key={key} icon={SECTIONS[key].icon} title={SECTIONS[key].title} onEdit={() => setEditing(key)}>
               {content[key]}
             </ProfileSection>
