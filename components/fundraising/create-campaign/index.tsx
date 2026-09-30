@@ -18,7 +18,7 @@ import {
   DESCRIPTION_MAX,
   type CampaignImpact,
 } from "@/components/fundraising/create-campaign/schema";
-import { HelpCard } from "@/components/fundraising/SidePanels";
+import HelpCard from "@/components/fundraising/help-card";
 import { TEAMS } from "@/components/teams/data";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
