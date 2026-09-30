@@ -154,13 +154,34 @@ export const INITIAL_ORG_FORM: OrgFormState = {
   accentColor: "#231F20",
 };
 
+// Event Type, Team Name, Sport and Level only apply to club teams; for schools, leagues
+// and tournaments they are hidden, not validated and not sent.
+export const CLUB_TEAM = "club-team";
+export const isClubTeam = (organizationType: string) => organizationType === CLUB_TEAM;
+
 export const orgSchema = yup.object({
   organizationName: yup.string().required("Organization name is required"),
   organizationType: yup.string().required("Organization type is required"),
-  eventType: yup.string().required("Event type is required"),
-  teamName: yup.string().required("Team name is required"),
-  level: yup.string().required("Level is required"),
-  sport: yup.string().required("Sport is required"),
+  eventType: yup.string().when("organizationType", {
+    is: CLUB_TEAM,
+    then: (s) => s.required("Event type is required"),
+    otherwise: (s) => s.notRequired(),
+  }),
+  teamName: yup.string().when("organizationType", {
+    is: CLUB_TEAM,
+    then: (s) => s.required("Team name is required"),
+    otherwise: (s) => s.notRequired(),
+  }),
+  level: yup.string().when("organizationType", {
+    is: CLUB_TEAM,
+    then: (s) => s.required("Level is required"),
+    otherwise: (s) => s.notRequired(),
+  }),
+  sport: yup.string().when("organizationType", {
+    is: CLUB_TEAM,
+    then: (s) => s.required("Sport is required"),
+    otherwise: (s) => s.notRequired(),
+  }),
   streetAddress: yup.string().required("Street address is required"),
   city: yup.string().required("City is required"),
   state: yup.string().required("State is required"),
@@ -240,10 +261,12 @@ export function orgFormToFormData(form: OrgFormState, logoFile: File | null): Fo
   const body = new FormData();
   body.append("name", form.organizationName);
   body.append("organizationType", labelOf(ORG_TYPE_OPTIONS, form.organizationType));
-  body.append("eventType", labelOf(EVENT_TYPE_OPTIONS, form.eventType));
-  body.append("teamName", form.teamName);
-  body.append("level", labelOf(LEVEL_OPTIONS, form.level));
-  body.append("sportsType", form.sport);
+  if (isClubTeam(form.organizationType)) {
+    body.append("eventType", labelOf(EVENT_TYPE_OPTIONS, form.eventType));
+    body.append("teamName", form.teamName);
+    body.append("level", labelOf(LEVEL_OPTIONS, form.level));
+    body.append("sportsType", form.sport);
+  }
   body.append("streetAddress", form.streetAddress);
   body.append("city", form.city);
   body.append("state", form.state);
