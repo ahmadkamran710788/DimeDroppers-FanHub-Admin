@@ -4,18 +4,22 @@ import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { useSetup } from "@/context/setup";
 import { useAuth } from "@/context/auth";
-import { User } from "lucide-react";
+import { ClipboardList, User, Video } from "lucide-react";
 import Link from "next/link";
+import { type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
 // Setup Wizard is not in the sidebar: first-time setup is a full-screen flow after
 // sign-in, and afterwards the organization is edited from Profile.
-const NAV_ITEMS = [
+// Icons are SVG paths, or a lucide icon where the set has no matching SVG.
+const NAV_ITEMS: { icon: string | ReactNode; label: string; href: string }[] = [
   { icon: "/icons/icon-user.svg", label: "Profile", href: routes.ui.profile },
   { icon: "/icons/icon-calendar.svg", label: "Schedule", href: routes.ui.schedule },
   { icon: "/icons/icon-link.svg", label: "External Links", href: routes.ui.externalLinks },
   { icon: "/icons/icon-bolt.svg", label: "Activations", href: routes.ui.activations },
   { icon: "/icons/icon-users.svg", label: "Teams", href: routes.ui.teams },
+  { icon: <ClipboardList className="size-6" strokeWidth={1.5} />, label: "List Score Keeper", href: routes.ui.scorekeepers },
+  { icon: <Video className="size-6" strokeWidth={1.5} />, label: "List Video Grapher", href: routes.ui.videographers },
   { icon: "/icons/icon-ticket.svg", label: "Buy Tickets", href: routes.ui.buyTickets },
   { icon: "/icons/icon-media.svg", label: "Media", href: "#" },
   { icon: "/icons/icon-business.svg", label: "Sponsors", href: "#" },
@@ -30,7 +34,7 @@ function NavItem({
   href,
   active,
 }: {
-  icon: string;
+  icon: string | ReactNode;
   label: string;
   href: string;
   active?: boolean;
@@ -44,9 +48,13 @@ function NavItem({
       )}
       style={active ? { background: "var(--gradient-cta)" } : undefined}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={icon} alt="" width={24} height={24} className="shrink-0" />
-      {label}
+      {typeof icon === "string" ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={icon} alt="" width={24} height={24} className="shrink-0" />
+      ) : (
+        <span className="size-6 shrink-0 flex items-center justify-center">{icon}</span>
+      )}
+      <span className="whitespace-nowrap">{label}</span>
     </Link>
   );
 }
@@ -64,7 +72,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const sidebarContent = (
     <aside
       className={cn(
-        "flex flex-col w-[236px] shrink-0 h-screen overflow-y-auto",
+        "flex flex-col w-[256px] shrink-0 h-screen overflow-y-auto",
         "bg-[rgba(11,28,45,0.01)] backdrop-blur-[48px]",
         "shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.2)]"
       )}
