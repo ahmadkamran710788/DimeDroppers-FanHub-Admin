@@ -151,14 +151,14 @@ These are the conventional shared primitives this stack relies on. **They may no
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `Button` | `common/Button` | All buttons — supports `primary`, `secondary`, `outline`, `disabled` variants + `isLoading` |
-| `Input` | `common/Input` | Text inputs — supports `error`, `startIcon`, `search` props |
-| `Select` | `common/Select` | Dropdowns — supports `searchable`, `fullWidth`, `error`, `startIcon` |
-| `SearchInput` | `common/SearchInput` | Debounced search with live API calls |
-| `GenericTable` | `common/GenericTable` | Typed, paginated, sortable table |
-| `Loader` | `common/Loader` | Animated dot loader |
-| `Card` | `common/Card` | Content card wrapper |
-| `BackArrow` | `common/BackArrow` | Navigation back button |
+| `Button` | `common/button` | All buttons — supports `primary`, `secondary`, `outline`, `disabled` variants + `isLoading` |
+| `Input` | `common/input` | Text inputs — supports `error`, `startIcon`, `search` props |
+| `Select` | `common/select` | Dropdowns — supports `searchable`, `fullWidth`, `error`, `startIcon` |
+| `SearchInput` | `common/search-input` | Debounced search with live API calls |
+| `GenericTable` | `common/generic-table` | Typed, paginated, sortable table |
+| `Loader` | `common/loader` | Animated dot loader |
+| `Card` | `common/card` | Content card wrapper |
+| `BackArrow` | `common/back-arrow` | Navigation back button |
 | `FormDialog` | `common/form-dialog` | Modal dialog for forms and confirmations |
 
 > Before importing any of these, confirm the folder exists. If it doesn't, create it first (following the contract in §4) rather than assuming it's already there.
@@ -167,7 +167,7 @@ These are the conventional shared primitives this stack relies on. **They may no
 
 When you need a UI element that will be used in 2+ places:
 
-1. Create `components/common/MyComponent/index.tsx`
+1. Create `components/common/my-component/index.tsx`
 2. Define a typed props interface that extends the relevant HTML element attributes
 3. Accept `className` and spread `...props` through to the underlying element
 4. Use `cn()` to merge base styles with incoming `className`
@@ -256,10 +256,10 @@ Multiple form fields are grouped in `<div className="space-y-5">`.
 
 ## 5. Button Component — Always Use It
 
-Never write raw `<button>` tags in feature components (only in `common/` internals). Always use `<Button>` from `common/Button`. If `common/Button` doesn't exist yet in this project, create it first (to the contract in §4, with `variant` and `isLoading` support), then use it everywhere.
+Never write raw `<button>` tags in feature components (only in `common/` internals). Always use `<Button>` from `common/button`. If `common/button` doesn't exist yet in this project, create it first (to the contract in §4, with `variant` and `isLoading` support), then use it everywhere.
 
 ```tsx
-import Button from '@/components/common/Button';
+import Button from '@/components/common/button';
 
 // Primary action
 <Button onClick={handleSubmit} isLoading={isLoading} className="w-full">
@@ -294,5 +294,5 @@ import Button from '@/components/common/Button';
 - **Server Components** (no directive) for data-fetching pages; they call `apiRequest` from `@/utils/api-request`
 - **Client Components** for interactive UI; they call `apiCall` from `@/utils/api-call`
 - **Icons** always come from `lucide-react` — not emoji, not custom SVG, not other icon libraries
-- **Loading states** always use `<Loader />` from `common/Loader` — never custom spinners (create `common/Loader` if it doesn't exist yet)
+- **Loading states** always use `<Loader />` from `common/loader` — never custom spinners (create `common/loader` if it doesn't exist yet)
 - **Path alias** — always use `@/` not relative imports that climb more than one directory
