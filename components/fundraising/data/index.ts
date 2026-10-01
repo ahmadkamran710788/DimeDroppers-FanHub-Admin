@@ -6,6 +6,8 @@ export type CampaignStatus = "Active" | "Draft" | "Ended";
 
 export interface FundraisingCampaign {
   id: string;
+  // Team the campaign raises money for (sample team ids until the API exists).
+  teamId: string;
   title: string;
   description: string;
   image: string;
@@ -62,9 +64,22 @@ export const SAMPLE_TOP_DONORS: TopDonor[] = [
   { name: "Jakob Dorwart", amount: 325 },
 ];
 
+const CAMPAIGN_TITLES = [
+  "New Football Helmets",
+  "Tournament Entry Fees",
+  "Away Game Travel Fund",
+  "Team Meals for the Season",
+  "New Practice Uniforms",
+  "Gym Equipment Upgrade",
+];
+
+// Sample team for each campaign, so teams have 0–3 campaigns (ids match components/teams/data).
+const CAMPAIGN_TEAM = [1, 1, 1, 2, 2, 3, 4, 4, 4, 5, 7, 7, 8, 10, 10, 12, 13, 15];
+
 export const SAMPLE_CAMPAIGNS: FundraisingCampaign[] = Array.from({ length: 18 }, (_, i) => ({
   id: `sample-campaign-${i + 1}`,
-  title: "New Football Helmets",
+  teamId: `team-${CAMPAIGN_TEAM[i]}`,
+  title: CAMPAIGN_TITLES[i % CAMPAIGN_TITLES.length],
   description:
     "Help us upgrade our football helmets for safety and performance. The team will be glad to get your support on that.",
   image: "/images/fundraising-campaign-sample.jpg",

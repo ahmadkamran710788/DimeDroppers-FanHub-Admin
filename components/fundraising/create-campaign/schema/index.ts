@@ -2,7 +2,7 @@ import * as yup from "yup";
 
 export const DESCRIPTION_MAX = 250;
 
-// "Your Impact" — what the campaign funds; any number can be picked.
+// "Purpose" — what the campaign funds; any number can be picked.
 export const IMPACT_OPTIONS = ["Meals", "Travel", "Tournament Fees"] as const;
 export type CampaignImpact = (typeof IMPACT_OPTIONS)[number];
 
