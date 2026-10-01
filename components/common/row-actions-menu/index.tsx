@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { MoreVertical } from "lucide-react";
 import { cn } from "@/utils/cn";
@@ -40,9 +40,11 @@ interface RowActionsMenuProps {
   items: readonly RowAction[];
   ariaLabel: string;
   className?: string;
+  // Replaces the default kebab icon, e.g. a labelled "3 Campaigns" trigger.
+  trigger?: ReactNode;
 }
 
-export default function RowActionsMenu({ items, ariaLabel, className }: RowActionsMenuProps) {
+export default function RowActionsMenu({ items, ariaLabel, className, trigger }: RowActionsMenuProps) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -176,7 +178,7 @@ export default function RowActionsMenu({ items, ariaLabel, className }: RowActio
           className
         )}
       >
-        <MoreVertical className="w-4 h-4 text-white" strokeWidth={2} />
+        {trigger ?? <MoreVertical className="w-4 h-4 text-white" strokeWidth={2} />}
       </button>
       {panel}
     </>

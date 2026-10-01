@@ -16,6 +16,9 @@ export const routes = {
     buyTickets: "/buy-tickets",
     fundraising: "/fundraising",
     createFundraisingCampaign: "/fundraising/create",
+    sponsors: "/sponsors",
+    addSponsor: "/sponsors/add",
+    sponsorAddOns: "/sponsors/add-ons",
     userDetails: (id: string | number) => `users/${id}`,
     setupWizard: {
       organizationDetails: "/setup-wizard/organization-details",
