@@ -21,6 +21,7 @@ const PAGE_TITLES: Record<string, string> = {
   [routes.ui.buyTickets]: "Buy Tickets",
   [routes.ui.fundraising]: "Fundraising",
   [routes.ui.createFundraisingCampaign]: "Fundraising",
+  [routes.ui.media]: "Media",
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
