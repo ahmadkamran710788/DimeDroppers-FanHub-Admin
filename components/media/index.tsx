@@ -72,7 +72,7 @@ const columns: Column<MediaItem>[] = [
   },
   {
     header: "Uploaded By",
-    cls: "w-[100px] shrink-0",
+    cls: "w-[112px] shrink-0 whitespace-nowrap",
     cell: (m) => <span className="leading-4 capitalize">{m.uploadedBy}</span>,
   },
   {
