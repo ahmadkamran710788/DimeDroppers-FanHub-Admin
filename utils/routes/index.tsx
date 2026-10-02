@@ -9,6 +9,8 @@ export const routes = {
     videographers: "/videographers",
     requests: "/requests",
     importSchedule: "/schedule/import",
+    gameRecap: (gameId: string) => `/schedule/games/${gameId}/recap`,
+    gameHighlights: (gameId: string) => `/schedule/games/${gameId}/highlights`,
     externalLinks: "/external-links",
     activations: "/activations",
     teams: "/teams",
