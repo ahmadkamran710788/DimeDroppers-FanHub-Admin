@@ -23,6 +23,8 @@ interface SelectProps {
   // Extra utilities for the <select> itself (e.g. a white fill).
   selectClassName?: string;
   disabled?: boolean;
+  // Adds a red asterisk after the label.
+  required?: boolean;
 }
 
 export default function Select({
@@ -38,11 +40,13 @@ export default function Select({
   labelClassName,
   selectClassName,
   disabled,
+  required,
 }: SelectProps) {
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <label htmlFor={name} className={cn("text-base font-medium text-midnight-navy", labelClassName)}>
         {label}
+        {required && <span className="text-error"> *</span>}
       </label>
       <div className="relative flex items-center">
         {icon && (
