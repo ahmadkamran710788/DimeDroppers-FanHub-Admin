@@ -18,6 +18,7 @@ export const routes = {
     buyTickets: "/buy-tickets",
     fundraising: "/fundraising",
     createFundraisingCampaign: "/fundraising/create",
+    media: "/media",
     sponsors: "/sponsors",
     addSponsor: "/sponsors/add",
     sponsorAddOns: "/sponsors/add-ons",
