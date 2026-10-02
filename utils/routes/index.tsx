@@ -9,6 +9,8 @@ export const routes = {
     videographers: "/videographers",
     requests: "/requests",
     importSchedule: "/schedule/import",
+    gameRecap: (gameId: string) => `/schedule/games/${gameId}/recap`,
+    gameHighlights: (gameId: string) => `/schedule/games/${gameId}/highlights`,
     externalLinks: "/external-links",
     activations: "/activations",
     teams: "/teams",
@@ -17,6 +19,9 @@ export const routes = {
     fundraising: "/fundraising",
     createFundraisingCampaign: "/fundraising/create",
     media: "/media",
+    sponsors: "/sponsors",
+    addSponsor: "/sponsors/add",
+    sponsorAddOns: "/sponsors/add-ons",
     userDetails: (id: string | number) => `users/${id}`,
     setupWizard: {
       organizationDetails: "/setup-wizard/organization-details",

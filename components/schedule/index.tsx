@@ -2,6 +2,7 @@
 
 import AddGameModal from "@/components/schedule/add-game-modal";
 import DeleteGameModal from "@/components/schedule/delete-game-modal";
+import GameDetailsPanel from "@/components/schedule/game-details-panel";
 import ExposureEventModal from "@/components/schedule/exposure-event-modal";
 import Button from "@/components/common/button";
 import RowActionsMenu from "@/components/common/row-actions-menu";
@@ -164,81 +165,97 @@ function GameRow({ game, onEdit, onDelete }: GameRowProps) {
 
   const statusColor = game.status === "cancelled" ? "bg-red-400" : game.status === "tentative" ? "bg-yellow-400" : "bg-green-400";
   const statusText = game.status === "cancelled" ? "Cancelled" : game.status === "tentative" ? "Tentative" : "Scheduled";
+  const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="flex justify-start items-stretch border-b border-white/20">
-      {/* DATE */}
-      <div className="flex-1 px-2 py-4 bg-white/5 flex justify-center items-center overflow-hidden">
-        <div className="px-4 py-1 bg-white/10 rounded-lg outline outline-1 outline-white/10 backdrop-blur-xl flex items-center">
-          <div className="w-7 flex flex-col items-center">
-            <div className="text-white text-3xl font-extrabold font-display uppercase leading-none">{day}</div>
-            <div className="text-white text-xs font-bold uppercase leading-6">{month}</div>
-            <div className="text-white text-xs font-bold uppercase leading-6">{weekday}</div>
-          </div>
+    <div className={cn("flex flex-col border-b border-white/20 border-l-2", expanded ? "border-l-[#FF34BF]" : "border-l-transparent")}>
+      <div className="flex justify-start items-stretch">
+        {/* EXPAND — opens the game details panel under the row */}
+        <div className="w-14 px-2 py-4 bg-white/5 flex justify-center items-center">
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            aria-label={expanded ? "Hide game details" : "Show game details"}
+            className="size-10 rounded-lg bg-white/10 outline outline-1 outline-white/10 backdrop-blur-xl flex items-center justify-center hover:bg-white/20 transition-colors"
+          >
+            <ChevronDown className={cn("w-4 h-4 text-white transition-transform", expanded && "rotate-180")} strokeWidth={2} />
+          </button>
         </div>
-      </div>
-      {/* OPPONENT */}
-      <div className="w-52 px-2 py-4 bg-white/5 flex items-center overflow-hidden">
-        <div className="flex items-center gap-2 min-w-0 w-full">
-          {game.opponentLogoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={game.opponentLogoUrl}
-              alt=""
-              className="size-10 shrink-0 rounded-full border border-white/30 object-cover"
-            />
-          ) : (
-            <div className="size-10 shrink-0 bg-white/20 rounded-full border border-white/30 backdrop-blur-sm" />
-          )}
-          <div className="flex flex-col justify-center gap-0.5 min-w-0">
-            <div className="text-white text-xs font-semibold leading-4 truncate">
-              {game.opponent ? `vs. ${game.opponent}` : game.title}
+        {/* DATE */}
+        <div className="flex-1 px-2 py-4 bg-white/5 flex justify-center items-center overflow-hidden">
+          <div className="px-4 py-1 bg-white/10 rounded-lg outline outline-1 outline-white/10 backdrop-blur-xl flex items-center">
+            <div className="w-7 flex flex-col items-center">
+              <div className="text-white text-3xl font-extrabold font-display uppercase leading-none">{day}</div>
+              <div className="text-white text-xs font-bold uppercase leading-6">{month}</div>
+              <div className="text-white text-xs font-bold uppercase leading-6">{weekday}</div>
             </div>
-            {game.title && game.opponent && (
-              <div className="text-white/40 text-xs font-normal leading-5 truncate">{game.title}</div>
+          </div>
+        </div>
+        {/* OPPONENT */}
+        <div className="w-52 px-2 py-4 bg-white/5 flex items-center overflow-hidden">
+          <div className="flex items-center gap-2 min-w-0 w-full">
+            {game.opponentLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={game.opponentLogoUrl}
+                alt=""
+                className="size-10 shrink-0 rounded-full border border-white/30 object-cover"
+              />
+            ) : (
+              <div className="size-10 shrink-0 bg-white/20 rounded-full border border-white/30 backdrop-blur-sm" />
             )}
+            <div className="flex flex-col justify-center gap-0.5 min-w-0">
+              <div className="text-white text-xs font-semibold leading-4 truncate">
+                {game.opponent ? `vs. ${game.opponent}` : game.title}
+              </div>
+              {game.title && game.opponent && (
+                <div className="text-white/40 text-xs font-normal leading-5 truncate">{game.title}</div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-      {/* TEAM */}
-      <div className="flex-1 px-2 py-4 bg-white/5 flex items-center overflow-hidden">
-        <div className="text-white text-xs font-medium uppercase leading-4 truncate">
-          {game.homeAway ?? "—"}
-        </div>
-      </div>
-      {/* LOCATION */}
-      <div className="w-36 px-2 py-4 bg-white/5 flex items-center overflow-hidden">
-        <div className="flex flex-col gap-1 min-w-0 w-full">
-          <div className="flex items-center gap-1">
-            <div className={cn("size-3 rounded-full shrink-0", game.homeAway === "home" ? "bg-green-400" : game.homeAway === "away" ? "bg-violet-500" : "bg-white/40")} />
-            <div className="text-white text-xs font-medium uppercase leading-4">{game.homeAway ?? "neutral"}</div>
+        {/* TEAM */}
+        <div className="flex-1 px-2 py-4 bg-white/5 flex items-center overflow-hidden">
+          <div className="text-white text-xs font-medium uppercase leading-4 truncate">
+            {game.homeAway ?? "—"}
           </div>
-          <div className="text-white/40 text-xs font-normal leading-5 truncate">{game.location ?? "—"}</div>
+        </div>
+        {/* LOCATION */}
+        <div className="w-36 px-2 py-4 bg-white/5 flex items-center overflow-hidden">
+          <div className="flex flex-col gap-1 min-w-0 w-full">
+            <div className="flex items-center gap-1">
+              <div className={cn("size-3 rounded-full shrink-0", game.homeAway === "home" ? "bg-green-400" : game.homeAway === "away" ? "bg-violet-500" : "bg-white/40")} />
+              <div className="text-white text-xs font-medium uppercase leading-4">{game.homeAway ?? "neutral"}</div>
+            </div>
+            <div className="text-white/40 text-xs font-normal leading-5 truncate">{game.location ?? "—"}</div>
+          </div>
+        </div>
+        {/* TIME */}
+        <div className="w-20 px-2 py-4 bg-white/5 flex justify-center items-center overflow-hidden">
+          <div className="flex flex-col gap-1">
+            <div className="text-white text-xs font-medium uppercase leading-4 whitespace-nowrap">{time}</div>
+            {tz && <div className="text-white/40 text-xs font-normal leading-5">{tz}</div>}
+          </div>
+        </div>
+        {/* STATUS */}
+        <div className="flex-1 px-2 py-4 bg-white/5 flex justify-center items-center overflow-hidden">
+          <div className={cn("h-6 px-3 rounded-full flex items-center", statusColor)}>
+            <span className="text-slate-900 text-xs font-medium whitespace-nowrap">{statusText}</span>
+          </div>
+        </div>
+        {/* ACTIONS */}
+        <div className="w-20 px-2 py-4 bg-white/5 flex justify-center items-center">
+          <RowActionsMenu
+            ariaLabel="Game actions"
+            items={[
+              { label: "Edit", onSelect: () => onEdit(game) },
+              { label: "Delete", onSelect: () => onDelete(game), variant: "destructive" },
+            ]}
+          />
         </div>
       </div>
-      {/* TIME */}
-      <div className="w-16 px-2 py-4 bg-white/5 flex justify-center items-center overflow-hidden">
-        <div className="flex flex-col gap-1">
-          <div className="text-white text-xs font-medium uppercase leading-4">{time}</div>
-          {tz && <div className="text-white/40 text-xs font-normal leading-5">{tz}</div>}
-        </div>
-      </div>
-      {/* STATUS */}
-      <div className="flex-1 px-2 py-4 bg-white/5 flex justify-center items-center overflow-hidden">
-        <div className={cn("h-6 px-3 rounded-full flex items-center", statusColor)}>
-          <span className="text-slate-900 text-xs font-medium">{statusText}</span>
-        </div>
-      </div>
-      {/* ACTIONS */}
-      <div className="w-20 px-2 py-4 bg-white/5 flex justify-center items-center">
-        <RowActionsMenu
-          ariaLabel="Game actions"
-          items={[
-            { label: "Edit", onSelect: () => onEdit(game) },
-            { label: "Delete", onSelect: () => onDelete(game), variant: "destructive" },
-          ]}
-        />
-      </div>
+      {expanded && <GameDetailsPanel gameId={game.id} />}
     </div>
   );
 }
@@ -865,12 +882,13 @@ export default function SchedulePage() {
                   {/* Table header */}
                   <div className="flex items-center border-b border-white/20">
                     {[
+                      { label: "", cls: "w-14" },
                       { label: "DATE", cls: "flex-1 justify-center" },
                       { label: "OPPONENT", cls: "w-52" },
                       { label: "HOME/AWAY", cls: "flex-1" },
                       { label: "LOCATION", cls: "w-36" },
-                      { label: "TIME", cls: "w-16" },
-                      { label: "STATUS", cls: "flex-1" },
+                      { label: "TIME", cls: "w-20" },
+                      { label: "STATUS", cls: "flex-1 justify-center" },
                       { label: "ACTIONS", cls: "w-20" },
                     ].map(({ label, cls }) => (
                       <div key={label} className={cn("h-10 px-2 bg-white/10 flex items-center gap-1", cls)}>

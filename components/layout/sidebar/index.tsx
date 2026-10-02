@@ -22,7 +22,7 @@ const NAV_ITEMS: { icon: string | ReactNode; label: string; href: string }[] = [
   { icon: <Video className="size-6" strokeWidth={1.5} />, label: "List Video Grapher", href: routes.ui.videographers },
   { icon: "/icons/icon-ticket.svg", label: "Buy Tickets", href: routes.ui.buyTickets },
   { icon: "/icons/icon-media.svg", label: "Media", href: routes.ui.media },
-  { icon: "/icons/icon-business.svg", label: "Sponsors", href: "#" },
+  { icon: "/icons/icon-business.svg", label: "Sponsors", href: routes.ui.sponsors },
   { icon: "/icons/icon-donations.svg", label: "Fundraising", href: routes.ui.fundraising },
   { icon: "/icons/icon-analytics.svg", label: "Analytics", href: "#" },
   { icon: "/icons/icon-settings.svg", label: "Settings", href: "#" },

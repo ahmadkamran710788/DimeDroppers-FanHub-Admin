@@ -14,6 +14,8 @@ interface InputProps {
   error?: string;
   type?: string;
   disabled?: boolean;
+  // Adds a red asterisk after the label.
+  required?: boolean;
   className?: string;
   labelClassName?: string;
   // Extra utilities for the <input> itself (e.g. a white fill or right-aligned text).
@@ -34,6 +36,7 @@ export default function Input({
   error,
   type = "text",
   disabled = false,
+  required,
   className,
   labelClassName,
   inputClassName,
@@ -48,6 +51,7 @@ export default function Input({
     <div className={cn("flex flex-col gap-2", className)}>
       <label htmlFor={name} className={cn("text-base font-medium text-midnight-navy", labelClassName)}>
         {label}
+        {required && <span className="text-error"> *</span>}
       </label>
       <div className="relative flex items-center">
         {icon && (
