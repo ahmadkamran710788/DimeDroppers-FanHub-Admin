@@ -170,7 +170,7 @@ export default function CreateCampaignPage() {
             inputClassName={FIELD}
           />
           <CheckboxGroup
-            label="Your Impact"
+            label="Purpose"
             options={IMPACT_OPTIONS}
             value={form.impact}
             onChange={(v) => update("impact", v)}

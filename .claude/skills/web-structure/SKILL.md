@@ -85,21 +85,21 @@ components/
 │   └── header/
 │       └── index.tsx
 └── common/                            # Reusable, domain-agnostic UI primitives
-    ├── Button/
+    ├── button/
     │   └── index.tsx
-    ├── Input/
+    ├── input/
     │   └── index.tsx
-    ├── Card/
+    ├── card/
     │   └── index.tsx
-    ├── Loader/
+    ├── loader/
     │   └── index.tsx
-    ├── Select/
+    ├── select/
     │   └── index.tsx
-    ├── SearchInput/
+    ├── search-input/
     │   └── index.tsx
-    ├── GenericTable/
+    ├── generic-table/
     │   └── index.tsx
-    ├── BackArrow/
+    ├── back-arrow/
     │   └── index.tsx
     └── form-dialog/
         └── index.tsx
@@ -108,7 +108,7 @@ components/
 **Naming rules:**
 - Feature folders are lowercase kebab-case: `order-details`, `category-details`
 - Each component lives in its own folder with an `index.tsx` entry point
-- Common components use PascalCase folder names: `Button/`, `GenericTable/`
+- Common components use lowercase kebab-case folder names too: `button/`, `generic-table/`, `date-field/` (never PascalCase like `Button/`)
 - Each feature that has forms gets a `schema/index.ts` alongside its `index.tsx`
 - Plain `.ts` modules (data, schema, config, hooks, types, helpers) follow the same rule: a kebab-case folder with an `index.ts` (e.g. `data/index.ts`, `use-organization-form/index.ts`), never a flat `data.ts`. Only files Next.js requires by name stay flat (`page.tsx`, `layout.tsx`, `route.ts`, `next.config.ts`, `proxy.ts`, `next-env.d.ts`).
 
@@ -151,7 +151,7 @@ All environment-dependent values are read here and imported from this file — n
 
 ## Key Conventions
 
-1. **Every component in its own folder with `index.tsx`** — this keeps imports clean (`import Foo from '@/components/common/Foo'`) and makes future co-location of styles or tests trivial.
+1. **Every component in its own folder with `index.tsx`** — this keeps imports clean (`import Foo from '@/components/common/foo'`) and makes future co-location of styles or tests trivial.
 
 2. **Feature = folder** — when adding a new domain feature (call it `<feature>`), create:
    - `app/(app)/<feature>/page.tsx` (or under whatever route group the project uses, or directly under `app/` if there's no shell)
