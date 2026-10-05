@@ -8,11 +8,13 @@ interface ToggleProps {
   onChange: (checked: boolean) => void;
   /** Whether the label sits before or after the switch. Defaults to "left". */
   labelPosition?: "left" | "right";
+  // Overrides the label text style (e.g. a small muted description).
+  labelClassName?: string;
   className?: string;
 }
 
-export default function Toggle({ label, checked, onChange, labelPosition = "left", className }: ToggleProps) {
-  const labelEl = <span className="text-base font-medium text-white">{label}</span>;
+export default function Toggle({ label, checked, onChange, labelPosition = "left", labelClassName, className }: ToggleProps) {
+  const labelEl = <span className={cn("text-base font-medium text-white", labelClassName)}>{label}</span>;
   return (
     <label
       className={cn("flex items-center gap-3 cursor-pointer select-none", className)}
