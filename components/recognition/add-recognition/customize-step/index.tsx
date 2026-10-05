@@ -1,4 +1,5 @@
 import { Info, User } from "lucide-react";
+import Image from "next/image";
 import Input from "@/components/common/input";
 import Select from "@/components/common/select";
 import Textarea from "@/components/common/textarea";
@@ -117,8 +118,7 @@ export default function CustomizeStep({
               placeholder="Select game or event"
               icon={
                 game?.opponent ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={game.opponent.logo} alt="" className="size-6 rounded-full object-cover" />
+                  <Image src={game.opponent.logo} alt="" width={24} height={24} className="size-6 rounded-full object-cover" />
                 ) : undefined
               }
               error={errors.gameId}

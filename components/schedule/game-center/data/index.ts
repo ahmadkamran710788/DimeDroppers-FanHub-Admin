@@ -1,5 +1,5 @@
-// SAMPLE DATA — there is no game center endpoint yet. Mirrors the "Subway Basketball Highlights"
-// and "Recap" mockups; replace with the game's real result, recap and clips once the API exists.
+// SAMPLE DATA — there is no game center endpoint yet. Mirrors the Subway "Highlights", "Recap"
+// and "Shop" mockups; replace with the game's real result, recap, clips and shop items once the API exists.
 
 export interface GameTeam {
   name: string;
@@ -32,20 +32,36 @@ export interface GameRecap {
   leaders: { home: TeamLeader | null; away: TeamLeader | null };
 }
 
+export type ShopCategory = "Merch & Apparel" | "Player Cards" | "Highlights" | "Activity";
+
+export interface ShopProduct {
+  id: string;
+  name: string;
+  price: number;
+  // Price in Dimes, the fan-hub points currency.
+  dimes: number;
+  image: string;
+  trending: boolean;
+  category: ShopCategory;
+  apparelType: string;
+  brand: string;
+  color: string;
+}
+
 export interface GameCenter {
-  sponsor: { name: string; logo: string; presentedLogo: string };
+  sponsor: { name: string; presentedLogo: string };
   home: GameTeam;
   away: GameTeam;
   // e.g. "Final", "Q3 4:12".
   status: string;
   highlights: Highlight[];
   recap: GameRecap;
+  shop: ShopProduct[];
 }
 
 export const SAMPLE_GAME: GameCenter = {
   sponsor: {
     name: "Subway",
-    logo: "/images/highlights/sponsor-logo.png",
     presentedLogo: "/images/highlights/sponsor-presented.png",
   },
   home: { name: "Twin Lakes Academy Middle", logo: "/images/highlights/team-home.png", score: 56 },
@@ -78,4 +94,54 @@ export const SAMPLE_GAME: GameCenter = {
       away: null,
     },
   },
+  shop: [
+    {
+      id: "p-1",
+      name: "Official Hoodie",
+      price: 49.99,
+      dimes: 8000,
+      image: "/images/shop/official-hoodie.jpg",
+      trending: true,
+      category: "Merch & Apparel",
+      apparelType: "Hoodie",
+      brand: "Twin Lakes Academy",
+      color: "Black",
+    },
+    {
+      id: "p-2",
+      name: "Official Jersey",
+      price: 49.99,
+      dimes: 8000,
+      image: "/images/shop/official-jersey.jpg",
+      trending: true,
+      category: "Merch & Apparel",
+      apparelType: "T-Shirt",
+      brand: "Twin Lakes Academy",
+      color: "Black",
+    },
+    {
+      id: "p-3",
+      name: "Mom Jersey",
+      price: 49.99,
+      dimes: 8000,
+      image: "/images/shop/mom-jersey.jpg",
+      trending: false,
+      category: "Merch & Apparel",
+      apparelType: "T-Shirt",
+      brand: "Twin Lakes Academy",
+      color: "Black",
+    },
+    {
+      id: "p-4",
+      name: "Player Jersey",
+      price: 49.99,
+      dimes: 8000,
+      image: "/images/shop/player-jersey.jpg",
+      trending: false,
+      category: "Merch & Apparel",
+      apparelType: "T-Shirt",
+      brand: "Twin Lakes Academy",
+      color: "Black",
+    },
+  ],
 };

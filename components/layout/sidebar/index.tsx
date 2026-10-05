@@ -4,7 +4,7 @@ import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { useSetup } from "@/context/setup";
 import { useAuth } from "@/context/auth";
-import { ClipboardList, Star, User, Video } from "lucide-react";
+import { ClipboardList, Gem, Star, User, Video } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode } from "react";
 import { usePathname } from "next/navigation";
@@ -22,6 +22,7 @@ const NAV_ITEMS: { icon: string | ReactNode; label: string; href: string }[] = [
   { icon: <Video className="size-6" strokeWidth={1.5} />, label: "List Video Grapher", href: routes.ui.videographers },
   { icon: "/icons/icon-ticket.svg", label: "Buy Tickets", href: routes.ui.buyTickets },
   { icon: "/icons/icon-media.svg", label: "Media", href: routes.ui.media },
+  { icon: <Gem className="size-6" strokeWidth={1.5} />, label: "Digital Collectibles", href: routes.ui.digitalCollectibles },
   { icon: <Star className="size-6" strokeWidth={1.5} />, label: "Recognition & Fan Wall", href: routes.ui.recognition },
   { icon: "/icons/icon-business.svg", label: "Sponsors", href: routes.ui.sponsors },
   { icon: "/icons/icon-donations.svg", label: "Fundraising", href: routes.ui.fundraising },

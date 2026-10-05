@@ -1,4 +1,5 @@
 import { Volleyball } from "lucide-react";
+import Image from "next/image";
 import { HOME_TEAM, type Recognition } from "@/components/recognition/recognitions-data";
 import { TEMPLATES } from "@/components/recognition/templates";
 import { cn } from "@/utils/cn";
@@ -19,8 +20,7 @@ const initials = (name: string) =>
 function Crest({ name, logo }: { name: string; logo: string }) {
   return (
     <div className="flex flex-col items-center gap-1.5 w-24 text-center">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={logo} alt="" className="size-12 rounded-full object-cover ring-2 ring-white/30" />
+      <Image src={logo} alt="" width={48} height={48} className="size-12 rounded-full object-cover ring-2 ring-white/30" />
       <span className="text-sm font-semibold leading-tight text-white">{name}</span>
     </div>
   );

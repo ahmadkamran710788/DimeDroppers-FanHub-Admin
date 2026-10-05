@@ -1,16 +1,19 @@
 import { ArrowRight, Play } from "lucide-react";
 import type { Highlight } from "@/components/schedule/game-center/data";
+import Image from "next/image";
+import { cn } from "@/utils/cn";
 
 interface HighlightsSectionProps {
   highlights: Highlight[];
   onPlay: (h: Highlight) => void;
   onSeeAll: () => void;
+  className?: string;
 }
 
 // "Video" tab: grid of the game's top highlight clips.
-export default function HighlightsSection({ highlights, onPlay, onSeeAll }: HighlightsSectionProps) {
+export default function HighlightsSection({ highlights, onPlay, onSeeAll, className }: HighlightsSectionProps) {
   return (
-    <div className="px-6 py-8 flex flex-col gap-6">
+    <div className={cn("px-6 py-8 flex flex-col gap-6", className)}>
       <div className="flex items-center justify-between gap-4">
         <h3 className="font-display font-extrabold text-[32px] lg:text-[40px] uppercase leading-none text-white">
           Top Highlights
@@ -35,8 +38,13 @@ export default function HighlightsSection({ highlights, onPlay, onSeeAll }: High
             className="group text-left rounded-[8px] overflow-hidden border border-white/10 bg-[#111C2E] hover:border-white/30 transition-colors"
           >
             <div className="relative aspect-[16/9]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={h.thumbnail} alt="" className="absolute inset-0 size-full object-cover" />
+              <Image
+                src={h.thumbnail}
+                alt=""
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                className="object-cover"
+              />
               <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/70 text-sm font-medium text-white">
                 {`${h.duration}s`}
               </span>

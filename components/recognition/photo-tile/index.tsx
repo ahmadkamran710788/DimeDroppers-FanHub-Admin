@@ -1,4 +1,5 @@
 import { GripVertical, X } from "lucide-react";
+import Image from "next/image";
 import Checkbox from "@/components/common/checkbox";
 import { cn } from "@/utils/cn";
 
@@ -27,8 +28,14 @@ export default function PhotoTile({ src, alt, selected, onToggle, onRemove, drop
         className
       )}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt} draggable={false} className="absolute inset-0 size-full object-cover" />
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
+        draggable={false}
+        className="object-cover"
+      />
       <span className="absolute top-1.5 left-1.5 size-8 rounded-[6px] bg-black/60 flex items-center justify-center">
         <GripVertical className="size-4 text-white" strokeWidth={2} />
       </span>

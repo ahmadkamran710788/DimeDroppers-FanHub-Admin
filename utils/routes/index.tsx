@@ -11,6 +11,7 @@ export const routes = {
     importSchedule: "/schedule/import",
     gameRecap: (gameId: string) => `/schedule/games/${gameId}/recap`,
     gameHighlights: (gameId: string) => `/schedule/games/${gameId}/highlights`,
+    gameShop: (gameId: string) => `/schedule/games/${gameId}/shop`,
     externalLinks: "/external-links",
     activations: "/activations",
     teams: "/teams",
@@ -19,6 +20,7 @@ export const routes = {
     fundraising: "/fundraising",
     createFundraisingCampaign: "/fundraising/create",
     media: "/media",
+    digitalCollectibles: "/digital-collectibles",
     recognition: "/recognition",
     // Opens the page on the Recognition Posts section.
     recognitionPosts: "/recognition?view=posts",

@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import Image from "next/image";
 import { Check, Volleyball } from "lucide-react";
 import SectionHeading from "@/components/recognition/add-recognition/section-heading";
 import { MUSTANGS, type RecognitionCategory, type RecognitionTemplate } from "@/components/recognition/recognitions-data";
@@ -66,8 +67,7 @@ function TemplateCard({ name }: { name: RecognitionTemplate }) {
           <span className="text-sm font-semibold whitespace-nowrap">10:00 PM</span>
         </div>
         <div className="flex flex-col items-center gap-1 w-16 text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={MUSTANGS.logo} alt="" className="size-9 rounded-full object-cover" />
+          <Image src={MUSTANGS.logo} alt="" width={36} height={36} className="size-9 rounded-full object-cover" />
           <span className="text-[10px] font-semibold leading-tight text-white">{MUSTANGS.name}</span>
         </div>
       </div>
