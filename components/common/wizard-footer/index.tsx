@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Button from "@/components/common/button";
 import { cn } from "@/utils/cn";
 
@@ -12,6 +13,12 @@ interface WizardFooterProps {
   primaryLabel?: string;
   onPrimary?: () => void;
   primaryDisabled?: boolean;
+  // Optional extra action before the primary one (e.g. "Preview on Fan App").
+  secondaryLabel?: string;
+  secondaryIcon?: ReactNode;
+  onSecondary?: () => void;
+  primaryIcon?: ReactNode;
+  primaryIconPosition?: "start" | "end";
   // Leave room for the 256px desktop sidebar. False on full-screen pages (Setup Wizard).
   withSidebar?: boolean;
 }
@@ -23,6 +30,11 @@ export default function WizardFooter({
   primaryLabel,
   onPrimary,
   primaryDisabled,
+  secondaryLabel,
+  secondaryIcon,
+  onSecondary,
+  primaryIcon,
+  primaryIconPosition,
   withSidebar = true,
 }: WizardFooterProps) {
   return (
@@ -35,8 +47,18 @@ export default function WizardFooter({
       {onBack ? <Button variant="ghost" label={backLabel} onClick={onBack} /> : <span />}
       <div className="flex gap-4">
         {onSaveExit && <Button className="cursor-pointer" variant="ghost" label="Save & Exit" onClick={onSaveExit} />}
+        {secondaryLabel && onSecondary && (
+          <Button variant="primary" label={secondaryLabel} icon={secondaryIcon} onClick={onSecondary} />
+        )}
         {primaryLabel && onPrimary && (
-          <Button variant="cta" label={primaryLabel} onClick={onPrimary} disabled={primaryDisabled} />
+          <Button
+            variant="cta"
+            label={primaryLabel}
+            icon={primaryIcon}
+            iconPosition={primaryIconPosition}
+            onClick={onPrimary}
+            disabled={primaryDisabled}
+          />
         )}
       </div>
     </div>

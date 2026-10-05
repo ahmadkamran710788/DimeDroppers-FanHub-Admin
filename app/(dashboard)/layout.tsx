@@ -23,6 +23,8 @@ const PAGE_TITLES: Record<string, string> = {
   [routes.ui.createFundraisingCampaign]: "Fundraising",
   [routes.ui.media]: "Media",
   [routes.ui.digitalCollectibles]: "Digital Collectibles",
+  [routes.ui.recognition]: "Recognition & Fan Wall",
+  [routes.ui.addRecognition]: "Recognition & Fan Wall",
   [routes.ui.sponsors]: "Sponsors",
   [routes.ui.addSponsor]: "Sponsors",
   [routes.ui.sponsorAddOns]: "Sponsors",

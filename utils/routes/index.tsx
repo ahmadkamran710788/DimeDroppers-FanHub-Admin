@@ -21,6 +21,10 @@ export const routes = {
     createFundraisingCampaign: "/fundraising/create",
     media: "/media",
     digitalCollectibles: "/digital-collectibles",
+    recognition: "/recognition",
+    // Opens the page on the Recognition Posts section.
+    recognitionPosts: "/recognition?view=posts",
+    addRecognition: "/recognition/add",
     sponsors: "/sponsors",
     addSponsor: "/sponsors/add",
     sponsorAddOns: "/sponsors/add-ons",
