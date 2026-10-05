@@ -1,16 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Image from "next/image";
 import { CloudUpload, EllipsisVertical, Filter, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import Button from "@/components/common/button";
-import GenericTable, { type Column } from "@/components/common/generic-table";
+import GenericTable from "@/components/common/generic-table";
 import Pagination from "@/components/common/pagination";
-import RowActionsMenu from "@/components/common/row-actions-menu";
 import SearchInput from "@/components/common/search-input";
-import StatusPill from "@/components/common/status-pill";
-import { ATHLETES, type Athlete } from "@/components/teams/data";
+import { athleteColumns } from "@/components/teams/athlete-columns";
+import { ATHLETES } from "@/components/teams/data";
 
 const PAGE_SIZE = 10;
 
@@ -35,43 +33,10 @@ export default function AthletesTab() {
   const from = filtered.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const to = Math.min(currentPage * PAGE_SIZE, filtered.length);
 
-  const columns: Column<Athlete>[] = [
-    {
-      header: "Athlete",
-      cls: "flex-1 min-w-[180px] py-5",
-      cell: (a) => (
-        <div className="flex items-center gap-3 min-w-0">
-          <Image src={a.avatar} alt="" width={40} height={40} className="size-10 shrink-0 rounded-full object-cover" />
-          <div className="flex flex-col gap-1 min-w-0">
-            <span className="text-sm font-semibold text-white truncate">{a.name}</span>
-            <span className="text-xs text-white/40 truncate">{a.email}</span>
-          </div>
-        </div>
-      ),
-    },
-    { header: "Jersey #", cls: "w-16 shrink-0 py-5", cell: (a) => a.jersey },
-    { header: "Position", cls: "w-20 shrink-0 py-5", cell: (a) => <span className="leading-5">{a.position}</span> },
-    { header: "Graduated", cls: "w-20 shrink-0 py-5", cell: (a) => a.graduated },
-    {
-      header: "Status",
-      cls: "w-20 shrink-0 py-5",
-      cell: (a) => <StatusPill label={a.status} color={a.status === "Active" ? "bg-success" : "bg-white/30"} />,
-    },
-    {
-      header: "Actions",
-      cls: "w-16 shrink-0 py-5 justify-end",
-      cell: (a) => (
-        <RowActionsMenu
-          ariaLabel={`Actions for ${a.name}`}
-          className="bg-white/25 hover:bg-white/35"
-          items={[
-            { label: "Edit Athlete", onSelect: comingSoon },
-            { label: "Remove Athlete", onSelect: comingSoon, variant: "destructive" },
-          ]}
-        />
-      ),
-    },
-  ];
+  const columns = athleteColumns(() => [
+    { label: "Edit Athlete", onSelect: comingSoon },
+    { label: "Remove Athlete", onSelect: comingSoon, variant: "destructive" },
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
