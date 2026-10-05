@@ -8,14 +8,14 @@ import Button from "@/components/common/button";
 import Tabs from "@/components/common/tabs";
 import { routes } from "@/utils/routes";
 
-const TABS = ["Digital Collectables", "Recap", "Shop Items", "Highlights"] as const;
+const TABS = ["Insights", "Recap", "Shop Items", "Highlights"] as const;
 type Tab = (typeof TABS)[number];
 
 const TAB_COPY: Record<Tab, { title: string; description: string; action: string }> = {
-  "Digital Collectables": {
-    title: "Game Digital Collectables",
-    description: "View and manage digital collectables for this game.",
-    action: "View Collectables",
+  Insights: {
+    title: "Game Insights",
+    description: "Key stats, trends and takeaways from this game.",
+    action: "View Insights",
   },
   Recap: {
     title: "Game Recap",
@@ -34,17 +34,18 @@ const TAB_COPY: Record<Tab, { title: string; description: string; action: string
   },
 };
 
-// Game center screen each tab opens; collectables and shop pages don't exist yet.
+// Game center screen each tab opens; the insights page doesn't exist yet.
 const TAB_ROUTE: Partial<Record<Tab, (gameId: string) => string>> = {
   Recap: routes.ui.gameRecap,
   Highlights: routes.ui.gameHighlights,
+  "Shop Items": routes.ui.gameShop,
 };
 
-// Expanded area under a schedule row. Recap and Highlights open the game center screen;
-// the others show a "coming soon" toast for now.
+// Expanded area under a schedule row. Recap, Shop Items and Highlights open the game center
+// screen; Insights shows a "coming soon" toast for now.
 export default function GameDetailsPanel({ gameId }: { gameId: string }) {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("Digital Collectables");
+  const [tab, setTab] = useState<Tab>("Insights");
   const copy = TAB_COPY[tab];
 
   return (

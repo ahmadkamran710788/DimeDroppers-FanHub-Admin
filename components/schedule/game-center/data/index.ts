@@ -1,5 +1,5 @@
-// SAMPLE DATA — there is no game center endpoint yet. Mirrors the "Subway Basketball Highlights"
-// and "Recap" mockups; replace with the game's real result, recap and clips once the API exists.
+// SAMPLE DATA — there is no game center endpoint yet. Mirrors the Subway "Highlights", "Recap"
+// and "Shop" mockups; replace with the game's real result, recap, clips and shop items once the API exists.
 
 export interface GameTeam {
   name: string;
@@ -49,7 +49,7 @@ export interface ShopProduct {
 }
 
 export interface GameCenter {
-  sponsor: { name: string; logo: string; presentedLogo: string };
+  sponsor: { name: string; presentedLogo: string };
   home: GameTeam;
   away: GameTeam;
   // e.g. "Final", "Q3 4:12".
@@ -62,7 +62,6 @@ export interface GameCenter {
 export const SAMPLE_GAME: GameCenter = {
   sponsor: {
     name: "Subway",
-    logo: "/images/highlights/sponsor-logo.png",
     presentedLogo: "/images/highlights/sponsor-presented.png",
   },
   home: { name: "Twin Lakes Academy Middle", logo: "/images/highlights/team-home.png", score: 56 },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import Image from "next/image";
 import {
   ArrowRight,
   ChartLine,
@@ -56,8 +57,13 @@ function ProductCard({ product, onSelect }: { product: ShopProduct; onSelect: ()
       className="group text-left rounded-[8px] overflow-hidden border border-white/10 bg-[#111C2E] hover:border-white/30 transition-colors"
     >
       <div className="relative aspect-[4/3] bg-[#F1F2F4]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={product.image} alt="" className="absolute inset-0 size-full object-cover" />
+        <Image
+          src={product.image}
+          alt=""
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+          className="object-cover"
+        />
         {product.trending && (
           <span
             className="absolute top-3 left-3 h-7 px-2.5 rounded-full flex items-center gap-1 text-sm font-medium text-white"
@@ -117,8 +123,7 @@ export default function ShopSection({
             </h3>
             <div className="flex items-center gap-3 text-base text-white">
               Presented by
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={sponsorLogo} alt={sponsorName} className="h-9 w-auto" />
+              <Image src={sponsorLogo} alt={sponsorName} width={150} height={36} className="h-9 w-auto" />
             </div>
           </div>
 

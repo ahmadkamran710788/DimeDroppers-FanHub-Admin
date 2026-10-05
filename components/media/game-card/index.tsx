@@ -1,5 +1,6 @@
 import { ChevronRight, Play } from "lucide-react";
 import type { MediaGame, MediaTeam } from "@/components/media/data";
+import Image from "next/image";
 import { dayOfMonth, monthShort, timeOfDay, weekdayShort } from "@/components/media/format";
 import { cn } from "@/utils/cn";
 
@@ -12,8 +13,7 @@ interface GameCardProps {
 function Team({ team }: { team: MediaTeam }) {
   return (
     <div className="flex flex-col items-center gap-2 min-w-0 text-center">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={team.logo} alt="" className="size-14 shrink-0 rounded-full object-cover" />
+      <Image src={team.logo} alt="" width={56} height={56} className="size-14 shrink-0 rounded-full object-cover" />
       <span className="text-[15px] leading-[22px] font-medium text-white">{team.shortName}</span>
     </div>
   );

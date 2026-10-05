@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { ChevronDown, Clock3 } from "lucide-react";
 import RowActionsMenu from "@/components/common/row-actions-menu";
 import SegmentedControl from "@/components/common/segmented-control";
@@ -15,8 +16,7 @@ function EventRow({ event }: { event: PlayEvent }) {
       <span className="text-[15px] text-white whitespace-nowrap">{event.time}</span>
       <span className="self-stretch bg-white/15" />
       {event.teamLogo ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={event.teamLogo} alt="" className="size-11 rounded-full object-cover" />
+        <Image src={event.teamLogo} alt="" width={44} height={44} className="size-11 rounded-full object-cover" />
       ) : (
         <span className="size-11 rounded-full bg-white/10 flex items-center justify-center">
           <Clock3 className="size-6 text-white" strokeWidth={1.5} />

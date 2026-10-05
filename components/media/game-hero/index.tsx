@@ -1,11 +1,11 @@
 import type { MediaGame, MediaTeam } from "@/components/media/data";
 import { fullDate, timeOfDay } from "@/components/media/format";
+import Image from "next/image";
 
 function Team({ team }: { team: MediaTeam }) {
   return (
     <div className="flex flex-col items-center gap-3 min-w-0 text-center">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={team.logo} alt="" className="size-16 sm:size-20 shrink-0 rounded-full object-cover" />
+      <Image src={team.logo} alt="" width={80} height={80} className="size-16 sm:size-20 shrink-0 rounded-full object-cover" />
       <span className="max-w-[200px] text-base sm:text-lg leading-6 font-semibold text-white">{team.name}</span>
     </div>
   );
@@ -18,8 +18,7 @@ export default function GameHero({ game }: { game: MediaGame }) {
 
   return (
     <div className="relative rounded-[12px] overflow-hidden border border-white/10">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/images/highlights/hero-bg.jpg" alt="" aria-hidden className="absolute inset-0 size-full object-cover grayscale" />
+      <Image src="/images/highlights/hero-bg.jpg" alt="" aria-hidden fill sizes="(max-width: 1280px) 100vw, 60vw" className="object-cover grayscale" />
       <div className="absolute inset-0 bg-[#0B1424]/45" />
       <span className="absolute top-4 right-4 h-9 px-3.5 rounded-[8px] flex items-center bg-black/50 text-sm text-white">
         {fullDate(game.start)}
