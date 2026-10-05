@@ -64,6 +64,50 @@ export const ATHLETES: Athlete[] = Array.from({ length: 18 }, (_, i) => ({
   status: "Active",
 }));
 
+export interface StaffMember {
+  id: string;
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  status: TeamStatus;
+}
+
+// Demo staff for the team details → Staff tab, until a team staff endpoint exists.
+export const STAFF: StaffMember[] = [
+  { id: "staff-1", name: "Lincoln Korsgaard", role: "Head Coach", email: "lincoln@twinlakes.edu", phone: "(555) 201-4410", status: "Active" },
+  { id: "staff-2", name: "Maria Lopez", role: "Assistant Coach", email: "maria@twinlakes.edu", phone: "(555) 201-4421", status: "Active" },
+  { id: "staff-3", name: "Derek Hale", role: "Assistant Coach", email: "derek@twinlakes.edu", phone: "(555) 201-4432", status: "Active" },
+  { id: "staff-4", name: "Priya Nair", role: "Team Manager", email: "priya@twinlakes.edu", phone: "(555) 201-4443", status: "Active" },
+  { id: "staff-5", name: "Sam Ortega", role: "Athletic Trainer", email: "sam@twinlakes.edu", phone: "(555) 201-4454", status: "Inactive" },
+];
+
+export type FollowerType = "Parent" | "Fan" | "Alumni";
+
+export interface Follower {
+  id: string;
+  name: string;
+  email: string;
+  type: FollowerType;
+  // ISO date the follow started.
+  followingSince: string;
+}
+
+const FOLLOWER_NAMES = ["Ava Johnson", "Sarah Johnson", "Marcus Lee", "Thomas Family", "Maya R.", "Chris Miller", "Jay Ryan", "Sofia Martinez"];
+const FOLLOWER_TYPES: FollowerType[] = ["Parent", "Fan", "Alumni"];
+
+// Demo followers for the team details → Followers tab, until a followers endpoint exists.
+export const FOLLOWERS: Follower[] = Array.from({ length: 24 }, (_, i) => {
+  const name = FOLLOWER_NAMES[i % FOLLOWER_NAMES.length];
+  return {
+    id: `follower-${i + 1}`,
+    name,
+    email: `${name.toLowerCase().replace(/[^a-z]+/g, ".").replace(/.$/, "")}@gmail.com`,
+    type: FOLLOWER_TYPES[i % FOLLOWER_TYPES.length],
+    followingSince: `2026-0${1 + (i % 9)}-${String(5 + (i % 20)).padStart(2, "0")}`,
+  };
+});
+
 export const TEAM_STATS = {
   coachesAndStaff: 47,
   coachesAndStaffPct: "7% of total",

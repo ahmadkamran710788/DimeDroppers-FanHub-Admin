@@ -22,6 +22,8 @@ interface GenericTableProps<T> {
   headerCellClassName?: string;
   /** Extra utilities for every body cell (e.g. a different fill or padding). */
   cellClassName?: string;
+  /** Makes rows clickable (e.g. to open a details page). */
+  onRowClick?: (row: T) => void;
   className?: string;
 }
 
@@ -37,6 +39,7 @@ export default function GenericTable<T>({
   loading = false,
   headerCellClassName,
   cellClassName,
+  onRowClick,
   className,
 }: GenericTableProps<T>) {
   return (
@@ -66,7 +69,11 @@ export default function GenericTable<T>({
         </div>
       ) : (
         rows.map((row, index) => (
-          <div key={getKey(row, index)} className="flex items-stretch border-b border-white/20">
+          <div
+            key={getKey(row, index)}
+            onClick={onRowClick ? () => onRowClick(row) : undefined}
+            className={cn("flex items-stretch border-b border-white/20", onRowClick && "cursor-pointer hover:bg-white/[0.04]")}
+          >
             {columns.map((col) => {
               const content = col.cell(row);
               return (

@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { ChevronDown, Filter } from "lucide-react";
 import toast from "react-hot-toast";
 import Button from "@/components/common/button";
@@ -11,6 +13,7 @@ import SearchInput from "@/components/common/search-input";
 import StatusPill from "@/components/common/status-pill";
 import { useSetup } from "@/context/setup";
 import { cn } from "@/utils/cn";
+import { routes } from "@/utils/routes";
 import { SPORT_ICON, TEAMS, type Team } from "@/components/teams/data";
 
 const PAGE_SIZE = 10;
@@ -26,7 +29,13 @@ interface TeamsTableProps {
 }
 
 // Searchable, paginated teams list shared by the Teams page and the Fundraising "Teams" tab.
+// Rows open the team; menus inside a row (and their portalled items) must not.
+function StopRowClick({ children }: { children: ReactNode }) {
+  return <div onClick={(e) => e.stopPropagation()}>{children}</div>;
+}
+
 export default function TeamsTable({ collapsible = false, campaignsByTeam }: TeamsTableProps) {
+  const router = useRouter();
   const { savedSchool } = useSetup();
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -54,10 +63,13 @@ export default function TeamsTable({ collapsible = false, campaignsByTeam }: Tea
       cls: "flex-1 min-w-[240px] py-5",
       cell: (t) => (
         <div className="flex items-center gap-3 min-w-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={crest}
             alt=""
+            width={40}
+            height={40}
+            // The school logo may be an uploaded remote URL with no configured image host.
+            unoptimized={crest.startsWith("http")}
             className="size-10 shrink-0 rounded-full object-cover bg-black/40 p-0.5 border-2"
             style={{ borderColor: t.ring }}
           />
@@ -73,8 +85,7 @@ export default function TeamsTable({ collapsible = false, campaignsByTeam }: Tea
       cls: "w-32 shrink-0 py-5",
       cell: (t) => (
         <span className="flex items-center gap-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={SPORT_ICON[t.sport]} alt="" width={20} height={20} className="shrink-0" />
+          <Image src={SPORT_ICON[t.sport]} alt="" width={20} height={20} className="shrink-0" />
           {t.sport}
         </span>
       ),
@@ -98,17 +109,19 @@ export default function TeamsTable({ collapsible = false, campaignsByTeam }: Tea
               const names = campaignsByTeam[t.id] ?? [];
               if (names.length === 0) return <span className="text-white/40">No campaigns</span>;
               return (
-                <RowActionsMenu
-                  ariaLabel={`Campaigns for ${t.name}`}
-                  className="w-auto h-9 px-3 gap-1 text-xs font-medium text-white whitespace-nowrap"
-                  trigger={
-                    <>
-                      {names.length} {names.length === 1 ? "Campaign" : "Campaigns"}
-                      <ChevronDown className="w-4 h-4" />
-                    </>
-                  }
-                  items={names.map((label) => ({ label, onSelect: comingSoon }))}
-                />
+                <StopRowClick>
+                  <RowActionsMenu
+                    ariaLabel={`Campaigns for ${t.name}`}
+                    className="w-auto h-9 px-3 gap-1 text-xs font-medium text-white whitespace-nowrap"
+                    trigger={
+                      <>
+                        {names.length} {names.length === 1 ? "Campaign" : "Campaigns"}
+                        <ChevronDown className="w-4 h-4" />
+                      </>
+                    }
+                    items={names.map((label) => ({ label, onSelect: comingSoon }))}
+                  />
+                </StopRowClick>
               );
             },
           },
@@ -118,15 +131,17 @@ export default function TeamsTable({ collapsible = false, campaignsByTeam }: Tea
       header: "Actions",
       cls: "w-20 shrink-0 py-5 justify-end",
       cell: (t) => (
-        <RowActionsMenu
-          ariaLabel={`Actions for ${t.name}`}
-          className="bg-white/25 hover:bg-white/35"
-          items={[
-            { label: "View Team", onSelect: comingSoon },
-            { label: "Edit Team", onSelect: comingSoon },
-            { label: "Delete Team", onSelect: comingSoon, variant: "destructive" },
-          ]}
-        />
+        <StopRowClick>
+          <RowActionsMenu
+            ariaLabel={`Actions for ${t.name}`}
+            className="bg-white/25 hover:bg-white/35"
+            items={[
+              { label: "View Team", onSelect: () => router.push(routes.ui.teamDetails(t.id)) },
+              { label: "Edit Team", onSelect: comingSoon },
+              { label: "Delete Team", onSelect: comingSoon, variant: "destructive" },
+            ]}
+          />
+        </StopRowClick>
       ),
     },
   ];
@@ -165,7 +180,13 @@ export default function TeamsTable({ collapsible = false, campaignsByTeam }: Tea
 
       {!(collapsible && collapsed) && (
         <div className="flex flex-col">
-          <GenericTable columns={columns} rows={rows} getKey={(t) => t.id} empty="No teams match your search." />
+          <GenericTable
+            columns={columns}
+            rows={rows}
+            getKey={(t) => t.id}
+            empty="No teams match your search."
+            onRowClick={(t) => router.push(routes.ui.teamDetails(t.id))}
+          />
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 border-b border-white/20">
             <span className="text-xs text-white/80">
               Showing {from} to {to} of {filtered.length} teams

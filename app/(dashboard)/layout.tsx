@@ -33,7 +33,11 @@ const PAGE_TITLES: Record<string, string> = {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const title = PAGE_TITLES[pathname] ?? "Schedule";
+  // Detail pages (e.g. /teams/team-3) take the title of their parent section.
+  const title =
+    PAGE_TITLES[pathname] ??
+    Object.entries(PAGE_TITLES).find(([path]) => pathname.startsWith(`${path}/`))?.[1] ??
+    "Schedule";
 
   return (
     <SetupProvider>

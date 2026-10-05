@@ -12,6 +12,10 @@ interface PhoneInputProps {
   error?: string;
   disabled?: boolean;
   className?: string;
+  // Overrides the label colour (e.g. navy inside a white modal).
+  labelClassName?: string;
+  // Adds a red asterisk after the label.
+  required?: boolean;
 }
 
 export default function PhoneInput({
@@ -23,11 +27,14 @@ export default function PhoneInput({
   error,
   disabled = false,
   className,
+  labelClassName,
+  required,
 }: PhoneInputProps) {
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <label htmlFor={name} className="text-base font-medium text-white">
+      <label htmlFor={name} className={cn("text-base font-medium text-white", labelClassName)}>
         {label}
+        {required && <span className="text-error"> *</span>}
       </label>
       <IMaskInput
         id={name}

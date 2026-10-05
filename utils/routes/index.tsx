@@ -16,6 +16,7 @@ export const routes = {
     activations: "/activations",
     teams: "/teams",
     addTeam: "/teams/add",
+    teamDetails: (teamId: string) => `/teams/${teamId}`,
     buyTickets: "/buy-tickets",
     fundraising: "/fundraising",
     createFundraisingCampaign: "/fundraising/create",
