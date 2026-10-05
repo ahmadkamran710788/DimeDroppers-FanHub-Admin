@@ -1,16 +1,18 @@
 import { ArrowRight, Play } from "lucide-react";
 import type { Highlight } from "@/components/schedule/game-center/data";
+import { cn } from "@/utils/cn";
 
 interface HighlightsSectionProps {
   highlights: Highlight[];
   onPlay: (h: Highlight) => void;
   onSeeAll: () => void;
+  className?: string;
 }
 
 // "Video" tab: grid of the game's top highlight clips.
-export default function HighlightsSection({ highlights, onPlay, onSeeAll }: HighlightsSectionProps) {
+export default function HighlightsSection({ highlights, onPlay, onSeeAll, className }: HighlightsSectionProps) {
   return (
-    <div className="px-6 py-8 flex flex-col gap-6">
+    <div className={cn("px-6 py-8 flex flex-col gap-6", className)}>
       <div className="flex items-center justify-between gap-4">
         <h3 className="font-display font-extrabold text-[32px] lg:text-[40px] uppercase leading-none text-white">
           Top Highlights

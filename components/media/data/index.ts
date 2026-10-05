@@ -1,6 +1,8 @@
 // SAMPLE DATA — there is no media/game-content endpoint yet. Mirrors the Media mockups
 // (games list, Game Thread and Game Details); replace with API calls once the backend exists.
 
+import { SAMPLE_GAME, type Highlight, type ShopProduct } from "@/components/schedule/game-center/data";
+
 export interface MediaTeam {
   name: string;
   // Shorter name for the games list, e.g. "Twin Lakes Academy".
@@ -36,6 +38,10 @@ export interface MediaGame {
   // Plays per phase and quarter (Pre-Game / Final only use "1st Quarter").
   thread: Partial<Record<GamePhase, Partial<Record<Quarter, PlayEvent[]>>>>;
   recap?: { headline: string; paragraphs: string[] };
+  // Highlight clips for the Videos section.
+  videos?: Highlight[];
+  // Merch for the Shop Items section.
+  shop?: ShopProduct[];
 }
 
 const TEAMS = {
@@ -99,6 +105,8 @@ export const SAMPLE_GAMES: MediaGame[] = [
     homeScore: 56,
     awayScore: 30,
     thread: { "Live Game": { "1st Quarter": LANDMARK_FIRST_QUARTER } },
+    videos: SAMPLE_GAME.highlights,
+    shop: SAMPLE_GAME.shop,
     recap: {
       headline: "Mount Powers Twin Lakes Past Landmark in 56-30 Rout",
       paragraphs: [
