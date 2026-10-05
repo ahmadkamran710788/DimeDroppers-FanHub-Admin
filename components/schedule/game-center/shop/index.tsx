@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import Image from "next/image";
 import {
   ArrowRight,
   ChartLine,
@@ -43,6 +44,9 @@ interface ShopSectionProps {
   sponsorLogo: string;
   onSelectProduct: (p: ShopProduct) => void;
   onSeeAll: () => void;
+  // Skip the heading, sponsor and category/filter chips; show only the featured grid.
+  featuredOnly?: boolean;
+  className?: string;
 }
 
 function ProductCard({ product, onSelect }: { product: ShopProduct; onSelect: () => void }) {
@@ -53,8 +57,13 @@ function ProductCard({ product, onSelect }: { product: ShopProduct; onSelect: ()
       className="group text-left rounded-[8px] overflow-hidden border border-white/10 bg-[#111C2E] hover:border-white/30 transition-colors"
     >
       <div className="relative aspect-[4/3] bg-[#F1F2F4]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={product.image} alt="" className="absolute inset-0 size-full object-cover" />
+        <Image
+          src={product.image}
+          alt=""
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+          className="object-cover"
+        />
         {product.trending && (
           <span
             className="absolute top-3 left-3 h-7 px-2.5 rounded-full flex items-center gap-1 text-sm font-medium text-white"
@@ -79,8 +88,16 @@ function ProductCard({ product, onSelect }: { product: ShopProduct; onSelect: ()
   );
 }
 
-// "Shop" tab: category chips, apparel filters and the game's featured merch.
-export default function ShopSection({ products, sponsorName, sponsorLogo, onSelectProduct, onSeeAll }: ShopSectionProps) {
+// "Shop" tab: category chips, apparel filters and the game's featured merch (or just the merch).
+export default function ShopSection({
+  products,
+  sponsorName,
+  sponsorLogo,
+  onSelectProduct,
+  onSeeAll,
+  featuredOnly = false,
+  className,
+}: ShopSectionProps) {
   const [category, setCategory] = useState<ShopCategory>("Merch & Apparel");
   const [filters, setFilters] = useState<Partial<Record<FilterKey, string>>>({});
 
@@ -96,57 +113,60 @@ export default function ShopSection({ products, sponsorName, sponsorLogo, onSele
   );
 
   return (
-    <div className="px-6 py-8 flex flex-col gap-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h3 className="flex items-center gap-4 text-4xl lg:text-[44px] font-semibold text-white">
-          <ShoppingBag className="size-11 text-[#C04BF2]" strokeWidth={1.5} />
-          Shop
-        </h3>
-        <div className="flex items-center gap-3 text-base text-white">
-          Presented by
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={sponsorLogo} alt={sponsorName} className="h-9 w-auto" />
-        </div>
-      </div>
+    <div className={cn("px-6 py-8 flex flex-col gap-8", className)}>
+      {!featuredOnly && (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h3 className="flex items-center gap-4 text-4xl lg:text-[44px] font-semibold text-white">
+              <ShoppingBag className="size-11 text-[#C04BF2]" strokeWidth={1.5} />
+              Shop
+            </h3>
+            <div className="flex items-center gap-3 text-base text-white">
+              Presented by
+              <Image src={sponsorLogo} alt={sponsorName} width={150} height={36} className="h-9 w-auto" />
+            </div>
+          </div>
 
-      {/* Category chips + filter dropdowns */}
-      <div className="flex flex-wrap gap-3 lg:gap-4">
-        {CATEGORIES.map(({ label, icon }) => {
-          const active = label === category;
-          return (
-            <button
-              key={label}
-              type="button"
-              onClick={() => setCategory(label)}
-              aria-pressed={active}
-              className={cn(CHIP, active ? "text-white" : IDLE_CHIP)}
-              style={active ? { background: "var(--gradient-cta)" } : undefined}
-            >
-              {icon}
-              {label}
-            </button>
-          );
-        })}
-        {FILTERS.map(({ key, label, icon }) => (
-          <RowActionsMenu
-            key={key}
-            ariaLabel={`Filter by ${label}`}
-            // size-auto first so CHIP's h-11 overrides the trigger's default square size.
-            className={cn("size-auto outline-0 backdrop-blur-none", CHIP, IDLE_CHIP)}
-            trigger={
-              <>
-                {icon}
-                {filters[key] ?? label}
-                <ChevronDown className="size-4" strokeWidth={2} />
-              </>
-            }
-            items={[
-              { label: `All ${label === "Brand" ? "Brands" : label === "Color" ? "Colors" : "Types"}`, onSelect: () => setFilters((f) => ({ ...f, [key]: undefined })) },
-              ...options(key).map((value) => ({ label: value, onSelect: () => setFilters((f) => ({ ...f, [key]: value })) })),
-            ]}
-          />
-        ))}
-      </div>
+          {/* Category chips + filter dropdowns */}
+          <div className="flex flex-wrap gap-3 lg:gap-4">
+            {CATEGORIES.map(({ label, icon }) => {
+              const active = label === category;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setCategory(label)}
+                  aria-pressed={active}
+                  className={cn(CHIP, active ? "text-white" : IDLE_CHIP)}
+                  style={active ? { background: "var(--gradient-cta)" } : undefined}
+                >
+                  {icon}
+                  {label}
+                </button>
+              );
+            })}
+            {FILTERS.map(({ key, label, icon }) => (
+              <RowActionsMenu
+                key={key}
+                ariaLabel={`Filter by ${label}`}
+                // size-auto first so CHIP's h-11 overrides the trigger's default square size.
+                className={cn("size-auto outline-0 backdrop-blur-none", CHIP, IDLE_CHIP)}
+                trigger={
+                  <>
+                    {icon}
+                    {filters[key] ?? label}
+                    <ChevronDown className="size-4" strokeWidth={2} />
+                  </>
+                }
+                items={[
+                  { label: `All ${label === "Brand" ? "Brands" : label === "Color" ? "Colors" : "Types"}`, onSelect: () => setFilters((f) => ({ ...f, [key]: undefined })) },
+                  ...options(key).map((value) => ({ label: value, onSelect: () => setFilters((f) => ({ ...f, [key]: value })) })),
+                ]}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Featured */}
       <section className="flex flex-col gap-5">
