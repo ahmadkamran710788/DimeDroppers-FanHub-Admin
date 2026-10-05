@@ -1,5 +1,5 @@
 import GameCenterPage from "@/components/schedule/game-center";
 
 export default function Page() {
-  return <GameCenterPage section="Recap" />;
+  return <GameCenterPage section="Shop" />;
 }
