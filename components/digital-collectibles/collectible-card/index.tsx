@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Image from "next/image";
 import { CircleDot, Volleyball } from "lucide-react";
 import type { Collectible } from "@/components/digital-collectibles/data";
@@ -5,17 +6,14 @@ import { formatMoney } from "@/utils/helper";
 
 interface CollectibleCardProps {
   collectible: Collectible;
-  onSelect: () => void;
+  // Optional footer action, e.g. "Add to Store".
+  action?: ReactNode;
 }
 
 // One digital collectible card template: artwork with rarity badge, name and price.
-export default function CollectibleCard({ collectible, onSelect }: CollectibleCardProps) {
+export default function CollectibleCard({ collectible, action }: CollectibleCardProps) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className="group text-left rounded-[14px] overflow-hidden border-2 border-white/20 bg-[#151519] hover:border-[#14B8C4] transition-colors"
-    >
+    <div className="rounded-[14px] overflow-hidden border-2 border-white/20 bg-[#151519] flex flex-col">
       <div className="relative aspect-[239/266] bg-[#0E7C86]">
         <Image
           src={collectible.image}
@@ -29,15 +27,18 @@ export default function CollectibleCard({ collectible, onSelect }: CollectibleCa
           {collectible.rarity}
         </span>
       </div>
-      <div className="px-5 py-4 flex flex-col gap-1.5">
-        <span className="text-base text-white/90">{collectible.name}</span>
-        <span className="flex items-center gap-1.5 text-lg text-white">
-          {formatMoney(collectible.price)}
-          <span className="text-white/60">/</span>
-          <CircleDot className="size-5 text-[#C04BF2]" strokeWidth={2.5} />
-          {collectible.dimes.toLocaleString("en-US")}
-        </span>
+      <div className="px-5 py-4 flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-base text-white/90">{collectible.name}</span>
+          <span className="flex items-center gap-1.5 text-lg text-white">
+            {formatMoney(collectible.price)}
+            <span className="text-white/60">/</span>
+            <CircleDot className="size-5 text-[#C04BF2]" strokeWidth={2.5} />
+            {collectible.dimes.toLocaleString("en-US")}
+          </span>
+        </div>
+        {action}
       </div>
-    </button>
+    </div>
   );
 }

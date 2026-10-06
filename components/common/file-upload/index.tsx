@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Button from "@/components/common/button";
 import { cn } from "@/utils/cn";
 import { CloudUpload } from "lucide-react";
@@ -17,6 +18,10 @@ interface FileUploadProps {
   className?: string;
   /** When set and no new file has been picked, shows this URL as the existing logo with a "Change Logo" button. */
   existingUrl?: string;
+  /** "dark" (default): white text on dark cards. "light": navy text inside a white modal. */
+  tone?: "dark" | "light";
+  /** Overrides the dropzone headline (defaults to "Upload Logo" / the CSV prompt). */
+  prompt?: string;
 }
 
 export default function FileUpload({
@@ -28,7 +33,12 @@ export default function FileUpload({
   variant = "image",
   className,
   existingUrl,
+  tone = "dark",
+  prompt,
 }: FileUploadProps) {
+  const light = tone === "light";
+  const text = light ? "text-midnight-navy" : "text-white";
+  const muted = light ? "text-midnight-navy/50" : "text-[rgba(255,255,255,0.4)]";
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -72,7 +82,7 @@ export default function FileUpload({
   };
 
   const primaryText =
-    variant === "image" ? "Upload Logo" : "Drag & Drop your CSV file here.";
+    prompt ?? (variant === "image" ? "Upload Logo" : "Drag & Drop your CSV file here.");
   const defaultHelper =
     variant === "image"
       ? "Size must be minimum 512x512 px, PNG, JPG, SVG (max 2MB)"
@@ -86,7 +96,7 @@ export default function FileUpload({
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       {label && (
-        <span className="text-base font-medium text-white">{label}</span>
+        <span className={cn("text-base font-medium", text)}>{label}</span>
       )}
 
       {showImagePreview ? (
@@ -96,10 +106,13 @@ export default function FileUpload({
               className="w-[60px] h-[60px] rounded-full shrink-0 overflow-hidden"
               style={{ background: "#231F20", outline: "2px solid rgba(255,255,255,0.5)", outlineOffset: "-2px" }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={previewUrl}
                 alt={fileName ?? "Uploaded logo"}
+                width={60}
+                height={60}
+                // Local blob: preview, so skip the image optimizer.
+                unoptimized
                 className="w-full h-full object-cover"
                 onLoad={(e) => {
                   const img = e.currentTarget;
@@ -110,13 +123,11 @@ export default function FileUpload({
               />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-medium text-white truncate">{fileName}</span>
-              {meta && (
-                <span className="text-xs text-[rgba(255,255,255,0.4)]">{meta}</span>
-              )}
+              <span className={cn("text-sm font-medium truncate", text)}>{fileName}</span>
+              {meta && <span className={cn("text-xs", muted)}>{meta}</span>}
             </div>
           </div>
-          <Button label="Delete" variant="ghost" onClick={handleClear} className="w-24 h-12 shrink-0" />
+          <Button label="Delete" variant={light ? "secondary" : "ghost"} onClick={handleClear} className="w-24 h-12 shrink-0" />
         </div>
       ) : showExisting ? (
         <div className="flex items-center justify-between gap-4 rounded-[8px] border-2 border-border-dashed px-4 py-4">
@@ -125,12 +136,19 @@ export default function FileUpload({
               className="w-[60px] h-[60px] rounded-full shrink-0 overflow-hidden"
               style={{ background: "#231F20", outline: "2px solid rgba(255,255,255,0.5)", outlineOffset: "-2px" }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={existingUrl} alt="Current logo" className="w-full h-full object-cover" />
+              <Image
+                src={existingUrl}
+                alt="Current logo"
+                width={60}
+                height={60}
+                // Uploaded logos may live on a remote host with no configured image domain.
+                unoptimized
+                className="w-full h-full object-cover"
+              />
             </div>
-            <span className="text-sm font-medium text-white">Current logo</span>
+            <span className={cn("text-sm font-medium", text)}>Current logo</span>
           </div>
-          <Button label="Change Logo" variant="ghost" onClick={() => inputRef.current?.click()} className="w-32 h-12 shrink-0 text-xs" />
+          <Button label="Change Logo" variant={light ? "secondary" : "ghost"} onClick={() => inputRef.current?.click()} className="w-32 h-12 shrink-0 text-xs" />
         </div>
       ) : (
         <div
@@ -143,17 +161,19 @@ export default function FileUpload({
           onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
           className={cn(
             "flex flex-col items-center justify-center gap-2 rounded-[8px] border-2 border-dashed",
-            "border-[rgba(255,255,255,0.31)] bg-transparent px-4 py-6 cursor-pointer",
-            "transition-colors hover:border-[rgba(255,255,255,0.5)]",
-            dragging && "border-white bg-[rgba(255,255,255,0.04)]"
+            "bg-transparent px-4 py-6 cursor-pointer transition-colors",
+            light
+              ? "border-[rgba(11,28,45,0.25)] hover:border-steel-blue"
+              : "border-[rgba(255,255,255,0.31)] hover:border-[rgba(255,255,255,0.5)]",
+            dragging && (light ? "border-steel-blue bg-steel-blue/5" : "border-white bg-[rgba(255,255,255,0.04)]")
           )}
         >
-          <CloudUpload className="w-6 h-6 text-white" strokeWidth={1.5} />
-          <p className="text-base font-medium text-white text-center">
+          <CloudUpload className={cn("w-6 h-6", text)} strokeWidth={1.5} />
+          <p className={cn("text-base font-medium text-center", text)}>
             {fileName ?? primaryText}
           </p>
           {!fileName && (
-            <p className="text-sm text-[rgba(255,255,255,0.4)] text-center">
+            <p className={cn("text-sm text-center", muted)}>
               {helperText ?? defaultHelper}
             </p>
           )}

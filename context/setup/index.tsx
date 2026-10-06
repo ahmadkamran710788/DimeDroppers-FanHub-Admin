@@ -32,9 +32,18 @@ export function SetupProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Fetch once when the setup shell mounts — all wizard steps share this result.
+  // isLoading already starts true, so only set state once the request resolves.
   useEffect(() => {
-    fetchSchool();
-  }, [fetchSchool]);
+    let cancelled = false;
+    getSavedSchool().then((school) => {
+      if (cancelled) return;
+      setSavedSchool(school);
+      setIsLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <SetupContext.Provider
