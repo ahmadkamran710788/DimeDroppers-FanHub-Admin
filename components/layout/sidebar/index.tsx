@@ -27,7 +27,8 @@ const NAV_ITEMS: { icon: string | ReactNode; label: string; href: string }[] = [
   { icon: <Star className="size-6" strokeWidth={1.5} />, label: "Recognition & Fan Wall", href: routes.ui.recognition },
   { icon: "/icons/icon-business.svg", label: "Sponsors", href: routes.ui.sponsors },
   { icon: "/icons/icon-donations.svg", label: "Fundraising", href: routes.ui.fundraising },
-  { icon: "/icons/icon-analytics.svg", label: "Analytics", href: "#" },
+  // Hidden until the Analytics page is built.
+  // { icon: "/icons/icon-analytics.svg", label: "Analytics", href: "#" },
   { icon: "/icons/icon-settings.svg", label: "Settings", href: "#" },
 ];
 
@@ -97,7 +98,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         ))}
 
         {/* Help Center */}
-        <NavItem icon="/icons/icon-help2.svg" label="Help Center" href="#" />
+        <NavItem icon="/icons/icon-help2.svg" label="Help Center" href={routes.ui.helpCenter} />
       </nav>
 
       {/* Profile */}
