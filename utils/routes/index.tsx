@@ -27,6 +27,7 @@ export const routes = {
     recognitionPosts: "/recognition?view=posts",
     addRecognition: "/recognition/add",
     sponsors: "/sponsors",
+    helpCenter: "/help-center",
     addSponsor: "/sponsors/add",
     sponsorAddOns: "/sponsors/add-ons",
     userDetails: (id: string | number) => `users/${id}`,
