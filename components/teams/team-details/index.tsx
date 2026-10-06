@@ -13,6 +13,7 @@ import { athleteColumns } from "@/components/teams/athlete-columns";
 import {
   ATHLETES,
   FOLLOWERS,
+  PARENTS,
   SPORT_ICON,
   STAFF,
   TEAMS,
@@ -22,11 +23,12 @@ import {
 } from "@/components/teams/data";
 import AddPlayerModal from "@/components/teams/team-details/add-player-modal";
 import AddStaffModal from "@/components/teams/team-details/add-staff-modal";
+import ParentsTab from "@/components/teams/team-details/parents-tab";
 import PeopleList from "@/components/teams/team-details/people-list";
 import { useSetup } from "@/context/setup";
 import { routes } from "@/utils/routes";
 
-const TABS = ["Players", "Staff", "Followers"] as const;
+const TABS = ["Players", "Parents", "Staff", "Followers"] as const;
 type Tab = (typeof TABS)[number];
 
 const initials = (name: string) =>
@@ -151,7 +153,7 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
           tabs={TABS}
           active={tab}
           onChange={setTab}
-          counts={{ Players: players.length, Staff: staff.length, Followers: FOLLOWERS.length }}
+          counts={{ Players: players.length, Parents: PARENTS.length, Staff: staff.length, Followers: FOLLOWERS.length }}
         />
         {tab === "Players" ? (
           <PeopleList
@@ -171,6 +173,8 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
               />
             }
           />
+        ) : tab === "Parents" ? (
+          <ParentsTab />
         ) : tab === "Staff" ? (
           <PeopleList
             key={tab}
