@@ -4,6 +4,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import SegmentedControl from "@/components/common/segmented-control";
 import type { MediaGame } from "@/components/media/data";
+import GameInsights from "@/components/media/game-insights";
 import { SAMPLE_GAME } from "@/components/schedule/game-center/data";
 import HighlightsSection from "@/components/schedule/game-center/highlights";
 import ShopSection from "@/components/schedule/game-center/shop";
@@ -14,7 +15,7 @@ type Section = (typeof SECTIONS)[number];
 // Clip playback and product pages aren't built yet.
 const comingSoon = () => toast("Coming soon.");
 
-// "Game Details" tab: recap, highlight videos and game merch; insights land with their own design.
+// "Game Details" tab: recap, insights, highlight videos and game merch.
 export default function GameDetails({ game }: { game: MediaGame }) {
   const [section, setSection] = useState<Section>("Recap");
 
@@ -29,7 +30,9 @@ export default function GameDetails({ game }: { game: MediaGame }) {
         fullWidth
       />
 
-      {section === "Shop Items" && game.shop?.length ? (
+      {section === "Insights" ? (
+        <GameInsights game={game} />
+      ) : section === "Shop Items" && game.shop?.length ? (
         <ShopSection
           products={game.shop}
           sponsorName={SAMPLE_GAME.sponsor.name}
@@ -56,9 +59,7 @@ export default function GameDetails({ game }: { game: MediaGame }) {
             ? "The recap will appear here after the game."
             : section === "Videos"
               ? "Videos will appear here after the game."
-              : section === "Shop Items"
-                ? "No shop items for this game yet."
-                : `${section} — coming soon.`}
+              : "No shop items for this game yet."}
         </p>
       )}
     </div>

@@ -26,6 +26,23 @@ export interface PlayEvent {
   score?: string;
 }
 
+export type InsightPeriod = "All" | "H1" | "H2";
+
+export interface InsightPoint {
+  title: string;
+  text: string;
+}
+
+export interface TeamInsight {
+  team: MediaTeam;
+  points: number;
+  season: string;
+  // School and city line, e.g. "Twin Lakes Academy Middle, JACKSONVILLE, FL".
+  location: string;
+  players: number;
+  strengths: InsightPoint[];
+}
+
 export interface MediaGame {
   id: string;
   // ISO date-time.
@@ -42,6 +59,8 @@ export interface MediaGame {
   videos?: Highlight[];
   // Merch for the Shop Items section.
   shop?: ShopProduct[];
+  // AI game insights per period (whole game, first half, second half).
+  insights?: Partial<Record<InsightPeriod, TeamInsight[]>>;
 }
 
 const TEAMS = {
@@ -107,6 +126,77 @@ export const SAMPLE_GAMES: MediaGame[] = [
     thread: { "Live Game": { "1st Quarter": LANDMARK_FIRST_QUARTER } },
     videos: SAMPLE_GAME.highlights,
     shop: SAMPLE_GAME.shop,
+    insights: {
+      All: [
+        {
+          team: TEAMS.twinLakes,
+          points: 56,
+          season: "Fall 26-27",
+          location: "Twin Lakes Academy Middle, JACKSONVILLE, FL",
+          players: 5,
+          strengths: [
+            {
+              title: "Elite Shooting Efficiency",
+              text: "Shot 85.7% from the field (24-of-28) and a perfect 4-of-4 from three, converting nearly every attempt into points.",
+            },
+            {
+              title: "Glass Control",
+              text: "Out-rebounded Landmark 10-4, led by Jonathan Mount's 8 boards, controlling possessions and creating second chances.",
+            },
+            {
+              title: "Defensive Disruption",
+              text: "Forced 4 turnovers while producing 4 steals (Lily Carter) and 4 blocks (Mount) against a Landmark team that generated none, dominating the possession battle.",
+            },
+            {
+              title: "Balanced Attack",
+              text: "Four players scored 8 or more, with Ava Johnson dishing 12 assists and King Williams adding 12 points and 4 assists to keep the offense unpredictable.",
+            },
+            {
+              title: "Consistency",
+              text: "Scored exactly 14 points in every quarter, never allowing Landmark a run to close the gap.",
+            },
+          ],
+        },
+      ],
+      H1: [
+        {
+          team: TEAMS.twinLakes,
+          points: 28,
+          season: "Fall 26-27",
+          location: "Twin Lakes Academy Middle, JACKSONVILLE, FL",
+          players: 5,
+          strengths: [
+            {
+              title: "Fast Start",
+              text: "Opened on a 9-0 run and led 14-4 after the first quarter behind early buckets inside from Jonathan Mount.",
+            },
+            {
+              title: "Ball Movement",
+              text: "Ava Johnson set the tone with crisp passing, creating open looks that pushed the lead to 28-15 at halftime.",
+            },
+          ],
+        },
+      ],
+      H2: [
+        {
+          team: TEAMS.twinLakes,
+          points: 28,
+          season: "Fall 26-27",
+          location: "Twin Lakes Academy Middle, JACKSONVILLE, FL",
+          players: 5,
+          strengths: [
+            {
+              title: "Closing Strong",
+              text: "Matched the first-half output with another 28 points, stretching the margin every period to win 56-30.",
+            },
+            {
+              title: "Perimeter Shooting",
+              text: "Jaren Dunnamon hit timely threes to keep Landmark from mounting any comeback.",
+            },
+          ],
+        },
+      ],
+    },
     recap: {
       headline: "Mount Powers Twin Lakes Past Landmark in 56-30 Rout",
       paragraphs: [
