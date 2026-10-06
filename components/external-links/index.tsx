@@ -11,7 +11,7 @@ export default function ExternalLinksPage() {
           External Links
         </h1>
         <p className="text-base lg:text-xl text-white/85">
-          Add external links for ticketing and live streaming so fans can easily access your games.
+          Add external links for ticketing, live streaming and your team store so fans can easily access your games and gear.
         </p>
       </div>
 

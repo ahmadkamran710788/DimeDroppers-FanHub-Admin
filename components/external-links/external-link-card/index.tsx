@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Info, Link2, Play, RefreshCw, Ticket } from "lucide-react";
+import { Info, Link2, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import Button from "@/components/common/button";
 import Input from "@/components/common/input";
@@ -16,12 +16,12 @@ interface ExternalLinkCardProps {
   config: ExternalLinkConfig;
 }
 
-// One provider section (Ticketing / Streaming): header strip, logo, link field,
+// One provider section (Ticketing / Streaming / Team Store): header strip, logo, link field,
 // Test Connection, result box and Save.
 export default function ExternalLinkCard({ config }: ExternalLinkCardProps) {
   const { savedSchool, refreshSchool } = useSetup();
   const theme = THEME[config.theme];
-  const Icon = config.id === "ticketing" ? Ticket : Play;
+  const Icon = config.icon;
 
   const savedUrl = (savedSchool?.[config.savedField] as string | null | undefined) ?? "";
   const [url, setUrl] = useState(savedUrl);
@@ -117,7 +117,7 @@ export default function ExternalLinkCard({ config }: ExternalLinkCardProps) {
         <div className="flex items-center gap-6 flex-1 min-w-0">
           <span className={cn("size-[90px] shrink-0 rounded-full flex items-center justify-center", theme.badge)}>
             <Icon
-              className={cn("size-11 text-white", config.id === "ticketing" ? "-rotate-45" : "fill-white ml-1")}
+              className={cn("size-11 text-white", config.iconClassName)}
               strokeWidth={2}
             />
           </span>

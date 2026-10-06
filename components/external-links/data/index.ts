@@ -1,10 +1,14 @@
+import { Play, ShoppingBag, Ticket, type LucideIcon } from "lucide-react";
 import type { SavedSchool } from "@/utils/types/school";
 
-export type LinkTheme = "blue" | "purple";
+export type LinkTheme = "blue" | "purple" | "teal";
 
 export interface ExternalLinkConfig {
-  id: "ticketing" | "streaming";
+  id: "ticketing" | "streaming" | "store";
   theme: LinkTheme;
+  // Header badge icon and its tweak (e.g. tilted ticket, filled play).
+  icon: LucideIcon;
+  iconClassName: string;
   title: string;
   description: string;
   info: string;
@@ -16,7 +20,7 @@ export interface ExternalLinkConfig {
   providerName: string;
   saveLabel: string;
   // Key in the feature-links PATCH payload.
-  payloadKey: "buyTickets" | "watchGame";
+  payloadKey: "buyTickets" | "watchGame" | "teamStores";
   // Field the school GET returns the saved link under.
   savedField: keyof SavedSchool;
 }
@@ -25,6 +29,8 @@ export const EXTERNAL_LINKS: ExternalLinkConfig[] = [
   {
     id: "ticketing",
     theme: "blue",
+    icon: Ticket,
+    iconClassName: "-rotate-45",
     title: "Ticketing",
     description: "Add your GoFan link so fans can purchase tickets for your games.",
     info: "This link will be shown on your team and game pages for fans to buy tickets.",
@@ -41,6 +47,8 @@ export const EXTERNAL_LINKS: ExternalLinkConfig[] = [
   {
     id: "streaming",
     theme: "purple",
+    icon: Play,
+    iconClassName: "fill-white ml-1",
     title: "Streaming",
     description: "Add your NFHS Network link so fans can watch your games live and on-demand.",
     info: "This link will be shown on your team and game pages for fans to watch the games online.",
@@ -53,6 +61,25 @@ export const EXTERNAL_LINKS: ExternalLinkConfig[] = [
     saveLabel: "Save Streaming Link",
     payloadKey: "watchGame",
     savedField: "nfhsNetworkLink",
+  },
+  {
+    id: "store",
+    theme: "teal",
+    icon: ShoppingBag,
+    iconClassName: "",
+    title: "Team Store",
+    description: "Add your T5 Sportswear online store link so fans can buy team apparel and fan wear.",
+    info: "This link will be shown on your team pages for fans to shop your official team store.",
+    logo: "/images/external-links/t5-sportswear-logo.png",
+    logoAlt: "T5 Sportswear",
+    label: "T5 Store Link",
+    placeholder: "https://www.t5sportswear.com/your-store",
+    hint: "Enter your T5 Sportswear online store link.",
+    providerName: "T5 Sportswear",
+    saveLabel: "Save Store Link",
+    // Same feature link the Activations "Team Stores" toggle uses.
+    payloadKey: "teamStores",
+    savedField: "teamStoresLink",
   },
 ];
 
@@ -71,5 +98,12 @@ export const THEME = {
     badge: "bg-[radial-gradient(circle_at_30%_30%,#A45BEA,#5E1FA8)] shadow-[0_0_0_4px_rgba(164,91,234,0.25)]",
     infoBox: "border-[#7B3FC0]/60 bg-[rgba(110,50,170,0.18)]",
     infoIcon: "text-[#B57BF0]",
+  },
+  teal: {
+    card: "border-[#1A9BD7]/40 bg-[rgba(20,140,200,0.10)]",
+    strip: "bg-[rgba(20,140,200,0.16)]",
+    badge: "bg-[radial-gradient(circle_at_30%_30%,#3CC3F2,#0B6FA8)] shadow-[0_0_0_4px_rgba(60,195,242,0.25)]",
+    infoBox: "border-[#1A9BD7]/60 bg-[rgba(20,140,200,0.18)]",
+    infoIcon: "text-[#4CC4F0]",
   },
 } as const;
