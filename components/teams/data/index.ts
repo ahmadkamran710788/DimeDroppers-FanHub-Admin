@@ -82,6 +82,51 @@ export const STAFF: StaffMember[] = [
   { id: "staff-5", name: "Sam Ortega", role: "Athletic Trainer", email: "sam@twinlakes.edu", phone: "(555) 201-4454", status: "Inactive" },
 ];
 
+export type ParentRelationship = "Mother" | "Father" | "Guardian";
+
+export interface Parent {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  relationship: ParentRelationship;
+  // Athlete on the roster this parent is linked to.
+  athlete: string;
+  jersey: number;
+}
+
+const PARENT_NAMES: [string, ParentRelationship][] = [
+  ["Maria Ryan", "Mother"],
+  ["David Ryan", "Father"],
+  ["Angela Smith", "Mother"],
+  ["Robert Lee", "Father"],
+  ["Linda Carter", "Guardian"],
+  ["James Williams", "Father"],
+];
+const PARENT_ATHLETES: [string, number][] = [
+  ["Jay Ryan", 23],
+  ["Jay Ryan", 23],
+  ["Jordan Smith", 12],
+  ["Marcus Lee", 5],
+  ["Lily Carter", 3],
+  ["King Williams", 10],
+];
+
+// Demo parents for the Team Details → Parents tab, until a parents endpoint exists.
+export const PARENTS: Parent[] = Array.from({ length: 14 }, (_, i) => {
+  const [name, relationship] = PARENT_NAMES[i % PARENT_NAMES.length];
+  const [athlete, jersey] = PARENT_ATHLETES[i % PARENT_ATHLETES.length];
+  return {
+    id: `parent-${i + 1}`,
+    name,
+    email: `${name.toLowerCase().replace(/[^a-z]+/g, ".")}@gmail.com`,
+    phone: `(555) ${300 + i}-${4110 + i}`,
+    relationship,
+    athlete,
+    jersey,
+  };
+});
+
 export type FollowerType = "Parent" | "Fan" | "Alumni";
 
 export interface Follower {
