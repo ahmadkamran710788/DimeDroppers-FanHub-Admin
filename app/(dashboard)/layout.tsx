@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
 import { routes } from "@/utils/routes";
 import { SetupProvider } from "@/context/setup";
+import { TeamShopProvider } from "@/context/team-shop";
 
 const PAGE_TITLES: Record<string, string> = {
   [routes.ui.profile]: "Organization Profile",
@@ -43,31 +45,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <SetupProvider>
-      <div className="flex h-screen bg-black overflow-hidden">
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="relative flex flex-col flex-1 overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/images/hub-bg-3c75bf.png"
-            alt=""
-            aria-hidden="true"
-            className="absolute pointer-events-none select-none"
-            style={{
-              top: 0,
-              right: 0,
-              width: "80%",
-              height: "100%",
-              objectFit: "cover",
-              objectPosition: "top right",
-              filter: "blur(72px)",
-              opacity: 0.6,
-              zIndex: 0,
-            }}
-          />
-          <Header title={title} onMenuClick={() => setSidebarOpen(true)} />
-          <main className="relative z-10 flex-1 overflow-y-auto px-4 py-4 lg:px-10 lg:py-8">{children}</main>
+      <TeamShopProvider>
+        <div className="flex h-screen bg-black overflow-hidden">
+          <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          <div className="relative flex flex-col flex-1 overflow-hidden">
+            <Image
+              src="/images/hub-bg-3c75bf.png"
+              alt=""
+              width={1440}
+              height={1757}
+              aria-hidden="true"
+              className="absolute pointer-events-none select-none"
+              style={{
+                top: 0,
+                right: 0,
+                width: "80%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "top right",
+                filter: "blur(72px)",
+                opacity: 0.6,
+                zIndex: 0,
+              }}
+            />
+            <Header title={title} onMenuClick={() => setSidebarOpen(true)} />
+            <main className="relative z-10 flex-1 overflow-y-auto px-4 py-4 lg:px-10 lg:py-8">{children}</main>
+          </div>
         </div>
-      </div>
+      </TeamShopProvider>
     </SetupProvider>
   );
 }

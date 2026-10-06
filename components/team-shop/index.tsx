@@ -16,12 +16,11 @@ import Tabs from "@/components/common/tabs";
 import AddProductModal from "@/components/team-shop/add-product-modal";
 import {
   PRODUCT_TYPE_LABEL,
-  sampleProducts,
-  type ProductStatus,
   type ProductType,
   type TeamShopProduct,
 } from "@/components/team-shop/data";
 import { TEAMS } from "@/components/teams/data";
+import { useTeamShop } from "@/context/team-shop";
 import { formatMoney } from "@/utils/helper";
 
 const PAGE_SIZE = 10;
@@ -59,18 +58,16 @@ function productDetail(p: TeamShopProduct) {
 
 // Team Shop: the merch, highlight videos and digital collectibles a team sells.
 export default function TeamShopPage() {
+  const { productsFor, addProduct, removeProduct, setStatus } = useTeamShop();
   const [teamId, setTeamId] = useState(TEAMS[0].id);
-  // Products per team, kept in state so adds and edits show right away (sample data until an API exists).
-  const [byTeam, setByTeam] = useState<Record<string, TeamShopProduct[]>>({});
   const [tab, setTab] = useState<Tab>("All");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("All Status");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
 
-  const products = useMemo(() => byTeam[teamId] ?? sampleProducts(teamId), [byTeam, teamId]);
-  const setProducts = (update: (prev: TeamShopProduct[]) => TeamShopProduct[]) =>
-    setByTeam((prev) => ({ ...prev, [teamId]: update(prev[teamId] ?? sampleProducts(teamId)) }));
+  // Shared store, so items added from Media and Digital Collectibles show up here too.
+  const products = productsFor(teamId);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -90,10 +87,8 @@ export default function TeamShopPage() {
   const to = Math.min(currentPage * PAGE_SIZE, filtered.length);
 
   const count = (type?: ProductType) => products.filter((p) => !type || p.type === type).length;
-  const setStatus = (id: string, status: ProductStatus) =>
-    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
   const remove = (p: TeamShopProduct) => {
-    setProducts((prev) => prev.filter((x) => x.id !== p.id));
+    removeProduct(teamId, p.id);
     toast.success(`${p.name} removed`);
   };
 
@@ -158,8 +153,8 @@ export default function TeamShopPage() {
             // Editing needs the product API; status and delete work on the sample list.
             { label: "Edit Product", onSelect: () => toast("Coming soon.") },
             p.status === "Active"
-              ? { label: "Move to Draft", onSelect: () => setStatus(p.id, "Draft") }
-              : { label: "Publish", onSelect: () => setStatus(p.id, "Active") },
+              ? { label: "Move to Draft", onSelect: () => setStatus(teamId, p.id, "Draft") }
+              : { label: "Publish", onSelect: () => setStatus(teamId, p.id, "Active") },
             { label: "Delete Product", onSelect: () => remove(p), variant: "destructive" },
           ]}
         />
@@ -277,7 +272,7 @@ export default function TeamShopPage() {
         onClose={() => setAddOpen(false)}
         teamId={teamId}
         onAdd={(product) => {
-          setProducts((prev) => [product, ...prev]);
+          addProduct(product);
           toast.success(`${product.name} added to the team shop`);
         }}
       />

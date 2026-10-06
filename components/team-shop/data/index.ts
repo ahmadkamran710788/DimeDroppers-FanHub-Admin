@@ -24,6 +24,8 @@ export interface TeamShopProduct {
   rarity?: CollectibleRarity;
   // Game the video or collectible is from.
   game?: string;
+  // Game content this product was created from (via "Add to Store"), so it isn't added twice.
+  sourceId?: string;
 }
 
 export const PRODUCT_TYPE_LABEL: Record<ProductType, string> = {

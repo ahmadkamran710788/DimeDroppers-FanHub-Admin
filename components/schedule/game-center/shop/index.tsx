@@ -46,45 +46,46 @@ interface ShopSectionProps {
   onSeeAll: () => void;
   // Skip the heading, sponsor and category/filter chips; show only the featured grid.
   featuredOnly?: boolean;
+  // Optional action under each product, e.g. "Add to Store".
+  renderAction?: (p: ShopProduct) => ReactNode;
   className?: string;
 }
 
-function ProductCard({ product, onSelect }: { product: ShopProduct; onSelect: () => void }) {
+function ProductCard({ product, onSelect, action }: { product: ShopProduct; onSelect: () => void; action?: ReactNode }) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className="group text-left rounded-[8px] overflow-hidden border border-white/10 bg-[#111C2E] hover:border-white/30 transition-colors"
-    >
-      <div className="relative aspect-[4/3] bg-[#F1F2F4]">
-        <Image
-          src={product.image}
-          alt=""
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
-          className="object-cover"
-        />
-        {product.trending && (
-          <span
-            className="absolute top-3 left-3 h-7 px-2.5 rounded-full flex items-center gap-1 text-sm font-medium text-white"
-            style={{ background: "var(--gradient-cta)" }}
-          >
-            <Flame className="size-4 fill-white" strokeWidth={0} />
-            Trending
-          </span>
-        )}
-      </div>
-      <div className="px-5 py-4 flex flex-col gap-2">
-        <span className="text-lg font-medium text-white truncate">{product.name}</span>
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <span className="text-base text-white">{formatMoney(product.price)}</span>
-          <span className="h-8 px-3 rounded-full flex items-center gap-2 bg-white/10 text-sm text-white/85">
-            <CircleDot className="size-4 text-[#A855F7]" strokeWidth={2.5} />
-            {`${product.dimes.toLocaleString("en-US")} Dimes`}
-          </span>
+    <div className="rounded-[8px] overflow-hidden border border-white/10 bg-[#111C2E] hover:border-white/30 transition-colors flex flex-col">
+      <button type="button" onClick={onSelect} className="group text-left">
+        <div className="relative aspect-[4/3] bg-[#F1F2F4]">
+          <Image
+            src={product.image}
+            alt=""
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+            className="object-cover"
+          />
+          {product.trending && (
+            <span
+              className="absolute top-3 left-3 h-7 px-2.5 rounded-full flex items-center gap-1 text-sm font-medium text-white"
+              style={{ background: "var(--gradient-cta)" }}
+            >
+              <Flame className="size-4 fill-white" strokeWidth={0} />
+              Trending
+            </span>
+          )}
         </div>
-      </div>
-    </button>
+        <div className="px-5 py-4 flex flex-col gap-2">
+          <span className="text-lg font-medium text-white truncate">{product.name}</span>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <span className="text-base text-white">{formatMoney(product.price)}</span>
+            <span className="h-8 px-3 rounded-full flex items-center gap-2 bg-white/10 text-sm text-white/85">
+              <CircleDot className="size-4 text-[#A855F7]" strokeWidth={2.5} />
+              {`${product.dimes.toLocaleString("en-US")} Dimes`}
+            </span>
+          </div>
+        </div>
+      </button>
+      {action && <div className="px-5 pb-4 -mt-1">{action}</div>}
+    </div>
   );
 }
 
@@ -96,6 +97,7 @@ export default function ShopSection({
   onSelectProduct,
   onSeeAll,
   featuredOnly = false,
+  renderAction,
   className,
 }: ShopSectionProps) {
   const [category, setCategory] = useState<ShopCategory>("Merch & Apparel");
@@ -186,7 +188,7 @@ export default function ShopSection({
         {visible.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
             {visible.map((p) => (
-              <ProductCard key={p.id} product={p} onSelect={() => onSelectProduct(p)} />
+              <ProductCard key={p.id} product={p} onSelect={() => onSelectProduct(p)} action={renderAction?.(p)} />
             ))}
           </div>
         ) : (
