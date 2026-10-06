@@ -26,6 +26,7 @@ const PAGE_TITLES: Record<string, string> = {
   [routes.ui.recognition]: "Recognition & Fan Wall",
   [routes.ui.addRecognition]: "Recognition & Fan Wall",
   [routes.ui.sponsors]: "Sponsors",
+  [routes.ui.helpCenter]: "Help Center",
   [routes.ui.addSponsor]: "Sponsors",
   [routes.ui.sponsorAddOns]: "Sponsors",
 };
