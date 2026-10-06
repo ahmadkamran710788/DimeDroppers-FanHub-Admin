@@ -2,17 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
-import { Inbox, LogOut, Menu, User } from "lucide-react";
-import Tooltip from "@/components/common/tooltip";
+import Image from "next/image";
+import { LogOut, Menu, User } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { clearFanhubSession } from "@/utils/auth/session";
 import { useAuth } from "@/context/auth";
-
-// SAMPLE DATA — pending requests count shown on the header Requests icon.
-// TODO: load from the requests API (pending scorekeeper + videographer requests).
-const PENDING_REQUESTS_COUNT = 2;
 
 interface HeaderProps {
   className?: string;
@@ -118,32 +113,13 @@ export default function Header({ className, title = "Setup Wizard", onMenuClick 
           </h1>
         </div>
 
-        {/* Right side: help, requests, bell, avatar */}
+        {/* Right side: help, bell, avatar */}
         <div className="flex items-center gap-6">
           <button type="button" className="w-6 h-6 flex items-center justify-center" aria-label="Help">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/icon-help.svg" alt="" width={24} height={24} />
+            <Image src="/icons/icon-help.svg" alt="" width={24} height={24} />
           </button>
-          <Tooltip label="Requests">
-            <Link
-              href={routes.ui.requests}
-              aria-label={PENDING_REQUESTS_COUNT > 0 ? `Requests (${PENDING_REQUESTS_COUNT} pending)` : "Requests"}
-              className="relative w-6 h-6 flex items-center justify-center text-white hover:opacity-80 transition-opacity"
-            >
-              <Inbox className="w-6 h-6" strokeWidth={1.5} />
-              {PENDING_REQUESTS_COUNT > 0 && (
-                <span
-                  aria-hidden
-                  className="absolute -top-1.5 -right-2 min-w-4 h-4 px-1 rounded-full bg-error text-white text-[10px] font-semibold leading-none flex items-center justify-center"
-                >
-                  {PENDING_REQUESTS_COUNT > 9 ? "9+" : PENDING_REQUESTS_COUNT}
-                </span>
-              )}
-            </Link>
-          </Tooltip>
           <button type="button" className="w-6 h-6 flex items-center justify-center relative" aria-label="Notifications">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/icon-bell.svg" alt="" width={24} height={24} />
+            <Image src="/icons/icon-bell.svg" alt="" width={24} height={24} />
           </button>
 
           {/* Org info + avatar toggle */}
