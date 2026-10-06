@@ -10,6 +10,7 @@ import SearchInput from "@/components/common/search-input";
 import Tabs from "@/components/common/tabs";
 import WizardFooter from "@/components/common/wizard-footer";
 import { SAMPLE_LAYOUT, SAMPLE_PHOTOS, SAMPLE_PHOTO_TOTAL, type FanPhoto } from "@/components/recognition/data";
+import PhotoTemplates from "@/components/recognition/photo-templates";
 import PhotoTile from "@/components/recognition/photo-tile";
 import RecognitionsTable from "@/components/recognition/recognitions-table";
 import { cn } from "@/utils/cn";
@@ -20,7 +21,7 @@ const SECTIONS = [
 ] as const;
 export type RecognitionSection = (typeof SECTIONS)[number]["label"];
 
-const TABS = ["All Photos", "Uploaded Photos", "Fan Wall Layout", "Settings"] as const;
+const TABS = ["All Photos", "Uploaded Photos", "Templates"] as const;
 type Tab = (typeof TABS)[number];
 
 type FilterKey = "event" | "team" | "uploader";
@@ -107,7 +108,7 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
 
   const layoutPhotos = layout.map((id) => byId.get(id)).filter((p): p is FanPhoto => !!p);
   const showGrid = tab === "All Photos" || tab === "Uploaded Photos";
-  const showLayout = tab === "All Photos" || tab === "Fan Wall Layout";
+  const showLayout = tab === "All Photos";
 
   return (
     <div className="flex flex-col gap-6 pb-24">
@@ -164,9 +165,9 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
             />
           </div>
 
-          {tab === "Settings" ? (
-            <div className={cn(CARD, "py-16 items-center text-center")}>
-              <p className="text-sm text-white/60">Fan wall settings are coming soon.</p>
+          {tab === "Templates" ? (
+            <div className={CARD}>
+              <PhotoTemplates />
             </div>
           ) : (
             <>
