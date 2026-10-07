@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import toast from "react-hot-toast";
 import DateField from "@/components/common/date-field";
 import CheckboxGroup from "@/components/common/checkbox-group";
 import Input from "@/components/common/input";
@@ -18,7 +17,6 @@ import {
   DESCRIPTION_MAX,
   type CampaignImpact,
 } from "@/components/fundraising/create-campaign/schema";
-import HelpCard from "@/components/fundraising/help-card";
 import { TEAMS } from "@/components/teams/data";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
@@ -188,8 +186,6 @@ export default function CreateCampaignPage() {
             error={errors.description}
           />
         </SectionCard>
-
-        <HelpCard onLearnMore={() => toast("Coming soon.")} />
       </div>
 
       <WizardFooter
