@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { ChevronDown, CircleDot, Plus } from "lucide-react";
+import { ChevronDown, CircleDot } from "lucide-react";
 import toast from "react-hot-toast";
-import Button from "@/components/common/button";
 import GenericTable, { type Column } from "@/components/common/generic-table";
 import Pagination from "@/components/common/pagination";
 import RowActionsMenu from "@/components/common/row-actions-menu";
@@ -13,7 +12,6 @@ import Select from "@/components/common/select";
 import StatCard from "@/components/common/stat-card";
 import StatusPill from "@/components/common/status-pill";
 import Tabs from "@/components/common/tabs";
-import AddProductModal from "@/components/team-shop/add-product-modal";
 import {
   PRODUCT_TYPE_LABEL,
   type ProductType,
@@ -58,13 +56,12 @@ function productDetail(p: TeamShopProduct) {
 
 // Team Shop: the merch, highlight videos and digital collectibles a team sells.
 export default function TeamShopPage() {
-  const { productsFor, addProduct, removeProduct, setStatus } = useTeamShop();
+  const { productsFor, removeProduct, setStatus } = useTeamShop();
   const [teamId, setTeamId] = useState(TEAMS[0].id);
   const [tab, setTab] = useState<Tab>("All");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("All Status");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [addOpen, setAddOpen] = useState(false);
 
   // Shared store, so items added from Media and Digital Collectibles show up here too.
   const products = productsFor(teamId);
@@ -163,13 +160,16 @@ export default function TeamShopPage() {
   ];
 
   return (
-    // Pointer cursor on everything clickable in the Team Shop (page and Add Product popup).
+    // Pointer cursor on everything clickable in the Team Shop.
     <div className="flex flex-col gap-10 [&_button:not(:disabled)]:cursor-pointer [&_select]:cursor-pointer [&_[role=button]]:cursor-pointer">
       {/* Title + team + add */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
         <div className="flex flex-col gap-2 text-white">
           <h2 className="font-display font-black text-[32px] sm:text-[40px] lg:text-[56px] uppercase leading-none">Team Shop</h2>
-          <p className="text-base text-white/80">Add and manage the merch, videos and digital collectibles your team sells.</p>
+          <p className="text-base text-white/80">
+            Manage the merch, videos and digital collectibles your team sells. Add items from Media and Digital
+            Collectibles with Add to Store.
+          </p>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-end gap-4">
           <Select
@@ -186,13 +186,6 @@ export default function TeamShopPage() {
             // Wide enough for "Team name · Head coach"; pr-10 keeps long names clear of the arrow.
             className="sm:w-[28rem]"
             selectClassName="pr-10 truncate"
-          />
-          <Button
-            variant="cta"
-            label="Add Product"
-            icon={<Plus className="size-5" strokeWidth={2} />}
-            className="shrink-0"
-            onClick={() => setAddOpen(true)}
           />
         </div>
       </div>
@@ -266,16 +259,6 @@ export default function TeamShopPage() {
           </div>
         </div>
       </div>
-
-      <AddProductModal
-        isOpen={addOpen}
-        onClose={() => setAddOpen(false)}
-        teamId={teamId}
-        onAdd={(product) => {
-          addProduct(product);
-          toast.success(`${product.name} added to the team shop`);
-        }}
-      />
     </div>
   );
 }
