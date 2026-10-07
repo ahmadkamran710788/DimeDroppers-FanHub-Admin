@@ -2,13 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CirclePlus, MailPlus, Share, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import Button from "@/components/common/button";
 import Tabs from "@/components/common/tabs";
 import GivingOverview from "@/components/fundraising/giving-overview";
-import HelpCard from "@/components/fundraising/help-card";
-import QuickLinks, { type QuickLink } from "@/components/fundraising/quick-links";
 import StatCard from "@/components/fundraising/stat-card";
 import TopDonors from "@/components/fundraising/top-donors";
 import TeamsTable from "@/components/teams/teams-table";
@@ -32,14 +29,6 @@ const CAMPAIGNS_BY_TEAM = SAMPLE_CAMPAIGNS.reduce<Record<string, string[]>>((acc
   (acc[c.teamId] ??= []).push(c.title);
   return acc;
 }, {});
-
-const iconCls = "size-6";
-const quickLinks = (onCreate: () => void): QuickLink[] => [
-  { label: "Create Campaign", icon: <CirclePlus className={iconCls} strokeWidth={1.5} />, onSelect: onCreate },
-  { label: "Invite Supporters", icon: <MailPlus className={iconCls} strokeWidth={1.5} />, onSelect: comingSoon },
-  { label: "Share Donation Page", icon: <Share className={iconCls} strokeWidth={1.5} />, onSelect: comingSoon },
-  { label: "Manage Fundraisers", icon: <Users className={iconCls} strokeWidth={1.5} />, onSelect: comingSoon },
-];
 
 export default function FundraisingPage() {
   const router = useRouter();
@@ -69,13 +58,9 @@ export default function FundraisingPage() {
       </div>
 
       {/* Overview panels */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-10 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-10 items-start">
         <GivingOverview total={SAMPLE_GIVING_TOTAL} slices={SAMPLE_GIVING} onViewReports={comingSoon} />
         <TopDonors donors={SAMPLE_TOP_DONORS} onViewAll={comingSoon} />
-        <div className="flex flex-col gap-10">
-          <QuickLinks links={quickLinks(openCreate)} />
-          <HelpCard onLearnMore={comingSoon} />
-        </div>
       </div>
 
       {/* Tabs */}
