@@ -15,6 +15,7 @@ import {
   SAMPLE_GIVING_TOTAL,
   SAMPLE_STATS,
   SAMPLE_TOP_DONORS,
+  type FundraisingCampaign,
 } from "@/components/fundraising/data";
 import { routes } from "@/utils/routes";
 
@@ -24,9 +25,9 @@ type Tab = (typeof TABS)[number];
 // Only the Teams tab is built; the rest land with their own designs.
 const comingSoon = () => toast("Coming soon.");
 
-// Campaign names grouped by team, for the Teams tab's Campaigns dropdown.
-const CAMPAIGNS_BY_TEAM = SAMPLE_CAMPAIGNS.reduce<Record<string, string[]>>((acc, c) => {
-  (acc[c.teamId] ??= []).push(c.title);
+// Campaigns grouped by team, shown under a team when it is clicked in the Teams tab.
+const CAMPAIGNS_BY_TEAM = SAMPLE_CAMPAIGNS.reduce<Record<string, FundraisingCampaign[]>>((acc, c) => {
+  (acc[c.teamId] ??= []).push(c);
   return acc;
 }, {});
 

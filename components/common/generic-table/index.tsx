@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/utils/cn";
-import { type ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 
 export interface Column<T> {
   header: string;
@@ -24,6 +24,8 @@ interface GenericTableProps<T> {
   cellClassName?: string;
   /** Makes rows clickable (e.g. to open a details page). */
   onRowClick?: (row: T) => void;
+  /** Content shown full-width under a row (e.g. an expanded details panel); return null to show nothing. */
+  renderExpanded?: (row: T) => ReactNode;
   className?: string;
 }
 
@@ -40,6 +42,7 @@ export default function GenericTable<T>({
   headerCellClassName,
   cellClassName,
   onRowClick,
+  renderExpanded,
   className,
 }: GenericTableProps<T>) {
   return (
@@ -69,31 +72,33 @@ export default function GenericTable<T>({
         </div>
       ) : (
         rows.map((row, index) => (
-          <div
-            key={getKey(row, index)}
-            onClick={onRowClick ? () => onRowClick(row) : undefined}
-            className={cn("flex items-stretch border-b border-white/20", onRowClick && "cursor-pointer hover:bg-white/[0.04]")}
-          >
-            {columns.map((col) => {
-              const content = col.cell(row);
-              return (
-                <div
-                  key={col.header}
-                  className={cn(
-                    "px-2 py-3 bg-white/5 flex items-center overflow-hidden text-white text-xs font-medium leading-4",
-                    cellClassName,
-                    col.cls
-                  )}
-                >
-                  {typeof content === "string" || typeof content === "number" ? (
-                    <span className="truncate">{content}</span>
-                  ) : (
-                    content
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <Fragment key={getKey(row, index)}>
+            <div
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+              className={cn("flex items-stretch border-b border-white/20", onRowClick && "cursor-pointer hover:bg-white/[0.04]")}
+            >
+              {columns.map((col) => {
+                const content = col.cell(row);
+                return (
+                  <div
+                    key={col.header}
+                    className={cn(
+                      "px-2 py-3 bg-white/5 flex items-center overflow-hidden text-white text-xs font-medium leading-4",
+                      cellClassName,
+                      col.cls
+                    )}
+                  >
+                    {typeof content === "string" || typeof content === "number" ? (
+                      <span className="truncate">{content}</span>
+                    ) : (
+                      content
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {renderExpanded?.(row)}
+          </Fragment>
         ))
       )}
     </div>
