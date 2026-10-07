@@ -2,6 +2,7 @@
 
 import { cn } from "@/utils/cn";
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface ModalProps {
   isOpen: boolean;
@@ -28,7 +29,9 @@ export default function Modal({ isOpen, onClose, title, children, className }: M
 
   if (!isOpen) return null;
 
-  return (
+  // Portalled to <body>: a blurred or transformed ancestor would otherwise become the
+  // containing block for `fixed`, pinning the popup to that panel instead of the viewport.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
         className="absolute inset-0 bg-[rgba(0,0,0,0.55)] backdrop-blur-sm"
@@ -48,6 +51,7 @@ export default function Modal({ isOpen, onClose, title, children, className }: M
         )}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

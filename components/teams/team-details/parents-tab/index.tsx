@@ -41,5 +41,5 @@ const search = (p: Parent) => [p.name, p.email, p.athlete, p.relationship];
 
 // Team Details → Parents: parents and guardians linked to the team's athletes (sample data until a parents API exists).
 export default function ParentsTab() {
-  return <PeopleList rows={PARENTS} columns={COLUMNS} getKey={(p) => p.id} searchFields={search} noun="parents" />;
+  return <PeopleList rows={PARENTS} columns={COLUMNS} getKey={(p) => p.id} searchFields={search} noun="parents" invitee={(p) => ({ name: p.name, email: p.email })} />;
 }

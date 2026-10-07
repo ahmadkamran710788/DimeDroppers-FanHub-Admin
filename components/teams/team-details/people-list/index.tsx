@@ -1,9 +1,12 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import toast from "react-hot-toast";
+import Button from "@/components/common/button";
 import GenericTable, { type Column } from "@/components/common/generic-table";
 import Pagination from "@/components/common/pagination";
 import SearchInput from "@/components/common/search-input";
+import InviteModal from "@/components/teams/team-details/invite-modal";
 
 const PAGE_SIZE = 10;
 
@@ -17,11 +20,32 @@ interface PeopleListProps<T> {
   noun: string;
   // Optional toolbar action next to the search box (e.g. "Add Player").
   action?: ReactNode;
+  // Name and email of a row. When given, every row gets an "Invite" button that opens the invite popup.
+  invitee?: (row: T) => { name: string; email: string };
 }
 
 // Searchable, paginated list for one Team Details tab (players, staff or followers).
-export default function PeopleList<T>({ rows, columns, getKey, searchFields, noun, action }: PeopleListProps<T>) {
+export default function PeopleList<T>({ rows, columns, getKey, searchFields, noun, action, invitee }: PeopleListProps<T>) {
   const [query, setQuery] = useState("");
+  const [inviting, setInviting] = useState<{ name: string; email: string } | null>(null);
+
+  const tableColumns: Column<T>[] = invitee
+    ? [
+        ...columns,
+        {
+          header: "Invite",
+          cls: "w-28 shrink-0 py-5",
+          cell: (row) => (
+            <Button
+              variant="primary"
+              label="Invite"
+              className="h-9 min-w-0 px-4 text-sm"
+              onClick={() => setInviting(invitee(row))}
+            />
+          ),
+        },
+      ]
+    : columns;
   const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
@@ -52,12 +76,20 @@ export default function PeopleList<T>({ rows, columns, getKey, searchFields, nou
         {action}
       </div>
       <div className="flex flex-col">
-        <GenericTable columns={columns} rows={visible} getKey={getKey} empty={`No ${noun} match your search.`} />
+        <GenericTable columns={tableColumns} rows={visible} getKey={getKey} empty={`No ${noun} match your search.`} />
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 border-b border-white/20">
           <span className="text-xs text-white/80">{`Showing ${from} to ${to} of ${filtered.length} ${noun}`}</span>
           <Pagination page={currentPage} pageCount={pageCount} onChange={setPage} />
         </div>
       </div>
+
+      <InviteModal
+        key={inviting?.email ?? "closed"}
+        invitee={inviting}
+        onClose={() => setInviting(null)}
+        // There is no team invite API yet, so the popup validates the email and stops here.
+        onSend={() => toast("Coming soon.")}
+      />
     </div>
   );
 }
