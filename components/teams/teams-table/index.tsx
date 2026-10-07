@@ -11,6 +11,8 @@ import Pagination from "@/components/common/pagination";
 import RowActionsMenu from "@/components/common/row-actions-menu";
 import SearchInput from "@/components/common/search-input";
 import StatusPill from "@/components/common/status-pill";
+import CampaignsTable from "@/components/fundraising/campaigns-table";
+import type { FundraisingCampaign } from "@/components/fundraising/data";
 import { useSetup } from "@/context/setup";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
@@ -24,8 +26,8 @@ const comingSoon = () => toast("Coming soon.");
 interface TeamsTableProps {
   // Shows the "Teams (n)" toggle that collapses the table (Teams page only).
   collapsible?: boolean;
-  // Campaign names per team id. When given, adds a "Campaigns" dropdown column (Fundraising).
-  campaignsByTeam?: Record<string, string[]>;
+  // Campaigns per team id. When given (Fundraising), clicking a team opens its campaigns below the row.
+  campaignsByTeam?: Record<string, FundraisingCampaign[]>;
 }
 
 // Searchable, paginated teams list shared by the Teams page and the Fundraising "Teams" tab.
@@ -40,6 +42,7 @@ export default function TeamsTable({ collapsible = false, campaignsByTeam }: Tea
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [collapsed, setCollapsed] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -106,22 +109,13 @@ export default function TeamsTable({ collapsible = false, campaignsByTeam }: Tea
             header: "Campaigns",
             cls: "w-36 shrink-0 py-5",
             cell: (t: Team) => {
-              const names = campaignsByTeam[t.id] ?? [];
-              if (names.length === 0) return <span className="text-white/40">No campaigns</span>;
+              const count = campaignsByTeam[t.id]?.length ?? 0;
+              if (count === 0) return <span className="text-white/40">No campaigns</span>;
               return (
-                <StopRowClick>
-                  <RowActionsMenu
-                    ariaLabel={`Campaigns for ${t.name}`}
-                    className="w-auto h-9 px-3 gap-1 text-xs font-medium text-white whitespace-nowrap"
-                    trigger={
-                      <>
-                        {names.length} {names.length === 1 ? "Campaign" : "Campaigns"}
-                        <ChevronDown className="w-4 h-4" />
-                      </>
-                    }
-                    items={names.map((label) => ({ label, onSelect: comingSoon }))}
-                  />
-                </StopRowClick>
+                <span className="flex items-center gap-1 whitespace-nowrap">
+                  {count} {count === 1 ? "Campaign" : "Campaigns"}
+                  <ChevronDown className={cn("w-4 h-4 transition-transform", expandedId === t.id && "rotate-180")} />
+                </span>
               );
             },
           },
@@ -185,7 +179,21 @@ export default function TeamsTable({ collapsible = false, campaignsByTeam }: Tea
             rows={rows}
             getKey={(t) => t.id}
             empty="No teams match your search."
-            onRowClick={(t) => router.push(routes.ui.teamDetails(t.id))}
+            onRowClick={(t) =>
+              campaignsByTeam
+                ? setExpandedId((id) => (id === t.id ? null : t.id))
+                : router.push(routes.ui.teamDetails(t.id))
+            }
+            renderExpanded={
+              campaignsByTeam
+                ? (t) =>
+                    expandedId === t.id ? (
+                      <div className="p-4 bg-black/30 border-b border-white/20">
+                        <CampaignsTable campaigns={campaignsByTeam[t.id] ?? []} />
+                      </div>
+                    ) : null
+                : undefined
+            }
           />
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 border-b border-white/20">
             <span className="text-xs text-white/80">
