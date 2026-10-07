@@ -163,6 +163,7 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
             getKey={(a) => a.id}
             searchFields={playerSearch}
             noun="players"
+            invitee={(p) => ({ name: p.name, email: p.email })}
             action={
               <Button
                 variant="cta"
@@ -183,6 +184,7 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
             getKey={(s) => s.id}
             searchFields={staffSearch}
             noun="staff"
+            invitee={(p) => ({ name: p.name, email: p.email })}
             action={
               <Button
                 variant="cta"
@@ -201,6 +203,7 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
             getKey={(f) => f.id}
             searchFields={followerSearch}
             noun="followers"
+            invitee={(p) => ({ name: p.name, email: p.email })}
           />
         )}
       </div>
