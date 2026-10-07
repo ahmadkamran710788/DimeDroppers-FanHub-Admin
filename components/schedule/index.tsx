@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import AddGameModal from "@/components/schedule/add-game-modal";
 import DeleteGameModal from "@/components/schedule/delete-game-modal";
 import GameDetailsPanel from "@/components/schedule/game-details-panel";
@@ -11,7 +12,13 @@ import { useSetup } from "@/context/setup";
 import { cn } from "@/utils/cn";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
-import { GENDER_OPTIONS, SEASON_OPTIONS, SPORTS_OPTIONS, LEVEL_OPTIONS } from "@/utils/constants/schedule";
+import FilterDropdown from "@/components/common/filter-dropdown";
+import {
+  SCHEDULE_GENDER_FILTERS,
+  SCHEDULE_LEVEL_FILTERS,
+  SCHEDULE_SEASON_FILTERS,
+  SCHEDULE_VIEW_FILTERS,
+} from "@/utils/constants/schedule";
 import type { ScheduleItem, ScheduleListResponse, SchedulePagination, ScheduleSummary } from "@/utils/types/schedule";
 import type { ExposureEvent, ExposureEventsResponse, ExposureEventView } from "@/utils/types/exposure-event";
 import {
@@ -22,7 +29,9 @@ import {
   Loader2,
   Plus,
   Search,
-  SlidersHorizontal,
+  Play,
+  ChartNoAxesColumn,
+  Users,
   CalendarPlus,
   CalendarDays,
   Copy,
@@ -34,7 +43,7 @@ import { useCallback, useEffect, useState } from "react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const TABS = ["Games", "Calendar", "Locations", "Opponents", "Events"];
+const TABS = ["Games", "Events"];
 
 const SCHEDULE_TOOLS = [
   { icon: Plus, label: "Add Game", description: "Manually add a single game" },
@@ -196,10 +205,13 @@ function GameRow({ game, onEdit, onDelete }: GameRowProps) {
         <div className="w-52 px-2 py-4 bg-white/5 flex items-center overflow-hidden">
           <div className="flex items-center gap-2 min-w-0 w-full">
             {game.opponentLogoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={game.opponentLogoUrl}
                 alt=""
+                width={40}
+                height={40}
+                // Opponent logos come from external hosts that aren't configured for the image optimizer.
+                unoptimized
                 className="size-10 shrink-0 rounded-full border border-white/30 object-cover"
               />
             ) : (
@@ -426,8 +438,8 @@ function TeamSide({ name, logoUrl }: { name: string; logoUrl?: string | null }) 
   return (
     <div className="w-20 shrink-0 flex flex-col items-center gap-1 min-w-0">
       {logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={logoUrl} alt="" className="size-12 rounded-full border border-white/30 object-cover" />
+        // External logo host, so skip the image optimizer.
+        <Image src={logoUrl} alt="" width={48} height={48} unoptimized className="size-12 rounded-full border border-white/30 object-cover" />
       ) : (
         <div className="size-12 bg-white/20 rounded-full border border-white/30 flex items-center justify-center">
           <CalendarDays className="w-6 h-6 text-white/60" strokeWidth={1.5} />
@@ -493,7 +505,8 @@ function ScheduleTools({ onAddGame }: { onAddGame: () => void }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const DEFAULT_FILTERS = { status: "", homeAway: "", gender: "", season: "", sports: "", level: "", from: "", to: "", sortOrder: "asc" };
+const DEFAULT_FILTERS = { view: "upcoming", season: "", level: "", gender: "" };
+type ScheduleFilters = typeof DEFAULT_FILTERS;
 
 export default function SchedulePage() {
   const router = useRouter();
@@ -509,7 +522,6 @@ export default function SchedulePage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editGame, setEditGame] = useState<ScheduleItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ScheduleItem | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
 
   // Synced Exposure events (lazy-loaded when the Events tab is first opened)
   const [events, setEvents] = useState<ExposureEvent[]>([]);
@@ -517,10 +529,13 @@ export default function SchedulePage() {
   // Which event + view the details modal is showing (null = closed).
   const [eventView, setEventView] = useState<{ event: ExposureEvent; view: ExposureEventView } | null>(null);
 
-  const [pendingFilters, setPendingFilters] = useState(DEFAULT_FILTERS);
-  const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS);
-
-  const activeFilterCount = [appliedFilters.status, appliedFilters.homeAway, appliedFilters.gender, appliedFilters.season, appliedFilters.sports, appliedFilters.level, appliedFilters.from, appliedFilters.to].filter(Boolean).length;
+  const [filters, setFilters] = useState<ScheduleFilters>(DEFAULT_FILTERS);
+  const activeFilterCount = [filters.season, filters.level, filters.gender].filter(Boolean).length;
+  const setFilter = (key: keyof ScheduleFilters) => (value: string) => {
+    setFilters((f) => ({ ...f, [key]: value }));
+    setPage(1);
+  };
+  const viewLabel = SCHEDULE_VIEW_FILTERS.find((o) => o.value === filters.view)?.label ?? "Upcoming";
 
   // Debounce search — also reset to page 1 so results reflect the new query
   useEffect(() => {
@@ -536,16 +551,16 @@ export default function SchedulePage() {
   const fetchGames = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   useEffect(() => {
-    const params: Record<string, unknown> = { page, limit: 20, sortOrder: appliedFilters.sortOrder };
+    // Past games read newest-first; everything else runs in date order.
+    const params: Record<string, unknown> = { page, limit: 20, sortOrder: filters.view === "past" ? "desc" : "asc" };
     if (debouncedSearch) params.search = debouncedSearch;
-    if (appliedFilters.status)   params.status   = appliedFilters.status;
-    if (appliedFilters.homeAway) params.homeAway  = appliedFilters.homeAway;
-    if (appliedFilters.gender)   params.gender    = appliedFilters.gender;
-    if (appliedFilters.season)   params.season    = appliedFilters.season;
-    if (appliedFilters.sports)   params.sports    = appliedFilters.sports;
-    if (appliedFilters.level)    params.level     = appliedFilters.level;
-    if (appliedFilters.from)     params.from      = appliedFilters.from;
-    if (appliedFilters.to)       params.to        = appliedFilters.to;
+    const today = new Date().toISOString().slice(0, 10);
+    if (filters.view === "past") params.to = today;
+    if (filters.view === "upcoming") params.from = today;
+    if (filters.view === "home" || filters.view === "away") params.homeAway = filters.view;
+    if (filters.season) params.season = filters.season;
+    if (filters.level)  params.level  = filters.level;
+    if (filters.gender) params.gender = filters.gender;
 
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -565,7 +580,7 @@ export default function SchedulePage() {
       setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [page, debouncedSearch, refreshKey, appliedFilters]);
+  }, [page, debouncedSearch, refreshKey, filters]);
 
   // Lazy-load synced Exposure events the first time the Events tab is opened (and on re-open).
   useEffect(() => {
@@ -646,7 +661,7 @@ export default function SchedulePage() {
         </div>
 
         {/* Games panel */}
-        <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 backdrop-blur-xl flex flex-col gap-6 overflow-hidden">
+        <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 backdrop-blur-xl flex flex-col gap-6">
           {/* Tabs */}
           <div className="relative h-11 overflow-hidden">
             <div className="absolute bottom-0 left-0 right-0 h-px bg-white/20" />
@@ -675,203 +690,40 @@ export default function SchedulePage() {
                 className="flex-1 bg-transparent text-slate-900 text-base font-medium placeholder:text-slate-900/60 outline-none"
               />
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setPendingFilters(appliedFilters);
-                setShowFilters((v) => !v);
-              }}
-              className={cn(
-                "relative w-28 h-12 px-3 rounded-lg outline outline-1 outline-white/20 backdrop-blur-xl flex items-center gap-2 text-white text-base font-medium transition-colors",
-                showFilters ? "bg-white/20" : "bg-white/10 hover:bg-white/20"
-              )}
-            >
-              <SlidersHorizontal className="w-5 h-5 shrink-0" strokeWidth={1.5} />
-              Filters
-              {activeFilterCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
           </div>
 
-          {/* Filter panel */}
-          {showFilters && (
-            <div className="flex flex-col gap-4 p-5 bg-white/5 rounded-lg outline outline-1 outline-white/10">
-              <div className="grid grid-cols-2 gap-4">
-                {/* Status */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wide">Status</label>
-                  <select
-                    value={pendingFilters.status}
-                    onChange={(e) => setPendingFilters((f) => ({ ...f, status: e.target.value }))}
-                    className="h-10 px-3 bg-white/10 rounded-lg outline outline-1 outline-white/20 text-white text-sm font-medium appearance-none cursor-pointer hover:bg-white/15 transition-colors"
-                  >
-                    <option value="">All statuses</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="tentative">Tentative</option>
-                    <option value="cancelled">Cancelled</option>
-                    <option value="postponed">Postponed</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                </div>
-
-                {/* Home / Away */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wide">Home / Away</label>
-                  <select
-                    value={pendingFilters.homeAway}
-                    onChange={(e) => setPendingFilters((f) => ({ ...f, homeAway: e.target.value }))}
-                    className="h-10 px-3 bg-white/10 rounded-lg outline outline-1 outline-white/20 text-white text-sm font-medium appearance-none cursor-pointer hover:bg-white/15 transition-colors"
-                  >
-                    <option value="">All</option>
-                    <option value="home">Home</option>
-                    <option value="away">Away</option>
-                    <option value="neutral">Neutral</option>
-                  </select>
-                </div>
-
-                {/* Gender */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wide">Gender</label>
-                  <select
-                    value={pendingFilters.gender}
-                    onChange={(e) => setPendingFilters((f) => ({ ...f, gender: e.target.value }))}
-                    className="h-10 px-3 bg-white/10 rounded-lg outline outline-1 outline-white/20 text-white text-sm font-medium appearance-none cursor-pointer hover:bg-white/15 transition-colors"
-                  >
-                    <option value="">All genders</option>
-                    {GENDER_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Season */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wide">Season</label>
-                  <select
-                    value={pendingFilters.season}
-                    onChange={(e) => setPendingFilters((f) => ({ ...f, season: e.target.value }))}
-                    className="h-10 px-3 bg-white/10 rounded-lg outline outline-1 outline-white/20 text-white text-sm font-medium appearance-none cursor-pointer hover:bg-white/15 transition-colors"
-                  >
-                    <option value="">All seasons</option>
-                    {SEASON_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Sports */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wide">Sports</label>
-                  <select
-                    value={pendingFilters.sports}
-                    onChange={(e) => setPendingFilters((f) => ({ ...f, sports: e.target.value }))}
-                    className="h-10 px-3 bg-white/10 rounded-lg outline outline-1 outline-white/20 text-white text-sm font-medium appearance-none cursor-pointer hover:bg-white/15 transition-colors"
-                  >
-                    <option value="">All sports</option>
-                    {SPORTS_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Level */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wide">Level</label>
-                  <select
-                    value={pendingFilters.level}
-                    onChange={(e) => setPendingFilters((f) => ({ ...f, level: e.target.value }))}
-                    className="h-10 px-3 bg-white/10 rounded-lg outline outline-1 outline-white/20 text-white text-sm font-medium appearance-none cursor-pointer hover:bg-white/15 transition-colors"
-                  >
-                    <option value="">All levels</option>
-                    {LEVEL_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* From date */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wide">From</label>
-                  <input
-                    type="date"
-                    value={pendingFilters.from}
-                    onChange={(e) => setPendingFilters((f) => ({ ...f, from: e.target.value }))}
-                    className="h-10 px-3 bg-white/10 rounded-lg outline outline-1 outline-white/20 text-white text-sm font-medium cursor-pointer hover:bg-white/15 transition-colors [color-scheme:dark]"
-                  />
-                </div>
-
-                {/* To date */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-white/60 text-xs font-semibold uppercase tracking-wide">To</label>
-                  <input
-                    type="date"
-                    value={pendingFilters.to}
-                    onChange={(e) => setPendingFilters((f) => ({ ...f, to: e.target.value }))}
-                    className="h-10 px-3 bg-white/10 rounded-lg outline outline-1 outline-white/20 text-white text-sm font-medium cursor-pointer hover:bg-white/15 transition-colors [color-scheme:dark]"
-                  />
-                </div>
-              </div>
-
-              {/* Sort order */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-white/60 text-xs font-semibold uppercase tracking-wide">Sort Order</label>
-                <div className="flex gap-2">
-                  {(["asc", "desc"] as const).map((val) => (
-                    <button
-                      key={val}
-                      type="button"
-                      onClick={() => setPendingFilters((f) => ({ ...f, sortOrder: val }))}
-                      className={cn(
-                        "h-10 px-4 rounded-lg outline outline-1 text-sm font-medium transition-colors",
-                        pendingFilters.sortOrder === val
-                          ? "bg-white/20 outline-white/40 text-white"
-                          : "bg-white/5 outline-white/10 text-white/60 hover:bg-white/10"
-                      )}
-                    >
-                      {val === "asc" ? "Oldest first" : "Newest first"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-3 pt-1 border-t border-white/10">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAppliedFilters(pendingFilters);
-                    setPage(1);
-                    setShowFilters(false);
-                  }}
-                  className="h-10 px-6 rounded-lg text-white text-sm font-semibold transition-opacity hover:opacity-90"
-                  style={{ background: "var(--gradient-cta)" }}
-                >
-                  Apply Filters
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPendingFilters(DEFAULT_FILTERS);
-                    setAppliedFilters(DEFAULT_FILTERS);
-                    setPage(1);
-                    setShowFilters(false);
-                  }}
-                  className="h-10 px-6 rounded-lg bg-white/10 outline outline-1 outline-white/20 text-white/70 text-sm font-medium hover:bg-white/20 transition-colors"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-3">
+            <FilterDropdown
+              label="Upcoming"
+              variant="accent"
+              clearable={false}
+              options={SCHEDULE_VIEW_FILTERS}
+              value={filters.view}
+              onChange={setFilter("view")}
+            />
+            <FilterDropdown label="Season" icon={<Play className="w-5 h-5" strokeWidth={1.5} />} options={SCHEDULE_SEASON_FILTERS} value={filters.season} onChange={setFilter("season")} />
+            <FilterDropdown label="Level" icon={<ChartNoAxesColumn className="w-5 h-5" strokeWidth={1.5} />} options={SCHEDULE_LEVEL_FILTERS} value={filters.level} onChange={setFilter("level")} />
+            <FilterDropdown label="Gender" icon={<Users className="w-5 h-5" strokeWidth={1.5} />} options={SCHEDULE_GENDER_FILTERS} value={filters.gender} onChange={setFilter("gender")} />
+            {activeFilterCount > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilters((f) => ({ ...DEFAULT_FILTERS, view: f.view }));
+                  setPage(1);
+                }}
+                className="cursor-pointer text-sm font-medium text-white/70 hover:text-white transition-colors"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
 
           {activeTab === "Games" && (
             <div className="flex flex-col">
               <button type="button" onClick={() => setUpcomingOpen((v) => !v)} className="flex items-center gap-2 mb-4">
                 <span className="text-white text-3xl font-extrabold font-display uppercase">
-                  Upcoming ({pagination?.total ?? games.length})
+                  {viewLabel} ({pagination?.total ?? games.length})
                 </span>
                 <ChevronDown className={cn("w-5 h-5 text-white transition-transform", upcomingOpen && "rotate-180")} />
               </button>
@@ -990,11 +842,6 @@ export default function SchedulePage() {
             </div>
           )}
 
-          {activeTab !== "Games" && activeTab !== "Events" && (
-            <div className="flex items-center justify-center py-20 text-white/30 text-sm font-medium">
-              {activeTab} — coming soon
-            </div>
-          )}
         </div>
       </div>
 

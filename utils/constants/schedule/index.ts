@@ -20,3 +20,17 @@ export const LEVEL_OPTIONS = [
   { label: "JV", value: "JV" },
   { label: "Varsity", value: "Varsity" },
 ];
+
+// Schedule page filter dropdowns.
+export const SCHEDULE_VIEW_FILTERS = [
+  { label: "Past", value: "past" },
+  { label: "Upcoming", value: "upcoming" },
+  { label: "Home", value: "home" },
+  { label: "Away", value: "away" },
+];
+
+export const SCHEDULE_SEASON_FILTERS = ["Fall", "Winter", "Spring", "Summer"].map((s) => ({ label: s, value: s }));
+
+export const SCHEDULE_LEVEL_FILTERS = ["Freshman", "JV", "Varsity"].map((s) => ({ label: s, value: s }));
+
+export const SCHEDULE_GENDER_FILTERS = GENDER_OPTIONS.filter((o) => o.value !== "Other");
