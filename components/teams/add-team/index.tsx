@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Info, Mars } from "lucide-react";
@@ -13,7 +14,7 @@ import AthletesTab from "@/components/teams/add-team/athletes-tab";
 import { addTeamSchema } from "@/components/teams/add-team/schema";
 import { useSetup } from "@/context/setup";
 import { cn } from "@/utils/cn";
-import { GENDER_OPTIONS, LEVEL_OPTIONS, SEASON_OPTIONS, SPORTS_OPTIONS } from "@/utils/constants/schedule";
+import { GENDER_OPTIONS, LEVEL_OPTIONS, SPORTS_OPTIONS } from "@/utils/constants/schedule";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
 
@@ -34,14 +35,6 @@ const INITIAL_FORM = {
   level: "",
   sport: "",
   gender: "",
-  ageGroup: "",
-  season: "",
-  facilityName: "",
-  address1: "",
-  address2: "",
-  city: "",
-  state: "",
-  zip: "",
 };
 type Form = typeof INITIAL_FORM;
 
@@ -72,6 +65,7 @@ export default function AddTeamPage() {
   };
 
   const summaryTitle = savedSchool?.name || form.teamName || "Your Team";
+  const crest = savedSchool?.logoUrl || "/images/preview-crest.png";
 
   return (
     <div className="flex flex-col gap-10 pb-24">
@@ -132,21 +126,9 @@ export default function AddTeamPage() {
                 <Input label="Nickname (Optional)" name="nickname" value={form.nickname} onChange={set("nickname")} placeholder="TLAM" error={errors.nickname} labelClassName={LABEL} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <Select label="Level" name="level" value={form.level} onChange={set("level")} options={TEAM_LEVEL_OPTIONS} placeholder="Select level" error={errors.level} labelClassName={LABEL} />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <Select label="Sport" name="sport" value={form.sport} onChange={set("sport")} options={SPORTS_OPTIONS} placeholder="Select sport" icon={<img src="/icons/icon-dribbble.svg" alt="" className="w-5 h-5 invert" />} error={errors.sport} labelClassName={LABEL} />
+                  <Select label="Sport" name="sport" value={form.sport} onChange={set("sport")} options={SPORTS_OPTIONS} placeholder="Select sport" icon={<Image src="/icons/icon-dribbble.svg" alt="" width={20} height={20} className="w-5 h-5 invert" />} error={errors.sport} labelClassName={LABEL} />
                   <Select label="Gender" name="gender" value={form.gender} onChange={set("gender")} options={GENDER_OPTIONS} placeholder="Select gender" icon={<Mars className="w-5 h-5" />} error={errors.gender} labelClassName={LABEL} />
-                  <Input label="Age Group (Optional)" name="ageGroup" value={form.ageGroup} onChange={set("ageGroup")} placeholder="e.g. Varsity, 14U, 10U" error={errors.ageGroup} labelClassName={LABEL} />
                 </div>
-                <Select
-                  label="Season *"
-                  name="season"
-                  value={form.season}
-                  onChange={set("season")}
-                  options={SEASON_OPTIONS}
-                  placeholder="Select season"
-                  error={errors.season}
-                  labelClassName={LABEL}
-                />
               </div>
             ) : tab === "Athletes" ? (
               <AthletesTab />
@@ -155,21 +137,6 @@ export default function AddTeamPage() {
             )}
           </SectionCard>
 
-          {tab === "Team Info" && (
-            <SectionCard>
-              <h3 className="font-display font-black text-xl lg:text-2xl uppercase text-white leading-tight">
-                Team Venue
-              </h3>
-              <Input label="Facility Name" name="facilityName" value={form.facilityName} onChange={set("facilityName")} placeholder="Johnson Gymnasium" error={errors.facilityName} labelClassName={LABEL} />
-              <Input label="Address 1" name="address1" value={form.address1} onChange={set("address1")} placeholder="756 Rose Blvd" error={errors.address1} labelClassName={LABEL} />
-              <Input label="Address 2" name="address2" value={form.address2} onChange={set("address2")} placeholder="BUILDING C" error={errors.address2} labelClassName={LABEL} />
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <Input label="City" name="city" value={form.city} onChange={set("city")} placeholder="Jacksonville" error={errors.city} labelClassName={LABEL} />
-                <Input label="State" name="state" value={form.state} onChange={set("state")} placeholder="FL" error={errors.state} labelClassName={LABEL} />
-                <Input label="ZIP" name="zip" value={form.zip} onChange={set("zip")} placeholder="67890" error={errors.zip} labelClassName={LABEL} />
-              </div>
-            </SectionCard>
-          )}
         </div>
 
         {/* Summary */}
@@ -178,25 +145,28 @@ export default function AddTeamPage() {
             Summary
           </h3>
           <div className="relative overflow-hidden rounded-[8px] min-h-[184px] p-4 flex flex-col justify-between gap-6 bg-teal">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src="/images/preview-hero.png"
               alt=""
               aria-hidden
-              className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-luminosity"
+              fill
+              sizes="(max-width: 1024px) 100vw, 33vw"
+              className="object-cover opacity-30 mix-blend-luminosity"
             />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={savedSchool?.logoUrl || "/images/preview-crest.png"}
+            <Image
+              src={crest}
               alt=""
+              width={64}
+              height={64}
+              // The school logo may be an uploaded remote URL with no configured image host.
+              unoptimized={crest.startsWith("http")}
               className="relative size-16 rounded-full object-cover bg-black/40 border-2 border-white/60"
             />
             <p className="relative font-display font-black text-[32px] lg:text-[40px] uppercase text-white leading-[1.05]">
               {summaryTitle}
             </p>
             <div className="relative flex items-center gap-2 pt-3 border-t border-white/20 text-xs text-white">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/icon-dribbble.svg" alt="" width={16} height={16} />
+              <Image src="/icons/icon-dribbble.svg" alt="" width={16} height={16} />
               {form.sport || "Sport"}
             </div>
           </div>
