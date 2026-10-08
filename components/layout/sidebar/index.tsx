@@ -4,7 +4,7 @@ import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { useSetup } from "@/context/setup";
 import { useAuth } from "@/context/auth";
-import { ClipboardList, Gem, ShoppingBag, Star, User, Video } from "lucide-react";
+import { ClipboardList, Gem, ShoppingBag, Sparkles, Star, User, Video } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode } from "react";
 import { usePathname } from "next/navigation";
@@ -27,6 +27,7 @@ const NAV_ITEMS: { icon: string | ReactNode; label: string; href: string }[] = [
   { icon: <Star className="size-6" strokeWidth={1.5} />, label: "Recognition & Fan Wall", href: routes.ui.recognition },
   { icon: "/icons/icon-business.svg", label: "Sponsors", href: routes.ui.sponsors },
   { icon: "/icons/icon-donations.svg", label: "Fundraising", href: routes.ui.fundraising },
+  { icon: <Sparkles className="size-6" strokeWidth={1.5} />, label: "Engagement", href: routes.ui.engagement },
   // Hidden until the Analytics page is built.
   // { icon: "/icons/icon-analytics.svg", label: "Analytics", href: "#" },
   { icon: "/icons/icon-settings.svg", label: "Settings", href: "#" },
