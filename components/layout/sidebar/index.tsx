@@ -4,7 +4,7 @@ import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { useSetup } from "@/context/setup";
 import { useAuth } from "@/context/auth";
-import { ClipboardList, Gem, ShoppingBag, Sparkles, Star, User, Video } from "lucide-react";
+import { ClipboardList, Gem, LayoutDashboard, ShoppingBag, Sparkles, Star, User, Video } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode } from "react";
 import { usePathname } from "next/navigation";
@@ -14,6 +14,7 @@ import { usePathname } from "next/navigation";
 // Icons are SVG paths, or a lucide icon where the set has no matching SVG.
 const NAV_ITEMS: { icon: string | ReactNode; label: string; href: string }[] = [
   { icon: "/icons/icon-user.svg", label: "Profile", href: routes.ui.profile },
+  { icon: <LayoutDashboard className="size-6" strokeWidth={1.5} />, label: "Command Center", href: routes.ui.commandCenter },
   { icon: "/icons/icon-calendar.svg", label: "Schedule", href: routes.ui.schedule },
   { icon: "/icons/icon-link.svg", label: "External Links", href: routes.ui.externalLinks },
   { icon: "/icons/icon-bolt.svg", label: "Activations", href: routes.ui.activations },

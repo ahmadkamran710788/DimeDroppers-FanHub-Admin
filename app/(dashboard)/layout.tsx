@@ -23,6 +23,7 @@ const PAGE_TITLES: Record<string, string> = {
   [routes.ui.addTeam]: "Teams",
   [routes.ui.buyTickets]: "Buy Tickets",
   [routes.ui.fundraising]: "Fundraising",
+  [routes.ui.commandCenter]: "Command Center",
   [routes.ui.createFundraisingCampaign]: "Fundraising",
   [routes.ui.engagement]: "Engagement",
   [routes.ui.media]: "Media",
