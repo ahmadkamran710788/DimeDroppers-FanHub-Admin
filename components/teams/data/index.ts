@@ -1,5 +1,5 @@
-// Static demo data for the Teams list (design 3.1). There is no teams list endpoint
-// yet — replace TEAMS / TEAM_STATS with an API call once the backend exposes one.
+// Static demo data. The Teams page and Team Details now load real teams (use-org-teams);
+// TEAMS is still the sample list behind Fundraising, Team Shop and Messages.
 
 export type TeamStatus = "Active" | "Inactive";
 export type Sport = "Basketball" | "Football" | "Soccer";
@@ -8,20 +8,25 @@ export interface Team {
   id: string;
   name: string;
   schoolName: string;
-  sport: Sport;
+  // A known Sport for the sample teams; real teams can be any department name (e.g. "Volleyball").
+  sport: Sport | (string & {});
   level: string;
   headCoach: string;
-  athletes: number;
+  // Unknown for real teams until the API returns roster counts.
+  athletes?: number;
   status: TeamStatus;
   // Ring colour around the team crest.
   ring: string;
 }
 
-export const SPORT_ICON: Record<Sport, string> = {
+const SPORT_ICON: Record<Sport, string> = {
   Basketball: "/icons/icon-dribbble.svg",
   Football: "/icons/icon-football.svg",
   Soccer: "/icons/icon-dribbble.svg",
 };
+
+// Icon for a sport, with a generic one for sports that have none (e.g. Volleyball).
+export const sportIcon = (sport: string) => SPORT_ICON[sport as Sport] ?? "/icons/icon-sport.svg";
 
 const RING = { gray: "#9CA3AF", blue: "#3B84C9", red: "#C0392B" };
 
@@ -70,7 +75,8 @@ export interface StaffMember {
   role: string;
   email: string;
   phone: string;
-  status: TeamStatus;
+  // "Active" for sample staff; real staff show their invitation state (Not Invited, Invited, Active…).
+  status: string;
 }
 
 // Demo staff for the team details → Staff tab, until a team staff endpoint exists.
@@ -81,51 +87,6 @@ export const STAFF: StaffMember[] = [
   { id: "staff-4", name: "Priya Nair", role: "Team Manager", email: "priya@twinlakes.edu", phone: "(555) 201-4443", status: "Active" },
   { id: "staff-5", name: "Sam Ortega", role: "Athletic Trainer", email: "sam@twinlakes.edu", phone: "(555) 201-4454", status: "Inactive" },
 ];
-
-export type ParentRelationship = "Mother" | "Father" | "Guardian";
-
-export interface Parent {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  relationship: ParentRelationship;
-  // Athlete on the roster this parent is linked to.
-  athlete: string;
-  jersey: number;
-}
-
-const PARENT_NAMES: [string, ParentRelationship][] = [
-  ["Maria Ryan", "Mother"],
-  ["David Ryan", "Father"],
-  ["Angela Smith", "Mother"],
-  ["Robert Lee", "Father"],
-  ["Linda Carter", "Guardian"],
-  ["James Williams", "Father"],
-];
-const PARENT_ATHLETES: [string, number][] = [
-  ["Jay Ryan", 23],
-  ["Jay Ryan", 23],
-  ["Jordan Smith", 12],
-  ["Marcus Lee", 5],
-  ["Lily Carter", 3],
-  ["King Williams", 10],
-];
-
-// Demo parents for the Team Details → Parents tab, until a parents endpoint exists.
-export const PARENTS: Parent[] = Array.from({ length: 14 }, (_, i) => {
-  const [name, relationship] = PARENT_NAMES[i % PARENT_NAMES.length];
-  const [athlete, jersey] = PARENT_ATHLETES[i % PARENT_ATHLETES.length];
-  return {
-    id: `parent-${i + 1}`,
-    name,
-    email: `${name.toLowerCase().replace(/[^a-z]+/g, ".")}@gmail.com`,
-    phone: `(555) ${300 + i}-${4110 + i}`,
-    relationship,
-    athlete,
-    jersey,
-  };
-});
 
 export type FollowerType = "Parent" | "Fan" | "Alumni";
 

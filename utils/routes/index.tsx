@@ -187,6 +187,15 @@ export const routes = {
     createCampaign: "fanhub/org/campaigns",
     // Proxy route (browser calls this via apiCall; server injects the Bearer token):
     proxyCreateCampaign: "/api/fanhub/org/campaigns",
+    // The org's teams, grouped by sport department. teams[].id is the schoolTeamId the roster calls take.
+    orgDepartments: "fanhub/org/departments",
+    proxyOrgDepartments: "/api/fanhub/org/departments",
+    // A team's staff (coaches): GET ?schoolTeamId= lists them, POST adds one.
+    rosterStaff: "fanhub/org/roster/staff",
+    proxyRosterStaff: "/api/fanhub/org/roster/staff",
+    // A team's roster, read-only (players with their parents): GET ?schoolTeamId=. The coach adds them in the app.
+    rosterPlayers: "fanhub/org/roster/players",
+    proxyRosterPlayers: "/api/fanhub/org/roster/players",
     // Setup Wizard — wire these when backend is ready
     saveSchedule: "setup/schedule",
     saveActivations: "setup/activations",

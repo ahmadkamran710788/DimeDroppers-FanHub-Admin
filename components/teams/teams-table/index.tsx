@@ -16,7 +16,7 @@ import type { FundraisingCampaign } from "@/components/fundraising/data";
 import { useSetup } from "@/context/setup";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
-import { SPORT_ICON, TEAMS, type Team } from "@/components/teams/data";
+import { sportIcon, TEAMS, type Team } from "@/components/teams/data";
 
 const PAGE_SIZE = 10;
 
@@ -28,6 +28,9 @@ interface TeamsTableProps {
   collapsible?: boolean;
   // Campaigns per team id. When given (Fundraising), clicking a team opens its campaigns below the row.
   campaignsByTeam?: Record<string, FundraisingCampaign[]>;
+  // Teams to list; defaults to the sample teams (Fundraising). The Teams page passes the real ones.
+  teams?: Team[];
+  loading?: boolean;
 }
 
 // Searchable, paginated teams list shared by the Teams page and the Fundraising "Teams" tab.
@@ -36,7 +39,7 @@ function StopRowClick({ children }: { children: ReactNode }) {
   return <div onClick={(e) => e.stopPropagation()}>{children}</div>;
 }
 
-export default function TeamsTable({ collapsible = false, campaignsByTeam }: TeamsTableProps) {
+export default function TeamsTable({ collapsible = false, campaignsByTeam, teams = TEAMS, loading = false }: TeamsTableProps) {
   const router = useRouter();
   const { savedSchool } = useSetup();
   const [query, setQuery] = useState("");
@@ -46,11 +49,11 @@ export default function TeamsTable({ collapsible = false, campaignsByTeam }: Tea
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return TEAMS;
-    return TEAMS.filter((t) =>
+    if (!q) return teams;
+    return teams.filter((t) =>
       [t.name, t.schoolName, t.sport, t.level, t.headCoach].some((v) => v.toLowerCase().includes(q))
     );
-  }, [query]);
+  }, [query, teams]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
@@ -78,7 +81,7 @@ export default function TeamsTable({ collapsible = false, campaignsByTeam }: Tea
           />
           <div className="flex flex-col gap-1 min-w-0">
             <span className="text-sm font-semibold text-white truncate">{t.name}</span>
-            <span className="text-xs text-white/40 truncate">{t.schoolName}</span>
+            {t.schoolName && <span className="text-xs text-white/40 truncate">{t.schoolName}</span>}
           </div>
         </div>
       ),
@@ -88,14 +91,14 @@ export default function TeamsTable({ collapsible = false, campaignsByTeam }: Tea
       cls: "w-32 shrink-0 py-5",
       cell: (t) => (
         <span className="flex items-center gap-2">
-          <Image src={SPORT_ICON[t.sport]} alt="" width={20} height={20} className="shrink-0" />
+          <Image src={sportIcon(t.sport)} alt="" width={20} height={20} className="shrink-0" />
           {t.sport}
         </span>
       ),
     },
     { header: "Level", cls: "w-20 shrink-0 py-5", cell: (t) => <span className="leading-5">{t.level}</span> },
     { header: "Head Coach", cls: "w-24 shrink-0 py-5", cell: (t) => <span className="leading-5">{t.headCoach}</span> },
-    { header: "Athletes", cls: "w-20 shrink-0 py-5", cell: (t) => t.athletes },
+    { header: "Athletes", cls: "w-20 shrink-0 py-5", cell: (t) => t.athletes ?? "—" },
     {
       header: "Status",
       cls: "w-24 shrink-0 py-5",
@@ -178,7 +181,8 @@ export default function TeamsTable({ collapsible = false, campaignsByTeam }: Tea
             columns={columns}
             rows={rows}
             getKey={(t) => t.id}
-            empty="No teams match your search."
+            loading={loading}
+            empty={teams.length === 0 ? "No teams yet." : "No teams match your search."}
             onRowClick={(t) =>
               campaignsByTeam
                 ? setExpandedId((id) => (id === t.id ? null : t.id))

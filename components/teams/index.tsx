@@ -4,32 +4,20 @@ import { useRouter } from "next/navigation";
 import BadgeStatCard, { STAT_TINTS, type BadgeStat } from "@/components/common/badge-stat-card";
 import Button from "@/components/common/button";
 import TeamsTable from "@/components/teams/teams-table";
-import { TEAMS, TEAM_STATS } from "@/components/teams/data";
+import { useOrgTeams } from "@/components/teams/use-org-teams";
 import { routes } from "@/utils/routes";
 
 export default function TeamsPage() {
   const router = useRouter();
+  const { teams, loading } = useOrgTeams();
+  const count = loading ? "—" : teams.length;
 
+  // Roster and staff totals need counts the teams endpoint doesn't return yet.
   const stats: BadgeStat[] = [
-    { label: "Total Teams", value: TEAMS.length, caption: "All Sports", tint: STAT_TINTS.blue },
-    {
-      label: "Active Teams",
-      value: TEAMS.filter((t) => t.status === "Active").length,
-      caption: "This Season",
-      tint: STAT_TINTS.green,
-    },
-    {
-      label: "Total Athletes",
-      value: TEAMS.reduce((sum, t) => sum + t.athletes, 0),
-      caption: TEAM_STATS.athletesPct,
-      tint: STAT_TINTS.purple,
-    },
-    {
-      label: "Coaches & Staff",
-      value: TEAM_STATS.coachesAndStaff,
-      caption: TEAM_STATS.coachesAndStaffPct,
-      tint: STAT_TINTS.brown,
-    },
+    { label: "Total Teams", value: count, caption: "All Sports", tint: STAT_TINTS.blue },
+    { label: "Active Teams", value: count, caption: "This Season", tint: STAT_TINTS.green },
+    { label: "Total Athletes", value: "—", caption: "Across all teams", tint: STAT_TINTS.purple },
+    { label: "Coaches & Staff", value: "—", caption: "Across all teams", tint: STAT_TINTS.brown },
   ];
 
   return (
@@ -54,7 +42,7 @@ export default function TeamsPage() {
 
       {/* Teams list */}
       <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px] bg-surface-07">
-        <TeamsTable collapsible />
+        <TeamsTable collapsible teams={teams} loading={loading} />
       </div>
     </div>
   );
