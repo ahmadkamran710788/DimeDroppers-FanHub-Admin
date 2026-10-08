@@ -14,9 +14,11 @@ import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import FilterDropdown from "@/components/common/filter-dropdown";
 import {
+  SCHEDULE_DIVISION_FILTERS,
   SCHEDULE_GENDER_FILTERS,
   SCHEDULE_LEVEL_FILTERS,
   SCHEDULE_SEASON_FILTERS,
+  SCHEDULE_VENUE_FILTERS,
   SCHEDULE_VIEW_FILTERS,
 } from "@/utils/constants/schedule";
 import type { ScheduleItem, ScheduleListResponse, SchedulePagination, ScheduleSummary } from "@/utils/types/schedule";
@@ -32,6 +34,8 @@ import {
   Play,
   ChartNoAxesColumn,
   Users,
+  MapPin,
+  Trophy,
   CalendarPlus,
   CalendarDays,
   Copy,
@@ -505,7 +509,7 @@ function ScheduleTools({ onAddGame }: { onAddGame: () => void }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const DEFAULT_FILTERS = { view: "upcoming", season: "", level: "", gender: "" };
+const DEFAULT_FILTERS = { view: "upcoming", season: "", level: "", gender: "", venue: "", division: "" };
 type ScheduleFilters = typeof DEFAULT_FILTERS;
 
 export default function SchedulePage() {
@@ -530,7 +534,7 @@ export default function SchedulePage() {
   const [eventView, setEventView] = useState<{ event: ExposureEvent; view: ExposureEventView } | null>(null);
 
   const [filters, setFilters] = useState<ScheduleFilters>(DEFAULT_FILTERS);
-  const activeFilterCount = [filters.season, filters.level, filters.gender].filter(Boolean).length;
+  const activeFilterCount = [filters.season, filters.level, filters.gender, filters.venue, filters.division].filter(Boolean).length;
   const setFilter = (key: keyof ScheduleFilters) => (value: string) => {
     setFilters((f) => ({ ...f, [key]: value }));
     setPage(1);
@@ -561,6 +565,8 @@ export default function SchedulePage() {
     if (filters.season) params.season = filters.season;
     if (filters.level)  params.level  = filters.level;
     if (filters.gender) params.gender = filters.gender;
+    if (filters.venue)  params.venue  = filters.venue;
+    if (filters.division) params.division = filters.division;
 
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -705,6 +711,8 @@ export default function SchedulePage() {
             <FilterDropdown label="Season" icon={<Play className="w-5 h-5" strokeWidth={1.5} />} options={SCHEDULE_SEASON_FILTERS} value={filters.season} onChange={setFilter("season")} />
             <FilterDropdown label="Level" icon={<ChartNoAxesColumn className="w-5 h-5" strokeWidth={1.5} />} options={SCHEDULE_LEVEL_FILTERS} value={filters.level} onChange={setFilter("level")} />
             <FilterDropdown label="Gender" icon={<Users className="w-5 h-5" strokeWidth={1.5} />} options={SCHEDULE_GENDER_FILTERS} value={filters.gender} onChange={setFilter("gender")} />
+            <FilterDropdown label="All Venues" icon={<MapPin className="w-5 h-5" strokeWidth={1.5} />} options={SCHEDULE_VENUE_FILTERS} value={filters.venue} onChange={setFilter("venue")} />
+            <FilterDropdown label="All Divisions" icon={<Trophy className="w-5 h-5" strokeWidth={1.5} />} options={SCHEDULE_DIVISION_FILTERS} value={filters.division} onChange={setFilter("division")} />
             {activeFilterCount > 0 && (
               <button
                 type="button"

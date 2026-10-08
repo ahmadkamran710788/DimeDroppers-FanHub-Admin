@@ -34,3 +34,7 @@ export const SCHEDULE_SEASON_FILTERS = ["Fall", "Winter", "Spring", "Summer"].ma
 export const SCHEDULE_LEVEL_FILTERS = ["Freshman", "JV", "Varsity"].map((s) => ({ label: s, value: s }));
 
 export const SCHEDULE_GENDER_FILTERS = GENDER_OPTIONS.filter((o) => o.value !== "Other");
+
+export const SCHEDULE_VENUE_FILTERS = ["The Big House", "Lake Country Clubhouse"].map((s) => ({ label: s, value: s }));
+
+export const SCHEDULE_DIVISION_FILTERS = ["17U Gold", "16U Gold"].map((s) => ({ label: s, value: s }));
