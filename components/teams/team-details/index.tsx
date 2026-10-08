@@ -9,22 +9,14 @@ import Button from "@/components/common/button";
 import type { Column } from "@/components/common/generic-table";
 import StatusPill from "@/components/common/status-pill";
 import Tabs from "@/components/common/tabs";
-import { athleteColumns } from "@/components/teams/athlete-columns";
-import {
-  ATHLETES,
-  FOLLOWERS,
-  PARENTS,
-  SPORT_ICON,
-  STAFF,
-  TEAMS,
-  type Athlete,
-  type Follower,
-  type StaffMember,
-} from "@/components/teams/data";
-import AddPlayerModal from "@/components/teams/team-details/add-player-modal";
+import { FOLLOWERS, sportIcon, type Follower, type StaffMember } from "@/components/teams/data";
 import AddStaffModal from "@/components/teams/team-details/add-staff-modal";
+import { invitationColor } from "@/components/teams/team-details/invitation-status";
 import ParentsTab from "@/components/teams/team-details/parents-tab";
 import PeopleList from "@/components/teams/team-details/people-list";
+import { useTeamPlayers, type RosterPlayer } from "@/components/teams/team-details/use-team-players";
+import { useTeamStaff } from "@/components/teams/team-details/use-team-staff";
+import { useOrgTeams } from "@/components/teams/use-org-teams";
 import { useSetup } from "@/context/setup";
 import { routes } from "@/utils/routes";
 
@@ -53,8 +45,18 @@ function PersonCell({ name, email }: { name: string; email: string }) {
   );
 }
 
-const PLAYER_COLUMNS = athleteColumns();
-const playerSearch = (a: Athlete) => [a.name, a.email, a.position, String(a.jersey)];
+const PLAYER_COLUMNS: Column<RosterPlayer>[] = [
+  { header: "Player", cls: "flex-1 min-w-[200px] py-5", cell: (p) => <PersonCell name={p.name} email={p.email} /> },
+  { header: "Jersey #", cls: "w-20 shrink-0 py-5 whitespace-nowrap", cell: (p) => p.number || "—" },
+  { header: "Position", cls: "w-28 shrink-0 py-5", cell: (p) => <span className="leading-5">{p.position || "—"}</span> },
+  { header: "Parents", cls: "w-20 shrink-0 py-5", cell: (p) => p.parentCount },
+  {
+    header: "Status",
+    cls: "w-28 shrink-0 py-5",
+    cell: (p) => <StatusPill label={p.status} color={invitationColor(p.status)} className="whitespace-nowrap" />,
+  },
+];
+const playerSearch = (p: RosterPlayer) => [p.name, p.email, p.position, p.number];
 
 const STAFF_COLUMNS: Column<StaffMember>[] = [
   { header: "Name", cls: "flex-1 min-w-[200px] py-5", cell: (s) => <PersonCell name={s.name} email={s.email} /> },
@@ -62,8 +64,14 @@ const STAFF_COLUMNS: Column<StaffMember>[] = [
   { header: "Phone", cls: "w-36 shrink-0 py-5", cell: (s) => s.phone || "—" },
   {
     header: "Status",
-    cls: "w-24 shrink-0 py-5",
-    cell: (s) => <StatusPill label={s.status} color={s.status === "Active" ? "bg-success" : "bg-white/30"} />,
+    cls: "w-28 shrink-0 py-5",
+    cell: (s) => (
+      <StatusPill
+        label={s.status}
+        color={invitationColor(s.status)}
+        className="whitespace-nowrap"
+      />
+    ),
   },
 ];
 const staffSearch = (s: StaffMember) => [s.name, s.email, s.role];
@@ -80,16 +88,17 @@ const FOLLOWER_COLUMNS: Column<Follower>[] = [
 ];
 const followerSearch = (f: Follower) => [f.name, f.email, f.type];
 
-// Team details: header plus Players / Staff / Followers lists (sample data until team APIs exist).
+// Team details: header plus Players / Parents / Staff / Followers lists. The team and its staff
+// come from the API (players and parents read-only); followers are still sample data.
 export default function TeamDetailsPage({ teamId }: { teamId: string }) {
   const { savedSchool } = useSetup();
   const [tab, setTab] = useState<Tab>("Players");
-  // Players live in state so new ones show up right away (sample data until a roster API exists).
-  const [players, setPlayers] = useState<Athlete[]>(ATHLETES);
-  const [addOpen, setAddOpen] = useState(false);
-  const [staff, setStaff] = useState<StaffMember[]>(STAFF);
   const [addStaffOpen, setAddStaffOpen] = useState(false);
-  const team = TEAMS.find((t) => t.id === teamId);
+  const { teams, loading: teamsLoading } = useOrgTeams();
+  const { staff, loading: staffLoading, reload: reloadStaff } = useTeamStaff(teamId);
+  const { players, parents, loading: rosterLoading } = useTeamPlayers(teamId);
+  const team = teams.find((t) => t.id === teamId);
+  const headCoach = staff.find((s) => s.role === "Head Coach")?.name ?? "—";
 
   const back = (
     <Link
@@ -105,7 +114,9 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
     return (
       <div className="flex flex-col gap-6">
         {back}
-        <p className="py-16 text-center text-sm text-white/60">This team could not be found.</p>
+        <p className="py-16 text-center text-sm text-white/60">
+          {teamsLoading ? "Loading team…" : "This team could not be found."}
+        </p>
       </div>
     );
   }
@@ -136,13 +147,13 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
             <StatusPill label={team.status} color={team.status === "Active" ? "bg-success" : "bg-white/30"} />
           </div>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-white/75">
-            <span>{team.schoolName}</span>
+            {team.schoolName && <span>{team.schoolName}</span>}
             <span className="flex items-center gap-1.5">
-              <Image src={SPORT_ICON[team.sport]} alt="" width={16} height={16} />
+              <Image src={sportIcon(team.sport)} alt="" width={16} height={16} />
               {team.sport}
             </span>
             <span>{team.level}</span>
-            <span>{`Head Coach: ${team.headCoach}`}</span>
+            <span>{`Head Coach: ${headCoach}`}</span>
           </div>
         </div>
       </div>
@@ -153,38 +164,29 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
           tabs={TABS}
           active={tab}
           onChange={setTab}
-          counts={{ Players: players.length, Parents: PARENTS.length, Staff: staff.length, Followers: FOLLOWERS.length }}
+          counts={{ Players: players.length, Parents: parents.length, Staff: staff.length, Followers: FOLLOWERS.length }}
         />
         {tab === "Players" ? (
           <PeopleList
             key={tab}
             rows={players}
+            loading={rosterLoading}
             columns={PLAYER_COLUMNS}
             getKey={(a) => a.id}
             searchFields={playerSearch}
             noun="players"
-            invitee={(p) => ({ name: p.name, email: p.email })}
-            action={
-              <Button
-                variant="cta"
-                label="Add Player"
-                icon={<Plus className="size-5" strokeWidth={2} />}
-                className="shrink-0"
-                onClick={() => setAddOpen(true)}
-              />
-            }
           />
         ) : tab === "Parents" ? (
-          <ParentsTab />
+          <ParentsTab rows={parents} loading={rosterLoading} />
         ) : tab === "Staff" ? (
           <PeopleList
             key={tab}
             rows={staff}
+            loading={staffLoading}
             columns={STAFF_COLUMNS}
             getKey={(s) => s.id}
             searchFields={staffSearch}
             noun="staff"
-            invitee={(p) => ({ name: p.name, email: p.email })}
             action={
               <Button
                 variant="cta"
@@ -203,34 +205,17 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
             getKey={(f) => f.id}
             searchFields={followerSearch}
             noun="followers"
-            invitee={(p) => ({ name: p.name, email: p.email })}
           />
         )}
       </div>
 
-      <AddPlayerModal
-        isOpen={addOpen}
-        onClose={() => setAddOpen(false)}
-        sport={team.sport}
-        takenJerseys={players.map((p) => p.jersey)}
-        onAdd={(player) => {
-          setPlayers((prev) => [player, ...prev]);
-          toast.success(`${player.name} added to the roster`);
-        }}
-      />
-
       <AddStaffModal
         isOpen={addStaffOpen}
         onClose={() => setAddStaffOpen(false)}
-        onAdd={(member) => {
-          // A team has one head coach: adding a new one moves the current one to assistant.
-          setStaff((prev) => [
-            member,
-            ...prev.map((s) =>
-              member.role === "Head Coach" && s.role === "Head Coach" ? { ...s, role: "Assistant Coach" } : s
-            ),
-          ]);
-          toast.success(`${member.name} added as ${member.role.toLowerCase()}`);
+        teamId={team.id}
+        onAdded={(name, role) => {
+          reloadStaff();
+          toast.success(`${name} added as ${role.toLowerCase()}`);
         }}
       />
     </div>

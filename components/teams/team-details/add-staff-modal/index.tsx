@@ -6,12 +6,16 @@ import Button from "@/components/common/button";
 import Input from "@/components/common/input";
 import Modal from "@/components/common/modal";
 import PhoneInput from "@/components/common/phone-input";
-import type { StaffMember } from "@/components/teams/data";
 import { addStaffSchema } from "@/components/teams/team-details/add-staff-modal/schema";
+import type { StaffRole } from "@/components/teams/team-details/use-team-staff";
+import apiCall from "@/utils/api-call";
+import { routes } from "@/utils/routes";
 import { cn } from "@/utils/cn";
 import { validateAndSetErrors } from "@/utils/validation";
 
 export type CoachRole = "Head Coach" | "Assistant Coach";
+
+const ROLE_VALUE: Record<CoachRole, StaffRole> = { "Head Coach": "HEAD_COACH", "Assistant Coach": "ASSISTANT_COACH" };
 
 const ROLES: { role: CoachRole; description: string; icon: ReactNode }[] = [
   { role: "Head Coach", description: "Leads the team and its staff.", icon: <UserStar className="size-6" strokeWidth={1.75} /> },
@@ -30,12 +34,16 @@ const LABEL = "text-midnight-navy";
 interface AddStaffModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (member: StaffMember) => void;
+  // The team the coach joins (its schoolTeamId).
+  teamId: string;
+  // Called after the coach is saved, so the staff list can reload.
+  onAdded: (name: string, role: CoachRole) => void;
 }
 
 // Popup for adding a coach: pick head or assistant coach, then their details.
-export default function AddStaffModal({ isOpen, onClose, onAdd }: AddStaffModalProps) {
+export default function AddStaffModal({ isOpen, onClose, teamId, onAdded }: AddStaffModalProps) {
   const [form, setForm] = useState<Form>(INITIAL);
+  const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const update = <K extends keyof Form>(key: K, value: Form[K]) => {
@@ -51,14 +59,27 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }: AddStaffModalP
 
   const save = async () => {
     if (!(await validateAndSetErrors(addStaffSchema, form, setErrors))) return;
-    onAdd({
-      id: `staff-${Date.now()}`,
-      name: form.name.trim(),
-      role: form.role as CoachRole,
-      email: form.email.trim(),
-      phone: form.phone,
-      status: "Active",
+    const role = form.role as CoachRole;
+    const [firstName, ...rest] = form.name.trim().split(/\s+/);
+    setSaving(true);
+    // Adds the coach to the staff list only; inviting them to Fan Hub is a separate step.
+    // Errors (e.g. someone with this email is already on the staff) are toasted by apiCall.
+    const result = await apiCall({
+      endpoint: routes.api.proxyRosterStaff,
+      method: "POST",
+      data: {
+        schoolTeamId: teamId,
+        role: ROLE_VALUE[role],
+        firstName,
+        ...(rest.length > 0 && { lastName: rest.join(" ") }),
+        email: form.email.trim(),
+        ...(form.phone && { phone: form.phone }),
+      },
+      invalidates: [routes.api.proxyRosterStaff],
     });
+    setSaving(false);
+    if (!result.success) return;
+    onAdded(form.name.trim(), role);
     close();
   };
 
@@ -131,7 +152,7 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }: AddStaffModalP
       </div>
       <div className="w-full flex gap-3">
         <Button label="Cancel" variant="secondary" onClick={close} fullWidth />
-        <Button label="Add Staff" variant="cta" onClick={save} fullWidth />
+        <Button label={saving ? "Adding…" : "Add Staff"} variant="cta" onClick={save} disabled={saving} fullWidth />
       </div>
     </Modal>
   );
