@@ -1,26 +1,11 @@
 import type { Stat } from "@/components/common/stat-card";
-
-export type GameStatus = "Live" | "Halftime" | "Final";
+import type { ScheduleItem } from "@/utils/types/schedule";
 
 export interface ReadinessItem {
   label: string;
   // "done" shows a tick; otherwise a "22 / 24" count or a number of exceptions.
   value: string;
   tone?: "done" | "warning";
-}
-
-export interface LiveGame {
-  id: string;
-  home: string;
-  away: string;
-  homeScore: number;
-  awayScore: number;
-  status: GameStatus;
-  // Division and game clock, e.g. "17U Gold · Q3 04:22".
-  detail: string;
-  court: string;
-  // 0–100, how much of the game has been played.
-  progress: number;
 }
 
 // Sample tournament until the tournament operations API exists.
@@ -47,15 +32,36 @@ export const COMMAND_STATS: Stat[] = [
   { label: "Total Followers", value: "8,940", tint: "rgba(184,184,184,0.5)", change: 12.6, caption: "vs Last 30 Days" },
 ];
 
-export const LIVE_GAMES: LiveGame[] = [
-  { id: "g1", home: "Twin Lakes", away: "Landmark", homeScore: 54, awayScore: 48, status: "Live", detail: "17U Gold · Q3 04:22", court: "Court 1", progress: 65 },
-  { id: "g2", home: "Southside", away: "Alfred I. duPont", homeScore: 61, awayScore: 63, status: "Live", detail: "16U Silver · Q4 01:08", court: "Court 2", progress: 88 },
-  { id: "g3", home: "Landon", away: "Darnell-Cookman", homeScore: 31, awayScore: 27, status: "Halftime", detail: "15U Gold · Half", court: "Court 3", progress: 50 },
-  { id: "g4", home: "Lake Country", away: "Big House", homeScore: 22, awayScore: 25, status: "Live", detail: "17U Gold · Q2 06:15", court: "Court 4", progress: 35 },
-];
+// TEMPORARY: two live games so the Live Games cards can be previewed. Remove once real games go live.
+const PREVIEW_START = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+export const PREVIEW_LIVE_GAMES: ScheduleItem[] = [
+  { opponent: "Riverside Middle School", id: "preview-live-1" },
+  { opponent: "Landmark Middle School", id: "preview-live-2" },
+].map(({ id, opponent }) => ({
+  id,
+  schoolId: "preview",
+  title: `vs ${opponent}`,
+  opponent,
+  opponentLogoUrl: null,
+  description: null,
+  location: null,
+  start: PREVIEW_START,
+  end: null,
+  isAllDay: false,
+  homeAway: "home",
+  status: "confirmed",
+  result: null,
+  gender: null,
+  season: null,
+  sports: null,
+  level: null,
+  sourcePlatform: "preview",
+  createdAt: PREVIEW_START,
+  updatedAt: PREVIEW_START,
+}));
 
-export const GAME_STATUS_COLOR: Record<GameStatus, string> = {
-  Live: "bg-success",
-  Halftime: "bg-[#FF8D2A]",
-  Final: "bg-white/30",
+// TEMPORARY: demo scores for the preview games (home first).
+export const PREVIEW_SCORES: Record<string, [number, number]> = {
+  "preview-live-1": [28, 24],
+  "preview-live-2": [56, 30],
 };
