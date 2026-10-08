@@ -1,5 +1,6 @@
 "use client";
 
+import Loader from "@/components/common/loader";
 import { cn } from "@/utils/cn";
 import { Fragment, type ReactNode } from "react";
 
@@ -63,9 +64,7 @@ export default function GenericTable<T>({
 
       {/* Body */}
       {loading ? (
-        <div className="flex justify-center items-center py-12">
-          <span className="w-6 h-6 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
-        </div>
+        <Loader />
       ) : rows.length === 0 ? (
         <div className="flex justify-center items-center py-12 text-white/40 text-sm">
           {empty}

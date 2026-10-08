@@ -5,6 +5,8 @@ import AddGameModal from "@/components/schedule/add-game-modal";
 import DeleteGameModal from "@/components/schedule/delete-game-modal";
 import GameDetailsPanel from "@/components/schedule/game-details-panel";
 import ExposureEventModal from "@/components/schedule/exposure-event-modal";
+import { formatTime, parseGameDate } from "@/components/schedule/game-date";
+import TeamSide from "@/components/schedule/team-side";
 import Button from "@/components/common/button";
 import RowActionsMenu from "@/components/common/row-actions-menu";
 import { useRouter } from "next/navigation";
@@ -37,7 +39,6 @@ import {
   MapPin,
   Trophy,
   CalendarPlus,
-  CalendarDays,
   Copy,
   Download,
   Printer,
@@ -75,25 +76,6 @@ const LEGEND = [
 ];
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
-
-function parseGameDate(iso: string): { day: number; month: string; weekday: string } {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return { day: 0, month: "---", weekday: "---" };
-  return {
-    day: d.getDate(),
-    month: d.toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
-    weekday: d.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase(),
-  };
-}
-
-function formatTime(iso: string, isAllDay: boolean): { time: string; tz: string } {
-  if (isAllDay) return { time: "All Day", tz: "" };
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return { time: "---", tz: "" };
-  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone.split("/").pop() ?? "";
-  return { time, tz };
-}
 
 function formatNextGameDate(iso: string): string {
   const d = new Date(iso);
@@ -433,25 +415,6 @@ function MiniCalendar({ games }: { games: ScheduleItem[] }) {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-// One side of the Next Game matchup: crest (or a placeholder) with the school name under it.
-function TeamSide({ name, logoUrl }: { name: string; logoUrl?: string | null }) {
-  return (
-    <div className="w-20 shrink-0 flex flex-col items-center gap-1 min-w-0">
-      {logoUrl ? (
-        // External logo host, so skip the image optimizer.
-        <Image src={logoUrl} alt="" width={48} height={48} unoptimized className="size-12 rounded-full border border-white/30 object-cover" />
-      ) : (
-        <div className="size-12 bg-white/20 rounded-full border border-white/30 flex items-center justify-center">
-          <CalendarDays className="w-6 h-6 text-white/60" strokeWidth={1.5} />
-        </div>
-      )}
-      <span title={name} className="w-full text-white text-xs font-semibold text-center truncate">
-        {name}
-      </span>
     </div>
   );
 }

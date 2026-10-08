@@ -5,7 +5,7 @@ import Button from "@/components/common/button";
 import StatCard from "@/components/common/stat-card";
 import { COMMAND_STATS } from "@/components/command-center/data";
 import EventHero from "@/components/command-center/event-hero";
-import LiveGames from "@/components/command-center/live-games";
+import GameCards from "@/components/command-center/game-cards";
 import ReadinessCard from "@/components/command-center/readiness-card";
 
 // Event overview and Game Day Mode have no screens yet.
@@ -42,7 +42,7 @@ export default function CommandCenterPage() {
         ))}
       </div>
 
-      <LiveGames />
+      <GameCards />
     </div>
   );
 }
