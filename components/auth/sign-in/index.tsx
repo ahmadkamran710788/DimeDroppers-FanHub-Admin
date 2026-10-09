@@ -3,19 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
 import { Mail, Lock } from "lucide-react";
 
 import Input from "@/components/common/input";
 import Button from "@/components/common/button";
+import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
-import { setFanhubSchoolId } from "@/utils/auth/session";
+import { markSignedIn, setFanhubSchoolId } from "@/utils/auth/session";
 import { getSavedSchool } from "@/utils/fanhub/get-saved-school";
 import { getPostAuthRoute } from "@/utils/fanhub/get-resume-step";
 import { useAuth } from "@/context/auth";
 import type { AuthSession } from "@/utils/types/auth";
-import { signInSchema } from "../schema";
+import { signInSchema } from "@/components/auth/schema";
 
 interface SignInForm {
   email: string;
@@ -41,38 +41,35 @@ export default function SignIn() {
     if (!(await validateAndSetErrors(signInSchema, form, setErrors))) return;
 
     setIsSubmitting(true);
-    try {
-      // Same-origin proxy route (sets the httpOnly token cookies) — call it with a
-      // plain fetch, not apiCall (apiCall prepends config.apiUrl for upstream calls).
-      const res = await fetch(routes.api.proxyAuthSignin, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.email, password: form.password }),
-      });
-      const json = await res.json().catch(() => null);
+    // Straight to the backend, which sets the httpOnly token cookies on success.
+    // apiCall shows the error toast (e.g. 401 "Invalid email or password").
+    const { success, data } = await apiCall<{ data: AuthSession[] }>({
+      endpoint: routes.api.authSignin,
+      method: "POST",
+      data: { email: form.email, password: form.password },
+      // The backend's JSON body parser expects plain JSON, not apiCall's ld+json default.
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      skipAuthRefresh: true,
+    });
 
-      if (!res.ok) {
-        // e.g. 401 "Invalid email or password" — surfaced from the backend message.
-        toast.error(json?.message || "Unable to sign in. Please try again.");
-        return;
-      }
-
-      // org.id is the school id (= JWT schoolId claim). Seed sessionStorage so Step 1
-      // updates the auto-created school instead of creating a duplicate, and populate
-      // the global AuthContext so the org is available app-wide without re-fetching.
-      const session = json?.data?.[0] as AuthSession | undefined;
-      if (session?.organization?.id) {
-        setFanhubSchoolId(String(session.organization.id));
-        setAuth(session.organization);
-      }
-
-      const school = await getSavedSchool();
-      router.replace(getPostAuthRoute(school));
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-    } finally {
+    if (!success) {
       setIsSubmitting(false);
+      return;
     }
+    markSignedIn();
+
+    // org.id is the school id (= JWT schoolId claim). Seed sessionStorage so Step 1
+    // updates the auto-created school instead of creating a duplicate, and populate
+    // the global AuthContext so the org is available app-wide without re-fetching.
+    const session = data?.data?.[0];
+    if (session?.organization?.id) {
+      setFanhubSchoolId(String(session.organization.id));
+      setAuth(session.organization);
+    }
+
+    const school = await getSavedSchool();
+    setIsSubmitting(false);
+    router.replace(getPostAuthRoute(school));
   };
 
   return (

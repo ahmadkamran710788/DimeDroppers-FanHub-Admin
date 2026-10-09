@@ -3,20 +3,20 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
 import { Mail, Lock, Building2 } from "lucide-react";
 
 import Input from "@/components/common/input";
 import PhoneInput from "@/components/common/phone-input";
 import Button from "@/components/common/button";
+import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
-import { setFanhubSchoolId } from "@/utils/auth/session";
+import { markSignedIn, setFanhubSchoolId } from "@/utils/auth/session";
 import { getSavedSchool } from "@/utils/fanhub/get-saved-school";
 import { getPostAuthRoute } from "@/utils/fanhub/get-resume-step";
 import { useAuth } from "@/context/auth";
 import type { AuthSession } from "@/utils/types/auth";
-import { signUpSchema } from "../schema";
+import { signUpSchema } from "@/components/auth/schema";
 
 interface SignUpForm {
   name: string;
@@ -62,43 +62,33 @@ export default function SignUp() {
     if (!(await validateAndSetErrors(signUpSchema, form, setErrors))) return;
 
     setIsSubmitting(true);
-    try {
-      // Same-origin proxy route (sets the httpOnly token cookies) — call it with a
-      // plain fetch, not apiCall (apiCall prepends config.apiUrl for upstream calls).
-      const res = await fetch(routes.api.proxyAuthSignup, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name,
-          email: form.email,
-          phone: form.phone,
-          password: form.password,
-        }),
-      });
-      const json = await res.json().catch(() => null);
+    // Straight to the backend, which sets the httpOnly token cookies on success.
+    // apiCall shows the error toast (e.g. 409 "An account with this email already exists").
+    const { success, data } = await apiCall<{ data: AuthSession[] }>({
+      endpoint: routes.api.authSignup,
+      method: "POST",
+      data: { name: form.name, email: form.email, phone: form.phone, password: form.password },
+      skipAuthRefresh: true,
+    });
 
-      if (!res.ok) {
-        // e.g. 409 "An account with this email already exists".
-        toast.error(json?.message || "Unable to create account. Please try again.");
-        return;
-      }
-
-      // Signup creates the school row; org.id is its id (= JWT schoolId claim). Seed
-      // sessionStorage so Step 1 updates that school instead of creating a duplicate,
-      // and populate global AuthContext so the org is available app-wide.
-      const session = json?.data?.[0] as AuthSession | undefined;
-      if (session?.organization?.id) {
-        setFanhubSchoolId(String(session.organization.id));
-        setAuth(session.organization);
-      }
-
-      const school = await getSavedSchool();
-      router.replace(getPostAuthRoute(school));
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-    } finally {
+    if (!success) {
       setIsSubmitting(false);
+      return;
     }
+    markSignedIn();
+
+    // Signup creates the school row; org.id is its id (= JWT schoolId claim). Seed
+    // sessionStorage so Step 1 updates that school instead of creating a duplicate,
+    // and populate global AuthContext so the org is available app-wide.
+    const session = data?.data?.[0];
+    if (session?.organization?.id) {
+      setFanhubSchoolId(String(session.organization.id));
+      setAuth(session.organization);
+    }
+
+    const school = await getSavedSchool();
+    setIsSubmitting(false);
+    router.replace(getPostAuthRoute(school));
   };
 
   return (

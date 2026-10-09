@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import { LogOut, Menu, User } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { backendUrl } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import { clearFanhubSession } from "@/utils/auth/session";
 import { useAuth } from "@/context/auth";
@@ -57,7 +58,9 @@ export default function Header({ className, title = "Setup Wizard", onMenuClick 
     setOpen(false);
     clearFanhubSession();
     clearAuth();
-    await fetch(routes.api.proxyAuthSignout, { method: "POST" });
+    // The backend invalidates the refresh token and clears its cookies. Sign out locally
+    // even if that call fails, so the user is never stuck signed in.
+    await fetch(backendUrl(routes.api.authSignout), { method: "POST", credentials: "include" }).catch(() => null);
     // Full-page navigation (not router.replace) so the whole client state is torn
     // down and rebuilt fresh on the sign-in page. `replace` drops the current
     // (now signed-out) entry from history.

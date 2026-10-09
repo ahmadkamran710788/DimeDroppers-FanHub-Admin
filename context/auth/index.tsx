@@ -8,6 +8,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { backendUrl } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import { setFanhubSchoolId, SCHOOL_ID_KEY } from "@/utils/auth/session";
 import type { AuthOrganization } from "@/utils/types/auth";
@@ -25,19 +26,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [org, setOrg] = useState<AuthOrganization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Hydrate from the /api/auth/me route on first mount so a hard-refresh
+  // Hydrate from the backend `me` endpoint on first mount so a hard-refresh
   // keeps the user logged in without an extra sign-in.
   useEffect(() => {
-    fetch(routes.api.proxyAuthMe)
-      // A 401 is deliberately NOT treated as "session over" here. The upstream
-      // `fanhub/org-auth/me` endpoint does not exist (404), so this route always
-      // fails and `org` is always null — a pre-existing bug, unrelated to token
-      // expiry. Redirecting on it would sign everyone out on every page load.
-      // Session expiry is handled by `proxy` (refresh-token gate) and by
-      // `upstreamFetch`, which renews the access token transparently.
+    // Straight to the backend with the auth cookies. A failure is deliberately NOT
+    // treated as "session over": `fanhub/org-auth/me` has returned 404 upstream, so
+    // `org` may stay null. Session expiry is handled by `proxy` (session marker gate)
+    // and by `apiCall`, which renews the access token on a 401.
+    fetch(backendUrl(routes.api.authMe), { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        const organization = json?.data as AuthOrganization | undefined;
+        const organization = json?.data?.[0] as AuthOrganization | undefined;
         if (organization?.id) {
           setOrg(organization);
           if (!sessionStorage.getItem(SCHOOL_ID_KEY)) {

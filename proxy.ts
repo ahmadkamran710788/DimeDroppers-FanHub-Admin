@@ -23,7 +23,9 @@ const SIGN_IN = "/auth/sign-in";
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hasSession = request.cookies.has("refreshToken");
+  // `fanhubSession` is set by the client after signing in straight against the backend
+  // (utils/auth/session); `refreshToken` covers a session signed in before auth moved to the backend.
+  const hasSession = request.cookies.has("fanhubSession") || request.cookies.has("refreshToken");
   const isAuthPage = pathname.startsWith("/auth");
 
   if (!hasSession && !isAuthPage) {

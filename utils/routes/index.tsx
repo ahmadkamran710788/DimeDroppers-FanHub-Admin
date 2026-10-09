@@ -43,20 +43,13 @@ export const routes = {
   api: {
     getArea: "areas",
     editArea: (id: string | number) => `areas/${id}`,
-    // FanHub Org Auth. `auth*` are the upstream paths appended to config.apiUrl on the
-    // server (in the route handlers); `proxyAuth*` are the internal Next routes the browser
-    // posts to, which set the httpOnly accessToken/refreshToken cookies server-side.
+    // FanHub Org Auth, called straight from the browser. The backend sets, reads and clears
+    // the httpOnly accessToken/refreshToken cookies itself.
     authSignin: "fanhub/org-auth/signin",
-    proxyAuthSignin: "/api/auth/signin",
     authSignup: "fanhub/org-auth/signup",
-    proxyAuthSignup: "/api/auth/signup",
     authRefresh: "fanhub/org-auth/refresh",
-    proxyAuthRefresh: "/api/auth/refresh",
-    // Clears the auth cookies (no upstream call).
-    proxyAuthSignout: "/api/auth/signout",
-    // Returns the org from the decoded accessToken cookie (no upstream call needed
-    // when the token carries the org claims; falls back to upstream if not).
-    proxyAuthMe: "/api/auth/me",
+    authSignout: "fanhub/org-auth/signout",
+    authMe: "fanhub/org-auth/me",
     // FanHub — Step 1 "Create School". `createSchool` is the upstream path appended to
     // config.apiUrl on the server; `proxyCreateSchool` is the internal Next route the
     // browser posts to (which injects the x-fanhub-key header server-side).

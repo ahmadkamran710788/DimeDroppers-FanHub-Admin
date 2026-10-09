@@ -6,6 +6,10 @@ import { clearFanhubSession } from "@/utils/auth/session";
 
 const BASE_URL = config.apiUrl;
 
+// Full backend URL for a `routes.api` path (with or without a leading slash). For the few
+// callers that need a raw `fetch`; pass `credentials: "include"` so the auth cookies go along.
+export const backendUrl = (endpoint: string) => `${BASE_URL}/${endpoint.replace(/^\/+/, "")}`;
+
 const apiCache = new Map<string, ApiResponse<unknown>>();
 
 interface ApiCallParams {
@@ -18,6 +22,9 @@ interface ApiCallParams {
   // Scoped cache invalidation: only evict cache entries whose key contains one of
   // these strings. Avoids wiping unrelated caches on every mutation.
   invalidates?: string[];
+  // For the auth endpoints (sign in / sign up): a 401 there is the real answer
+  // ("Invalid email or password"), not an expired session, so don't refresh or sign out.
+  skipAuthRefresh?: boolean;
   // Internal. Set on the single post-refresh retry so an endpoint that keeps
   // returning 401 signs the user out instead of recursing forever.
   _isRetry?: boolean;
@@ -59,7 +66,13 @@ function attemptTokenRefresh(): Promise<boolean> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const res = await fetch("/api/auth/refresh", { method: "POST" });
+        // The backend reads the refreshToken cookie and sets fresh token cookies.
+        const res = await fetch(backendUrl(routes.api.authRefresh), {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+        });
         return res.ok;
       } catch {
         return false;
@@ -83,7 +96,9 @@ function forceSignOut() {
   if (typeof window === "undefined" || isLoggingOut) return;
   isLoggingOut = true;
   clearFanhubSession();
-  void fetch(routes.api.proxyAuthSignout, { method: "POST" }).finally(() => {
+  void fetch(backendUrl(routes.api.authSignout), { method: "POST", credentials: "include" })
+    .catch(() => null)
+    .finally(() => {
     window.location.assign(routes.ui.signIn);
   });
 }
@@ -96,6 +111,7 @@ export default async function apiCall<T = unknown>({
   showSuccessToast = false,
   successMessage,
   invalidates,
+  skipAuthRefresh = false,
   _isRetry = false,
 }: ApiCallParams): Promise<ApiResponse<T>> {
   const cacheKey = `${method}:${endpoint}:${JSON.stringify(data || {})}`;
@@ -106,14 +122,16 @@ export default async function apiCall<T = unknown>({
 
   try {
     // No Authorization header here by design: the auth cookies are httpOnly, so the
-    // browser cannot read them. Every endpoint used with `apiCall` is an /api/*
-    // route handler, which attaches the Bearer token server-side via `upstreamFetch`.
+    // browser cannot read them. Backend endpoints get them via `withCredentials` (the
+    // backend sets and reads the cookies); the remaining /api/* route handlers attach
+    // the FanHub API key server-side.
     const axiosConfig: AxiosRequestConfig = {
-      url: endpoint.startsWith("/api/") ? endpoint : `${BASE_URL}${endpoint}`,
+      url: endpoint.startsWith("/api/") ? endpoint : backendUrl(endpoint),
       method,
+      withCredentials: true,
       headers: {
-        "Content-Type": "application/ld+json",
-        Accept: "application/ld+json",
+        "Content-Type": "application/json",
+        Accept: "application/json",
         ...headers,
       },
     };
@@ -176,6 +194,10 @@ export default async function apiCall<T = unknown>({
           errorMessage = "Invalid request. Please check your input.";
           break;
         case 401: {
+          if (skipAuthRefresh) {
+            errorMessage = backendMessage || "Invalid email or password.";
+            break;
+          }
           // Silently attempt a token refresh then retry the original request once.
           // `_isRetry` bounds this to exactly one attempt: the retry already carries
           // a freshly refreshed token, so a second 401 means the session is dead
