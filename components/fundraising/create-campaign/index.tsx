@@ -75,7 +75,7 @@ export default function CreateCampaignPage() {
 
     setSubmitting(true);
     const { success } = await apiCall({
-      endpoint: routes.api.proxyCreateCampaign,
+      endpoint: routes.api.createCampaign,
       method: "POST",
       data: { ...payload },
       showSuccessToast: true,

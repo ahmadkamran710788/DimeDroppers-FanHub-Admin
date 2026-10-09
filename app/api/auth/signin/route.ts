@@ -48,6 +48,11 @@ export async function POST(request: Request) {
       const session = body?.data?.[0] as AuthSession | undefined;
       if (session?.accessToken && session?.refreshToken) {
         await setAuthCookies(session.accessToken, session.refreshToken);
+        // Keep the refresh token out of the browser: it lives only in its httpOnly cookie.
+        return Response.json(
+          { ...body, data: [{ accessToken: session.accessToken, organization: session.organization }] },
+          { status: upstream.status }
+        );
       }
     }
 

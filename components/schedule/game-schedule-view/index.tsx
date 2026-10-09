@@ -56,9 +56,9 @@ export default function GameScheduleView({ games }: { games: ExposureGame[] }) {
   useEffect(() => {
     let cancelled = false;
     apiCall<ScorekeeperPoolResponse>({
-      endpoint: routes.api.proxyListScorekeeperPool,
+      endpoint: routes.api.listScorekeeperPool,
       method: "GET",
-      data: { status: "ACTIVE" }, // → ?status=ACTIVE, forwarded verbatim by the proxy
+      data: { status: "ACTIVE" }, // → ?status=ACTIVE
     }).then((res) => {
       if (cancelled) return;
       // Only members with a linkable fanId can be assigned / resolved to a name.
@@ -113,7 +113,7 @@ export default function GameScheduleView({ games }: { games: ExposureGame[] }) {
     const ids = [...selectedIds];
     setLinking(true);
     const res = await apiCall<ScorekeeperBulkAssignResponse>({
-      endpoint: routes.api.proxyBulkAssignScorekeeper,
+      endpoint: routes.api.bulkAssignScorekeeper,
       method: "PUT",
       data: { fanId, scheduleEventIds: ids },
       showSuccessToast: true,

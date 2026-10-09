@@ -20,7 +20,7 @@ export default function DeleteGameModal({ game, onClose, onDeleted }: DeleteGame
     if (!game) return;
     setLoading(true);
     const result = await apiCall({
-      endpoint: routes.api.proxyDeleteSchedule(game.id),
+      endpoint: routes.api.deleteSchedule(game.id),
       method: "DELETE",
       showSuccessToast: true,
       successMessage: "Game deleted",

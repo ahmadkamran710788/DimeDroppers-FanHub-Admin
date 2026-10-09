@@ -46,7 +46,7 @@ export function useOrgTeams() {
 
   useEffect(() => {
     let cancelled = false;
-    apiCall<DepartmentsResponse>({ endpoint: routes.api.proxyOrgDepartments, method: "GET" }).then((result) => {
+    apiCall<DepartmentsResponse>({ endpoint: routes.api.orgDepartments, method: "GET" }).then((result) => {
       if (cancelled) return;
       const departments = result.success ? (result.data?.data?.[0]?.departments ?? []) : [];
       setTeams(departments.flatMap((d) => d.teams.map((t) => toTeam(d, t))));

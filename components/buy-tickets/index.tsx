@@ -51,7 +51,7 @@ export default function BuyTicketsPage() {
   useEffect(() => {
     let cancelled = false;
     apiCall<ScheduleListResponse>({
-      endpoint: routes.api.proxyListSchedules,
+      endpoint: routes.api.listSchedules,
       method: "GET",
       data: { page: 1, limit: FETCH_LIMIT, sortOrder: "asc" },
     }).then((result) => {

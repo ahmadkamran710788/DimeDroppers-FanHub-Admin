@@ -7,8 +7,8 @@ import type { NextRequest } from "next/server";
 //
 // The gate is the *refresh* token, not the access token. The refresh token is the
 // real session (30 days); the access token is a short-lived credential that goes
-// stale routinely and is renewed transparently by `upstreamFetch`
-// (utils/auth/upstream.ts) inside the /api route handlers.
+// stale routinely and is renewed transparently by /api/auth/token and
+// /api/auth/refresh (utils/auth/upstream), which apiCall uses.
 //
 // Gating on the access token instead would log the user out every time it expired,
 // because this check runs before Next renders anything — so the client-side code
@@ -16,7 +16,7 @@ import type { NextRequest } from "next/server";
 //
 // Presence is a coarse signal only: cookies are httpOnly and real authorization is
 // enforced upstream. A dead refresh token still reaches the API, which rejects it;
-// `upstreamFetch` then clears the cookies so the next navigation lands here.
+// the refresh then clears the cookies so the next navigation lands here.
 
 const SETUP_WIZARD_DEFAULT = "/setup-wizard/organization-details";
 const SIGN_IN = "/auth/sign-in";

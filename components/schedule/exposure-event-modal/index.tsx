@@ -234,14 +234,14 @@ export default function ExposureEventModal({ event, initialView, onClose }: Expo
     setLoading(true);
     const endpoint =
       view === "brackets"
-        ? routes.api.proxyExposureEventDivisions(eventId)
+        ? routes.api.exposureEventDivisions(eventId)
         : view === "games"
-          ? routes.api.proxyExposureEventGames(eventId)
+          ? routes.api.exposureEventGames(eventId)
           : view === "teams"
-            ? routes.api.proxyExposureEventTeams(eventId)
+            ? routes.api.exposureEventTeams(eventId)
             : view === "standings"
-              ? routes.api.proxyExposureEventStandings(eventId)
-              : routes.api.proxyExposureEventVenues(eventId);
+              ? routes.api.exposureEventStandings(eventId)
+              : routes.api.exposureEventVenues(eventId);
 
     apiCall<ExposureListResponse<unknown>>({
       endpoint,
@@ -272,7 +272,7 @@ export default function ExposureEventModal({ event, initialView, onClose }: Expo
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPlayersLoading(true);
     apiCall<ExposureListResponse<ExposurePlayer>>({
-      endpoint: routes.api.proxyExposureTeamPlayers(playersTeamId),
+      endpoint: routes.api.exposureTeamPlayers(playersTeamId),
       method: "GET",
     }).then((result) => {
       if (cancelled) return;

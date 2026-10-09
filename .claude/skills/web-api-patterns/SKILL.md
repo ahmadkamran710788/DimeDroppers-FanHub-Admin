@@ -112,7 +112,10 @@ apiCall<T = unknown>({
 
 ### How it works
 
-- Reads the `authtoken` cookie and attaches it as a `Bearer` token automatically.
+- Calls backend endpoints (`routes.api.*` paths like `fanhub/org/...`) **directly** and attaches the access token as a `Bearer` header automatically. The token comes from `utils/auth/client-token`, which gets it from the same-origin `/api/auth/token` route (the httpOnly cookies are sent to it automatically) and keeps it in memory. Don't add a Next route handler just to forward an org call.
+- On a 401 it forces one token refresh (`/api/auth/refresh`) and retries once; if that fails the user is signed out.
+- Need the raw `Response` (e.g. to show the backend's exact error message without a toast)? Use `backendFetch` from `@/utils/api-call` — same URL building, Bearer header and 401 retry.
+- Endpoints that need the server-only `x-fanhub-key` (`fanhub/schools`, `fanhub/ics/*`, `fanhub/scrape/*`) still go through their `/api/fanhub/*` route handlers — never expose that key to the browser.
 - **Caches GET responses** in memory — repeated identical GET calls return the cached result instantly.
 - **Clears the cache** on any mutation (POST, PUT, PATCH, DELETE) so the next GET fetches fresh data.
 - Shows an error toast automatically on failure — you don't need to handle toasts yourself for errors.

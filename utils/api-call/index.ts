@@ -3,8 +3,12 @@ import toast from "react-hot-toast";
 import { config } from "@/config";
 import { routes } from "@/utils/routes";
 import { clearFanhubSession } from "@/utils/auth/session";
+import { getAccessToken, clearAccessToken } from "@/utils/auth/client-token";
 
 const BASE_URL = config.apiUrl;
+
+// Full backend URL for a `routes.api` path, with or without a leading slash.
+const backendUrl = (endpoint: string) => `${BASE_URL}/${endpoint.replace(/^\/+/, "")}`;
 
 const apiCache = new Map<string, ApiResponse<unknown>>();
 
@@ -49,30 +53,6 @@ const formatBackendMessage = (msg: unknown): string => {
   return msg;
 };
 
-// Single-flight refresh: concurrent 401s share ONE in-flight refresh and all
-// receive its real result. The old boolean guard made every caller BUT the first
-// return `false` (a spurious "refresh failed"), which surfaced a bogus "Session
-// expired" toast even though the refresh actually succeeded.
-let refreshPromise: Promise<boolean> | null = null;
-
-function attemptTokenRefresh(): Promise<boolean> {
-  if (!refreshPromise) {
-    refreshPromise = (async () => {
-      try {
-        const res = await fetch("/api/auth/refresh", { method: "POST" });
-        return res.ok;
-      } catch {
-        return false;
-      }
-    })();
-    // Reset after settle so a later expiry triggers a fresh refresh.
-    void refreshPromise.finally(() => {
-      refreshPromise = null;
-    });
-  }
-  return refreshPromise;
-}
-
 // Genuine expiry (refresh token truly dead / offline): clear the client session
 // and hard-redirect to sign-in. `apiCall` is a plain util — not a hook — so it
 // can't reach the router/auth context; a full reload also resets that context.
@@ -83,9 +63,29 @@ function forceSignOut() {
   if (typeof window === "undefined" || isLoggingOut) return;
   isLoggingOut = true;
   clearFanhubSession();
+  clearAccessToken();
   void fetch(routes.api.proxyAuthSignout, { method: "POST" }).finally(() => {
     window.location.assign(routes.ui.signIn);
   });
+}
+
+/**
+ * Raw `fetch` to a backend `routes.api` path with the access token attached, for callers
+ * that need the untouched Response (exact backend error messages, no toasts). On a 401 it
+ * forces one token refresh and retries once; a 401 after that means the session is over.
+ */
+export async function backendFetch(endpoint: string, init: RequestInit = {}): Promise<Response> {
+  const send = (token: string | null) => {
+    const headers = new Headers(init.headers);
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    return fetch(backendUrl(endpoint), { ...init, headers });
+  };
+
+  const response = await send(await getAccessToken());
+  if (response.status !== 401) return response;
+
+  const refreshed = await getAccessToken({ force: true }).catch(() => null);
+  return refreshed ? send(refreshed) : response;
 }
 
 export default async function apiCall<T = unknown>({
@@ -105,15 +105,20 @@ export default async function apiCall<T = unknown>({
   }
 
   try {
-    // No Authorization header here by design: the auth cookies are httpOnly, so the
-    // browser cannot read them. Every endpoint used with `apiCall` is an /api/*
-    // route handler, which attaches the Bearer token server-side via `upstreamFetch`.
+    // Backend endpoints are called directly with the access token from
+    // utils/auth/client-token. No token means no session: the request then 401s and
+    // the refresh-or-sign-out path below takes over. /api/* routes are same-origin and
+    // carry the httpOnly cookies themselves.
+    const isBackend = !endpoint.startsWith("/api/");
+    const token = isBackend ? await getAccessToken() : null;
+
     const axiosConfig: AxiosRequestConfig = {
-      url: endpoint.startsWith("/api/") ? endpoint : `${BASE_URL}${endpoint}`,
+      url: isBackend ? backendUrl(endpoint) : endpoint,
       method,
       headers: {
-        "Content-Type": "application/ld+json",
-        Accept: "application/ld+json",
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
         ...headers,
       },
     };
@@ -176,11 +181,12 @@ export default async function apiCall<T = unknown>({
           errorMessage = "Invalid request. Please check your input.";
           break;
         case 401: {
-          // Silently attempt a token refresh then retry the original request once.
+          // Silently force a token refresh then retry the original request once.
           // `_isRetry` bounds this to exactly one attempt: the retry already carries
           // a freshly refreshed token, so a second 401 means the session is dead
-          // rather than stale.
-          const refreshed = !_isRetry && (await attemptTokenRefresh());
+          // rather than stale. Concurrent 401s share one refresh (client-token).
+          const refreshed =
+            !_isRetry && (await getAccessToken({ force: true }).catch(() => null));
           if (refreshed) {
             // Retry without propagating the 401 further — don't pass invalidates to
             // avoid a double-invalidation on the retry.

@@ -1,7 +1,7 @@
 import { routes } from "@/utils/routes";
 
 // Everything that differs between staff pools (scorekeepers, videographers): wording,
-// proxy endpoints and the apiCall cache tag. The page and dialogs are shared.
+// endpoints and the apiCall cache tag. The page and dialogs are shared.
 export interface StaffPoolConfig {
   // Singular role name for copy, e.g. "Scorekeeper".
   role: string;
@@ -24,10 +24,10 @@ export const SCOREKEEPER_POOL: StaffPoolConfig = {
   description: "Manage the fans eligible to keep score for your games.",
   cacheTag: "scorekeeper-pool",
   endpoints: {
-    list: routes.api.proxyListScorekeeperPool,
-    invite: routes.api.proxyInviteScorekeeper,
-    accept: routes.api.proxyAcceptScorekeeper,
-    reject: routes.api.proxyRejectScorekeeper,
+    list: routes.api.listScorekeeperPool,
+    invite: routes.api.inviteScorekeeper,
+    accept: routes.api.acceptScorekeeper,
+    reject: routes.api.rejectScorekeeper,
   },
 };
 
@@ -36,10 +36,10 @@ export const VIDEOGRAPHER_POOL: StaffPoolConfig = {
   description: "Manage the fans eligible to film your games.",
   cacheTag: "videographer-pool",
   endpoints: {
-    list: routes.api.proxyListVideographerPool,
-    invite: routes.api.proxyInviteVideographer,
-    accept: routes.api.proxyAcceptVideographer,
-    reject: routes.api.proxyRejectVideographer,
-    revoke: routes.api.proxyRevokeVideographer,
+    list: routes.api.listVideographerPool,
+    invite: routes.api.inviteVideographer,
+    accept: routes.api.acceptVideographer,
+    reject: routes.api.rejectVideographer,
+    revoke: routes.api.revokeVideographer,
   },
 };

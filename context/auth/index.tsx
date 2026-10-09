@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // fails and `org` is always null — a pre-existing bug, unrelated to token
       // expiry. Redirecting on it would sign everyone out on every page load.
       // Session expiry is handled by `proxy` (refresh-token gate) and by
-      // `upstreamFetch`, which renews the access token transparently.
+      // `apiCall`, which renews the access token transparently.
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         const organization = json?.data as AuthOrganization | undefined;
