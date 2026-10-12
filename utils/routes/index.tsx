@@ -143,6 +143,20 @@ export const routes = {
     rosterPlayers: "fanhub/org/roster/players",
     // Fans following a team, each tagged PLAYER / PARENT / STAFF / FAN: GET ?schoolTeamId=&page=&limit=.
     rosterFollowers: "fanhub/org/roster/followers",
+    // Messages — the org chats with the people of its teams (FANHUB_ORG_CHAT_ADMIN.md).
+    // Who can be messaged, per tab (players / parents / staff / followers): GET ?tab=&search=.
+    orgChatTeamMembers: (schoolTeamId: string) => `fanhub/org/chat/teams/${schoolTeamId}/members`,
+    // The org's conversations, newest activity first: GET ?schoolTeamId= (all teams without it).
+    orgChatConversations: "fanhub/org/chat/conversations",
+    // POST opens (or reuses) a direct chat with one fan of the team.
+    orgChatDirect: "fanhub/org/chat/conversations/direct",
+    // POST creates a group with a tab, everyone (ALL) or chosen fans (CUSTOM). Not idempotent.
+    orgChatGroup: "fanhub/org/chat/conversations/group",
+    orgChatConversation: (id: string) => `fanhub/org/chat/conversations/${id}`,
+    // GET ?limit=&before= pages back (each page oldest first); POST sends as the org.
+    orgChatMessages: (id: string) => `fanhub/org/chat/conversations/${id}/messages`,
+    // POST marks the conversation read, so its unreadCount drops to 0.
+    orgChatRead: (id: string) => `fanhub/org/chat/conversations/${id}/read`,
     // Setup Wizard — wire these when backend is ready
     saveSchedule: "setup/schedule",
     saveActivations: "setup/activations",
