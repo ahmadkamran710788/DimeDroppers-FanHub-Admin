@@ -10,6 +10,7 @@ import ConnectionStatus, { type ConnectionState } from "@/components/external-li
 import { THEME, type ExternalLinkConfig } from "@/components/external-links/data";
 import { useSetup } from "@/context/setup";
 import { cn } from "@/utils/cn";
+import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 
 interface ExternalLinkCardProps {
@@ -91,20 +92,15 @@ export default function ExternalLinkCard({ config }: ExternalLinkCardProps) {
     }
     setSaving(true);
     try {
-      const res = await fetch(routes.api.proxyFeatureLinks, {
+      // apiCall shows the error toast itself on failure.
+      const { success } = await apiCall({
+        endpoint: routes.api.featureLinks(schoolId),
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ schoolId, [config.payloadKey]: url.trim() }),
+        data: { [config.payloadKey]: url.trim() },
+        showSuccessToast: true,
+        successMessage: `${config.title} link saved.`,
       });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        toast.error(json?.message || `Couldn't save your ${config.title.toLowerCase()} link.`);
-        return;
-      }
-      toast.success(`${config.title} link saved.`);
-      await refreshSchool();
-    } catch {
-      toast.error("Something went wrong. Please try again.");
+      if (success) await refreshSchool();
     } finally {
       setSaving(false);
     }
