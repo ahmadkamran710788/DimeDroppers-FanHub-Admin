@@ -8,12 +8,14 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { backendFetch, forceSignOut } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import { setFanhubSchoolId, SCHOOL_ID_KEY } from "@/utils/auth/session";
-import type { AuthOrganization } from "@/utils/types/auth";
+import type { AuthOrganization, OrganizationProfile } from "@/utils/types/auth";
 
 interface AuthContextValue {
-  org: AuthOrganization | null;
+  // The full profile once /me has answered; just id/name/email/phone right after sign-in.
+  org: AuthOrganization | OrganizationProfile | null;
   isLoading: boolean;
   setAuth: (org: AuthOrganization) => void;
   clearAuth: () => void;
@@ -22,29 +24,31 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [org, setOrg] = useState<AuthOrganization | null>(null);
+  const [org, setOrg] = useState<AuthOrganization | OrganizationProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Hydrate from the /api/auth/me route on first mount so a hard-refresh
-  // keeps the user logged in without an extra sign-in.
+  // Restore the session on load (hard refresh, new tab) from GET /fanhub/org-auth/me.
+  // backendFetch attaches the access token and, on a 401, refreshes it once and retries.
   useEffect(() => {
-    fetch(routes.api.proxyAuthMe)
-      // A 401 is deliberately NOT treated as "session over" here. The upstream
-      // `fanhub/org-auth/me` endpoint does not exist (404), so this route always
-      // fails and `org` is always null — a pre-existing bug, unrelated to token
-      // expiry. Redirecting on it would sign everyone out on every page load.
-      // Session expiry is handled by `proxy` (refresh-token gate) and by
-      // `apiCall`, which renews the access token transparently.
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        const organization = json?.data as AuthOrganization | undefined;
-        if (organization?.id) {
-          setOrg(organization);
-          if (!sessionStorage.getItem(SCHOOL_ID_KEY)) {
-            setFanhubSchoolId(String(organization.id));
-          }
+    // Signed-out pages have no session to restore.
+    const { pathname } = window.location;
+    const signedOutPage = [routes.ui.signIn, routes.ui.signUp].some((p) => pathname.startsWith(p));
+    (signedOutPage ? Promise.resolve(null) : backendFetch(routes.api.authMe, { cache: "no-store" }))
+      .then(async (res) => {
+        if (!res) return;
+        // Still 401 after the refresh: the session is over, back to sign-in.
+        if (res.status === 401) return forceSignOut();
+        if (!res.ok) return;
+        const json = await res.json().catch(() => null);
+        const organization = json?.data?.[0]?.organization as OrganizationProfile | undefined;
+        if (!organization?.id) return;
+        setOrg(organization);
+        // organization.id is the school id every org endpoint is scoped to.
+        if (!sessionStorage.getItem(SCHOOL_ID_KEY)) {
+          setFanhubSchoolId(organization.id);
         }
       })
+      // A network failure is not a dead session; keep the user where they are.
       .catch(() => null)
       .finally(() => setIsLoading(false));
   }, []);

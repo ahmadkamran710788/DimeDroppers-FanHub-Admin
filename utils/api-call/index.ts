@@ -59,7 +59,7 @@ const formatBackendMessage = (msg: unknown): string => {
 // Guarded so concurrent failures only trigger one sign-out.
 let isLoggingOut = false;
 
-function forceSignOut() {
+export function forceSignOut() {
   if (typeof window === "undefined" || isLoggingOut) return;
   isLoggingOut = true;
   clearFanhubSession();
