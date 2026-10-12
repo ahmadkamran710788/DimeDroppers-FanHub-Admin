@@ -11,6 +11,7 @@ import {
   orgSchema,
   type OrgFormState,
 } from "@/components/organization/form";
+import { backendFetch } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
 
@@ -78,12 +79,11 @@ export function useOrganizationForm() {
 
     setSaving(true);
     try {
+      // backendFetch (not apiCall): the body is multipart (logo file), and fetch must set
+      // the multipart boundary itself — so no Content-Type header here.
       const res = existingSchoolId
-        ? await fetch(`${routes.api.proxyUpdateSchool}?schoolId=${encodeURIComponent(existingSchoolId)}`, {
-            method: "PUT",
-            body,
-          })
-        : await fetch(routes.api.proxyCreateSchool, { method: "POST", body });
+        ? await backendFetch(routes.api.updateSchool(existingSchoolId), { method: "PUT", body })
+        : await backendFetch(routes.api.createSchool, { method: "POST", body });
       const json = await res.json().catch(() => null);
 
       if (!res.ok) {

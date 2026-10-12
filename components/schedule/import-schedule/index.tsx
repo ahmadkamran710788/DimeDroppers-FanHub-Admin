@@ -82,10 +82,10 @@ const ICS_WIRED: {
   sourceId: string;
   keyword: string;
   platform: string;
-  previewProxy: string;
+  previewEndpoint: string;
 }[] = [
-    { sourceId: "sportsengine", keyword: "sportngin", platform: "SportsEngine", previewProxy: routes.api.proxyIcsSportsEngine },
-    { sourceId: "teamsnap", keyword: "teamsnap", platform: "TeamSnap", previewProxy: routes.api.proxyIcsTeamSnap },
+    { sourceId: "sportsengine", keyword: "sportngin", platform: "SportsEngine", previewEndpoint: routes.api.icsSportsEngine },
+    { sourceId: "teamsnap", keyword: "teamsnap", platform: "TeamSnap", previewEndpoint: routes.api.icsTeamSnap },
   ];
 
 const SUMMARY_STATS = [
@@ -285,8 +285,8 @@ export default function ImportScheduleContent() {
 
   // Section A — upload a schedule image/PDF to the MaxPreps scrape endpoint, which
   // parses it and attaches the games to the school. Mirrors handleIcsConnect: read the
-  // schoolId from sessionStorage (set in Step 1), POST to the internal proxy (which
-  // injects x-fanhub-key), and surface the result via toast + preview.
+  // schoolId from sessionStorage (set in Step 1), POST the file to the backend, and
+  // surface the result via toast + preview.
   const handleScrapeUpload = async (file: File) => {
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
     if (!ACCEPTED_UPLOAD_EXTENSIONS.includes(ext as (typeof ACCEPTED_UPLOAD_EXTENSIONS)[number])) {
@@ -306,10 +306,8 @@ export default function ImportScheduleContent() {
       const body = new FormData();
       body.append("file", file);
 
-      const res = await fetch(
-        `${routes.api.proxyScrapeMaxpreps}?schoolId=${encodeURIComponent(schoolId)}`,
-        { method: "POST", body }
-      );
+      // Multipart: no Content-Type header, so fetch sets the boundary itself.
+      const res = await backendFetch(routes.api.scrapeMaxpreps(schoolId), { method: "POST", body });
       const json = await res.json().catch(() => null);
 
       if (!res.ok) {
@@ -384,7 +382,7 @@ export default function ImportScheduleContent() {
       const imported: string[] = [];
       for (const c of candidates) {
         // 1) Preview — validate the feed upstream.
-        const previewRes = await fetch(c.previewProxy, {
+        const previewRes = await backendFetch(c.previewEndpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: c.url }),
@@ -397,10 +395,10 @@ export default function ImportScheduleContent() {
 
 
         // 2) Import into the school.
-        const importRes = await fetch(routes.api.proxyImportIcs, {
+        const importRes = await backendFetch(routes.api.importIcs(schoolId), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ schoolId, url: c.url, platform: c.platform }),
+          body: JSON.stringify({ url: c.url, platform: c.platform }),
         });
         if (!importRes.ok) {
           const j = await importRes.json().catch(() => null);

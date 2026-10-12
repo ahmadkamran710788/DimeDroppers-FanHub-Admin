@@ -2,7 +2,7 @@ import type { ScrapedEvent } from "@/components/common/schedule-preview-modal";
 
 /**
  * The saved school returned by `GET /fanhub/schools/{id}?schedule=N`
- * (via the `proxyGetSchool` route). Only the fields the Setup Wizard reads when
+ * (via `routes.api.getSchool`). Only the fields the Setup Wizard reads when
  * rehydrating Steps 1–3 are typed here; the API returns more. All optional/nullable
  * because a freshly-created school may have most fields empty.
  */
