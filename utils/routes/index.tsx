@@ -52,6 +52,9 @@ export const routes = {
     proxyAuthSignup: "/api/auth/signup",
     authRefresh: "fanhub/org-auth/refresh",
     proxyAuthRefresh: "/api/auth/refresh",
+    // Hands the browser the current access token (read from the httpOnly cookie, renewed if
+    // stale) so apiCall can call the org endpoints below directly with a Bearer header.
+    proxyAuthToken: "/api/auth/token",
     // Clears the auth cookies (no upstream call).
     proxyAuthSignout: "/api/auth/signout",
     // Returns the org from the decoded accessToken cookie (no upstream call needed
@@ -92,110 +95,65 @@ export const routes = {
     proxyFeatureLinks: "/api/fanhub/schools/feature-links",
     // External Links → "Test Connection" (server-side reachability check).
     proxyCheckExternalLink: "/api/external-links/check",
-    // Schedule CRUD — upstream paths (used by server-side proxy route handlers)
-    listSchedules: "/fanhub/org/schedules",
-    createSchedule: "/fanhub/org/schedules",
-    getSchedule: (id: string) => `/fanhub/org/schedules/${id}`,
-    updateSchedule: (id: string) => `/fanhub/org/schedules/${id}`,
-    deleteSchedule: (id: string) => `/fanhub/org/schedules/${id}`,
-    // Schedule CRUD — proxy routes (browser calls these; server injects Bearer token)
-    proxyListSchedules: "/api/fanhub/org/schedules",
-    proxyCreateSchedule: "/api/fanhub/org/schedules",
-    proxyUpdateSchedule: (id: string) => `/api/fanhub/org/schedules/${id}`,
-    proxyDeleteSchedule: (id: string) => `/api/fanhub/org/schedules/${id}`,
-    // Scorekeeper pool — upstream paths (used by the server-side proxy route handlers).
-    // A pool member is either org-invited (status INVITED) or fan-requested (REQUESTED);
-    // the org then accepts/rejects the REQUESTED ones.
-    listScorekeeperPool: "/fanhub/org/scorekeeper-pool",
-    inviteScorekeeper: "/fanhub/org/scorekeeper-pool",
-    acceptScorekeeper: (memberId: string) =>
-      `/fanhub/org/scorekeeper-pool/${memberId}/accept`,
-    rejectScorekeeper: (memberId: string) =>
-      `/fanhub/org/scorekeeper-pool/${memberId}/reject`,
-    // Scorekeeper pool — proxy routes (browser calls these; server injects Bearer token)
-    proxyListScorekeeperPool: "/api/fanhub/org/scorekeeper-pool",
-    proxyInviteScorekeeper: "/api/fanhub/org/scorekeeper-pool",
-    proxyAcceptScorekeeper: (memberId: string) =>
-      `/api/fanhub/org/scorekeeper-pool/${memberId}/accept`,
-    proxyRejectScorekeeper: (memberId: string) =>
-      `/api/fanhub/org/scorekeeper-pool/${memberId}/reject`,
+    // FanHub org endpoints (fanhub/org/*). The browser calls these straight on the backend:
+    // apiCall / backendFetch (utils/api-call) attach the Bearer access token. No Next route
+    // in between — they work with the token alone, no x-fanhub-key.
+    //
+    // Schedule CRUD
+    listSchedules: "fanhub/org/schedules",
+    createSchedule: "fanhub/org/schedules",
+    getSchedule: (id: string) => `fanhub/org/schedules/${id}`,
+    updateSchedule: (id: string) => `fanhub/org/schedules/${id}`,
+    deleteSchedule: (id: string) => `fanhub/org/schedules/${id}`,
+    // Scorekeeper pool. A pool member is either org-invited (status INVITED) or
+    // fan-requested (REQUESTED); the org then accepts/rejects the REQUESTED ones.
+    listScorekeeperPool: "fanhub/org/scorekeeper-pool",
+    inviteScorekeeper: "fanhub/org/scorekeeper-pool",
+    acceptScorekeeper: (memberId: string) => `fanhub/org/scorekeeper-pool/${memberId}/accept`,
+    rejectScorekeeper: (memberId: string) => `fanhub/org/scorekeeper-pool/${memberId}/reject`,
     // Scorekeeper game requests — a fan asks to keep score for one game; the org reviews
-    // (docs/fanhub-scorekeeper-game-request-admin.md). Upstream paths:
+    // (docs/fanhub-scorekeeper-game-request-admin.md).
     listScorekeeperRequests: "fanhub/org/scorekeeper-requests",
     acceptScorekeeperRequest: (requestId: string) => `fanhub/org/scorekeeper-requests/${requestId}/accept`,
     rejectScorekeeperRequest: (requestId: string) => `fanhub/org/scorekeeper-requests/${requestId}/reject`,
-    // Proxy routes (browser calls these via apiCall):
-    proxyListScorekeeperRequests: "/api/fanhub/org/scorekeeper-requests",
-    proxyAcceptScorekeeperRequest: (requestId: string) => `/api/fanhub/org/scorekeeper-requests/${requestId}/accept`,
-    proxyRejectScorekeeperRequest: (requestId: string) => `/api/fanhub/org/scorekeeper-requests/${requestId}/reject`,
     // Videographer game requests — same shape as scorekeeper game requests
-    // (docs/fanhub-videographer-game-request-admin.md). Upstream paths:
+    // (docs/fanhub-videographer-game-request-admin.md).
     listVideographerRequests: "fanhub/org/videographer-requests",
     acceptVideographerRequest: (requestId: string) => `fanhub/org/videographer-requests/${requestId}/accept`,
     rejectVideographerRequest: (requestId: string) => `fanhub/org/videographer-requests/${requestId}/reject`,
-    // Proxy routes (browser calls these via apiCall):
-    proxyListVideographerRequests: "/api/fanhub/org/videographer-requests",
-    proxyAcceptVideographerRequest: (requestId: string) => `/api/fanhub/org/videographer-requests/${requestId}/accept`,
-    proxyRejectVideographerRequest: (requestId: string) => `/api/fanhub/org/videographer-requests/${requestId}/reject`,
     // Videographer pool — mirror of the scorekeeper pool (docs/fanhub-videographer-pool-api.md).
-    // Upstream paths (appended to config.apiUrl by the proxy route handlers):
     listVideographerPool: "fanhub/org/videographer-pool",
     inviteVideographer: "fanhub/org/videographer-pool",
     acceptVideographer: (memberId: string) => `fanhub/org/videographer-pool/${memberId}/accept`,
     rejectVideographer: (memberId: string) => `fanhub/org/videographer-pool/${memberId}/reject`,
     revokeVideographer: (memberId: string) => `fanhub/org/videographer-pool/${memberId}`,
-    // Proxy routes (browser calls these via apiCall; server injects the Bearer token):
-    proxyListVideographerPool: "/api/fanhub/org/videographer-pool",
-    proxyInviteVideographer: "/api/fanhub/org/videographer-pool",
-    proxyAcceptVideographer: (memberId: string) => `/api/fanhub/org/videographer-pool/${memberId}/accept`,
-    proxyRejectVideographer: (memberId: string) => `/api/fanhub/org/videographer-pool/${memberId}/reject`,
-    proxyRevokeVideographer: (memberId: string) => `/api/fanhub/org/videographer-pool/${memberId}`,
     // Scorekeeper — bulk-assign a fan to schedule games (PUT). Note the path is /scorekeeper
     // (singular), a sibling of /scorekeeper-pool. Body: { fanId, scheduleEventIds }.
-    bulkAssignScorekeeper: "/fanhub/org/scorekeeper/bulk-assign",
-    proxyBulkAssignScorekeeper: "/api/fanhub/org/scorekeeper/bulk-assign",
-    // Exposure Events API integration (tournament orgs only). Upstream paths appended to
-    // config.apiUrl on the server; proxy* are internal Next routes the browser calls (the
-    // server route injects the Bearer accessToken cookie).
-    exposureSettings: "/fanhub/org/exposure/settings",
-    proxyExposureSettings: "/api/fanhub/org/exposure/settings",
-    exposureSync: "/fanhub/org/exposure/sync",
-    proxyExposureSync: "/api/fanhub/org/exposure/sync",
-    exposureSyncStatus: "/fanhub/org/exposure/sync/status",
-    proxyExposureSyncStatus: "/api/fanhub/org/exposure/sync/status",
+    bulkAssignScorekeeper: "fanhub/org/scorekeeper/bulk-assign",
+    // Exposure Events API integration (tournament orgs only).
+    exposureSettings: "fanhub/org/exposure/settings",
+    exposureSync: "fanhub/org/exposure/sync",
+    exposureSyncStatus: "fanhub/org/exposure/sync/status",
     // List synced Exposure events (the FanHubSchoolEvent rows)
-    listExposureEvents: "/fanhub/org/exposure/events",
-    proxyListExposureEvents: "/api/fanhub/org/exposure/events",
+    listExposureEvents: "fanhub/org/exposure/events",
     // Per-event sub-resources. The :id is the FanHubSchoolEvent id (e.g. evt-uuid-1111),
-    // NOT the numeric exposureEventId. Upstream paths + browser proxy routes (inject Bearer).
-    exposureEventDivisions: (id: string) => `/fanhub/org/exposure/events/${id}/divisions`,
-    proxyExposureEventDivisions: (id: string) => `/api/fanhub/org/exposure/events/${id}/divisions`,
-    exposureEventGames: (id: string) => `/fanhub/org/exposure/events/${id}/games`,
-    proxyExposureEventGames: (id: string) => `/api/fanhub/org/exposure/events/${id}/games`,
-    exposureEventTeams: (id: string) => `/fanhub/org/exposure/events/${id}/teams`,
-    proxyExposureEventTeams: (id: string) => `/api/fanhub/org/exposure/events/${id}/teams`,
-    exposureEventStandings: (id: string) => `/fanhub/org/exposure/events/${id}/standings`,
-    proxyExposureEventStandings: (id: string) => `/api/fanhub/org/exposure/events/${id}/standings`,
-    exposureEventVenues: (id: string) => `/fanhub/org/exposure/events/${id}/venues`,
-    proxyExposureEventVenues: (id: string) => `/api/fanhub/org/exposure/events/${id}/venues`,
+    // NOT the numeric exposureEventId.
+    exposureEventDivisions: (id: string) => `fanhub/org/exposure/events/${id}/divisions`,
+    exposureEventGames: (id: string) => `fanhub/org/exposure/events/${id}/games`,
+    exposureEventTeams: (id: string) => `fanhub/org/exposure/events/${id}/teams`,
+    exposureEventStandings: (id: string) => `fanhub/org/exposure/events/${id}/standings`,
+    exposureEventVenues: (id: string) => `fanhub/org/exposure/events/${id}/venues`,
     // Players for a team. The :teamId is the FanHubTeam id (e.g. team-uuid-001).
     // Note: this lives under exposure/teams/:teamId, NOT under events/:id.
-    exposureTeamPlayers: (teamId: string) => `/fanhub/org/exposure/teams/${teamId}/players`,
-    proxyExposureTeamPlayers: (teamId: string) => `/api/fanhub/org/exposure/teams/${teamId}/players`,
+    exposureTeamPlayers: (teamId: string) => `fanhub/org/exposure/teams/${teamId}/players`,
     // Fundraising campaigns — a campaign belongs to one of the school's teams (teamId).
-    // Upstream path (appended to config.apiUrl by the proxy route handler):
     createCampaign: "fanhub/org/campaigns",
-    // Proxy route (browser calls this via apiCall; server injects the Bearer token):
-    proxyCreateCampaign: "/api/fanhub/org/campaigns",
     // The org's teams, grouped by sport department. teams[].id is the schoolTeamId the roster calls take.
     orgDepartments: "fanhub/org/departments",
-    proxyOrgDepartments: "/api/fanhub/org/departments",
     // A team's staff (coaches): GET ?schoolTeamId= lists them, POST adds one.
     rosterStaff: "fanhub/org/roster/staff",
-    proxyRosterStaff: "/api/fanhub/org/roster/staff",
     // A team's roster, read-only (players with their parents): GET ?schoolTeamId=. The coach adds them in the app.
     rosterPlayers: "fanhub/org/roster/players",
-    proxyRosterPlayers: "/api/fanhub/org/roster/players",
     // Setup Wizard — wire these when backend is ready
     saveSchedule: "setup/schedule",
     saveActivations: "setup/activations",

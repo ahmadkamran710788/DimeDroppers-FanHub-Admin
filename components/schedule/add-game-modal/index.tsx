@@ -191,14 +191,14 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
       Object.entries(body).forEach(([k, v]) => fd.append(k, String(v)));
       fd.append("opponentLogo", logoFile);
       result = await apiCall<ScheduleItemResponse>({
-        endpoint: isEdit ? routes.api.proxyUpdateSchedule(editGame!.id) : routes.api.proxyCreateSchedule,
+        endpoint: isEdit ? routes.api.updateSchedule(editGame!.id) : routes.api.createSchedule,
         method: isEdit ? "PATCH" : "POST",
         data: fd as unknown as Record<string, unknown>,
         headers: { "Content-Type": "multipart/form-data" },
       });
     } else {
       result = await apiCall<ScheduleItemResponse>({
-        endpoint: isEdit ? routes.api.proxyUpdateSchedule(editGame!.id) : routes.api.proxyCreateSchedule,
+        endpoint: isEdit ? routes.api.updateSchedule(editGame!.id) : routes.api.createSchedule,
         method: isEdit ? "PATCH" : "POST",
         data: body,
         showSuccessToast: true,

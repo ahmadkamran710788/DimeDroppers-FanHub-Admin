@@ -11,6 +11,7 @@ import Toggle from "@/components/common/toggle";
 import { cn } from "@/utils/cn";
 import { useSetup } from "@/context/setup";
 import { extractApiErrorMessage } from "@/utils/api-error";
+import { backendFetch } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import {
   Calendar,
@@ -454,12 +455,12 @@ export default function ImportScheduleContent() {
       if (elapsed >= SLOW_SYNC_NOTICE_MS) setSlowSync(true);
 
       try {
-        const res = await fetch(routes.api.proxyExposureSyncStatus);
+        const res = await backendFetch(routes.api.exposureSyncStatus);
 
-        // Terminal, not transient: the status route goes through `upstreamFetch`, which
-        // already renews the access token proactively and retries once on a 401. Reaching
-        // here means that refresh failed, so the session is genuinely over — retrying
-        // client-side would only re-run the refresh that just failed.
+        // Terminal, not transient: `backendFetch` already renews the access token
+        // proactively and retries once on a 401. Reaching here means that refresh failed,
+        // so the session is genuinely over — retrying would only re-run the refresh that
+        // just failed.
         if (res.status === 401) {
           if (!isStale()) failSync("Your session expired. Please sign in again.");
           return;
@@ -514,7 +515,7 @@ export default function ImportScheduleContent() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(routes.api.proxyExposureSyncStatus);
+        const res = await backendFetch(routes.api.exposureSyncStatus);
         if (!res.ok) return;
         const json = await res.json().catch(() => null);
         const d = json?.data?.[0] as ExposureStatusPayload | undefined;
@@ -543,7 +544,7 @@ export default function ImportScheduleContent() {
     setShowModal(true);
   };
 
-  // Exposure connect flow: save credentials → start sync → poll status. Uses raw fetch
+  // Exposure connect flow: save credentials → start sync → poll status. Uses backendFetch
   // (not apiCall) so the backend's exact 403 "tournament organizations only" message
   // reaches the toast instead of apiCall's generic permission error.
   const handleExposureConnect = async () => {
@@ -556,7 +557,7 @@ export default function ImportScheduleContent() {
     setConnecting(true);
     try {
       // 1) Save credentials.
-      const settingsRes = await fetch(routes.api.proxyExposureSettings, {
+      const settingsRes = await backendFetch(routes.api.exposureSettings, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ apiKey: apiKey.trim(), apiSecret: apiSecret.trim() }),
@@ -571,7 +572,7 @@ export default function ImportScheduleContent() {
 
       // 2) Start the sync. The empty JSON body is deliberate — the upstream schema
       // validates the body itself, so a bodyless POST is rejected outright.
-      const syncRes = await fetch(routes.api.proxyExposureSync, {
+      const syncRes = await backendFetch(routes.api.exposureSync, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -602,7 +603,7 @@ export default function ImportScheduleContent() {
   const handleExposureSync = async () => {
     setResyncing(true);
     try {
-      const syncRes = await fetch(routes.api.proxyExposureSync, {
+      const syncRes = await backendFetch(routes.api.exposureSync, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),

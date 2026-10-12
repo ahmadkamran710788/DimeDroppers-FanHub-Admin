@@ -13,8 +13,9 @@ export const runtime = "nodejs";
  * Proxy for FanHub Org Auth "Refresh".
  *
  * Reads the httpOnly refreshToken cookie, exchanges it upstream for a fresh
- * access/refresh pair, and re-sets both cookies. On upstream failure the cookies
- * are cleared so a stale session is not left behind.
+ * access/refresh pair, re-sets both cookies, and returns `{ accessToken }` for the
+ * browser's direct API calls. On upstream failure the cookies are cleared so a stale
+ * session is not left behind.
  */
 export async function POST() {
   if (!config.apiUrl) {
@@ -44,11 +45,18 @@ export async function POST() {
       const tokens = body?.data?.[0] as AuthTokens | undefined;
       if (tokens?.accessToken && tokens?.refreshToken) {
         await setAuthCookies(tokens.accessToken, tokens.refreshToken);
+        // Only the access token goes back to the browser (it calls the API with it);
+        // the refresh token stays in its httpOnly cookie.
+        return Response.json(
+          { accessToken: tokens.accessToken },
+          { headers: { "Cache-Control": "no-store" } }
+        );
       }
-    } else {
       await clearAuthCookies();
+      return Response.json({ message: "Upstream returned no tokens." }, { status: 502 });
     }
 
+    await clearAuthCookies();
     return Response.json(body, { status: upstream.status });
   } catch (error) {
     const message =

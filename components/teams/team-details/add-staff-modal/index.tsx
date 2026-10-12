@@ -65,7 +65,7 @@ export default function AddStaffModal({ isOpen, onClose, teamId, onAdded }: AddS
     // Adds the coach to the staff list only; inviting them to Fan Hub is a separate step.
     // Errors (e.g. someone with this email is already on the staff) are toasted by apiCall.
     const result = await apiCall({
-      endpoint: routes.api.proxyRosterStaff,
+      endpoint: routes.api.rosterStaff,
       method: "POST",
       data: {
         schoolTeamId: teamId,
@@ -75,7 +75,7 @@ export default function AddStaffModal({ isOpen, onClose, teamId, onAdded }: AddS
         email: form.email.trim(),
         ...(form.phone && { phone: form.phone }),
       },
-      invalidates: [routes.api.proxyRosterStaff],
+      invalidates: [routes.api.rosterStaff],
     });
     setSaving(false);
     if (!result.success) return;

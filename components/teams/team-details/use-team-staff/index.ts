@@ -45,7 +45,7 @@ export function useTeamStaff(schoolTeamId: string) {
   useEffect(() => {
     let cancelled = false;
     apiCall<{ data: StaffEntry[] }>({
-      endpoint: routes.api.proxyRosterStaff,
+      endpoint: routes.api.rosterStaff,
       method: "GET",
       data: { schoolTeamId },
     }).then((result) => {

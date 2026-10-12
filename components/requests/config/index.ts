@@ -22,9 +22,9 @@ export const SCOREKEEPER_REQUESTS: GameRequestConfig = {
   duty: "keep score",
   cacheTags: ["scorekeeper-requests", "scorekeeper-pool"],
   endpoints: {
-    list: routes.api.proxyListScorekeeperRequests,
-    accept: routes.api.proxyAcceptScorekeeperRequest,
-    reject: routes.api.proxyRejectScorekeeperRequest,
+    list: routes.api.listScorekeeperRequests,
+    accept: routes.api.acceptScorekeeperRequest,
+    reject: routes.api.rejectScorekeeperRequest,
   },
 };
 
@@ -33,8 +33,8 @@ export const VIDEOGRAPHER_REQUESTS: GameRequestConfig = {
   duty: "film",
   cacheTags: ["videographer-requests", "videographer-pool"],
   endpoints: {
-    list: routes.api.proxyListVideographerRequests,
-    accept: routes.api.proxyAcceptVideographerRequest,
-    reject: routes.api.proxyRejectVideographerRequest,
+    list: routes.api.listVideographerRequests,
+    accept: routes.api.acceptVideographerRequest,
+    reject: routes.api.rejectVideographerRequest,
   },
 };

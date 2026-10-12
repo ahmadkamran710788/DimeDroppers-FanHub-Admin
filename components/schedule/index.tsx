@@ -535,7 +535,7 @@ export default function SchedulePage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     apiCall<ScheduleListResponse>({
-      endpoint: routes.api.proxyListSchedules,
+      endpoint: routes.api.listSchedules,
       method: "GET",
       data: params,
     }).then((result) => {
@@ -558,7 +558,7 @@ export default function SchedulePage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setEventsLoading(true);
     apiCall<ExposureEventsResponse>({
-      endpoint: routes.api.proxyListExposureEvents,
+      endpoint: routes.api.listExposureEvents,
       method: "GET",
     }).then((result) => {
       if (cancelled) return;

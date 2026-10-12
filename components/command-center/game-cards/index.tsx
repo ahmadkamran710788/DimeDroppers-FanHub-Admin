@@ -29,7 +29,7 @@ export default function GameCards() {
     const from = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     let cancelled = false;
     apiCall<ScheduleListResponse>({
-      endpoint: routes.api.proxyListSchedules,
+      endpoint: routes.api.listSchedules,
       method: "GET",
       data: { page: 1, limit: 50, sortOrder: "asc", from },
     }).then((result) => {

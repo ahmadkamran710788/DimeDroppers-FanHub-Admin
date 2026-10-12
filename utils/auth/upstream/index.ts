@@ -40,7 +40,7 @@ const unauthorized = () =>
  * the claim only decides *when to refresh* — upstream remains the sole authority on
  * whether a token is actually valid.
  */
-function isExpiringSoon(token: string): boolean {
+export function isExpiringSoon(token: string): boolean {
   try {
     const payload = token.split(".")[1];
     if (!payload) return false;
@@ -60,7 +60,7 @@ function isExpiringSoon(token: string): boolean {
  * locking: the backend keeps the previous refresh token valid after rotation, so
  * concurrent handlers refreshing at once cannot invalidate each other.
  */
-async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = await getRefreshToken();
   if (!refreshToken) return null;
 
