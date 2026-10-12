@@ -92,7 +92,6 @@ export const routes = {
     // FanHub — Step 3 "Choose Activations". Upstream path appended to config.apiUrl on the
     // server; proxy is the internal Next route the browser PATCHes to (injects x-fanhub-key).
     featureLinks: (schoolId: string) => `fanhub/schools/${schoolId}/feature-links`,
-    proxyFeatureLinks: "/api/fanhub/schools/feature-links",
     // External Links → "Test Connection" (server-side reachability check).
     proxyCheckExternalLink: "/api/external-links/check",
     // FanHub org endpoints (fanhub/org/*). The browser calls these straight on the backend:

@@ -1,6 +1,7 @@
 "use client";
 
 import { useSetup } from "@/context/setup";
+import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -109,22 +110,17 @@ export function useActivationSelection() {
 
     setSaving(true);
     try {
-      const res = await fetch(routes.api.proxyFeatureLinks, {
+      // apiCall shows the error toast itself on failure.
+      const { success } = await apiCall({
+        endpoint: routes.api.featureLinks(schoolId),
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ schoolId, ...links }),
+        data: links,
+        showSuccessToast: true,
+        successMessage: "Activations saved.",
       });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        toast.error(json?.message || "Couldn't save your activations. Please try again.");
-        return false;
-      }
-      toast.success("Activations saved.");
+      if (!success) return false;
       await refreshSchool();
       return true;
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-      return false;
     } finally {
       setSaving(false);
     }
