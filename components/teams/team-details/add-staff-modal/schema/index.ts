@@ -8,3 +8,6 @@ export const addStaffSchema = yup.object({
     .string()
     .test("is-complete", "Enter a 10-digit phone number", (v) => !v || v.replace(/\D/g, "").length === 10),
 });
+
+// Editing an imported entry (role OTHER, e.g. "Statistician"): keeping its title is allowed.
+export const editImportedStaffSchema = addStaffSchema.shape({ role: yup.string() });

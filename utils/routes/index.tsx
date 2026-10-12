@@ -134,8 +134,15 @@ export const routes = {
     orgDepartments: "fanhub/org/departments",
     // A team's staff (coaches): GET ?schoolTeamId= lists them, POST adds one.
     rosterStaff: "fanhub/org/roster/staff",
+    // One staff entry: PATCH edits it, DELETE removes it from the staff list.
+    rosterStaffMember: (staffId: string) => `fanhub/org/roster/staff/${staffId}`,
+    // POST invites the fan with the entry's email (again after a decline/withdraw/expiry);
+    // DELETE withdraws a pending invitation.
+    rosterStaffInvite: (staffId: string) => `fanhub/org/roster/staff/${staffId}/invite`,
     // A team's roster, read-only (players with their parents): GET ?schoolTeamId=. The coach adds them in the app.
     rosterPlayers: "fanhub/org/roster/players",
+    // Fans following a team, each tagged PLAYER / PARENT / STAFF / FAN: GET ?schoolTeamId=&page=&limit=.
+    rosterFollowers: "fanhub/org/roster/followers",
     // Setup Wizard — wire these when backend is ready
     saveSchedule: "setup/schedule",
     saveActivations: "setup/activations",

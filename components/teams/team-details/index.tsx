@@ -3,17 +3,17 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Plus } from "lucide-react";
-import toast from "react-hot-toast";
-import Button from "@/components/common/button";
+import { ArrowLeft } from "lucide-react";
 import type { Column } from "@/components/common/generic-table";
 import StatusPill from "@/components/common/status-pill";
 import Tabs from "@/components/common/tabs";
-import { FOLLOWERS, sportIcon, type Follower, type StaffMember } from "@/components/teams/data";
-import AddStaffModal from "@/components/teams/team-details/add-staff-modal";
+import { sportIcon } from "@/components/teams/data";
 import { invitationColor } from "@/components/teams/team-details/invitation-status";
 import ParentsTab from "@/components/teams/team-details/parents-tab";
 import PeopleList from "@/components/teams/team-details/people-list";
+import PersonCell from "@/components/teams/team-details/person-cell";
+import StaffTab from "@/components/teams/team-details/staff-tab";
+import { useTeamFollowers, type TeamFollower } from "@/components/teams/team-details/use-team-followers";
 import { useTeamPlayers, type RosterPlayer } from "@/components/teams/team-details/use-team-players";
 import { useTeamStaff } from "@/components/teams/team-details/use-team-staff";
 import { useOrgTeams } from "@/components/teams/use-org-teams";
@@ -22,28 +22,6 @@ import { routes } from "@/utils/routes";
 
 const TABS = ["Players", "Parents", "Staff", "Followers"] as const;
 type Tab = (typeof TABS)[number];
-
-const initials = (name: string) =>
-  name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-
-function PersonCell({ name, email }: { name: string; email: string }) {
-  return (
-    <div className="flex items-center gap-3 min-w-0">
-      <span className="size-10 shrink-0 rounded-full bg-white/15 flex items-center justify-center text-sm font-semibold text-white">
-        {initials(name)}
-      </span>
-      <div className="flex flex-col gap-1 min-w-0">
-        <span className="text-sm font-semibold text-white truncate">{name}</span>
-        <span className="text-xs text-white/40 truncate">{email}</span>
-      </div>
-    </div>
-  );
-}
 
 const PLAYER_COLUMNS: Column<RosterPlayer>[] = [
   { header: "Player", cls: "flex-1 min-w-[200px] py-5", cell: (p) => <PersonCell name={p.name} email={p.email} /> },
@@ -58,45 +36,27 @@ const PLAYER_COLUMNS: Column<RosterPlayer>[] = [
 ];
 const playerSearch = (p: RosterPlayer) => [p.name, p.email, p.position, p.number];
 
-const STAFF_COLUMNS: Column<StaffMember>[] = [
-  { header: "Name", cls: "flex-1 min-w-[200px] py-5", cell: (s) => <PersonCell name={s.name} email={s.email} /> },
-  { header: "Role", cls: "w-40 shrink-0 py-5", cell: (s) => <span className="leading-5">{s.role}</span> },
-  { header: "Phone", cls: "w-36 shrink-0 py-5", cell: (s) => s.phone || "—" },
-  {
-    header: "Status",
-    cls: "w-28 shrink-0 py-5",
-    cell: (s) => (
-      <StatusPill
-        label={s.status}
-        color={invitationColor(s.status)}
-        className="whitespace-nowrap"
-      />
-    ),
-  },
-];
-const staffSearch = (s: StaffMember) => [s.name, s.email, s.role];
-
-const FOLLOWER_COLUMNS: Column<Follower>[] = [
+const FOLLOWER_COLUMNS: Column<TeamFollower>[] = [
   { header: "Name", cls: "flex-1 min-w-[200px] py-5", cell: (f) => <PersonCell name={f.name} email={f.email} /> },
   { header: "Type", cls: "w-28 shrink-0 py-5", cell: (f) => f.type },
   {
     header: "Following Since",
     cls: "w-36 shrink-0 py-5",
     cell: (f) =>
-      new Date(`${f.followingSince}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      new Date(f.followedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
   },
 ];
-const followerSearch = (f: Follower) => [f.name, f.email, f.type];
+const followerSearch = (f: TeamFollower) => [f.name, f.email, f.type];
 
 // Team details: header plus Players / Parents / Staff / Followers lists. The team and its staff
-// come from the API (players and parents read-only); followers are still sample data.
+// come from the API (players, parents and followers read-only).
 export default function TeamDetailsPage({ teamId }: { teamId: string }) {
   const { savedSchool } = useSetup();
   const [tab, setTab] = useState<Tab>("Players");
-  const [addStaffOpen, setAddStaffOpen] = useState(false);
   const { teams, loading: teamsLoading } = useOrgTeams();
   const { staff, loading: staffLoading, reload: reloadStaff } = useTeamStaff(teamId);
   const { players, parents, loading: rosterLoading } = useTeamPlayers(teamId);
+  const { followers, loading: followersLoading } = useTeamFollowers(teamId);
   const team = teams.find((t) => t.id === teamId);
   const headCoach = staff.find((s) => s.role === "Head Coach")?.name ?? "—";
 
@@ -164,7 +124,7 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
           tabs={TABS}
           active={tab}
           onChange={setTab}
-          counts={{ Players: players.length, Parents: parents.length, Staff: staff.length, Followers: FOLLOWERS.length }}
+          counts={{ Players: players.length, Parents: parents.length, Staff: staff.length, Followers: followers.length }}
         />
         {tab === "Players" ? (
           <PeopleList
@@ -179,28 +139,12 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
         ) : tab === "Parents" ? (
           <ParentsTab rows={parents} loading={rosterLoading} />
         ) : tab === "Staff" ? (
-          <PeopleList
-            key={tab}
-            rows={staff}
-            loading={staffLoading}
-            columns={STAFF_COLUMNS}
-            getKey={(s) => s.id}
-            searchFields={staffSearch}
-            noun="staff"
-            action={
-              <Button
-                variant="cta"
-                label="Add Staff"
-                icon={<Plus className="size-5" strokeWidth={2} />}
-                className="shrink-0"
-                onClick={() => setAddStaffOpen(true)}
-              />
-            }
-          />
+          <StaffTab teamId={team.id} staff={staff} loading={staffLoading} reload={reloadStaff} />
         ) : (
           <PeopleList
             key={tab}
-            rows={FOLLOWERS}
+            rows={followers}
+            loading={followersLoading}
             columns={FOLLOWER_COLUMNS}
             getKey={(f) => f.id}
             searchFields={followerSearch}
@@ -208,16 +152,6 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
           />
         )}
       </div>
-
-      <AddStaffModal
-        isOpen={addStaffOpen}
-        onClose={() => setAddStaffOpen(false)}
-        teamId={team.id}
-        onAdded={(name, role) => {
-          reloadStaff();
-          toast.success(`${name} added as ${role.toLowerCase()}`);
-        }}
-      />
     </div>
   );
 }

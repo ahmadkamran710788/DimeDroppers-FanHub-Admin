@@ -19,6 +19,15 @@ interface StaffEntry {
   phone: string | null;
   onStaff: boolean;
   invitationStatus: InvitationStatus;
+  invitation: { isExpired: boolean } | null;
+}
+
+// A staff row plus what the row actions need from the API entry.
+export interface TeamStaffMember extends StaffMember {
+  roleValue: StaffRole;
+  invitationStatus: InvitationStatus;
+  // A pending invitation past its 7 days; it can be sent again.
+  invitationExpired: boolean;
 }
 
 const ROLE_TITLE: Record<StaffRole, string> = {
@@ -27,18 +36,24 @@ const ROLE_TITLE: Record<StaffRole, string> = {
   OTHER: "Staff",
 };
 
-const toMember = (s: StaffEntry): StaffMember => ({
-  id: s.id,
-  name: [s.firstName, s.lastName].filter(Boolean).join(" "),
-  role: s.title ?? ROLE_TITLE[s.role],
-  email: s.email ?? "",
-  phone: s.phone ?? "",
-  status: INVITATION_LABEL[s.invitationStatus] ?? s.invitationStatus,
-});
+const toMember = (s: StaffEntry): TeamStaffMember => {
+  const invitationExpired = s.invitationStatus === "INVITED" && !!s.invitation?.isExpired;
+  return {
+    id: s.id,
+    name: [s.firstName, s.lastName].filter(Boolean).join(" "),
+    role: s.title ?? ROLE_TITLE[s.role],
+    email: s.email ?? "",
+    phone: s.phone ?? "",
+    status: invitationExpired ? "Expired" : (INVITATION_LABEL[s.invitationStatus] ?? s.invitationStatus),
+    roleValue: s.role,
+    invitationStatus: s.invitationStatus,
+    invitationExpired,
+  };
+};
 
 // A team's staff list from the roster API; `reload` refetches it after a change.
 export function useTeamStaff(schoolTeamId: string) {
-  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [staff, setStaff] = useState<TeamStaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [version, setVersion] = useState(0);
 
