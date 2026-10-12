@@ -67,21 +67,13 @@ export const routes = {
     updateSchool: (schoolId: string) => `fanhub/schools/${schoolId}`,
     // FanHub — Setup Wizard rehydrate: the school plus its schedule events.
     getSchool: (schoolId: string, schedule = 5) => `fanhub/schools/${schoolId}?schedule=${schedule}`,
-    // FanHub — Step 2 "Import Schedule". Upstream paths appended to config.apiUrl on the
-    // server; proxy* are internal Next routes the browser posts to (inject x-fanhub-key).
+    // FanHub — Step 2 "Import Schedule": preview an ICS feed, then import it into the school.
     icsSportsEngine: "fanhub/ics/sportsengine",
-    proxyIcsSportsEngine: "/api/fanhub/ics/sportsengine",
     icsTeamSnap: "fanhub/ics/teamsnap",
-    proxyIcsTeamSnap: "/api/fanhub/ics/teamsnap",
     importIcs: (schoolId: string) => `fanhub/schools/${schoolId}/import-ics`,
-    proxyImportIcs: "/api/fanhub/schools/import-ics",
-    // FanHub — Step 2 "Upload schedule (pdf/jpg/png)". The browser posts multipart
-    // form-data (the schedule file) to proxyScrapeMaxpreps with ?schoolId=…; the server
-    // route appends scrapeMaxpreps(schoolId) to config.apiUrl and injects x-fanhub-key.
+    // FanHub — Step 2 "Upload schedule (pdf/jpg/png)": multipart form-data with the file.
     scrapeMaxpreps: (schoolId: string) => `fanhub/scrape/maxpreps/${schoolId}`,
-    proxyScrapeMaxpreps: "/api/fanhub/scrape/maxpreps",
-    // FanHub — Step 3 "Choose Activations". Upstream path appended to config.apiUrl on the
-    // server; proxy is the internal Next route the browser PATCHes to (injects x-fanhub-key).
+    // FanHub — Step 3 "Choose Activations": PATCH the school's feature-link URLs.
     featureLinks: (schoolId: string) => `fanhub/schools/${schoolId}/feature-links`,
     // External Links → "Test Connection" (server-side reachability check).
     proxyCheckExternalLink: "/api/external-links/check",
