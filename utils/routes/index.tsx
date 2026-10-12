@@ -57,9 +57,9 @@ export const routes = {
     proxyAuthToken: "/api/auth/token",
     // Clears the auth cookies (no upstream call).
     proxyAuthSignout: "/api/auth/signout",
-    // Returns the org from the decoded accessToken cookie (no upstream call needed
-    // when the token carries the org claims; falls back to upstream if not).
-    proxyAuthMe: "/api/auth/me",
+    // The signed-in organisation (GET, Bearer access token). Called straight from the browser
+    // on load to restore the session after a refresh or in a new tab.
+    authMe: "fanhub/org-auth/me",
     // FanHub — Step 1 "Create School" (multipart: form fields + logo).
     createSchool: "fanhub/schools",
     // FanHub — Step 1 "Update School" (when the user comes Back and re-submits an
