@@ -17,10 +17,11 @@ export const createCampaignSchema = yup.object({
   endDate: yup
     .string()
     .required("End date is required")
-    .test("is-after-start", "End date must be after the start date", function (endDate) {
+    // A campaign runs through the end of its end date, so a one-day campaign is valid.
+    .test("not-before-start", "End date can't be before the start date", function (endDate) {
       const { startDate } = this.parent;
       if (!startDate || !endDate) return true;
-      return endDate > startDate;
+      return endDate >= startDate;
     }),
   sponsorName: yup.string().trim(),
   impact: yup.array(yup.string().oneOf(IMPACT_OPTIONS)),

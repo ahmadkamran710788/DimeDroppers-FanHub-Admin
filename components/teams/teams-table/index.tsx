@@ -12,7 +12,7 @@ import RowActionsMenu from "@/components/common/row-actions-menu";
 import SearchInput from "@/components/common/search-input";
 import StatusPill from "@/components/common/status-pill";
 import CampaignsTable from "@/components/fundraising/campaigns-table";
-import type { FundraisingCampaign } from "@/components/fundraising/data";
+import type { Campaign } from "@/utils/types/campaign";
 import { useSetup } from "@/context/setup";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
@@ -27,7 +27,9 @@ interface TeamsTableProps {
   // Shows the "Teams (n)" toggle that collapses the table (Teams page only).
   collapsible?: boolean;
   // Campaigns per team id. When given (Fundraising), clicking a team opens its campaigns below the row.
-  campaignsByTeam?: Record<string, FundraisingCampaign[]>;
+  campaignsByTeam?: Record<string, Campaign[]>;
+  // Refetches the campaigns after a row action in an opened team changed one.
+  onCampaignsChanged?: () => void;
   // Teams to list; defaults to the sample teams (Fundraising). The Teams page passes the real ones.
   teams?: Team[];
   loading?: boolean;
@@ -39,7 +41,13 @@ function StopRowClick({ children }: { children: ReactNode }) {
   return <div onClick={(e) => e.stopPropagation()}>{children}</div>;
 }
 
-export default function TeamsTable({ collapsible = false, campaignsByTeam, teams = TEAMS, loading = false }: TeamsTableProps) {
+export default function TeamsTable({
+  collapsible = false,
+  campaignsByTeam,
+  onCampaignsChanged = () => {},
+  teams = TEAMS,
+  loading = false,
+}: TeamsTableProps) {
   const router = useRouter();
   const { savedSchool } = useSetup();
   const [query, setQuery] = useState("");
@@ -193,7 +201,7 @@ export default function TeamsTable({ collapsible = false, campaignsByTeam, teams
                 ? (t) =>
                     expandedId === t.id ? (
                       <div className="p-4 bg-black/30 border-b border-white/20">
-                        <CampaignsTable campaigns={campaignsByTeam[t.id] ?? []} />
+                        <CampaignsTable campaigns={campaignsByTeam[t.id] ?? []} onChanged={onCampaignsChanged} />
                       </div>
                     ) : null
                 : undefined

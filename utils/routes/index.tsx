@@ -23,6 +23,7 @@ export const routes = {
     commandCenter: "/command-center",
     engagement: "/engagement",
     createFundraisingCampaign: "/fundraising/create",
+    editFundraisingCampaign: (id: string) => `/fundraising/${id}/edit`,
     media: "/media",
     digitalCollectibles: "/digital-collectibles",
     teamShop: "/team-shop",
@@ -129,7 +130,15 @@ export const routes = {
     // Note: this lives under exposure/teams/:teamId, NOT under events/:id.
     exposureTeamPlayers: (teamId: string) => `fanhub/org/exposure/teams/${teamId}/players`,
     // Fundraising campaigns — a campaign belongs to one of the school's teams (teamId).
-    createCampaign: "fanhub/org/campaigns",
+    // GET lists them (?status=&teamId=&search=&page=&limit=, plus per-status counts); POST creates one.
+    campaigns: "fanhub/org/campaigns",
+    // One campaign: GET reads it, PATCH edits it (or launches / ends / reopens it via status),
+    // DELETE removes a draft for good and cancels anything else.
+    campaign: (id: string) => `fanhub/org/campaigns/${id}`,
+    // Organisation-wide fundraising totals (raised, donors, campaigns per status, last 30 days).
+    campaignStats: "fanhub/org/campaigns/stats",
+    // Every team of the org with its paid-donation totals (gross, net, count), teams that raised nothing included.
+    donationsByTeam: "fanhub/org/donations/by-team",
     // The org's teams, grouped by sport department. teams[].id is the schoolTeamId the roster calls take.
     orgDepartments: "fanhub/org/departments",
     // A team's staff (coaches): GET ?schoolTeamId= lists them, POST adds one.
