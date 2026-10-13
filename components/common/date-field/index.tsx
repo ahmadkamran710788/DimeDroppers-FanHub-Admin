@@ -15,6 +15,7 @@ interface DateFieldProps {
   error?: string;
   className?: string;
   labelClassName?: string;
+  disabled?: boolean;
 }
 
 // "2026-06-19" → "19 June, 2026" (design format), parsed as a local date.
@@ -37,6 +38,7 @@ export default function DateField({
   error,
   className,
   labelClassName,
+  disabled = false,
 }: DateFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -56,11 +58,12 @@ export default function DateField({
         {label}
       </label>
       <div
-        onClick={open}
+        onClick={disabled ? undefined : open}
         className={cn(
           "relative h-12 w-full px-4 py-3 rounded-[8px] bg-white border-2 border-[rgba(11,28,45,0.11)] cursor-pointer",
           "flex items-center justify-between gap-2 focus-within:border-steel-blue transition-colors",
-          error && "border-error focus-within:border-error"
+          error && "border-error focus-within:border-error",
+          disabled && "opacity-50 cursor-not-allowed"
         )}
       >
         <span className={cn("text-base font-medium truncate", value ? "text-midnight-navy" : "text-[rgba(11,28,45,0.4)]")}>
@@ -74,6 +77,7 @@ export default function DateField({
           type="date"
           value={value}
           min={min}
+          disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
           className="absolute inset-0 opacity-0 pointer-events-none"
         />

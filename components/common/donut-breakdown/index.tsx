@@ -16,13 +16,18 @@ interface DonutBreakdownProps {
   centerValue: string;
   centerLabel: string;
   slices: DonutSlice[];
-  actionLabel: string;
-  onAction: () => void;
+  // Full-width button under the legend; omitted when there is nothing to open.
+  actionLabel?: string;
+  onAction?: () => void;
+  // Shown in place of the legend when there are no slices.
+  emptyText?: string;
   className?: string;
 }
 
 // Donut built from a conic gradient, starting at 12 o'clock and running clockwise.
+// With no slices it is a plain grey ring.
 function donutGradient(slices: DonutSlice[]) {
+  if (slices.length === 0) return "rgba(255,255,255,0.1)";
   let start = 0;
   const stops = slices.map((s) => {
     const end = start + s.percent;
@@ -41,6 +46,7 @@ export default function DonutBreakdown({
   slices,
   actionLabel,
   onAction,
+  emptyText = "Nothing to show yet.",
   className,
 }: DonutBreakdownProps) {
   return (
@@ -56,17 +62,25 @@ export default function DonutBreakdown({
             <span className="text-base leading-6">{centerLabel}</span>
           </div>
         </div>
-        <ul className="flex flex-col gap-4">
-          {slices.map((s) => (
-            <li key={s.label} className="flex items-center gap-2 text-base leading-6 font-semibold text-white">
-              <span className="size-[18px] m-[3px] rounded-full shrink-0" style={{ background: s.color }} />
-              {`${s.label} - ${s.detail} (${s.percent}%)`}
-            </li>
-          ))}
-        </ul>
+        {slices.length === 0 ? (
+          <p className="text-center text-sm text-white/60">{emptyText}</p>
+        ) : (
+          <ul className="flex flex-col gap-4">
+            {slices.map((s) => (
+              <li key={s.label} className="flex items-center gap-2 text-base leading-6 font-semibold text-white">
+                <span className="size-[18px] m-[3px] rounded-full shrink-0" style={{ background: s.color }} />
+                {`${s.label} - ${s.detail} (${s.percent}%)`}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-      <hr className="border-white/10" />
-      <Button label={actionLabel} fullWidth onClick={onAction} />
+      {actionLabel && onAction && (
+        <>
+          <hr className="border-white/10" />
+          <Button label={actionLabel} fullWidth onClick={onAction} />
+        </>
+      )}
     </SectionCard>
   );
 }
