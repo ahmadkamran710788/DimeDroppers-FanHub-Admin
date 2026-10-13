@@ -20,6 +20,8 @@ export const routes = {
     teamDetails: (teamId: string) => `/teams/${teamId}`,
     buyTickets: "/buy-tickets",
     fundraising: "/fundraising",
+    communications: "/communications",
+    fanhubAi: "/fanhub-ai",
     commandCenter: "/command-center",
     engagement: "/engagement",
     createFundraisingCampaign: "/fundraising/create",
