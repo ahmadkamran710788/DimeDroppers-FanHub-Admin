@@ -4,7 +4,7 @@ import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { useSetup } from "@/context/setup";
 import { useAuth } from "@/context/auth";
-import { ClipboardList, Gem, LayoutDashboard, ShoppingBag, Sparkles, Star, User, Video } from "lucide-react";
+import { BotMessageSquare, ClipboardList, Gem, LayoutDashboard, MessagesSquare, ShoppingBag, Sparkles, Star, User, Video } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode } from "react";
 import { usePathname } from "next/navigation";
@@ -38,6 +38,8 @@ const NAV_SECTIONS: { title: string; items: NavLink[] }[] = [
       { icon: <ClipboardList className="size-6" strokeWidth={1.5} />, label: "Scorekeeper Requests", href: routes.ui.scorekeeperRequests },
       { icon: <Video className="size-6" strokeWidth={1.5} />, label: "Videographer Requests", href: routes.ui.videographerRequests },
       { icon: "/icons/icon-link.svg", label: "External Links", href: routes.ui.externalLinks },
+      { icon: <MessagesSquare className="size-6" strokeWidth={1.5} />, label: "Communications", href: routes.ui.communications },
+      { icon: <BotMessageSquare className="size-6" strokeWidth={1.5} />, label: "FanHub AI", href: routes.ui.fanhubAi },
     ],
   },
   {
