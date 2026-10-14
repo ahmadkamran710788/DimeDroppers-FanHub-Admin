@@ -1,55 +1,18 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { Dices, Gamepad2, ListChecks, SquareCheckBig, Trophy } from "lucide-react";
-import StatCard, { type Stat } from "@/components/common/stat-card";
+import { useState } from "react";
 import Tabs from "@/components/common/tabs";
-import {
-  ENGAGEMENT_CAMPAIGN_TYPES,
-  ENGAGEMENT_STATS,
-  PREDICTION_STATS,
-  PREDICTIONS,
-  POLLS,
-  VOTING_STATS,
-  CHALLENGES,
-  CHALLENGE_STATS,
-  QUESTS,
-  QUEST_STATS,
-  ARCADE_GAMES,
-  ARCADE_STATS,
-  type CampaignTypeId,
-} from "@/components/engagement/data";
+import CampaignTab from "@/components/engagement/campaign-tab";
+import { ARCADE_GAMES, ARCADE_STATS, QUEST_STATS, QUESTS } from "@/components/engagement/data";
+import OverviewTab from "@/components/engagement/overview-tab";
 import SettingsTable from "@/components/engagement/settings-table";
+import TabBody from "@/components/engagement/tab-body";
 
 const TABS = ["Overview", "Predictions", "Voting", "Challenges", "Quests", "Arcade", "Settings"] as const;
 type Tab = (typeof TABS)[number];
 
-const CAMPAIGN_ICON: Record<CampaignTypeId, ReactNode> = {
-  predictions: <Dices className="size-5" strokeWidth={1.75} />,
-  voting: <SquareCheckBig className="size-5" strokeWidth={1.75} />,
-  challenges: <ListChecks className="size-5" strokeWidth={1.75} />,
-  quests: <Trophy className="size-5" strokeWidth={1.75} />,
-  arcade: <Gamepad2 className="size-5" strokeWidth={1.75} />,
-};
-
-// Stat cards above a titled settings table — the layout every built tab shares.
-function TabBody({ stats, title, children }: { stats: Stat[]; title: string; children: ReactNode }) {
-  return (
-    <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-4 lg:gap-10">
-        {stats.map((stat) => (
-          <StatCard key={stat.label} {...stat} twoLineTitle />
-        ))}
-      </div>
-
-      <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[24px] bg-surface-06">
-        <h3 className="font-display font-extrabold text-[28px] uppercase text-white leading-none">{title}</h3>
-        {children}
-      </div>
-    </>
-  );
-}
-
+// Overview, Predictions, Voting and Challenges come from the engagement API; Quests and Arcade
+// are still sample data (no endpoint yet).
 export default function EngagementPage() {
   const [tab, setTab] = useState<Tab>("Overview");
 
@@ -67,21 +30,13 @@ export default function EngagementPage() {
       <Tabs tabs={TABS} active={tab} onChange={setTab} />
 
       {tab === "Overview" ? (
-        <TabBody stats={ENGAGEMENT_STATS} title="Campaign Types">
-          <SettingsTable key="overview" rows={ENGAGEMENT_CAMPAIGN_TYPES} icon={(row) => CAMPAIGN_ICON[row.id as CampaignTypeId]} />
-        </TabBody>
+        <OverviewTab />
       ) : tab === "Predictions" ? (
-        <TabBody stats={PREDICTION_STATS} title="Available Predictions">
-          <SettingsTable key="predictions" rows={PREDICTIONS} liveLabel="Activated" />
-        </TabBody>
+        <CampaignTab key="predictions" tab="predictions" />
       ) : tab === "Voting" ? (
-        <TabBody stats={VOTING_STATS} title="Available Voting">
-          <SettingsTable key="voting" rows={POLLS} liveLabel="Activated" />
-        </TabBody>
+        <CampaignTab key="voting" tab="voting" />
       ) : tab === "Challenges" ? (
-        <TabBody stats={CHALLENGE_STATS} title="Available Challenges">
-          <SettingsTable key="challenges" rows={CHALLENGES} liveLabel="Activated" />
-        </TabBody>
+        <CampaignTab key="challenges" tab="challenges" />
       ) : tab === "Quests" ? (
         <TabBody stats={QUEST_STATS} title="Available Quests">
           <SettingsTable key="quests" rows={QUESTS} liveLabel="Activated" />

@@ -9,6 +9,8 @@ interface InputProps {
   name: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  // Fires when the field loses focus, e.g. to save a value once the user is done typing.
+  onBlur?: () => void;
   placeholder?: string;
   icon?: ReactNode;
   error?: string;
@@ -31,6 +33,7 @@ export default function Input({
   name,
   value,
   onChange,
+  onBlur,
   placeholder,
   icon,
   error,
@@ -70,6 +73,7 @@ export default function Input({
           type={isPassword && showPassword ? "text" : type}
           value={value}
           onChange={onChange}
+          onBlur={onBlur}
           placeholder={placeholder}
           disabled={disabled}
           className={cn(

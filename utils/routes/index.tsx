@@ -141,6 +141,18 @@ export const routes = {
     campaignStats: "fanhub/org/campaigns/stats",
     // Every team of the org with its paid-donation totals (gross, net, count), teams that raised nothing included.
     donationsByTeam: "fanhub/org/donations/by-team",
+    // Engagement console (FANHUB_ORG_ENGAGEMENT_ADMIN.md): the five cards and the Campaign Types rows.
+    engagementOverview: "fanhub/org/engagement/overview",
+    // PATCH the switches on one type: PREDICTION, VOTING or CHALLENGE.
+    engagementType: (type: string) => `fanhub/org/engagement/types/${type}`,
+    // A tab's cards and the school's campaigns: GET ?search=&status=&page=&limit= (≤ 100).
+    engagementPredictions: "fanhub/org/engagement/predictions",
+    engagementVoting: "fanhub/org/engagement/voting",
+    engagementChallenges: "fanhub/org/engagement/challenges",
+    // PATCH one campaign's switches (multiplier, threshold, hide numbers) or its status.
+    predictionCampaign: (id: string) => `fanhub/org/prediction-campaigns/${id}`,
+    votingCampaign: (id: string) => `fanhub/org/voting-campaigns/${id}`,
+    challenge: (id: string) => `fanhub/org/challenges/${id}`,
     // The org's teams, grouped by sport department. teams[].id is the schoolTeamId the roster calls take.
     orgDepartments: "fanhub/org/departments",
     // A team's staff (coaches): GET ?schoolTeamId= lists them, POST adds one.
