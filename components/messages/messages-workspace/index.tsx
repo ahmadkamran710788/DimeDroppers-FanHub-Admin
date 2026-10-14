@@ -16,8 +16,9 @@ import type { Team } from "@/components/teams/data";
 import { useOrgTeams } from "@/components/teams/use-org-teams";
 import { useSetup } from "@/context/setup";
 
+// Clickable team rows (crest, two lines of text): native <button>s, not action buttons.
 const ROW = "cursor-pointer w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-left transition-colors";
-const ICON_BUTTON = "cursor-pointer size-9 shrink-0 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors";
+const ICON_BUTTON = "cursor-pointer size-9 bg-transparent hover:bg-white/10";
 
 // "chat" keeps the conversation it was opened with; the polled list's newer copy wins when there is one.
 type View =
@@ -114,14 +115,19 @@ export default function MessagesWorkspace({ conversations, loading, onRefresh, o
       {/* Title bar */}
       <div className="h-20 shrink-0 flex items-center gap-3 px-5 border-b border-white/10">
         {back && (
-          <button type="button" onClick={back} aria-label="Back" className={ICON_BUTTON}>
-            <ArrowLeft className="size-5" strokeWidth={2} />
-          </button>
+          <Button
+            size="icon"
+            icon={<ArrowLeft className="size-5" strokeWidth={2} />}
+            onClick={back}
+            aria-label="Back"
+            className={ICON_BUTTON}
+          />
         )}
         <h2 className="flex-1 min-w-0 truncate font-display font-black text-2xl uppercase text-white leading-none">{heading}</h2>
         {(view.kind === "list" || view.kind === "chat") && (
-          <button
-            type="button"
+          <Button
+            size="icon"
+            icon={<Plus className="size-5" strokeWidth={2} />}
             onClick={() => {
               setPendingChatId(null);
               setView({ kind: "team" });
@@ -129,9 +135,7 @@ export default function MessagesWorkspace({ conversations, loading, onRefresh, o
             aria-label="New message"
             title="New message"
             className={ICON_BUTTON}
-          >
-            <Plus className="size-5" strokeWidth={2} />
-          </button>
+          />
         )}
       </div>
 

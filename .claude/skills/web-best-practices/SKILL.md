@@ -151,7 +151,7 @@ These are the conventional shared primitives this stack relies on. **They may no
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `Button` | `common/button` | All buttons — supports `primary`, `secondary`, `outline`, `disabled` variants + `isLoading` |
+| `Button` | `common/button` | All buttons, icon-only ones included — variants, sizes and props in §5 |
 | `Input` | `common/input` | Text inputs — supports `error`, `startIcon`, `search` props |
 | `Select` | `common/select` | Dropdowns — supports `searchable`, `fullWidth`, `error`, `startIcon` |
 | `SearchInput` | `common/search-input` | Debounced search with live API calls |
@@ -256,26 +256,53 @@ Multiple form fields are grouped in `<div className="space-y-5">`.
 
 ## 5. Button Component — Always Use It
 
-Never write raw `<button>` tags in feature components (only in `common/` internals). Always use `<Button>` from `common/button`. If `common/button` doesn't exist yet in this project, create it first (to the contract in §4, with `variant` and `isLoading` support), then use it everywhere.
+Never write raw `<button>` tags in feature components (only in `common/` internals). Always use `<Button>` from `common/button` — including small toolbar pills, text links and icon-only buttons. Code review flags every raw `<button>`.
+
+### The `Button` API
+
+| Prop | Values | Notes |
+|---|---|---|
+| `label` | string | The text. Required unless the button is icon-only |
+| `variant` | `cta` (gradient), `primary`, `ghost` (default), `secondary`, `danger`, `outline`, `text` | `text` = bare label/icon, no background |
+| `size` | `md` (default, 48px), `sm` (32px pill), `icon` (40px round, icon only) | Resize an icon button with `className` (e.g. `size-9`) |
+| `icon`, `iconPosition` | ReactNode, `start` (default) / `end` | Always a `lucide-react` icon |
+| `children` | ReactNode | Extra content after the label, e.g. an unread badge |
+| `ref` | `Ref<HTMLButtonElement>` | E.g. to anchor a popover under the button |
+| `disabled`, `type`, `fullWidth`, `className`, `onClick` | | `className` is merged with `cn()` and wins |
+| any native attribute | `aria-*`, `title`, … | Passed through to the `<button>` |
+
+An icon-only button has no `label`, so TypeScript requires `icon` and `aria-label` for it.
 
 ```tsx
 import Button from '@/components/common/button';
 
-// Primary action
-<Button onClick={handleSubmit} isLoading={isLoading} className="w-full">
-  Save
-</Button>
+<Button variant="cta" label="Save" onClick={handleSubmit} disabled={saving} />
+<Button variant="danger" label="Delete" onClick={handleDelete} />
+<Button variant="secondary" label="Cancel" onClick={close} fullWidth />
 
-// Destructive action
-<Button variant="secondary" onClick={handleDelete}>
-  Delete
-</Button>
+// Compact pill and text link
+<Button size="sm" label="Load older messages" onClick={loadOlder} />
+<Button variant="text" size="sm" label="Select" onClick={startSelecting} />
+<Button variant="text" size="sm" label="Open" icon={<ChevronRight className="size-4" />} iconPosition="end" onClick={open} />
 
-// Disabled state (use variant, not the disabled attribute alone)
-<Button variant="disabled" disabled>
-  Unavailable
+// Icon-only, with a badge and a ref
+<Button
+  ref={anchorRef}
+  size="icon"
+  icon={<MessagesSquare className="size-6" />}
+  aria-label="Messages"
+  onClick={toggle}
+  className="relative bg-transparent hover:bg-white/10"
+>
+  {unread > 0 && <span className="absolute -top-1 -right-1 …">{unread}</span>}
 </Button>
 ```
+
+### When `Button` doesn't fit
+
+Don't fall back to a raw `<button>`. Extend `Button` instead: add an **optional** prop or a new `variant` / `size` whose default leaves every existing button exactly as it was (same class string for `md`), then use it. Check a few existing buttons in the browser afterwards (e.g. a `cta` and a `secondary` one) to confirm nothing else changed.
+
+The one accepted exception is a **whole clickable card or list row** (avatar, several lines of text, badges — e.g. a chat in a conversation list, a team in a picker). It may stay a native `<button type="button">`; add a one-line comment saying it's a clickable row, not an action button, so a reviewer sees it was deliberate.
 
 ---
 
@@ -296,3 +323,4 @@ import Button from '@/components/common/button';
 - **Icons** always come from `lucide-react` — not emoji, not custom SVG, not other icon libraries
 - **Loading states** always use `<Loader />` from `common/loader` — never custom spinners (create `common/loader` if it doesn't exist yet)
 - **Path alias** — always use `@/` not relative imports that climb more than one directory
+- **Shared client state** — when several places need the same live data (e.g. the header and a page), put it in a React context under `context/<name>/index.tsx` (`XProvider` + `useX()`), mounted once in the layout that covers both. The project has no store library (Redux, Zustand); don't add one for this — `context/auth`, `context/setup`, `context/team-shop` and `context/org-chat` follow the same pattern. A context also stops two components from polling the same endpoint twice.

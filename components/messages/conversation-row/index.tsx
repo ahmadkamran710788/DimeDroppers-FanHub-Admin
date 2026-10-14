@@ -15,6 +15,7 @@ export default function ConversationRow({ conversation: c, onClick, className }:
   const unread = c.unreadCount > 0;
   const at = c.lastMessageAt ?? c.createdAt;
   return (
+    // A whole clickable row (avatar, text, badges), not an action button, so it stays a native <button>.
     <button
       type="button"
       onClick={onClick}

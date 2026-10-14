@@ -9,6 +9,7 @@ import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { clearFanhubSession } from "@/utils/auth/session";
 import { useAuth } from "@/context/auth";
+import Button from "@/components/common/button";
 import MessagesPopover from "@/components/messages/messages-popover";
 import { useOrgChatContext } from "@/context/org-chat";
 
@@ -123,23 +124,23 @@ export default function Header({ className, title = "Setup Wizard", onMenuClick 
 
         {/* Right side: messages, bell, avatar */}
         <div className="flex items-center gap-6">
-          <button
+          <Button
             ref={messagesRef}
-            type="button"
+            size="icon"
+            icon={<MessagesSquare className="size-6" strokeWidth={1.5} />}
             onClick={() => setMessagesOpen((v) => !v)}
             aria-label={chat.unreadTotal > 0 ? `Messages, ${chat.unreadTotal} unread` : "Messages"}
             aria-haspopup="dialog"
             aria-expanded={messagesOpen}
-            className="cursor-pointer relative size-10 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors"
+            className="cursor-pointer relative bg-transparent hover:bg-white/10"
           >
-            <MessagesSquare className="size-6" strokeWidth={1.5} />
             {/* Fan messages the org hasn't read yet, across all conversations. */}
             {chat.unreadTotal > 0 && (
               <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-error text-white text-[11px] font-bold leading-none flex items-center justify-center">
                 {chat.unreadTotal > 99 ? "99+" : chat.unreadTotal}
               </span>
             )}
-          </button>
+          </Button>
           <button type="button" className="w-6 h-6 flex items-center justify-center relative" aria-label="Notifications">
             <Image src="/icons/icon-bell.svg" alt="" width={24} height={24} />
           </button>

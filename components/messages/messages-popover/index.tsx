@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { ChevronRight } from "lucide-react";
+import Button from "@/components/common/button";
 import Loader from "@/components/common/loader";
 import ConversationRow from "@/components/messages/conversation-row";
 import type { OrgConversation } from "@/components/messages/types";
@@ -77,14 +78,15 @@ export default function MessagesPopover({ anchorRef, conversations, loading, onO
         )}
       </div>
 
-      <button
-        type="button"
+      <Button
+        variant="text"
+        size="sm"
+        label="Open Communications"
+        icon={<ChevronRight className="size-4" />}
+        iconPosition="end"
         onClick={onOpenAll}
-        className="cursor-pointer flex items-center justify-center gap-1 px-4 py-3 border-t border-white/10 text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors"
-      >
-        Open Communications
-        <ChevronRight className="size-4" />
-      </button>
+        className="cursor-pointer w-full gap-1 px-4 py-3 rounded-none border-t border-white/10 text-sm hover:bg-white/5"
+      />
     </div>,
     document.body
   );
