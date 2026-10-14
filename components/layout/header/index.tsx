@@ -3,14 +3,15 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { LogOut, Menu, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { LogOut, Menu, MessagesSquare, User } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { clearFanhubSession } from "@/utils/auth/session";
 import { useAuth } from "@/context/auth";
 import Button from "@/components/common/button";
-import MessagesPanel from "@/components/messages/messages-panel";
-import { useOrgChat } from "@/components/messages/use-org-chat";
+import MessagesPopover from "@/components/messages/messages-popover";
+import { useOrgChatContext } from "@/context/org-chat";
 
 interface HeaderProps {
   className?: string;
@@ -21,9 +22,11 @@ interface HeaderProps {
 export default function Header({ className, title = "Setup Wizard", onMenuClick }: HeaderProps) {
   const { org, clearAuth } = useAuth();
   const [open, setOpen] = useState(false);
+  const router = useRouter();
   const [messagesOpen, setMessagesOpen] = useState(false);
-  // Polled here, not in the panel, so the unread badge stays current while the panel is closed.
-  const chat = useOrgChat();
+  // Shared with the Communications page (context/org-chat), so the badge stays current while the box is closed.
+  const chat = useOrgChatContext();
+  const messagesRef = useRef<HTMLButtonElement>(null);
   const avatarRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownStyle, setDropdownStyle] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
@@ -122,14 +125,14 @@ export default function Header({ className, title = "Setup Wizard", onMenuClick 
         {/* Right side: messages, bell, avatar */}
         <div className="flex items-center gap-6">
           <Button
-            variant="ghost"
-            size="sm"
-            label="Messages"
-            onClick={() => setMessagesOpen(true)}
+            ref={messagesRef}
+            size="icon"
+            icon={<MessagesSquare className="size-6" strokeWidth={1.5} />}
+            onClick={() => setMessagesOpen((v) => !v)}
             aria-label={chat.unreadTotal > 0 ? `Messages, ${chat.unreadTotal} unread` : "Messages"}
             aria-haspopup="dialog"
             aria-expanded={messagesOpen}
-            className="cursor-pointer relative h-10 text-sm bg-transparent hover:bg-white/10"
+            className="cursor-pointer relative bg-transparent hover:bg-white/10"
           >
             {/* Fan messages the org hasn't read yet, across all conversations. */}
             {chat.unreadTotal > 0 && (
@@ -167,11 +170,18 @@ export default function Header({ className, title = "Setup Wizard", onMenuClick 
 
       {dropdown}
       {messagesOpen && (
-        <MessagesPanel
+        <MessagesPopover
+          anchorRef={messagesRef}
           conversations={chat.conversations}
           loading={chat.loading}
-          onRefresh={chat.refresh}
-          onUpsert={chat.upsert}
+          onOpenChat={(id) => {
+            setMessagesOpen(false);
+            router.push(routes.ui.communicationsChat(id));
+          }}
+          onOpenAll={() => {
+            setMessagesOpen(false);
+            router.push(routes.ui.communications);
+          }}
           onClose={() => setMessagesOpen(false)}
         />
       )}
