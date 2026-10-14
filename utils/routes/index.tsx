@@ -21,6 +21,8 @@ export const routes = {
     buyTickets: "/buy-tickets",
     fundraising: "/fundraising",
     communications: "/communications",
+    // Opens one conversation on the Communications page (the header messages box links here).
+    communicationsChat: (conversationId: string) => `/communications?chat=${conversationId}`,
     fanhubAi: "/fanhub-ai",
     commandCenter: "/command-center",
     engagement: "/engagement",

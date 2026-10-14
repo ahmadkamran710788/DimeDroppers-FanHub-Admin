@@ -1,5 +1,6 @@
 import CommunicationsPage from "@/components/communications";
 
-export default function Page() {
-  return <CommunicationsPage />;
+export default async function Page({ searchParams }: { searchParams: Promise<{ chat?: string }> }) {
+  const { chat } = await searchParams;
+  return <CommunicationsPage chatId={chat} />;
 }
