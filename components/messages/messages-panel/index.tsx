@@ -4,49 +4,51 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { ArrowLeft, ChevronRight, Plus, X } from "lucide-react";
-import Tabs from "@/components/common/tabs";
+import Button from "@/components/common/button";
+import Loader from "@/components/common/loader";
+import { fetchConversation, startDirect } from "@/components/messages/chat-api";
 import ChatBox from "@/components/messages/chat-box";
 import ContactAvatar from "@/components/messages/contact-avatar";
-import { GROUP_LABEL, type ContactGroup, type Conversation } from "@/components/messages/types";
-import { ATHLETES, FOLLOWERS, STAFF, TEAMS, type Team } from "@/components/teams/data";
+import GroupForm from "@/components/messages/group-form";
+import { conversationName, formatListTime, previewText } from "@/components/messages/helpers";
+import MemberPicker from "@/components/messages/member-picker";
+import type { ChatAudience, MemberTab, OrgConversation, TeamMember } from "@/components/messages/types";
+import type { Team } from "@/components/teams/data";
+import { useOrgTeams } from "@/components/teams/use-org-teams";
 import { useSetup } from "@/context/setup";
-
-const GROUPS = ["Players", "Followers", "Staff"] as const satisfies readonly ContactGroup[];
-
-interface Contact {
-  id: string;
-  name: string;
-  detail: string;
-  avatar?: string;
-}
-
-// Everyone in a team you can message, per tab (sample data until roster APIs exist).
-const CONTACTS: Record<ContactGroup, Contact[]> = {
-  Players: ATHLETES.map((a) => ({ id: a.id, name: a.name, detail: `#${a.jersey} · ${a.position}`, avatar: a.avatar })),
-  Followers: FOLLOWERS.map((f) => ({ id: f.id, name: f.name, detail: f.type })),
-  Staff: STAFF.map((s) => ({ id: s.id, name: s.name, detail: s.role })),
-};
+import { cn } from "@/utils/cn";
 
 const ROW = "cursor-pointer w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-left transition-colors";
 const ICON_BUTTON = "cursor-pointer size-9 shrink-0 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors";
 
-// "list" = the chats, "new" = choose a team and then someone in it, otherwise a chat id.
-type View = "list" | "new" | { chatId: string };
+// "chat" keeps the conversation it was opened with; the polled list's newer copy wins when there is one.
+type View =
+  | { kind: "list" }
+  | { kind: "team" }
+  | { kind: "members"; team: Team }
+  | { kind: "group"; team: Team; audience: ChatAudience }
+  | { kind: "chat"; conversation: OrgConversation };
 
 interface MessagesPanelProps {
-  conversations: Conversation[];
-  onConversationsChange: (next: Conversation[]) => void;
+  // The org's conversations across all teams, polled by the header.
+  conversations: OrgConversation[];
+  loading: boolean;
+  // Refetches the conversations (after a send or a read receipt).
+  onRefresh: () => void;
+  // Puts a just-created or just-fetched conversation in the list.
+  onUpsert: (conversation: OrgConversation) => void;
   onClose: () => void;
 }
 
-// Right-side messages drawer. The first time it lists the teams; picking a team shows its
-// Players / Followers / Staff, and picking someone opens the chat. After that it opens on the
-// chats list, and "+" starts a new chat.
-export default function MessagesPanel({ conversations, onConversationsChange, onClose }: MessagesPanelProps) {
+// Right-side messages drawer. It opens on the chats list; "+" picks a team, then someone on its
+// Players / Parents / Staff / Followers tabs for a direct chat, or a tab / chosen people for a group.
+export default function MessagesPanel({ conversations, loading, onRefresh, onUpsert, onClose }: MessagesPanelProps) {
   const { savedSchool } = useSetup();
-  const [view, setView] = useState<View>(conversations.length > 0 ? "list" : "new");
-  const [team, setTeam] = useState<Team | null>(null);
-  const [group, setGroup] = useState<ContactGroup>("Players");
+  const { teams, loading: teamsLoading } = useOrgTeams();
+  const [view, setView] = useState<View>(loading || conversations.length > 0 ? { kind: "list" } : { kind: "team" });
+  const [tab, setTab] = useState<MemberTab>("players");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [openingFanId, setOpeningFanId] = useState<string | null>(null);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -56,45 +58,50 @@ export default function MessagesPanel({ conversations, onConversationsChange, on
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  const startNew = () => {
-    setTeam(null);
-    setGroup("Players");
-    setView("new");
+  const pickTeam = (team: Team) => {
+    setTab("players");
+    setSelected([]);
+    setView({ kind: "members", team });
   };
 
-  const openChat = (contact: Contact) => {
-    if (!team) return;
-    const id = `${team.id}-${group}-${contact.id}`;
-    // Picking someone you already chat with reopens that chat instead of starting a second one.
-    if (!conversations.some((c) => c.id === id)) {
-      onConversationsChange([
-        {
-          id,
-          teamId: team.id,
-          teamName: team.name,
-          group,
-          contactId: contact.id,
-          contactName: contact.name,
-          contactAvatar: contact.avatar,
-          messages: [],
-        },
-        ...conversations,
-      ]);
+  const openChat = (conversation: OrgConversation) => {
+    onUpsert(conversation);
+    setView({ kind: "chat", conversation });
+  };
+
+  // Reopens the existing direct chat with this fan, or starts one (idempotent per team + fan).
+  const openDirect = async (team: Team, member: TeamMember) => {
+    const known = conversations.find((c) => c.id === member.directConversationId);
+    if (known) {
+      setView({ kind: "chat", conversation: known });
+      return;
     }
-    setView({ chatId: id });
+    setOpeningFanId(member.fan.id);
+    const conversation = member.directConversationId
+      ? await fetchConversation(member.directConversationId)
+      : await startDirect(team.id, member.fan.id);
+    setOpeningFanId(null);
+    if (conversation) openChat(conversation);
   };
 
-  const chat = typeof view === "object" ? conversations.find((c) => c.id === view.chatId) : undefined;
-  const step = view === "new" ? (team ? "contact" : "team") : null;
+  const chat = view.kind === "chat" ? (conversations.find((c) => c.id === view.conversation.id) ?? view.conversation) : null;
 
-  // Back from the teams list returns to the chats list, if there is one.
   const back =
-    step === "contact"
-      ? () => setTeam(null)
-      : step === "team" && conversations.length > 0
-        ? () => setView("list")
-        : null;
-  const heading = step === "team" ? "Choose a Team" : step === "contact" && team ? team.name : "Messages";
+    view.kind === "team"
+      ? () => setView({ kind: "list" })
+      : view.kind === "members"
+        ? () => setView({ kind: "team" })
+        : view.kind === "group"
+          ? () => setView({ kind: "members", team: view.team })
+          : null;
+  const heading =
+    view.kind === "team"
+      ? "Choose a Team"
+      : view.kind === "members"
+        ? view.team.name
+        : view.kind === "group"
+          ? "New Group"
+          : "Messages";
 
   const crest = savedSchool?.logoUrl || "/images/preview-crest.png";
 
@@ -114,8 +121,14 @@ export default function MessagesPanel({ conversations, onConversationsChange, on
             </button>
           )}
           <h2 className="flex-1 min-w-0 truncate font-display font-black text-2xl uppercase text-white leading-none">{heading}</h2>
-          {view !== "new" && (
-            <button type="button" onClick={startNew} aria-label="New message" title="New message" className={ICON_BUTTON}>
+          {(view.kind === "list" || view.kind === "chat") && (
+            <button
+              type="button"
+              onClick={() => setView({ kind: "team" })}
+              aria-label="New message"
+              title="New message"
+              className={ICON_BUTTON}
+            >
               <Plus className="size-5" strokeWidth={2} />
             </button>
           )}
@@ -125,80 +138,98 @@ export default function MessagesPanel({ conversations, onConversationsChange, on
         </div>
 
         {chat ? (
-          <ChatBox
-            conversation={chat}
-            onBack={() => setView("list")}
-            onSend={(text) =>
-              onConversationsChange(
-                conversations.map((c) =>
-                  c.id === chat.id
-                    ? { ...c, messages: [...c.messages, { id: `msg-${Date.now()}`, text, sentAt: new Date().toISOString() }] }
-                    : c
-                )
-              )
-            }
+          <ChatBox key={chat.id} conversation={chat} onBack={() => setView({ kind: "list" })} onActivity={onRefresh} />
+        ) : view.kind === "members" ? (
+          <MemberPicker
+            key={view.team.id}
+            team={view.team}
+            tab={tab}
+            onTabChange={setTab}
+            selected={selected}
+            onSelectedChange={setSelected}
+            openingFanId={openingFanId}
+            onOpenDirect={(member) => void openDirect(view.team, member)}
+            onNewGroup={(audience) => setView({ kind: "group", team: view.team, audience })}
+          />
+        ) : view.kind === "group" ? (
+          <GroupForm
+            team={view.team}
+            initialAudience={view.audience}
+            selected={selected}
+            onCreated={(conversation) => {
+              setSelected([]);
+              openChat(conversation);
+            }}
           />
         ) : (
           <div className="flex-1 min-h-0 overflow-y-auto p-5 flex flex-col gap-3">
-            {view === "list" &&
-              conversations.map((c) => {
-                const last = c.messages[c.messages.length - 1];
-                return (
-                  <button key={c.id} type="button" onClick={() => setView({ chatId: c.id })} className={ROW}>
-                    <ContactAvatar name={c.contactName} src={c.contactAvatar} />
-                    <span className="flex-1 flex flex-col min-w-0">
-                      <span className="text-sm font-semibold text-white truncate">{c.contactName}</span>
-                      <span className="text-xs text-white/50 truncate">
-                        {last ? last.text : `${c.teamName} · ${GROUP_LABEL[c.group]}`}
+            {view.kind === "list" &&
+              (loading ? (
+                <Loader />
+              ) : conversations.length === 0 ? (
+                <div className="m-auto flex flex-col items-center gap-4 text-center">
+                  <p className="text-sm text-white/50">No conversations yet. Message a player, parent, coach or follower of one of your teams.</p>
+                  <Button variant="cta" label="New Message" onClick={() => setView({ kind: "team" })} />
+                </div>
+              ) : (
+                conversations.map((c) => {
+                  const unread = c.unreadCount > 0;
+                  const at = c.lastMessageAt ?? c.createdAt;
+                  return (
+                    <button key={c.id} type="button" onClick={() => setView({ kind: "chat", conversation: c })} className={ROW}>
+                      <ContactAvatar
+                        name={conversationName(c)}
+                        src={c.type === "DIRECT" ? c.participants[0]?.fan.avatarUrl : null}
+                        group={c.type === "GROUP"}
+                      />
+                      <span className="flex-1 flex flex-col min-w-0">
+                        <span className="flex items-center gap-2">
+                          <span className="flex-1 min-w-0 text-sm font-semibold text-white truncate">{conversationName(c)}</span>
+                          <span className="shrink-0 text-[11px] text-white/40">{formatListTime(at)}</span>
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <span className={cn("flex-1 min-w-0 text-xs truncate", unread ? "font-medium text-white" : "text-white/50")}>
+                            {previewText(c)}
+                          </span>
+                          {unread && (
+                            <span className="shrink-0 min-w-5 h-5 px-1 rounded-full bg-error text-white text-[11px] font-bold leading-none flex items-center justify-center">
+                              {c.unreadCount}
+                            </span>
+                          )}
+                        </span>
+                        {c.team && <span className="text-[11px] text-white/40 truncate">{c.team.name}</span>}
                       </span>
-                    </span>
-                    <ChevronRight className="size-4 text-white/50" />
-                  </button>
-                );
-              })}
-
-            {step === "team" &&
-              TEAMS.map((t) => (
-                <button key={t.id} type="button" onClick={() => setTeam(t)} className={ROW}>
-                  <Image
-                    src={crest}
-                    alt=""
-                    width={40}
-                    height={40}
-                    // The school logo may be an uploaded remote URL with no configured image host.
-                    unoptimized={crest.startsWith("http")}
-                    className="size-10 shrink-0 rounded-full object-cover bg-black/40 p-0.5 border-2"
-                    style={{ borderColor: t.ring }}
-                  />
-                  <span className="flex-1 flex flex-col min-w-0">
-                    <span className="text-sm font-semibold text-white truncate">{t.name}</span>
-                    <span className="text-xs text-white/50 truncate">{`${t.sport} · ${t.level}`}</span>
-                  </span>
-                  <ChevronRight className="size-4 text-white/50" />
-                </button>
+                    </button>
+                  );
+                })
               ))}
 
-            {step === "contact" && (
-              <>
-                <Tabs
-                  tabs={GROUPS}
-                  active={group}
-                  onChange={setGroup}
-                  counts={{ Players: CONTACTS.Players.length, Followers: CONTACTS.Followers.length, Staff: CONTACTS.Staff.length }}
-                  className="mb-1"
-                />
-                {CONTACTS[group].map((c) => (
-                  <button key={c.id} type="button" onClick={() => openChat(c)} className={ROW}>
-                    <ContactAvatar name={c.name} src={c.avatar} />
+            {view.kind === "team" &&
+              (teamsLoading ? (
+                <Loader />
+              ) : teams.length === 0 ? (
+                <p className="py-12 text-center text-sm text-white/50">No teams yet. Add a team to message its people.</p>
+              ) : (
+                teams.map((t) => (
+                  <button key={t.id} type="button" onClick={() => pickTeam(t)} className={ROW}>
+                    <Image
+                      src={crest}
+                      alt=""
+                      width={40}
+                      height={40}
+                      // The school logo may be an uploaded remote URL with no configured image host.
+                      unoptimized={crest.startsWith("http")}
+                      className="size-10 shrink-0 rounded-full object-cover bg-black/40 p-0.5 border-2"
+                      style={{ borderColor: t.ring }}
+                    />
                     <span className="flex-1 flex flex-col min-w-0">
-                      <span className="text-sm font-semibold text-white truncate">{c.name}</span>
-                      <span className="text-xs text-white/50 truncate">{c.detail}</span>
+                      <span className="text-sm font-semibold text-white truncate">{t.name}</span>
+                      <span className="text-xs text-white/50 truncate">{`${t.sport} · ${t.level}`}</span>
                     </span>
                     <ChevronRight className="size-4 text-white/50" />
                   </button>
-                ))}
-              </>
-            )}
+                ))
+              ))}
           </div>
         )}
       </aside>
