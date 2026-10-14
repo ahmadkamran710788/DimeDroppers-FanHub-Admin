@@ -62,6 +62,10 @@ export interface EffectiveEngagement {
   minParticipationThreshold: number | null;
 }
 
+// What fans see for a campaign right now, worked out by the API from the switch and the time window.
+// OPEN / UPCOMING / CLOSED for all; RESOLVED / CANCELLED for predictions and votes; OFF for challenges.
+export type EngagementDisplayStatus = "OPEN" | "UPCOMING" | "CLOSED" | "RESOLVED" | "CANCELLED" | "OFF";
+
 // The fields every tab's campaign rows share.
 interface EngagementCampaignBase {
   id: string;
@@ -71,14 +75,14 @@ interface EngagementCampaignBase {
   hideActualNumbers: boolean;
   createdAt: string;
   effective: EffectiveEngagement;
+  // The row's status text ("Open", "Closed"…); `status` still drives the on/off switch.
+  displayStatus: EngagementDisplayStatus;
+  displayStatusLabel: string;
 }
 
 export interface PredictionCampaign extends EngagementCampaignBase {
   status: "ACTIVE" | "ENDED" | "RESOLVED" | "CANCELLED";
   minParticipationThreshold: number | null;
-  // Open right now; an ACTIVE campaign whose window closed has hasEnded: true.
-  isActive: boolean;
-  hasEnded: boolean;
   entriesCount: number;
   boostedEntriesCount: number;
 }
@@ -86,8 +90,6 @@ export interface PredictionCampaign extends EngagementCampaignBase {
 export interface VotingCampaign extends EngagementCampaignBase {
   status: "ACTIVE" | "ENDED" | "RESOLVED" | "CANCELLED";
   minParticipationThreshold: number | null;
-  isActive: boolean;
-  hasEnded: boolean;
   votesCount: number;
   boostedVotesCount: number;
 }

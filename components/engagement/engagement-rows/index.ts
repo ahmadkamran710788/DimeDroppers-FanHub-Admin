@@ -11,6 +11,7 @@ import type {
   EngagementType,
   EngagementTypePatch,
   EngagementTypeRow,
+  EngagementDisplayStatus,
   PredictionCampaign,
   PredictionStats,
   VotingCampaign,
@@ -32,6 +33,16 @@ const VISIBILITY: Record<EngagementType, { label: string; hint: string; inverted
 };
 
 const NO_THRESHOLD = "Challenges do not require participation threshold";
+
+// Badge colour per display status: open green, upcoming blue, cancelled red, the rest grey.
+const STATUS_COLOR: Record<EngagementDisplayStatus, string> = {
+  OPEN: "bg-success",
+  UPCOMING: "bg-steel-blue",
+  CLOSED: "bg-white/30",
+  RESOLVED: "bg-white/30",
+  CANCELLED: "bg-error/70",
+  OFF: "bg-white/30",
+};
 
 const TINTS = ["rgba(101,193,98,0.5)", "rgba(99,139,254,0.5)", "rgba(157,98,193,0.5)", "rgba(184,184,184,0.5)", "rgba(184,184,184,0.5)"];
 
@@ -138,6 +149,7 @@ export function campaignRow(tab: EngagementTab, c: TabCampaign): EngagementSetti
     multiplier: c.multiplierEnabled,
     // The row allows boosts but its type doesn't, so fans don't get them.
     multiplierNote: c.multiplierEnabled && !c.effective.multiplierAllowed ? "Off for the whole type" : undefined,
+    statusBadge: { label: c.displayStatusLabel, color: STATUS_COLOR[c.displayStatus] ?? "bg-white/30" },
     visibilityLabel: visibility.label,
     visibilityHint: visibility.hint,
     visibility: visibility.inverted ? !c.hideActualNumbers : c.hideActualNumbers,
@@ -151,7 +163,8 @@ export function campaignRow(tab: EngagementTab, c: TabCampaign): EngagementSetti
       description: [ch.description, `${count(ch.startedCount)} started, ${completed} completed.`].filter(Boolean).join(" "),
       threshold: null,
       thresholdNote: NO_THRESHOLD,
-      ...(ch.status === "ENDED" && { statusLocked: true, statusNote: "Ended" }),
+      // An ended challenge can't be switched back on (the toggle only takes ACTIVE / INACTIVE).
+      statusLocked: ch.status === "ENDED",
     };
   }
 
@@ -165,14 +178,8 @@ export function campaignRow(tab: EngagementTab, c: TabCampaign): EngagementSetti
     ...base,
     description: [pv.description, `${count(entries)} ${noun} (${count(boosted)} boosted).`].filter(Boolean).join(" "),
     threshold: pv.minParticipationThreshold,
-    ...(pv.status === "RESOLVED" || pv.status === "CANCELLED"
-      ? { statusLocked: true, statusNote: pv.status === "RESOLVED" ? "Resolved" : "Cancelled" }
-      : pv.status === "ENDED"
-        ? { statusNote: "Ended" }
-        : pv.hasEnded
-          ? // A game-day campaign whose window closed before a job flipped it; fans see it as ended.
-            { statusNote: "Window closed" }
-          : {}),
+    // The API refuses any change to a resolved or cancelled prediction / vote.
+    statusLocked: pv.status === "RESOLVED" || pv.status === "CANCELLED",
   };
 }
 
