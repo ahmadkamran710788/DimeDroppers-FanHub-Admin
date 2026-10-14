@@ -105,18 +105,22 @@ export default function MemberPicker({
           aria-label="Search members"
         />
         <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
+          <Button
+            variant="text"
+            size="sm"
+            label={`Message all ${TAB_LABEL[tab]}`}
+            icon={<Megaphone className="size-4" strokeWidth={2} />}
             onClick={() => onNewGroup(TAB_AUDIENCE[tab])}
             disabled={loading || tabCount === 0}
             className={TEXT_BUTTON}
-          >
-            <Megaphone className="size-4" strokeWidth={2} />
-            {`Message all ${TAB_LABEL[tab]}`}
-          </button>
-          <button type="button" onClick={selecting ? stopSelecting : () => setSelecting(true)} className={TEXT_BUTTON}>
-            {selecting ? "Cancel" : "Select"}
-          </button>
+          />
+          <Button
+            variant="text"
+            size="sm"
+            label={selecting ? "Cancel" : "Select"}
+            onClick={selecting ? stopSelecting : () => setSelecting(true)}
+            className={TEXT_BUTTON}
+          />
         </div>
       </div>
 

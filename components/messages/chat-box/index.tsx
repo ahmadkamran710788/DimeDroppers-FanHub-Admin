@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ArrowLeft, Paperclip, SendHorizontal } from "lucide-react";
+import Button from "@/components/common/button";
 import Loader from "@/components/common/loader";
 import { fetchMessages, markRead, MESSAGES_PAGE_SIZE, sendMessage } from "@/components/messages/chat-api";
 import ContactAvatar from "@/components/messages/contact-avatar";
@@ -210,14 +211,13 @@ export default function ChatBox({ conversation, onBack, onActivity }: ChatBoxPro
         ) : (
           <>
             {hasOlder && (
-              <button
-                type="button"
+              <Button
+                size="sm"
+                label={loadingOlder ? "Loading…" : "Load older messages"}
                 onClick={() => void loadOlder()}
                 disabled={loadingOlder}
-                className="cursor-pointer self-center px-3 py-1.5 rounded-full text-xs font-medium text-white/70 bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-50"
-              >
-                {loadingOlder ? "Loading…" : "Load older messages"}
-              </button>
+                className="cursor-pointer self-center text-white/70 bg-white/5 hover:bg-white/10"
+              />
             )}
             {messages.map((m) =>
               m.senderIsOrg ? (
