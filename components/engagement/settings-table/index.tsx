@@ -7,6 +7,7 @@ import Checkbox from "@/components/common/checkbox";
 import GenericTable, { type Column } from "@/components/common/generic-table";
 import Input from "@/components/common/input";
 import Pagination from "@/components/common/pagination";
+import StatusPill from "@/components/common/status-pill";
 import Toggle from "@/components/common/toggle";
 import type { EngagementSetting } from "@/components/engagement/data";
 
@@ -112,19 +113,18 @@ export default function SettingsTable({ rows, icon, liveLabel = "since", onSave,
       cls: "w-[200px] shrink-0 py-5",
       cell: (t) => (
         <div className="flex flex-col gap-3">
-          {t.statusLocked ? (
-            <span className="text-xs font-semibold text-white">{t.statusNote}</span>
-          ) : (
+          {!t.statusLocked && (
             <Toggle
-              label={t.active ? "Active" : "Inactive"}
+              // A campaign's badge says what fans see, so its switch just reads On / Off.
+              label={t.statusBadge ? (t.active ? "On" : "Off") : t.active ? "Active" : "Inactive"}
               checked={t.active}
               onChange={(active) => void update(t, { active })}
               labelPosition="right"
               labelClassName="text-xs font-semibold"
             />
           )}
-          {t.statusLocked ? null : t.statusNote ? (
-            <span className="text-xs text-white/50">{t.statusNote}</span>
+          {t.statusBadge ? (
+            <StatusPill label={t.statusBadge.label} color={t.statusBadge.color} className="self-start whitespace-nowrap" />
           ) : t.active ? (
             <span className="flex items-center gap-1.5 text-xs text-white">
               <span className="size-2 rounded-full bg-success" />

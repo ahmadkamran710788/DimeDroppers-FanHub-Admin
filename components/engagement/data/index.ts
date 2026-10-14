@@ -18,9 +18,10 @@ export interface EngagementSetting {
   visibilityLabel: string;
   visibilityHint: string;
   visibility: boolean;
-  // Replaces the Live / Paused line, e.g. "Ended" for a game-day campaign whose window closed.
-  statusNote?: string;
-  // Resolved or cancelled: the API refuses any change, so every switch is disabled and statusNote shows instead of the toggle.
+  // A campaign's status as fans see it ("Open", "Closed"…), shown as a badge instead of the Live / Paused line.
+  statusBadge?: { label: string; color: string };
+  // Resolved, cancelled or an ended challenge: the API refuses any change, so the switches are disabled
+  // and only the badge shows.
   statusLocked?: boolean;
   // Why fans don't get the multiplier although the row allows it (its type has it switched off).
   multiplierNote?: string;
