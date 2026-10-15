@@ -11,7 +11,8 @@ import StatusPill from "@/components/common/status-pill";
 import Toggle from "@/components/common/toggle";
 import type { EngagementSetting } from "@/components/engagement/data";
 
-const PAGE_SIZE = 10;
+// Rows per page, for local paging and for the page size the campaign tabs ask the API for.
+export const ENGAGEMENT_PAGE_SIZE = 10;
 
 // "2026-10-14" or a full ISO timestamp → "Oct 14, 2026".
 const formatDate = (iso: string) =>
@@ -57,12 +58,22 @@ interface SettingsTableProps {
   // (sample Quests / Arcade) only change on this page.
   onSave?: (row: EngagementSetting, patch: SettingPatch) => Promise<boolean>;
   loading?: boolean;
+  // Set when the API pages the rows: `rows` is just the current page (ENGAGEMENT_PAGE_SIZE long)
+  // and `total` counts every row. Without it the table pages the rows it was given.
+  serverPagination?: { page: number; total: number; onChange: (page: number) => void };
 }
 
 // Engagement settings table shared by the Overview (campaign types) and the campaign tabs:
 // status, multiplier, participation threshold and visibility for each row. Rows seed local
 // state, so give each table its own `key` when the rows change.
-export default function SettingsTable({ rows, icon, liveLabel = "since", onSave, loading = false }: SettingsTableProps) {
+export default function SettingsTable({
+  rows,
+  icon,
+  liveLabel = "since",
+  onSave,
+  loading = false,
+  serverPagination,
+}: SettingsTableProps) {
   const [types, setTypes] = useState<EngagementSetting[]>(rows);
   const [page, setPage] = useState(1);
   // Thresholds being typed, saved when the field loses focus.
@@ -212,12 +223,15 @@ export default function SettingsTable({ rows, icon, liveLabel = "since", onSave,
     },
   ];
 
-  // Every row is already loaded, so pages are sliced here without another request.
-  const pageCount = Math.max(1, Math.ceil(types.length / PAGE_SIZE));
-  const currentPage = Math.min(page, pageCount);
-  const visible = types.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  const from = types.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
-  const to = Math.min(currentPage * PAGE_SIZE, types.length);
+  // The API pages the rows (campaign tabs), or every row is here and pages are sliced locally.
+  const total = serverPagination ? serverPagination.total : types.length;
+  const pageCount = Math.max(1, Math.ceil(total / ENGAGEMENT_PAGE_SIZE));
+  const currentPage = Math.min(serverPagination ? serverPagination.page : page, pageCount);
+  const visible = serverPagination
+    ? types
+    : types.slice((currentPage - 1) * ENGAGEMENT_PAGE_SIZE, currentPage * ENGAGEMENT_PAGE_SIZE);
+  const from = total === 0 ? 0 : (currentPage - 1) * ENGAGEMENT_PAGE_SIZE + 1;
+  const to = Math.min(currentPage * ENGAGEMENT_PAGE_SIZE, total);
 
   // Settings sit at the top of each row; only the gear button is centred.
   return (
@@ -230,10 +244,11 @@ export default function SettingsTable({ rows, icon, liveLabel = "since", onSave,
         cellClassName="items-start"
         empty="Nothing to show."
       />
-      {!loading && types.length > 0 && (
+      {/* With API paging the footer stays while the next page loads, so it doesn't jump. */}
+      {(serverPagination ? total > 0 : !loading && total > 0) && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 border-b border-white/20">
-          <span className="text-xs text-white/80">{`Showing ${from} to ${to} of ${types.length}`}</span>
-          <Pagination page={currentPage} pageCount={pageCount} onChange={setPage} />
+          <span className="text-xs text-white/80">{`Showing ${from} to ${to} of ${total}`}</span>
+          <Pagination page={currentPage} pageCount={pageCount} onChange={serverPagination ? serverPagination.onChange : setPage} />
         </div>
       )}
     </div>
