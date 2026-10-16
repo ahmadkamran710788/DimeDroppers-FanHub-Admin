@@ -155,6 +155,23 @@ export const routes = {
     predictionCampaign: (id: string) => `fanhub/org/prediction-campaigns/${id}`,
     votingCampaign: (id: string) => `fanhub/org/voting-campaigns/${id}`,
     challenge: (id: string) => `fanhub/org/challenges/${id}`,
+    // Buy Tickets (FANHUB_TICKETS_ADMIN.md). The four cards and every ticket campaign.
+    ticketOverview: "fanhub/org/tickets/overview",
+    // POST creates a campaign: title, ticket types and games (a game sells through one campaign).
+    ticketCampaigns: "fanhub/org/tickets/campaigns",
+    // PATCH edits the title, status or the whole ticket-type list; DELETE deactivates it.
+    ticketCampaign: (id: string) => `fanhub/org/tickets/campaigns/${id}`,
+    // POST { scheduleEventIds } attaches more games (already attached: skipped; in another active campaign: 409).
+    ticketCampaignGames: (campaignId: string) => `fanhub/org/tickets/campaigns/${campaignId}/games`,
+    // DELETE detaches a game from a campaign (409 once tickets were sold for it).
+    ticketCampaignGame: (campaignId: string, scheduleEventId: string) =>
+      `fanhub/org/tickets/campaigns/${campaignId}/games/${scheduleEventId}`,
+    // Sales list, newest first: GET ?campaignId=&scheduleEventId=&status=&search=&page=&limit=.
+    ticketOrders: "fanhub/org/tickets/orders",
+    // One game's tickets sold vs scanned at the gate, per ticket type.
+    ticketGameAttendance: (scheduleEventId: string) => `fanhub/org/tickets/games/${scheduleEventId}/attendance`,
+    // The Schedules table: GET ?search=&status=all|on-sale|not-on-sale|ended&page=&limit=.
+    ticketGames: "fanhub/org/tickets/games",
     // The org's teams, grouped by sport department. teams[].id is the schoolTeamId the roster calls take.
     orgDepartments: "fanhub/org/departments",
     // A team's staff (coaches): GET ?schoolTeamId= lists them, POST adds one.

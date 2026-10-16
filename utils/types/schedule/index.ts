@@ -6,7 +6,10 @@ export interface ScheduleItem {
   opponentLogoUrl: string | null;
   description: string | null;
   location: string | null;
+  // The event's local wall-clock time written with a "Z" (not a real UTC instant); compare times with utcTime.
   start: string;
+  // The real UTC start; missing on older rows.
+  utcTime?: string | null;
   end: string | null;
   isAllDay: boolean;
   homeAway: "home" | "away" | "neutral" | null;
@@ -17,6 +20,8 @@ export interface ScheduleItem {
   sports: string | null;
   level: string | null;
   sourcePlatform: string;
+  // GAME or PRACTICE; null when the event has no type (treated like a game).
+  activityType?: "GAME" | "PRACTICE" | null;
   createdAt: string;
   updatedAt: string;
 }
