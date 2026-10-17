@@ -1,13 +1,14 @@
 "use client";
 
-interface DonutCounts {
-  gameDay: number;
-  support: number;
-  engage: number;
+export interface DonutSegment {
+  key: string;
+  color: string;
+  count: number;
 }
 
 interface ActivationDonutProps {
-  counts: DonutCounts;
+  // Drawn in order, clockwise from 12 o'clock.
+  segments: DonutSegment[];
   total: number;
   // Fill the hole with a soft, faded blend of the segment colours (Activations page design).
   filled?: boolean;
@@ -20,36 +21,28 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const CENTER = SIZE / 2;
 const INNER_DIAMETER = SIZE - STROKE * 2;
 
-const SEGMENT_COLORS: Record<keyof DonutCounts, string> = {
-  gameDay: "#638BFE",
-  support: "#65C162",
-  engage: "#9D62C1",
-};
-
-const SEGMENT_ORDER: (keyof DonutCounts)[] = ["gameDay", "support", "engage"];
-
-export default function ActivationDonut({ counts, total, filled = false }: ActivationDonutProps) {
+export default function ActivationDonut({ segments: input, total, filled = false }: ActivationDonutProps) {
   // Conic gradient matching the arc layout (both start at 12 o'clock, clockwise).
-  const stops = SEGMENT_ORDER.reduce<{ angle: number; list: string[] }>(
-    (acc, key) => {
-      const sweep = total > 0 ? (counts[key] / total) * 360 : 0;
+  const stops = input.reduce<{ angle: number; list: string[] }>(
+    (acc, { color, count }) => {
+      const sweep = total > 0 ? (count / total) * 360 : 0;
       if (sweep === 0) return acc;
-      acc.list.push(`${SEGMENT_COLORS[key]} ${acc.angle}deg ${acc.angle + sweep}deg`);
+      acc.list.push(`${color} ${acc.angle}deg ${acc.angle + sweep}deg`);
       return { angle: acc.angle + sweep, list: acc.list };
     },
     { angle: 0, list: [] }
   ).list;
 
   // Build proportional arc segments. When total is 0, only the track shows.
-  const segments = SEGMENT_ORDER.reduce<
+  const segments = input.reduce<
     { offset: number; items: { key: string; color: string; dashArray: string; dashOffset: number }[] }
   >(
-    (acc, key) => {
-      const fraction = total > 0 ? counts[key] / total : 0;
+    (acc, { key, color, count }) => {
+      const fraction = total > 0 ? count / total : 0;
       const length = fraction * CIRCUMFERENCE;
       acc.items.push({
         key,
-        color: SEGMENT_COLORS[key],
+        color,
         dashArray: `${length} ${CIRCUMFERENCE - length}`,
         dashOffset: -acc.offset,
       });
