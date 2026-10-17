@@ -1,12 +1,13 @@
 "use client";
 
-import ActivationDonut from "@/components/setup/activation-donut";
+import ActivationSummary from "@/components/activations/activation-summary";
+import CategoryColumn from "@/components/activations/category-column";
+import { CATEGORY_ORDER, CATEGORY_STYLE, VISIBLE_CATEGORIES } from "@/components/activations/data";
+import RecommendedCard, { type RecommendedEntry } from "@/components/activations/recommended-card";
+import { useActivationInventory } from "@/components/activations/use-activation-inventory";
 import Button from "@/components/common/button";
-import Checkbox from "@/components/common/checkbox";
-import { ACTIVATION_BY_ID, CATEGORIES, RECOMMENDED_FOR_YOU } from "@/components/activations/data";
-import { useActivationSelection } from "@/components/activations/use-activation-selection";
-import { cn } from "@/utils/cn";
-import { Equal } from "lucide-react";
+import Loader from "@/components/common/loader";
+import type { ActivationCategory } from "@/utils/types/activations";
 
 interface Stat {
   label: string;
@@ -30,50 +31,60 @@ function StatCard({ label, value, caption }: Stat) {
   );
 }
 
-const pct = (part: number, whole: number) => (whole > 0 ? `${Math.round((part / whole) * 1000) / 10}%` : "0%");
-
 export default function ActivationsPage() {
-  const {
-    selected,
-    urls,
-    setUrl,
-    saving,
-    order,
-    draggingId,
-    toggle,
-    selectAll,
-    clearAll,
-    applyRecommended,
-    saveFeatureLinks,
-    startDrag,
-    endDrag,
-    handleDrop,
-    total,
-    counts,
-  } = useActivationSelection();
+  const inv = useActivationInventory();
 
-  // Active = selected with a link saved/entered; Draft = selected but still missing its link.
-  const active = [...selected].filter((id) => urls[id]?.trim()).length;
-  const draft = total - active;
-  // Scheduled / Completed have no backend source yet — shown as "—" until an endpoint exists.
+  const header = (
+    <div className="flex flex-col gap-2">
+      <h2 className="font-display font-black text-[32px] sm:text-[40px] lg:text-[56px] uppercase text-white leading-none">
+        Activations
+      </h2>
+      <p className="text-base text-white/80">Select the fan experience and features you want to offer in your Fan Hub.</p>
+    </div>
+  );
+
+  const { form, catalog } = inv;
+  if (inv.loading || !form || !catalog) {
+    return (
+      <div className="flex flex-col gap-10">
+        {header}
+        {inv.loading ? (
+          <Loader />
+        ) : (
+          <div className="flex flex-col items-start gap-4">
+            <p className="text-base text-white/80">We couldn&apos;t load your activations.</p>
+            <Button label="Try again" onClick={inv.reload} />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const categoryInfo = (category: ActivationCategory) => catalog.categories.find((c) => c.category === category);
+  const categoryLabels = Object.fromEntries(
+    CATEGORY_ORDER.map((c) => [c, categoryInfo(c)?.label ?? c])
+  ) as Record<ActivationCategory, string>;
+
+  const ticked = VISIBLE_CATEGORIES.flatMap((c) => form.columns[c]).filter((s) => s.enabled);
+
+  // Total = ticked slots. Active / Draft / Scheduled / Completed have no source yet (Active was
+  // "ticked with a link", and links aren't on this page any more) — shown as "—" until the
+  // stat cards get their data.
   const stats: Stat[] = [
-    { label: "Total Activations", value: String(total), caption: "All Time" },
-    { label: "Active", value: String(active), caption: `${pct(active, total)} of Total` },
-    { label: "Draft", value: String(draft), caption: `${pct(draft, total)} of Total` },
+    { label: "Total Activations", value: String(ticked.length), caption: "All Time" },
+    { label: "Active", value: "—", caption: "of Total" },
+    { label: "Draft", value: "—", caption: "of Total" },
     { label: "Scheduled", value: "—", caption: "All Time" },
     { label: "Completed", value: "—", caption: "This Month" },
   ];
 
+  const recommended: RecommendedEntry[] = VISIBLE_CATEGORIES.flatMap((category) =>
+    form.columns[category].filter((slot) => slot.isRecommended && !slot.retired).map((slot) => ({ category, slot }))
+  );
+
   return (
     <div className="flex flex-col gap-10">
-      <div className="flex flex-col gap-2">
-        <h2 className="font-display font-black text-[32px] sm:text-[40px] lg:text-[56px] uppercase text-white leading-none">
-          Activations
-        </h2>
-        <p className="text-base text-white/80">
-          Select the fan experience and features you want to offer in your Fan Hub.
-        </p>
-      </div>
+      {header}
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 lg:gap-10">
@@ -84,202 +95,42 @@ export default function ActivationsPage() {
 
       {/* 4-column row: 3 category cards + right rail */}
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-start">
-        {CATEGORIES.map((cat) => {
-          const ids = cat.activations.map((a) => a.id);
-          const catSelected = ids.filter((id) => selected.has(id));
-          const allSelected = catSelected.length === ids.length;
-          return (
-            <div
-              key={cat.id}
-              className="w-full lg:flex-1 min-w-0 rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px]"
-              style={{ background: cat.color }}
-            >
-              {/* Header */}
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex flex-col gap-2 min-w-0">
-                  <h3 className="font-display font-black text-[28px] uppercase text-white leading-tight">
-                    {cat.label}
-                  </h3>
-                  <p className="text-xs text-white">{cat.description}</p>
-                </div>
-                <span className="w-16 h-16 rounded-[8px] bg-[rgba(0,0,0,0.4)] flex flex-col items-center justify-center shrink-0">
-                  <span className="font-display font-black text-[28px] text-white leading-none">
-                    {catSelected.length}
-                  </span>
-                  <span className="text-xs text-white leading-none">Selected</span>
-                </span>
-              </div>
-
-              <div className="h-px bg-border-divider" />
-
-              {/* Select All / Clear All */}
-              <div className="flex items-center justify-between gap-2">
-                <button
-                  type="button"
-                  onClick={() => selectAll(ids)}
-                  className="flex items-center gap-2 text-base font-normal text-white"
-                >
-                  <Checkbox
-                    variant="white"
-                    checked={allSelected}
-                    indeterminate={!allSelected && catSelected.length > 0}
-                  />
-                  Select All ({ids.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => clearAll(ids)}
-                  className="text-base font-medium text-white hover:text-white/80 transition-colors"
-                >
-                  Clear All
-                </button>
-              </div>
-
-              <div className="h-px bg-border-divider" />
-
-              {/* Activation list */}
-              <div className="flex flex-col gap-6">
-                {order[cat.id].map((id) => {
-                  const activation = ACTIVATION_BY_ID[id];
-                  const isSelected = selected.has(id);
-                  return (
-                    <div
-                      key={id}
-                      draggable
-                      onDragStart={() => startDrag(cat.id, id)}
-                      onDragEnd={endDrag}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={() => handleDrop(cat.id, id)}
-                      className={cn(
-                        "flex flex-col gap-2 rounded-[8px] transition-opacity",
-                        draggingId === id && "opacity-50"
-                      )}
-                    >
-                      <div className="flex items-start gap-2">
-                        <button
-                          type="button"
-                          onClick={() => toggle(id)}
-                          className="flex items-start gap-3 flex-1 text-left min-w-0"
-                        >
-                          <span className="mt-1">
-                            <Checkbox variant="white" checked={isSelected} />
-                          </span>
-                          <span className="flex flex-col gap-1 min-w-0">
-                            <span className="text-base font-semibold text-white">{activation.title}</span>
-                            <span className="text-sm text-white/40">{activation.description}</span>
-                            {activation.recommended && (
-                              <span className="self-start mt-1 text-xs text-white bg-[rgba(0,0,0,0.5)] px-2 py-1 rounded-[70px] backdrop-blur-[104px] leading-none">
-                                Recommended
-                              </span>
-                            )}
-                          </span>
-                        </button>
-                        <span className="cursor-grab active:cursor-grabbing shrink-0">
-                          <Equal className="w-5 h-5 text-white opacity-60" />
-                        </span>
-                      </div>
-                      {isSelected && (
-                        <input
-                          type="url"
-                          inputMode="url"
-                          placeholder="https://…"
-                          value={urls[id] ?? ""}
-                          onChange={(e) => setUrl(id, e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                          draggable
-                          onDragStart={(e) => e.preventDefault()}
-                          className="ml-7 h-10 rounded-[8px] px-3 bg-[rgba(0,0,0,0.25)] border border-[rgba(255,255,255,0.2)] text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-steel-blue"
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="h-px bg-border-divider" />
-
-              {/* Footer count */}
-              <p className="text-base text-white text-center">
-                {catSelected.length} of {ids.length} selected
-              </p>
-            </div>
-          );
-        })}
+        {VISIBLE_CATEGORIES.map((category) => (
+          <CategoryColumn
+            key={category}
+            label={categoryLabels[category]}
+            description={categoryInfo(category)?.description ?? ""}
+            color={CATEGORY_STYLE[category].color}
+            slots={form.columns[category]}
+            rowErrors={inv.rowErrors}
+            onValueChange={(rowKey, value) => inv.setValue(category, rowKey, value)}
+            onToggle={(rowKey) => inv.toggle(category, rowKey)}
+            onSelectAll={() => inv.selectAll(category)}
+            onClearAll={() => inv.clearAll(category)}
+            onReorder={(from, to) => inv.reorder(category, from, to)}
+          />
+        ))}
 
         {/* Right rail */}
         <div className="w-full lg:flex-1 min-w-0 flex flex-col gap-10">
-          {/* Activation Summary */}
-          <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px] bg-surface-07">
-            <h3 className="font-display font-black text-[28px] uppercase text-white leading-tight">
-              Activation Summary
-            </h3>
-            <div className="h-px bg-border-divider" />
-            <div className="flex justify-center">
-              <ActivationDonut counts={counts} total={total} filled />
-            </div>
-            <div className="flex flex-col gap-3">
-              {CATEGORIES.map((cat) => (
-                <div key={cat.id} className="flex items-center gap-2">
-                  <span className="w-4 h-4 rounded-full shrink-0" style={{ background: cat.accent }} />
-                  <span className="text-base font-semibold text-white">{cat.label}</span>
-                </div>
-              ))}
-            </div>
-            <div className="h-px bg-border-divider" />
-            <div className="flex flex-col gap-1">
-              <p className="text-2xl font-bold text-success leading-none">Great mix!</p>
-              <p className="text-xs text-white">
-                {total > 0
-                  ? "You've selected a well-balanced set of activations."
-                  : "Select activations to build your fan experience."}
-              </p>
-            </div>
-          </div>
-
-          {/* Recommended for you */}
-          <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px] bg-surface-07">
-            <div className="flex flex-col gap-2">
-              <h3 className="font-display font-black text-[28px] uppercase text-white leading-tight">
-                Recommended for you
-              </h3>
-              <p className="text-xs text-white">Based on schools like yours with similar programs.</p>
-            </div>
-
-            <div className="h-px bg-border-divider" />
-
-            <div className="flex flex-col gap-4">
-              {RECOMMENDED_FOR_YOU.map((rec) => (
-                <button
-                  key={rec.id}
-                  type="button"
-                  onClick={() => toggle(rec.id)}
-                  className="flex items-start gap-3 text-left"
-                >
-                  <span className="mt-1">
-                    <Checkbox variant="white" checked={selected.has(rec.id)} />
-                  </span>
-                  <span className="flex flex-col gap-1">
-                    <span className="text-base font-semibold text-white">{rec.title}</span>
-                    <span className="text-sm text-white/40">{rec.subtitle}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            <div className="h-px bg-border-divider" />
-
-            <Button variant="ghost" label="Apply" fullWidth onClick={applyRecommended} />
-          </div>
+          <ActivationSummary columns={form.columns} categoryLabels={categoryLabels} />
+          <RecommendedCard
+            entries={recommended}
+            organizationTypeLabel={catalog.organizationTypeLabel}
+            onToggle={({ category, slot }) => inv.toggle(category, slot.rowKey)}
+            onApply={inv.selectRecommended}
+          />
         </div>
       </div>
 
       {/* Footer action */}
-      <div className="flex justify-end border-t border-border-divider pt-6">
+      <div className="flex flex-wrap items-center justify-end gap-4 border-t border-border-divider pt-6">
+        {inv.dirty && <span className="text-sm text-white/70">You have unsaved changes</span>}
         <Button
           variant="cta"
-          label={saving ? "Saving…" : "Save Activations"}
-          disabled={saving}
-          onClick={saveFeatureLinks}
+          label={inv.saving ? "Saving…" : "Save Activations"}
+          disabled={inv.saving}
+          onClick={inv.save}
         />
       </div>
     </div>

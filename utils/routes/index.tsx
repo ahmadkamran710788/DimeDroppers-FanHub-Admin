@@ -185,6 +185,11 @@ export const routes = {
     rosterPlayers: "fanhub/org/roster/players",
     // Fans following a team, each tagged PLAYER / PARENT / STAFF / FAN: GET ?schoolTeamId=&page=&limit=.
     rosterFollowers: "fanhub/org/roster/followers",
+    // Activations — the sponsor slots the org sells (FANHUB_ACTIVATIONS_FRONTEND.md).
+    // GET: the slot list for the org's type (School vs Tournament list).
+    activationCatalog: "fanhub/org/activations/catalog",
+    // GET the inventory (404 = none yet), POST creates it, PUT saves the whole of it.
+    activationInventory: "fanhub/org/activations",
     // Messages — the org chats with the people of its teams (FANHUB_ORG_CHAT_ADMIN.md).
     // Who can be messaged, per tab (players / parents / staff / followers): GET ?tab=&search=.
     orgChatTeamMembers: (schoolTeamId: string) => `fanhub/org/chat/teams/${schoolTeamId}/members`,
