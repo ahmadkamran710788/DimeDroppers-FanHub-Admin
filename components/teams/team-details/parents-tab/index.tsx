@@ -1,5 +1,8 @@
 "use client";
 
+import { Plus } from "lucide-react";
+import toast from "react-hot-toast";
+import Button from "@/components/common/button";
 import type { Column } from "@/components/common/generic-table";
 import StatusPill from "@/components/common/status-pill";
 import { invitationColor } from "@/components/teams/team-details/invitation-status";
@@ -39,6 +42,9 @@ const COLUMNS: Column<RosterParent>[] = [
   },
 ];
 
+// Not wired to the API yet.
+const comingSoon = () => toast("Coming soon.");
+
 const search = (p: RosterParent) => [p.name, p.email, p.player];
 
 interface ParentsTabProps {
@@ -48,5 +54,15 @@ interface ParentsTabProps {
 
 // Team Details → Parents: the parents the coach added to the team's players (read-only).
 export default function ParentsTab({ rows, loading }: ParentsTabProps) {
-  return <PeopleList rows={rows} loading={loading} columns={COLUMNS} getKey={(p) => p.id} searchFields={search} noun="parents" />;
+  return <PeopleList rows={rows} loading={loading} columns={COLUMNS} getKey={(p) => p.id} searchFields={search} noun="parents"
+      action={
+        <Button
+          variant="cta"
+          label="Add Parent"
+          icon={<Plus className="size-5" strokeWidth={2} />}
+          className="shrink-0"
+          onClick={comingSoon}
+        />
+      }
+    />;
 }

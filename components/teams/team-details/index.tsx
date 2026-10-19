@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
+import toast from "react-hot-toast";
+import Button from "@/components/common/button";
 import type { Column } from "@/components/common/generic-table";
 import StatusPill from "@/components/common/status-pill";
 import Tabs from "@/components/common/tabs";
@@ -21,6 +23,9 @@ import { useSetup } from "@/context/setup";
 import { routes } from "@/utils/routes";
 
 const TABS = ["Players", "Parents", "Staff", "Followers"] as const;
+// Add Player is not wired to the API yet.
+const comingSoon = () => toast("Coming soon.");
+
 type Tab = (typeof TABS)[number];
 
 const PLAYER_COLUMNS: Column<RosterPlayer>[] = [
@@ -135,6 +140,15 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
             getKey={(a) => a.id}
             searchFields={playerSearch}
             noun="players"
+            action={
+              <Button
+              variant="cta"
+              label="Add Player"
+              icon={<Plus className="size-5" strokeWidth={2} />}
+              className="shrink-0"
+              onClick={comingSoon}
+            />
+            }
           />
         ) : tab === "Parents" ? (
           <ParentsTab rows={parents} loading={rosterLoading} />
