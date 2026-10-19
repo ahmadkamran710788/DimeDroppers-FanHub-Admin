@@ -176,7 +176,7 @@ export default function Header({ className, title = "Setup Wizard", onMenuClick 
           loading={chat.loading}
           onOpenChat={(id) => {
             setMessagesOpen(false);
-            router.push(routes.ui.communicationsChat(id));
+            router.push(routes.ui.inboxChat(id));
           }}
           onOpenAll={() => {
             setMessagesOpen(false);
