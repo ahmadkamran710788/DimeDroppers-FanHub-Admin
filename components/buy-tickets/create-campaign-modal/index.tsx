@@ -12,7 +12,7 @@ import { campaignSchema } from "@/components/buy-tickets/schema";
 import apiCall from "@/utils/api-call";
 import { formatMoney } from "@/utils/helper";
 import { routes } from "@/utils/routes";
-import type { ScheduleItem, ScheduleListResponse } from "@/utils/types/schedule";
+import type { ScheduleGame, ScheduleGamesResponse } from "@/utils/types/schedule";
 import type { TicketCampaign, TicketGamesPage } from "@/utils/types/tickets";
 import { validateAndSetErrors } from "@/utils/validation";
 
@@ -36,14 +36,11 @@ const realStart = (e: { start: string; utcTime?: string | null }) => new Date(e.
 
 const byStart = (a: PickerGame, b: PickerGame) => realStart(a) - realStart(b);
 
-// Tickets are sold for games only: practice sessions and cancelled events are left out. Events
-// without a type count as games. (The API can't filter by type yet, so it's done here.)
-const isTicketable = (e: ScheduleItem) => e.activityType !== "PRACTICE" && e.status !== "cancelled";
-
-const toPickerGame = (e: ScheduleItem): PickerGame => ({
+// The opponent is the side that is not this school.
+const toPickerGame = (e: ScheduleGame, schoolId: string): PickerGame => ({
   id: e.id,
   title: e.title,
-  opponent: e.opponent,
+  opponent: (e.home?.id === schoolId ? e.away?.name : e.home?.name) ?? null,
   start: e.start,
   utcTime: e.utcTime || e.start,
   sports: e.sports,
@@ -62,7 +59,7 @@ export default function CreateCampaignModal({ onClose, campaign, onSaved }: Crea
   const [gameIds, setGameIds] = useState<string[]>(() => campaign?.games.map((g) => g.id) ?? []);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  // Upcoming games (not started, no practice sessions), each marked with another campaign it sells through.
+  // Upcoming events (not started), each marked with another campaign it sells through.
   const [upcoming, setUpcoming] = useState<PickerGame[]>([]);
   const [gamesLoading, setGamesLoading] = useState(true);
   // "Now" when the games loaded, so "Ended" stays stable across renders.
@@ -74,8 +71,9 @@ export default function CreateCampaignModal({ onClose, campaign, onSaved }: Crea
     Promise.all([
       // `from` is matched against `start`, which can be up to a day off the real time, so ask from
       // a day earlier and keep what is really upcoming below.
-      apiCall<ScheduleListResponse>({
-        endpoint: routes.api.listSchedules,
+      // Games only: the backend leaves out Practice / Travel / Other rows.
+      apiCall<ScheduleGamesResponse>({
+        endpoint: routes.api.listScheduleGames,
         method: "GET",
         data: { page: 1, limit: 100, sortOrder: "asc", from: new Date(now.getTime() - DAY_MS).toISOString() },
       }),
@@ -83,7 +81,8 @@ export default function CreateCampaignModal({ onClose, campaign, onSaved }: Crea
       apiCall<{ data: TicketGamesPage[] }>({ endpoint: routes.api.ticketGames, method: "GET", data: { page: 1, limit: 100, status: "all" } }),
     ]).then(([schedules, tickets]) => {
       if (cancelled) return;
-      const events = schedules.success ? ((schedules.data as ScheduleListResponse | null)?.data?.[0]?.items ?? []) : [];
+      const page = schedules.success ? schedules.data?.data?.[0] : undefined;
+      const events = page?.schedules ?? [];
       const sellingIn = new Map(
         (tickets.success ? (tickets.data?.data?.[0]?.items ?? []) : [])
           .filter((g) => g.campaign && g.campaign.status === "ACTIVE" && g.campaign.id !== campaign?.id)
@@ -91,8 +90,8 @@ export default function CreateCampaignModal({ onClose, campaign, onSaved }: Crea
       );
       setUpcoming(
         events
-          .filter((e) => isTicketable(e) && realStart(e) > now.getTime())
-          .map((e) => ({ ...toPickerGame(e), takenBy: sellingIn.get(e.id) }))
+          .filter((e) => realStart(e) > now.getTime())
+          .map((e) => ({ ...toPickerGame(e, page?.school.id ?? ""), takenBy: sellingIn.get(e.id) }))
           .sort(byStart)
       );
       setLoadedAt(now.getTime());
@@ -103,8 +102,8 @@ export default function CreateCampaignModal({ onClose, campaign, onSaved }: Crea
     };
   }, [campaign?.id]);
 
-  // Every upcoming game, plus (when editing) the other games the campaign is attached to — past
-  // ones or a practice session — so they can be detached. "Ended" goes by the real start time.
+  // Every upcoming event, plus (when editing) the past games the campaign is attached to, so they can
+  // be detached. "Ended" goes by the real start time.
   const games = (() => {
     const upcomingIds = new Set(upcoming.map((g) => g.id));
     const others = (campaign?.games ?? [])
