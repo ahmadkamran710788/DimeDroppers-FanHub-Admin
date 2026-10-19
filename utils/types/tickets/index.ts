@@ -39,7 +39,7 @@ export interface TicketCampaign {
   createdAt: string;
 }
 
-// GET /overview (data[0]).
+// GET /overview (data[0]): the four cards.
 export interface TicketOverview {
   cards: {
     // Distinct games attached to any campaign.
@@ -50,8 +50,7 @@ export interface TicketOverview {
     // The school's GoFan page, or null ("Not set").
     ticketLink: string | null;
   };
-  // Newest first.
-  campaigns: TicketCampaign[];
+  // The response also carries `campaigns`; the page reads them from GET /tickets/campaigns instead.
 }
 
 // A ticket type on one game, with that game's stock.

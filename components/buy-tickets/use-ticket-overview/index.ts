@@ -5,7 +5,8 @@ import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type { TicketOverview } from "@/utils/types/tickets";
 
-// The four cards and every ticket campaign, from GET /fanhub/org/tickets/overview.
+// The four cards, from GET /fanhub/org/tickets/overview (the campaigns list comes from
+// use-ticket-campaigns).
 // `reload` refetches after a campaign is created, edited or a game is detached.
 export function useTicketOverview() {
   const [overview, setOverview] = useState<TicketOverview | null>(null);

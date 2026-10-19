@@ -55,6 +55,29 @@ export interface ScheduleListResponse {
   data: [{ items: ScheduleItem[]; pagination: SchedulePagination; summary: ScheduleSummary }];
 }
 
+// One side of a GET /schedules/games row.
+export interface ScheduleGameSide {
+  id: string | null;
+  name: string | null;
+}
+
+// A row of GET /fanhub/org/schedules/games (games only).
+export interface ScheduleGame {
+  id: string;
+  title: string;
+  start: string;
+  utcTime?: string | null;
+  sports: string | null;
+  level: string | null;
+  activityType: string;
+  home: ScheduleGameSide | null;
+  away: ScheduleGameSide | null;
+}
+
+export interface ScheduleGamesResponse {
+  data: [{ school: { id: string }; schedules: ScheduleGame[]; pagination: SchedulePagination }];
+}
+
 export interface ScheduleItemResponse {
   statusCode: number;
   success: boolean;

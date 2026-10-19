@@ -88,6 +88,8 @@ export const routes = {
     //
     // Schedule CRUD
     listSchedules: "fanhub/org/schedules",
+    // GET: game rows only (no Practice / Travel / Other); `data[0].schedules` with home/away sides.
+    listScheduleGames: "fanhub/org/schedules/games",
     createSchedule: "fanhub/org/schedules",
     getSchedule: (id: string) => `fanhub/org/schedules/${id}`,
     updateSchedule: (id: string) => `fanhub/org/schedules/${id}`,
@@ -157,7 +159,8 @@ export const routes = {
     challenge: (id: string) => `fanhub/org/challenges/${id}`,
     // Buy Tickets (FANHUB_TICKETS_ADMIN.md). The four cards and every ticket campaign.
     ticketOverview: "fanhub/org/tickets/overview",
-    // POST creates a campaign: title, ticket types and games (a game sells through one campaign).
+    // GET lists every campaign (`data` is the list; ?status=&scheduleEventId=); POST creates one:
+    // title, ticket types and games (a game sells through one campaign).
     ticketCampaigns: "fanhub/org/tickets/campaigns",
     // PATCH edits the title, status or the whole ticket-type list; DELETE deactivates it.
     ticketCampaign: (id: string) => `fanhub/org/tickets/campaigns/${id}`,

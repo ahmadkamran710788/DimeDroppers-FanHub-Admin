@@ -20,6 +20,7 @@ import { HOME_AWAY_COLOR, HOME_AWAY_LABEL } from "@/components/buy-tickets/data"
 import GameAttendance from "@/components/buy-tickets/game-attendance";
 import OrdersTab from "@/components/buy-tickets/orders-tab";
 import { useTicketGames, type GameTicketFilter } from "@/components/buy-tickets/use-ticket-games";
+import { useTicketCampaigns } from "@/components/buy-tickets/use-ticket-campaigns";
 import { useTicketOverview } from "@/components/buy-tickets/use-ticket-overview";
 import { useOrgTeams } from "@/components/teams/use-org-teams";
 import apiCall from "@/utils/api-call";
@@ -73,7 +74,9 @@ const optionsOf = (values: string[]) => [
 // Buy Tickets: the four cards, every ticket campaign and the games fans can buy tickets for, all
 // from /fanhub/org/tickets.
 export default function BuyTicketsPage() {
-  const { overview, loading: overviewLoading, reload: reloadOverview } = useTicketOverview();
+  // The four cards come from the overview; the campaigns from their own list endpoint.
+  const { overview, reload: reloadOverview } = useTicketOverview();
+  const { campaigns, loading: campaignsLoading, reload: reloadCampaigns } = useTicketCampaigns();
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<GameTicketFilter>("all");
@@ -104,11 +107,11 @@ export default function BuyTicketsPage() {
   const [detach, setDetach] = useState<Detach | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const campaigns = overview?.campaigns ?? [];
   const ticketLink = overview?.cards.ticketLink ?? null;
 
   const reloadAll = () => {
     reloadOverview();
+    reloadCampaigns();
     reloadGames();
   };
 
@@ -300,7 +303,7 @@ export default function BuyTicketsPage() {
       </div>
 
       {/* Ticket campaigns */}
-      <CampaignCard campaigns={campaigns} loading={overviewLoading} ticketLink={ticketLink} onEdit={setEditing} />
+      <CampaignCard campaigns={campaigns} loading={campaignsLoading} ticketLink={ticketLink} onEdit={setEditing} />
 
       {/* Schedules | Orders */}
       <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px] bg-surface-07">
