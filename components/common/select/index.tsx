@@ -27,6 +27,8 @@ interface SelectProps {
   required?: boolean;
   // "light" (default): light-grey field. "dark": translucent field with white text on dark cards.
   variant?: "light" | "dark";
+  // Keep the browser's own dropdown arrow instead of the chevron icon.
+  nativeArrow?: boolean;
 }
 
 export default function Select({
@@ -44,6 +46,7 @@ export default function Select({
   disabled,
   required,
   variant = "light",
+  nativeArrow = false,
 }: SelectProps) {
   const dark = variant === "dark";
   return (
@@ -70,7 +73,8 @@ export default function Select({
           onChange={onChange}
           disabled={disabled}
           className={cn(
-            "w-full h-12 rounded-[8px] text-base font-medium leading-normal px-4 appearance-none outline-none border",
+            "w-full h-12 rounded-[8px] text-base font-medium leading-normal px-4 outline-none border",
+            !nativeArrow && "appearance-none",
             dark
               ? "bg-white/[0.06] text-white border-white/15"
               : "bg-[#F5F6F8] text-midnight-navy border-[rgba(11,28,45,0.12)]",
@@ -93,10 +97,12 @@ export default function Select({
             </option>
           ))}
         </select>
-        <ChevronDown
-          className={cn("absolute right-3 w-5 h-5 pointer-events-none", dark ? "text-white" : "text-midnight-navy")}
-          strokeWidth={2}
-        />
+        {!nativeArrow && (
+          <ChevronDown
+            className={cn("absolute right-3 w-5 h-5 pointer-events-none", dark ? "text-white" : "text-midnight-navy")}
+            strokeWidth={2}
+          />
+        )}
       </div>
       {error && <p className="text-sm text-error">{error}</p>}
     </div>

@@ -21,6 +21,10 @@ interface TextareaProps {
   // Adds a red asterisk after the label.
   required?: boolean;
   labelClassName?: string;
+  // Extra utilities for the <textarea> itself.
+  fieldClassName?: string;
+  // Hide the character counter (the limit still applies).
+  showCounter?: boolean;
 }
 
 export default function Textarea({
@@ -38,6 +42,8 @@ export default function Textarea({
   fieldVariant = "light",
   required,
   labelClassName,
+  fieldClassName,
+  showCounter = true,
 }: TextareaProps) {
   const onLight = variant === "onLight";
   const counter = (
@@ -55,7 +61,7 @@ export default function Textarea({
           {label}
           {required && <span className="text-error"> *</span>}
         </label>
-        {counterInLabel && counter}
+        {showCounter && counterInLabel && counter}
       </div>
       <textarea
         id={name}
@@ -71,10 +77,11 @@ export default function Textarea({
           fieldVariant === "dark"
             ? "bg-white/[0.06] text-white border border-white/15 placeholder:text-white/40"
             : "bg-white text-midnight-navy border-2 border-[rgba(11,28,45,0.11)] placeholder:text-[rgba(11,28,45,0.4)]",
+          fieldClassName,
           error && "border-error focus:border-error"
         )}
       />
-      {counterInLabel ? (
+      {counterInLabel || !showCounter ? (
         error && <p className="text-sm text-error">{error}</p>
       ) : (
         <div className="flex items-center justify-between">
