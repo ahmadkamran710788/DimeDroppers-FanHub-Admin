@@ -1,9 +1,9 @@
-// SAMPLE DATA — there is no game center endpoint yet. Mirrors the Subway "Highlights", "Recap"
-// and "Shop" mockups; replace with the game's real result, recap, clips and shop items once the API exists.
+// SAMPLE DATA for the sponsor bar, Highlights and Shop (no endpoint yet). Mirrors the Subway
+// mockups. The Recap section loads the real game from the command-center recap API.
 
 export interface GameTeam {
   name: string;
-  logo: string;
+  logo: string | null;
   score: number;
 }
 
@@ -24,10 +24,11 @@ export interface TeamLeader {
 
 export interface GameRecap {
   headline: string;
-  // ISO date.
+  // ISO date or instant.
   date: string;
   venue: string;
-  photo: string;
+  // The API has no photo, so only the sample carries one.
+  photo?: string;
   paragraphs: string[];
   leaders: { home: TeamLeader | null; away: TeamLeader | null };
 }
