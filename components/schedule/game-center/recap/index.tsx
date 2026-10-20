@@ -9,8 +9,9 @@ interface RecapSectionProps {
   onShare: () => void;
 }
 
+// A bare "2026-09-22" is read as a local date; a full instant as is.
 const fmtDate = (iso: string) =>
-  new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  new Date(iso.length === 10 ? `${iso}T00:00:00` : iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 const PANEL = "rounded-[8px] border border-white/10 bg-[#0E1A2B] p-6";
 const ICON = "size-5 shrink-0";
@@ -30,8 +31,12 @@ function DetailRow({ icon, label, children }: { icon: ReactNode; label: string; 
 function TeamChip({ team }: { team: GameTeam }) {
   return (
     <span className="flex items-center gap-2 min-w-0">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={team.logo} alt="" className="size-7 shrink-0 rounded-full object-cover" />
+      {team.logo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={team.logo} alt="" className="size-7 shrink-0 rounded-full object-cover" />
+      ) : (
+        <span className="size-7 shrink-0 rounded-full bg-white/20" />
+      )}
       <span className="truncate">{team.name}</span>
     </span>
   );
@@ -69,7 +74,7 @@ export default function RecapSection({ recap, home, away, onShare }: RecapSectio
   return (
     <div className="p-4 lg:p-6 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_440px] gap-4 lg:gap-6 items-start">
       {/* Story */}
-      <article className={`${PANEL} grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.65fr)] gap-6`}>
+      <article className={`${PANEL} grid grid-cols-1 gap-6 ${recap.photo ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,0.65fr)]" : ""}`}>
         <div className="flex flex-col gap-5 min-w-0">
           <span className="self-start px-3 py-1 rounded-[6px] bg-[#5B2BB5] text-xs font-semibold uppercase tracking-wide text-white">
             Recap
@@ -94,8 +99,10 @@ export default function RecapSection({ recap, home, away, onShare }: RecapSectio
             ))}
           </div>
         </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={recap.photo} alt="" className="w-full h-full max-h-[480px] rounded-[8px] object-cover" />
+        {recap.photo && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={recap.photo} alt="" className="w-full h-full max-h-[480px] rounded-[8px] object-cover" />
+        )}
       </article>
 
       {/* Sidebar */}
@@ -120,7 +127,7 @@ export default function RecapSection({ recap, home, away, onShare }: RecapSectio
               <TeamChip team={away} />
             </div>
           </DetailRow>
-          <DetailRow icon={<Clock3 className={ICON} strokeWidth={1.5} />} label="Final Score">
+          <DetailRow icon={<Clock3 className={ICON} strokeWidth={1.5} />} label="Score">
             {`${home.score} – ${away.score}`}
           </DetailRow>
         </section>

@@ -50,6 +50,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     Object.entries(PAGE_TITLES).find(([path]) => pathname.startsWith(`${path}/`))?.[1] ??
     "Schedule";
 
+  // The setup wizard sits in this group too but is full-screen: its own (setup) layout draws it.
+  if (pathname.startsWith(routes.ui.setupWizard.base)) return children;
+
   return (
     <SetupProvider>
       <TeamShopProvider>

@@ -43,6 +43,8 @@ export const routes = {
     sponsorAddOns: "/sponsors/add-ons",
     userDetails: (id: string | number) => `users/${id}`,
     setupWizard: {
+      // Every setup step starts with this; the organization layout leaves these pages full-screen.
+      base: "/setup-wizard",
       organizationDetails: "/setup-wizard/organization-details",
     },
     // Sponsor role (app/(sponsor)). Fundable Needs is where a sponsor lands after sign-in.
@@ -52,6 +54,10 @@ export const routes = {
   },
 
   api: {
+    // Command Center: GET the stat cards + Event Readiness, the live games strip (?limit=) and a game's recap.
+    commandCenterOverview: "fanhub/org/command-center/overview",
+    commandCenterLiveGames: "fanhub/org/command-center/live-games",
+    commandCenterGameRecap: (scheduleEventId: string) => `fanhub/org/command-center/games/${scheduleEventId}/recap`,
     getArea: "areas",
     editArea: (id: string | number) => `areas/${id}`,
     // FanHub Org Auth. `auth*` are the upstream paths appended to config.apiUrl on the

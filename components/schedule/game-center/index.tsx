@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import toast from "react-hot-toast";
+import Loader from "@/components/common/loader";
 import { SAMPLE_GAME, type GameTeam } from "@/components/schedule/game-center/data";
 import HighlightsSection from "@/components/schedule/game-center/highlights";
 import RecapSection from "@/components/schedule/game-center/recap";
 import ShopSection from "@/components/schedule/game-center/shop";
+import { useGameRecap } from "@/components/schedule/game-center/use-game-recap";
 import { routes } from "@/utils/routes";
 
 // Which part of the game the screen shows; picked from the schedule row's details panel.
@@ -18,8 +20,12 @@ const comingSoon = () => toast("Coming soon.");
 function TeamBadge({ team, reverse = false }: { team: GameTeam; reverse?: boolean }) {
   return (
     <div className={`flex items-center gap-4 lg:gap-6 ${reverse ? "flex-row-reverse sm:flex-row" : ""}`}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={team.logo} alt="" className="size-16 lg:size-24 shrink-0 rounded-full object-cover" />
+      {team.logo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={team.logo} alt="" className="size-16 lg:size-24 shrink-0 rounded-full object-cover" />
+      ) : (
+        <span className="size-16 lg:size-24 shrink-0 rounded-full bg-white/20" />
+      )}
       <span className="max-w-[200px] font-display font-extrabold text-lg lg:text-2xl uppercase leading-tight text-white">
         {team.name}
       </span>
@@ -28,13 +34,17 @@ function TeamBadge({ team, reverse = false }: { team: GameTeam; reverse?: boolea
 }
 
 interface GameCenterPageProps {
+  gameId: string;
   section: GameCenterSection;
 }
 
 // Per-game screen opened from the schedule row's details panel: sponsor bar, score hero and one section.
-export default function GameCenterPage({ section }: GameCenterPageProps) {
-  // Same sample game for every schedule row until a game center API exists to load it by id.
-  const game = SAMPLE_GAME;
+// Recap loads the game (teams, score, story, leaders) from the API; Highlights, Shop and the sponsor
+// bar are still sample data.
+export default function GameCenterPage({ gameId, section }: GameCenterPageProps) {
+  const isRecap = section === "Recap";
+  const { recap: loaded, loading } = useGameRecap(gameId, isRecap);
+  const game = isRecap && loaded ? { ...SAMPLE_GAME, ...loaded } : SAMPLE_GAME;
 
   const share = async () => {
     try {
@@ -57,7 +67,14 @@ export default function GameCenterPage({ section }: GameCenterPageProps) {
 
       <div className="rounded-[8px] overflow-hidden border border-white/10 bg-[#0B1424]">
         {/* Score hero — the Shop section goes straight to its catalogue */}
-        {section !== "Shop" && (
+        {isRecap && loading ? (
+          // The first recap of a game can take a few seconds to write.
+          <Loader className="mx-auto my-24" />
+        ) : isRecap && !loaded ? (
+          <p className="py-24 text-center text-sm text-white/60">This game&apos;s recap isn&apos;t available.</p>
+        ) : null}
+
+        {section !== "Shop" && !(isRecap && !loaded) && (
           <div className="relative px-6 py-8 lg:py-10 flex flex-col items-center gap-6 overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -87,8 +104,8 @@ export default function GameCenterPage({ section }: GameCenterPageProps) {
           </div>
         )}
 
-        {section === "Recap" ? (
-          <RecapSection recap={game.recap} home={game.home} away={game.away} onShare={share} />
+        {isRecap ? (
+          loaded && <RecapSection recap={game.recap} home={game.home} away={game.away} onShare={share} />
         ) : section === "Shop" ? (
           <ShopSection
             products={game.shop}
