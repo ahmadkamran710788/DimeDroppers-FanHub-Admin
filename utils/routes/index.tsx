@@ -45,6 +45,10 @@ export const routes = {
     setupWizard: {
       organizationDetails: "/setup-wizard/organization-details",
     },
+    // Sponsor role (app/(sponsor)). Fundable Needs is where a sponsor lands after sign-in.
+    sponsor: {
+      fundableNeeds: "/sponsor/fundable-needs",
+    },
   },
 
   api: {
