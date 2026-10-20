@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
-import { sampleProducts, type ProductStatus, type TeamShopProduct } from "@/components/team-shop/data";
+import { sampleProducts, type ProductStatus, type TeamShopProduct } from "@/components/organization/team-shop/data";
 
 // Team Shop products per team id, shared by the Team Shop page and every "Add to Store" button.
 // There is no products API yet, so the store lives here and is saved in this browser.

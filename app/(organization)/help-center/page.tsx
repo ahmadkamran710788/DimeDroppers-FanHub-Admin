@@ -1,4 +1,4 @@
-import HelpCenterPage from "@/components/help-center";
+import HelpCenterPage from "@/components/organization/help-center";
 
 export default function Page() {
   return <HelpCenterPage />;

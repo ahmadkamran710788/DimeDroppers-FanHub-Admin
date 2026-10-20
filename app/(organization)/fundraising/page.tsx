@@ -1,4 +1,4 @@
-import FundraisingPage from "@/components/fundraising";
+import FundraisingPage from "@/components/organization/fundraising";
 
 export default function Page() {
   return <FundraisingPage />;

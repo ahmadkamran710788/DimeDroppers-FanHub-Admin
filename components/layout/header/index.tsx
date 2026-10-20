@@ -10,7 +10,7 @@ import { routes } from "@/utils/routes";
 import { clearFanhubSession } from "@/utils/auth/session";
 import { useAuth } from "@/context/auth";
 import Button from "@/components/common/button";
-import MessagesPopover from "@/components/messages/messages-popover";
+import MessagesPopover from "@/components/organization/messages/messages-popover";
 import { useOrgChatContext } from "@/context/org-chat";
 
 interface HeaderProps {

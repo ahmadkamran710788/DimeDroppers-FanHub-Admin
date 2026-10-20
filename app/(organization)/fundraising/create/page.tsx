@@ -1,4 +1,4 @@
-import CreateCampaignPage from "@/components/fundraising/create-campaign";
+import CreateCampaignPage from "@/components/organization/fundraising/create-campaign";
 
 export default function Page() {
   return <CreateCampaignPage />;
