@@ -1,4 +1,4 @@
-import AddOnsPage from "@/components/sponsors/add-ons";
+import AddOnsPage from "@/components/organization/sponsors/add-ons";
 
 export default function Page() {
   return <AddOnsPage />;

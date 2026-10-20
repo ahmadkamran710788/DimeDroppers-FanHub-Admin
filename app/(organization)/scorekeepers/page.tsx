@@ -1,4 +1,4 @@
-import ScorekeepersPage from "@/components/scorekeepers";
+import ScorekeepersPage from "@/components/organization/scorekeepers";
 
 export default function Page() {
   return <ScorekeepersPage />;

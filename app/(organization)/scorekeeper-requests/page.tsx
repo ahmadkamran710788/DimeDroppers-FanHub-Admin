@@ -1,4 +1,4 @@
-import RoleRequestsPage from "@/components/requests/role-requests";
+import RoleRequestsPage from "@/components/organization/requests/role-requests";
 
 export default function Page() {
   return <RoleRequestsPage role="scorekeeper" />;

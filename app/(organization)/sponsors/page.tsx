@@ -1,4 +1,4 @@
-import SponsorsPage from "@/components/sponsors";
+import SponsorsPage from "@/components/organization/sponsors";
 
 export default function Page() {
   return <SponsorsPage />;

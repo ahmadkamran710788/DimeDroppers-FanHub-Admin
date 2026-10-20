@@ -1,4 +1,4 @@
-import MediaPage from "@/components/media";
+import MediaPage from "@/components/organization/media";
 
 export default function Page() {
   return <MediaPage />;

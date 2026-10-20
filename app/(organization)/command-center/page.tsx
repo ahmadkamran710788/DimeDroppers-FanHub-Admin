@@ -1,4 +1,4 @@
-import CommandCenterPage from "@/components/command-center";
+import CommandCenterPage from "@/components/organization/command-center";
 
 export default function Page() {
   return <CommandCenterPage />;

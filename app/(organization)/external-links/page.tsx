@@ -1,4 +1,4 @@
-import ExternalLinksPage from "@/components/external-links";
+import ExternalLinksPage from "@/components/organization/external-links";
 
 export default function Page() {
   return <ExternalLinksPage />;

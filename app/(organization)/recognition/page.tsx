@@ -1,4 +1,4 @@
-import RecognitionPage from "@/components/recognition";
+import RecognitionPage from "@/components/organization/recognition";
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const { view } = await searchParams;

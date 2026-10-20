@@ -1,4 +1,4 @@
-import FanHubAiPage from "@/components/fanhub-ai";
+import FanHubAiPage from "@/components/organization/fanhub-ai";
 
 export default function Page() {
   return <FanHubAiPage />;

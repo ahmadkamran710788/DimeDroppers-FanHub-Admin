@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, type ReactNode } from "react";
-import { useOrgChat } from "@/components/messages/use-org-chat";
+import { useOrgChat } from "@/components/organization/messages/use-org-chat";
 
 type OrgChatValue = ReturnType<typeof useOrgChat>;
 
