@@ -10,28 +10,21 @@ import Input from "@/components/common/input";
 import SectionCard from "@/components/common/section-card";
 import Select from "@/components/common/select";
 import WizardFooter from "@/components/common/wizard-footer";
+import { TEAM_GENDER_OPTIONS, TEAM_LEVEL_OPTIONS } from "@/components/organization/teams/team-options";
+import { useOrgTeams } from "@/components/organization/teams/use-org-teams";
 import AthletesTab from "@/components/organization/teams/add-team/athletes-tab";
 import { addTeamSchema } from "@/components/organization/teams/add-team/schema";
 import { useSetup } from "@/context/setup";
 import { cn } from "@/utils/cn";
-import { GENDER_OPTIONS, LEVEL_OPTIONS, SPORTS_OPTIONS } from "@/utils/constants/schedule";
+import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
 
 const TABS = ["Team Info", "Staff", "Athletes", "Settings"] as const;
 type Tab = (typeof TABS)[number];
 
-// Teams can be middle-school grades too, so extend the schedule levels.
-const TEAM_LEVEL_OPTIONS = [
-  { label: "6th Grade", value: "6th Grade" },
-  { label: "7th Grade", value: "7th Grade" },
-  { label: "8th Grade", value: "8th Grade" },
-  ...LEVEL_OPTIONS,
-];
-
 const INITIAL_FORM = {
   teamName: "",
-  nickname: "",
   level: "",
   sport: "",
   gender: "",
@@ -40,11 +33,18 @@ type Form = typeof INITIAL_FORM;
 
 const LABEL = "text-white text-sm font-medium";
 
+// The created team, as POST /fanhub/org/teams answers it.
+interface CreatedTeam {
+  id: string;
+}
+
 export default function AddTeamPage() {
   const router = useRouter();
   const { savedSchool } = useSetup();
+  const { departments } = useOrgTeams();
   const [tab, setTab] = useState<Tab>("Team Info");
   const [form, setForm] = useState<Form>(INITIAL_FORM);
+  const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const set =
@@ -59,10 +59,25 @@ export default function AddTeamPage() {
       return;
     }
     if (!(await validateAndSetErrors(addTeamSchema, form, setErrors))) return;
-    // No teams create endpoint yet — the form validates and moves on to the Staff step.
-    toast.success("Team info saved.");
-    setTab("Staff");
+    setSaving(true);
+    // apiCall toasts a refusal, e.g. 409 "A team with this name already exists in this sport".
+    const result = await apiCall<{ data: CreatedTeam[] }>({
+      endpoint: routes.api.orgTeams,
+      method: "POST",
+      data: { sport: form.sport, name: form.teamName.trim(), level: form.level, gender: form.gender },
+      invalidates: [routes.api.orgDepartments],
+      showSuccessToast: true,
+      successMessage: "Team created",
+    });
+    setSaving(false);
+    const team = result.success ? result.data?.data?.[0] : undefined;
+    if (!team) return;
+    // Staff and roster are managed on the new team's page.
+    router.push(routes.ui.teamDetails(team.id));
   };
+
+  // The org's own sports.
+  const sportOptions = departments.map((d) => ({ label: d.name, value: d.name }));
 
   const summaryTitle = savedSchool?.name || form.teamName || "Your Team";
   const crest = savedSchool?.logoUrl || "/images/preview-crest.png";
@@ -123,11 +138,10 @@ export default function AddTeamPage() {
                   Basic Information
                 </h3>
                 <Input label="Team Name" name="teamName" value={form.teamName} onChange={set("teamName")} placeholder="Twin Lakes Boys Basketball" error={errors.teamName} labelClassName={LABEL} />
-                <Input label="Nickname (Optional)" name="nickname" value={form.nickname} onChange={set("nickname")} placeholder="TLAM" error={errors.nickname} labelClassName={LABEL} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <Select label="Level" name="level" value={form.level} onChange={set("level")} options={TEAM_LEVEL_OPTIONS} placeholder="Select level" error={errors.level} labelClassName={LABEL} />
-                  <Select label="Sport" name="sport" value={form.sport} onChange={set("sport")} options={SPORTS_OPTIONS} placeholder="Select sport" icon={<Image src="/icons/icon-dribbble.svg" alt="" width={20} height={20} className="w-5 h-5 invert" />} error={errors.sport} labelClassName={LABEL} />
-                  <Select label="Gender" name="gender" value={form.gender} onChange={set("gender")} options={GENDER_OPTIONS} placeholder="Select gender" icon={<Mars className="w-5 h-5" />} error={errors.gender} labelClassName={LABEL} />
+                  <Select label="Activity" name="sport" value={form.sport} onChange={set("sport")} options={sportOptions} placeholder={departments.length ? "Select activity" : "Add an activity on the Teams page first"} icon={<Image src="/icons/icon-dribbble.svg" alt="" width={20} height={20} className="w-5 h-5 invert" />} error={errors.sport} labelClassName={LABEL} />
+                  <Select label="Gender" name="gender" value={form.gender} onChange={set("gender")} options={TEAM_GENDER_OPTIONS} placeholder="Select gender" icon={<Mars className="w-5 h-5" />} error={errors.gender} labelClassName={LABEL} />
                 </div>
               </div>
             ) : tab === "Athletes" ? (
@@ -167,7 +181,7 @@ export default function AddTeamPage() {
             </p>
             <div className="relative flex items-center gap-2 pt-3 border-t border-white/20 text-xs text-white">
               <Image src="/icons/icon-dribbble.svg" alt="" width={16} height={16} />
-              {form.sport || "Sport"}
+              {form.sport || "Activity"}
             </div>
           </div>
           <div className="h-px bg-border-divider" />
@@ -186,8 +200,9 @@ export default function AddTeamPage() {
       <WizardFooter
         onBack={() => router.push(routes.ui.teams)}
         backLabel="Cancel"
-        primaryLabel="Save & Continue"
+        primaryLabel={saving ? "Creating…" : "Create Team"}
         onPrimary={handleSaveContinue}
+        primaryDisabled={saving}
       />
     </div>
   );

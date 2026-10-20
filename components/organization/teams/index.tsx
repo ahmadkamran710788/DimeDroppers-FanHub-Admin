@@ -1,21 +1,34 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
 import BadgeStatCard, { STAT_TINTS, type BadgeStat } from "@/components/common/badge-stat-card";
 import Button from "@/components/common/button";
-import TeamsTable from "@/components/organization/teams/teams-table";
-import { useOrgTeams } from "@/components/organization/teams/use-org-teams";
+import EditTeamModal from "@/components/organization/teams/edit-team-modal";
+import SportModal from "@/components/organization/teams/sport-modal";
+import SportsList from "@/components/organization/teams/sports-list";
+import { useOrgTeams, type Department, type DepartmentTeam } from "@/components/organization/teams/use-org-teams";
+import { useSetup } from "@/context/setup";
 import { routes } from "@/utils/routes";
 
+// The sport modal: a new sport, or the sport being renamed.
+type SportEditing = { sport: Department | null } | null;
+
+// Teams: the org's sports with their teams. Add / rename a sport and edit a team here; a team is
+// added on its own page.
 export default function TeamsPage() {
   const router = useRouter();
-  const { teams, loading } = useOrgTeams();
+  const { savedSchool } = useSetup();
+  const { departments, teams, loading, reload } = useOrgTeams();
+  const [sportEditing, setSportEditing] = useState<SportEditing>(null);
+  const [teamEditing, setTeamEditing] = useState<{ team: DepartmentTeam; sport: Department } | null>(null);
   const count = loading ? "—" : teams.length;
 
   // Roster and staff totals need counts the teams endpoint doesn't return yet.
   const stats: BadgeStat[] = [
-    { label: "Total Teams", value: count, caption: "All Sports", tint: STAT_TINTS.blue },
-    { label: "Active Teams", value: count, caption: "This Season", tint: STAT_TINTS.green },
+    { label: "Total Teams", value: count, caption: "All Activities", tint: STAT_TINTS.blue },
+    { label: "Activities", value: loading ? "—" : departments.length, caption: "Sports and programs", tint: STAT_TINTS.green },
     { label: "Total Athletes", value: "—", caption: "Across all teams", tint: STAT_TINTS.purple },
     { label: "Coaches & Staff", value: "—", caption: "Across all teams", tint: STAT_TINTS.brown },
   ];
@@ -28,9 +41,12 @@ export default function TeamsPage() {
           <h2 className="font-display font-black text-[32px] sm:text-[40px] lg:text-[56px] uppercase text-white leading-none">
             Teams
           </h2>
-          <p className="text-base text-white/80">Manage your teams, rosters, staff, and team information.</p>
+          <p className="text-base text-white/80">Manage your activities, teams, rosters, staff, and team information.</p>
         </div>
-        <Button variant="cta" label="Add Team" className="px-12" onClick={() => router.push(routes.ui.addTeam)} />
+        <div className="flex flex-wrap gap-3 shrink-0">
+          <Button label="Add Activity" icon={<Plus className="size-5" />} onClick={() => setSportEditing({ sport: null })} />
+          <Button variant="cta" label="Add Team" className="px-12" onClick={() => router.push(routes.ui.addTeam)} />
+        </div>
       </div>
 
       {/* Stat cards */}
@@ -40,10 +56,27 @@ export default function TeamsPage() {
         ))}
       </div>
 
-      {/* Teams list */}
+      {/* Sports and their teams */}
       <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px] bg-surface-07">
-        <TeamsTable collapsible teams={teams} loading={loading} />
+        <SportsList
+          departments={departments}
+          loading={loading}
+          crest={savedSchool?.logoUrl || "/images/preview-crest.png"}
+          onRenameSport={(sport) => setSportEditing({ sport })}
+          onEditTeam={(team, sport) => setTeamEditing({ team, sport })}
+        />
       </div>
+
+      {sportEditing && <SportModal sport={sportEditing.sport} onClose={() => setSportEditing(null)} onSaved={reload} />}
+      {teamEditing && (
+        <EditTeamModal
+          team={teamEditing.team}
+          sport={teamEditing.sport.name}
+          departments={departments}
+          onClose={() => setTeamEditing(null)}
+          onSaved={reload}
+        />
+      )}
     </div>
   );
 }
