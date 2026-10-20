@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { routes } from "@/utils/routes";
 import SidebarFrame, { type NavSection } from "@/components/layout/sidebar-frame";
 import { SPONSOR_PROFILE } from "@/components/sponsor/data";
@@ -39,10 +40,10 @@ export default function SponsorSidebar({ open, onClose }: SponsorSidebarProps) {
   return (
     <SidebarFrame
       logo={
-        <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/DSLogoMark.svg" alt="" width={40} height={40} className="shrink-0" />
-          <span className="font-bebas italic text-[34px] leading-none tracking-[0.5px] text-white">DIME SPONSORS</span>
+        // One line in the admin logo's 162×32 box: the mark at the box height, the wordmark beside it.
+        <div className="w-[162px] h-8 flex items-center gap-2 whitespace-nowrap">
+          <Image src="/DSLogoMark.svg" alt="" width={32} height={32} className="shrink-0" />
+          <span className="font-display font-black italic text-[19px] leading-none text-white">DIME SPONSORS</span>
         </div>
       }
       sections={SPONSOR_PROFILE.nationalAccount ? [...NAV_SECTIONS, DIME_AI_SECTION] : NAV_SECTIONS}

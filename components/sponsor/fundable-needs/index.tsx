@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
-import Select from "@/components/common/select";
-import StatTile from "@/components/sponsor/stat-tile";
+import FilterChipMenu from "@/components/common/filter-chip-menu";
+import StatCard from "@/components/common/stat-card";
 import NeedCard from "@/components/sponsor/fundable-needs/need-card";
 import FundPanel from "@/components/sponsor/fundable-needs/fund-panel";
 import {
@@ -19,8 +19,6 @@ import {
 // Picking a need starts the panel on the $500 preset.
 const DEFAULT_AMOUNT_INDEX = 1;
 
-const FILTER_LABEL = "text-[15px] font-normal text-[#c4c4c4]";
-const FILTER_SELECT = "w-auto h-11 rounded-[10px] text-[15px] font-normal leading-[normal] px-[10px] bg-[#0b0b0b] text-white border-[#333]";
 
 // Sponsor landing page: open asks from nearby organizations, and a panel to fund the selected one.
 export default function FundableNeeds() {
@@ -40,17 +38,20 @@ export default function FundableNeeds() {
   }
 
   return (
-    <div className="pt-12 px-4 lg:px-14 pb-16 flex flex-col gap-8 max-w-[1240px] w-full">
-      <div>
-        <h1 className="font-bebas font-normal text-[76px] leading-[0.95] tracking-[0.5px]">FUNDABLE NEEDS</h1>
-        <p className="mt-[14px] text-[19px] text-[#e5e5e5]">
+    // Spacing and title sizes follow the admin pages (gap-10, 56px title, 16px subtitle).
+    <div className="flex flex-col gap-10">
+      <div className="flex flex-col">
+        <h2 className="font-display font-extrabold text-[32px] sm:text-[40px] lg:text-[56px] lg:leading-[68px] uppercase leading-none">
+          FUNDABLE NEEDS
+        </h2>
+        <p className="text-base leading-[26px] text-[#e5e5e5]">
           Real asks from organizations near you. Fund one fully or chip in, and choose how your brand is recognized.
         </p>
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-10">
         {STATS.map((stat) => (
-          <StatTile key={stat.label} {...stat} />
+          <StatCard key={stat.label} {...stat} />
         ))}
       </div>
 
@@ -73,27 +74,15 @@ export default function FundableNeeds() {
           })}
         </div>
         <div className="flex gap-3 flex-wrap">
-          <Select
-            label="Area"
-            name="area"
-            value={area}
-            onChange={(e) => setArea(e.target.value)}
-            options={AREA_OPTIONS}
-            nativeArrow
-            className="flex-row items-center gap-[10px]"
-            labelClassName={FILTER_LABEL}
-            selectClassName={FILTER_SELECT}
+          <FilterChipMenu
+            label={`Area: ${area}`}
+            ariaLabel="Area"
+            items={AREA_OPTIONS.map((o) => ({ label: o.label, onSelect: () => setArea(o.value) }))}
           />
-          <Select
-            label="Sort"
-            name="sort"
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            options={SORT_OPTIONS}
-            nativeArrow
-            className="flex-row items-center gap-[10px]"
-            labelClassName={FILTER_LABEL}
-            selectClassName={FILTER_SELECT}
+          <FilterChipMenu
+            label={`Sort: ${sort}`}
+            ariaLabel="Sort"
+            items={SORT_OPTIONS.map((o) => ({ label: o.label, onSelect: () => setSort(o.value) }))}
           />
         </div>
       </div>
