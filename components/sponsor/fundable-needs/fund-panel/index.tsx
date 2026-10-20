@@ -32,13 +32,13 @@ export default function FundPanel({ need, amountIndex, onAmountChange }: FundPan
     // box-content: the design's 340px basis is the content box, which sets how the row splits.
     <aside
       aria-label="Fund this need"
-      className="box-content flex-[1_1_340px] min-w-0 bg-[#141414] border border-[#2c2547] rounded-[14px] p-[26px] flex flex-col gap-5"
+      className="box-content flex-[1_1_340px] min-w-0 bg-[#141414] border border-[#2c2547] rounded-[8px] p-6 flex flex-col gap-5"
     >
       <div className="flex gap-4 items-start">
         <OrgCrest orgName={need.org} color={need.color} trim={need.trim} width={60} height={70} />
         <div className="min-w-0">
           <div className="text-[13px] tracking-[1px] text-[#a8a8a8] font-semibold">FUND THIS NEED</div>
-          <div className="font-bebas text-[32px] leading-[1.05] mt-1">{need.title}</div>
+          <div className="font-display font-extrabold text-2xl leading-tight mt-1">{need.title}</div>
           <div className="text-[15px] text-[#c4c4c4] mt-1">
             {need.org} · {formatMoney(remaining)} still needed
           </div>

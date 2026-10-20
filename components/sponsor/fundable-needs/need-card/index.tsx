@@ -18,7 +18,7 @@ export default function NeedCard({ need, selected, onSelect }: NeedCardProps) {
   return (
     <article
       className={cn(
-        "rounded-[14px] p-5 flex flex-col gap-[14px] border",
+        "rounded-[8px] p-6 flex flex-col gap-4 border",
         selected ? "bg-[#17151f] border-[#8b6dff]" : "bg-[#141414] border-[#222]"
       )}
     >
@@ -56,7 +56,8 @@ export default function NeedCard({ need, selected, onSelect }: NeedCardProps) {
         onClick={onSelect}
         fullWidth
         className={cn(
-          "h-11 min-w-0 px-[6px] rounded-[10px] text-[15px] font-semibold text-white border backdrop-blur-none transition-none",
+          // mt-auto pins the button to the card bottom, so every card in a row lines up.
+          "mt-auto h-11 min-w-0 px-[6px] rounded-[10px] text-[15px] font-semibold text-white border backdrop-blur-none transition-none",
           selected ? "bg-[#2a2148] border-[#8b6dff]" : "bg-transparent border-[#3a3a3a]"
         )}
       />

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Menu } from "lucide-react";
 import Button from "@/components/common/button";
 import { SPONSOR_PROFILE } from "@/components/sponsor/data";
@@ -13,7 +14,8 @@ interface SponsorHeaderProps {
 // name, email and initials. Messages and notifications are not wired up yet.
 export default function SponsorHeader({ title, onMenuClick }: SponsorHeaderProps) {
   return (
-    <header className="flex flex-wrap gap-4 items-center justify-between px-4 lg:px-14 py-[22px] border-b border-[#1c1c1c] shrink-0">
+    // Sized like the admin header: 80px tall, 40px side padding, 28px title, 24px icons, 48px avatar.
+    <header className="h-20 flex gap-4 items-center justify-between px-4 lg:px-10 border-b border-[#1c1c1c] shrink-0">
       <div className="flex items-center gap-3">
         <Button
           size="icon"
@@ -22,31 +24,31 @@ export default function SponsorHeader({ title, onMenuClick }: SponsorHeaderProps
           onClick={onMenuClick}
           className="lg:hidden size-8 bg-transparent backdrop-blur-none"
         />
-        <div className="font-bebas text-[36px] tracking-[0.5px] uppercase">{title}</div>
+        <h1 className="font-display font-black text-xl lg:text-[28px] uppercase tracking-wide">{title}</h1>
       </div>
-      <div className="flex items-center gap-[18px]">
+      <div className="flex items-center gap-6">
         <Button
           size="icon"
-          // eslint-disable-next-line @next/next/no-img-element
-          icon={<img src="/icons/icon-sponsor-messages.svg" alt="" width={26} height={26} />}
+          icon={<Image src="/icons/icon-sponsor-messages.svg" alt="" width={24} height={24} />}
           aria-label="Messages"
-          className="size-11 rounded-none bg-transparent backdrop-blur-none"
+          className="size-6 rounded-none bg-transparent backdrop-blur-none"
         />
         <Button
           size="icon"
-          // eslint-disable-next-line @next/next/no-img-element
-          icon={<img src="/icons/icon-sponsor-bell.svg" alt="" width={26} height={26} />}
+          icon={<Image src="/icons/icon-sponsor-bell.svg" alt="" width={24} height={24} />}
           aria-label="Notifications"
-          className="relative size-11 rounded-none bg-transparent backdrop-blur-none"
+          className="relative size-6 rounded-none bg-transparent backdrop-blur-none"
         >
-          <span className="absolute top-[9px] right-[10px] size-2 rounded-full bg-[#ff4d4d]" />
+          <span className="absolute top-0 right-0 size-2 rounded-full bg-[#ff4d4d]" />
         </Button>
-        <div className="hidden sm:block text-right leading-[1.3]">
-          <div className="font-semibold text-[17px] uppercase">{SPONSOR_PROFILE.name}</div>
-          <div className="text-[#a8a8a8] text-[14px]">{SPONSOR_PROFILE.email}</div>
-        </div>
-        <div className="box-content size-14 rounded-full border-2 border-[#444] flex items-center justify-center font-bebas text-[24px]">
-          {SPONSOR_PROFILE.initials}
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex flex-col items-end leading-tight">
+            <span className="text-sm font-semibold uppercase truncate max-w-[160px]">{SPONSOR_PROFILE.name}</span>
+            <span className="text-xs text-[#a8a8a8] truncate max-w-[160px]">{SPONSOR_PROFILE.email}</span>
+          </div>
+          <div className="size-12 shrink-0 rounded-full border-2 border-[#444] flex items-center justify-center font-display font-bold text-lg">
+            {SPONSOR_PROFILE.initials}
+          </div>
         </div>
       </div>
     </header>

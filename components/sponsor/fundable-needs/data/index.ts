@@ -1,5 +1,5 @@
 import type { Crest } from "@/components/sponsor/org-crest";
-import type { SponsorStat } from "@/components/sponsor/stat-tile";
+import type { Stat } from "@/components/common/stat-card";
 
 // Mock data for the Fundable Needs page until the sponsor API is integrated.
 
@@ -35,7 +35,7 @@ export const NEEDS: FundableNeed[] = [
   { org: "Silver Ridge High School", title: "Dugout renovation", category: "FACILITIES", raised: 3300, goal: 12000, daysLeft: 60, recognition: "Dugout signage for two seasons" },
 ].map((need, id) => ({ id, ...CRESTS[need.org], ...need }));
 
-export const STATS: SponsorStat[] = [
+export const STATS: Stat[] = [
   { label: "OPEN NEEDS NEARBY", value: "6", tint: "#3d6f3e", caption: "2 closing in the next 10 days" },
   { label: "STILL NEEDED", value: "$20,250", tint: "#3d5194", caption: "across 4 organizations" },
   { label: "FUNDED BY YOU", value: "$1,200", tint: "#5e4277", caption: "2 needs this season" },

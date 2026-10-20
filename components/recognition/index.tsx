@@ -5,7 +5,7 @@ import { CalendarDays, Check, ChevronDown, Eye, Image as ImageIcon, Newspaper, T
 import toast from "react-hot-toast";
 import Button from "@/components/common/button";
 import Checkbox from "@/components/common/checkbox";
-import RowActionsMenu from "@/components/common/row-actions-menu";
+import FilterChipMenu, { FILTER_CHIP } from "@/components/common/filter-chip-menu";
 import SearchInput from "@/components/common/search-input";
 import Tabs from "@/components/common/tabs";
 import WizardFooter from "@/components/common/wizard-footer";
@@ -35,8 +35,6 @@ const FILTERS: { key: FilterKey; all: string }[] = [
 const comingSoon = () => toast("Coming soon.");
 
 const CARD = "rounded-[10px] border border-white/10 bg-white/[0.04] p-4 lg:p-5 flex flex-col gap-4";
-const FILTER_CHIP =
-  "size-auto h-12 px-3.5 gap-2 rounded-[8px] outline-0 border border-white/15 bg-white/[0.06] hover:bg-white/10 text-sm text-white whitespace-nowrap";
 
 // Drag payload: where the photo came from and its id.
 type DragSource = { from: "grid" | "layout"; id: string } | null;
@@ -182,16 +180,10 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
                   className="w-full sm:w-60"
                 />
                 {FILTERS.map(({ key, all }) => (
-                  <RowActionsMenu
+                  <FilterChipMenu
                     key={key}
+                    label={filters[key] ?? all}
                     ariaLabel={`Filter by ${all.replace("All ", "").toLowerCase()}`}
-                    className={FILTER_CHIP}
-                    trigger={
-                      <>
-                        {filters[key] ?? all}
-                        <ChevronDown className="size-4" strokeWidth={2} />
-                      </>
-                    }
                     items={[
                       { label: all, onSelect: () => setFilters((f) => ({ ...f, [key]: undefined })) },
                       ...options(key).map((v) => ({ label: v, onSelect: () => setFilters((f) => ({ ...f, [key]: v })) })),

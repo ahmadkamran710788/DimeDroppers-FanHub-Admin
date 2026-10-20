@@ -36,9 +36,6 @@
   --font-sans: var(--font-inter);
   --font-display: var(--font-sofia);
   --font-mono: var(--font-geist-mono);
-  /* Sponsor pages only: the variables are set by app/(sponsor)/layout.tsx. */
-  --font-bebas: var(--font-bebas-neue);
-  --font-dm-sans: var(--font-dmsans);
 
   /* Brand */
   --color-midnight-navy: #0B1C2D;

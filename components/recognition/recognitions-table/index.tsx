@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import Button from "@/components/common/button";
 import GenericTable, { type Column } from "@/components/common/generic-table";
 import Pagination from "@/components/common/pagination";
+import FilterChipMenu, { FILTER_CHIP } from "@/components/common/filter-chip-menu";
 import RowActionsMenu from "@/components/common/row-actions-menu";
 import SearchInput from "@/components/common/search-input";
 import StatusPill from "@/components/common/status-pill";
@@ -24,8 +25,6 @@ const FILTERS: { key: FilterKey; all: string }[] = [
   { key: "status", all: "All Status" },
 ];
 
-const FILTER_CHIP =
-  "size-auto h-12 px-3.5 gap-2 rounded-[8px] outline-0 border border-white/15 bg-white/[0.06] hover:bg-white/10 text-sm text-white whitespace-nowrap";
 
 // Creating, editing and deleting recognitions need the recognitions API, which doesn't exist yet.
 const comingSoon = () => toast("Coming soon.");
@@ -135,16 +134,10 @@ export default function RecognitionsTable() {
           className="w-full sm:w-56"
         />
         {FILTERS.map(({ key, all }) => (
-          <RowActionsMenu
+          <FilterChipMenu
             key={key}
+            label={filters[key] ?? all}
             ariaLabel={`Filter by ${all.replace("All ", "").toLowerCase()}`}
-            className={FILTER_CHIP}
-            trigger={
-              <>
-                {filters[key] ?? all}
-                <ChevronDown className="size-4" strokeWidth={2} />
-              </>
-            }
             items={[
               { label: all, onSelect: () => setFilter(key) },
               ...options(key).map((v) => ({ label: v, onSelect: () => setFilter(key, v) })),
