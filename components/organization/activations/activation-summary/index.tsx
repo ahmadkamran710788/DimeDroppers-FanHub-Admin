@@ -1,4 +1,4 @@
-import { CATEGORY_STYLE, VISIBLE_CATEGORIES } from "@/components/organization/activations/data";
+import { CATEGORY_ORDER, CATEGORY_STYLE } from "@/components/organization/activations/data";
 import { formatUsd, selectedValue, type InventoryForm } from "@/components/organization/activations/helpers";
 import ActivationDonut from "@/components/organization/setup/activation-donut";
 import type { ActivationCategory } from "@/utils/types/activations";
@@ -11,7 +11,7 @@ interface ActivationSummaryProps {
 // The right rail summary: ticked slots per category (donut) and their total value, live from the
 // form so unsaved changes show.
 export default function ActivationSummary({ columns, categoryLabels }: ActivationSummaryProps) {
-  const lines = VISIBLE_CATEGORIES.map((c) => ({
+  const lines = CATEGORY_ORDER.map((c) => ({
     category: c,
     count: columns[c].filter((s) => s.enabled).length,
     value: selectedValue(columns[c]),

@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { CATEGORY_ORDER, VISIBLE_CATEGORIES } from "@/components/organization/activations/data";
+import { CATEGORY_ORDER } from "@/components/organization/activations/data";
 import { buildForm, toRequest, type FormSlot, type InventoryForm } from "@/components/organization/activations/helpers";
-import { slotValueSchema } from "@/components/organization/activations/schema";
+import { exclusivitySlotSchema } from "@/components/organization/activations/schema";
 import { backendFetch, forceSignOut } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type {
@@ -22,11 +22,16 @@ interface ApiResult<T> {
   error?: ActivationApiError;
 }
 
+export type SlotField = "value" | "size";
+
+// Problems with a slot's value or size, keyed by row.
+export type RowErrors = Record<string, Partial<Record<SlotField, string>>>;
+
 const NETWORK_ERROR = "Please check your network and try again.";
 
 // backendFetch (not apiCall) so the backend's own message and `data.errors` reach us untoasted:
-// apiCall replaces a 400 with generic text, and a 404 on GET / just means "no inventory yet".
-async function request<T>(method: "GET" | "POST" | "PUT", endpoint: string, body?: ActivationInventoryRequest): Promise<ApiResult<T>> {
+// apiCall replaces a 400 with generic text.
+async function request<T>(method: "GET" | "PUT", endpoint: string, body?: ActivationInventoryRequest): Promise<ApiResult<T>> {
   try {
     const res = await backendFetch(endpoint, {
       method,
@@ -50,12 +55,11 @@ const errorMessage = ({ status, error }: ApiResult<unknown>) =>
 interface Loaded {
   catalog: ActivationCatalog;
   form: InventoryForm;
-  // Whether the inventory exists yet: PUT saves it, otherwise POST creates it.
-  exists: boolean;
 }
 
 // State and saving for the Activations page: every slot of the org's type with its checkbox
-// ("show to sponsors") and value.
+// ("show to sponsors"), and the value and size of Exclusivity slots. The first GET creates the
+// inventory, so saving is always a PUT.
 export function useActivationInventory() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loads, setLoads] = useState(0);
@@ -63,8 +67,8 @@ export function useActivationInventory() {
   const [settledLoad, setSettledLoad] = useState(-1);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
-  // Value problems (before or from the last save), keyed by row.
-  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+  // Value / size problems (before or from the last save).
+  const [rowErrors, setRowErrors] = useState<RowErrors>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -74,13 +78,11 @@ export function useActivationInventory() {
     ]).then(([catalog, inventory]) => {
       if (cancelled) return;
       setSettledLoad(loads);
-      // A 404 on the inventory is the normal first visit: nothing created yet.
-      const inventoryFailed = !inventory.view && inventory.status !== 404;
-      if (!catalog.view || inventoryFailed) {
+      if (!catalog.view || !inventory.view) {
         toast.error(errorMessage(catalog.view ? inventory : catalog));
         return;
       }
-      setLoaded({ catalog: catalog.view, form: buildForm(catalog.view, inventory.view ?? null), exists: !!inventory.view });
+      setLoaded({ catalog: catalog.view, form: buildForm(catalog.view, inventory.view) });
       setDirty(false);
       setRowErrors({});
     });
@@ -106,14 +108,17 @@ export function useActivationInventory() {
     updateColumn(category, (slots) => slots.map((s) => (s.rowKey === rowKey ? fn(s) : s)));
   };
 
-  // ---- Checkbox, value and order ----
-  // Unticking only hides the slot from sponsors: its value (and any placements) are kept.
+  // ---- Checkbox, value, size and order ----
+  // Unticking only hides the slot from sponsors: its value, size (and any placements) are kept.
 
   const toggle = (category: ActivationCategory, rowKey: string) =>
     updateSlot(category, rowKey, (s) => ({ ...s, enabled: !s.enabled }));
 
   const setValue = (category: ActivationCategory, rowKey: string, value: string) =>
-    updateSlot(category, rowKey, (s) => ({ ...s, value }));
+    updateSlot(category, rowKey, (s) => (s.priceEditable ? { ...s, value } : s));
+
+  const setSize = (category: ActivationCategory, rowKey: string, size: string) =>
+    updateSlot(category, rowKey, (s) => (s.priceEditable ? { ...s, size } : s));
 
   const selectAll = (category: ActivationCategory) =>
     updateColumn(category, (slots) => slots.map((s) => ({ ...s, enabled: true })));
@@ -124,9 +129,7 @@ export function useActivationInventory() {
   const selectRecommended = () =>
     update((f) => ({
       ...f,
-      columns: mapColumns(f.columns, (s, category) =>
-        VISIBLE_CATEGORIES.includes(category) && s.isRecommended && !s.retired ? { ...s, enabled: true } : s
-      ),
+      columns: mapColumns(f.columns, (s) => (s.isRecommended && !s.retired ? { ...s, enabled: true } : s)),
     }));
 
   // Drag to reorder within a column; the order is saved.
@@ -145,35 +148,40 @@ export function useActivationInventory() {
 
   // ---- Save ----
 
-  // Every ticked slot needs a valid value (its field is showing).
-  const findValueErrors = async (f: InventoryForm) => {
-    const found: Record<string, string> = {};
+  // Every Exclusivity slot, ticked or not, since its value and size fields always show.
+  const findFieldErrors = async (f: InventoryForm) => {
+    const found: RowErrors = {};
+    const messages: string[] = [];
     for (const slot of CATEGORY_ORDER.flatMap((c) => f.columns[c])) {
-      if (!slot.enabled) continue;
-      const errors = await validateForm(slotValueSchema, { value: slot.value });
-      if (errors.value) found[slot.rowKey] = `${slot.name}: ${errors.value}`;
+      if (!slot.priceEditable) continue;
+      const errors = await validateForm(exclusivitySlotSchema, { value: slot.value, size: slot.size });
+      if (!errors.value && !errors.size) continue;
+      found[slot.rowKey] = { value: errors.value, size: errors.size };
+      messages.push(`${slot.name}: ${errors.value ?? errors.size}`);
     }
-    return found;
+    return { found, messages };
   };
 
   const mapSaveErrors = (result: ApiResult<unknown>, indexMap: string[]) => {
-    const found: Record<string, string> = {};
+    const found: RowErrors = {};
     for (const { path, message } of result.error?.data?.errors ?? []) {
-      const [root, index] = path.split(".");
+      const [root, index, field] = path.split(".");
       const rowKey = root === "activations" ? indexMap[Number(index)] : undefined;
-      if (rowKey) found[rowKey] ??= message;
+      if (!rowKey) continue;
+      const key: SlotField = field === "size" ? "size" : "value";
+      found[rowKey] = { ...found[rowKey], [key]: found[rowKey]?.[key] ?? message };
     }
     setRowErrors(found);
   };
 
   const save = async () => {
     if (!loaded || saving) return;
-    const { catalog, form: current, exists } = loaded;
+    const { catalog, form: current } = loaded;
 
-    const valueErrors = await findValueErrors(current);
-    if (Object.keys(valueErrors).length > 0) {
-      setRowErrors(valueErrors);
-      toast.error(Object.values(valueErrors)[0]);
+    const { found, messages } = await findFieldErrors(current);
+    if (messages.length > 0) {
+      setRowErrors(found);
+      toast.error(messages[0]);
       return;
     }
 
@@ -181,22 +189,12 @@ export function useActivationInventory() {
     setRowErrors({});
     try {
       const { body, indexMap } = toRequest(current);
-      let result = await request<ActivationInventory>(exists ? "PUT" : "POST", routes.api.activationInventory, body);
-      // The inventory is gone (PUT before any POST): create it instead.
-      if (exists && result.status === 404) {
-        result = await request<ActivationInventory>("POST", routes.api.activationInventory, body);
-      }
+      const result = await request<ActivationInventory>("PUT", routes.api.activationInventory, body);
 
       if (!result.view) {
-        if (result.status === 409) {
-          // Created meanwhile (another tab or admin): load it so the user reviews it before saving.
-          toast.error("Your organisation already has activations saved. We've loaded them — review and save again.");
-          reload();
-          return;
-        }
         toast.error(errorMessage(result));
         if (result.status === 400 && !result.error?.data?.errors?.length) {
-          // A catalog, type or id rule: the screen is out of date, so reload it.
+          // A catalog, category or id rule: the screen is out of date, so reload it.
           reload();
           return;
         }
@@ -205,8 +203,7 @@ export function useActivationInventory() {
       }
 
       // Replace the form with the saved view so new slots carry their ids into the next PUT.
-      const saved = buildForm(catalog, result.view, current.columns);
-      setLoaded({ catalog, form: saved, exists: true });
+      setLoaded({ catalog, form: buildForm(catalog, result.view, current.columns) });
       setDirty(false);
       toast.success("Activations saved.");
     } finally {
@@ -226,13 +223,13 @@ export function useActivationInventory() {
     loading: settledLoad !== loads,
     catalog: loaded?.catalog ?? null,
     form,
-    exists: loaded?.exists ?? false,
     reload,
     dirty,
     saving,
     rowErrors,
     toggle,
     setValue,
+    setSize,
     selectAll,
     clearAll,
     selectRecommended,
@@ -241,7 +238,7 @@ export function useActivationInventory() {
   };
 }
 
-function without(errors: Record<string, string>, key: string): Record<string, string> {
+function without(errors: RowErrors, key: string): RowErrors {
   const next = { ...errors };
   delete next[key];
   return next;

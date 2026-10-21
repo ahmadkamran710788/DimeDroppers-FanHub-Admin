@@ -1,14 +1,15 @@
 import * as yup from "yup";
-import { MAX_SLOT_VALUE } from "@/components/organization/activations/data";
+import { MAX_SIZE_LENGTH, MAX_SLOT_VALUE } from "@/components/organization/activations/data";
 
 const VALUE_MESSAGE = `Whole dollars from $0 to $${MAX_SLOT_VALUE.toLocaleString("en-US")}`;
 
-// A ticked slot's value, typed as text: whole dollars, 0 – 1,000,000.
-export const slotValueSchema = yup.object({
+// An Exclusivity slot's value and size, typed as text. Empty means the default (the category base
+// value, the catalog size).
+export const exclusivitySlotSchema = yup.object({
   value: yup
     .string()
     .trim()
-    .required("Value is required")
-    .matches(/^\d+$/, VALUE_MESSAGE)
-    .test("range", VALUE_MESSAGE, (v) => Number(v) <= MAX_SLOT_VALUE),
+    .test("whole", VALUE_MESSAGE, (v) => !v || /^\d+$/.test(v))
+    .test("range", VALUE_MESSAGE, (v) => !v || Number(v) <= MAX_SLOT_VALUE),
+  size: yup.string().trim().max(MAX_SIZE_LENGTH, `At most ${MAX_SIZE_LENGTH} characters`),
 });
