@@ -2,12 +2,15 @@ import * as yup from "yup";
 
 export const DESCRIPTION_MAX = 250;
 
+// Notifications show the title as the card body, which fits about 2 lines (~65 characters).
+export const NAME_MAX = 60;
+
 // "Purpose" — what the campaign funds; any number can be picked.
 export const IMPACT_OPTIONS = ["Meals", "Travel", "Tournament Fees"] as const;
 export type CampaignImpact = (typeof IMPACT_OPTIONS)[number];
 
 export const createCampaignSchema = yup.object({
-  name: yup.string().trim().required("Campaign name is required"),
+  name: yup.string().trim().required("Campaign name is required").max(NAME_MAX, `Keep the campaign name to ${NAME_MAX} characters`),
   teamId: yup.string().required("Select the team this campaign is for"),
   goal: yup
     .string()

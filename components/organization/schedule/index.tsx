@@ -45,10 +45,13 @@ import {
   Layers,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { orgKindOf, useAuth } from "@/context/auth";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const TABS = ["Games", "Events"];
+// A school schedules its own games; a tournament's games come in as synced events.
+const SCHOOL_TABS = ["Games"];
+const TOURNAMENT_TABS = ["Events"];
 
 const SCHEDULE_TOOLS = [
   { icon: Plus, label: "Add Game", description: "Manually add a single game" },
@@ -481,7 +484,12 @@ export default function SchedulePage() {
   const [pagination, setPagination] = useState<SchedulePagination | null>(null);
   const [summary, setSummary] = useState<ScheduleSummary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("Games");
+  // By the org's type (/me organizationType): a school gets the Games tab, Add Game and Schedule
+  // Tools; a tournament gets the Events tab only.
+  const { org } = useAuth();
+  const isTournament = orgKindOf(org) === "tournament";
+  const tabs = isTournament ? TOURNAMENT_TABS : SCHOOL_TABS;
+  const activeTab = tabs[0];
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -612,15 +620,17 @@ export default function SchedulePage() {
               icon={<CloudUpload className="w-5 h-5" strokeWidth={2} />}
               onClick={() => router.push(routes.ui.importSchedule)}
             />
-            <button
-              type="button"
-              onClick={() => setShowAddModal(true)}
-              className="h-12 px-6 rounded-lg flex items-center gap-2 text-white text-base font-medium transition-opacity hover:opacity-90"
-              style={{ background: "var(--gradient-cta)" }}
-            >
-              <Plus className="w-4 h-4" strokeWidth={2.5} />
-              Add Game
-            </button>
+            {!isTournament && (
+              <button
+                type="button"
+                onClick={() => setShowAddModal(true)}
+                className="h-12 px-6 rounded-lg flex items-center gap-2 text-white text-base font-medium transition-opacity hover:opacity-90"
+                style={{ background: "var(--gradient-cta)" }}
+              >
+                <Plus className="w-4 h-4" strokeWidth={2.5} />
+                Add Game
+              </button>
+            )}
           </div>
         </div>
 
@@ -635,10 +645,10 @@ export default function SchedulePage() {
           <div className="relative h-11 overflow-hidden">
             <div className="absolute bottom-0 left-0 right-0 h-px bg-white/20" />
             <div className="flex items-start h-full">
-              {TABS.map((tab) => {
+              {tabs.map((tab) => {
                 const isActive = activeTab === tab;
                 return (
-                  <button key={tab} type="button" onClick={() => setActiveTab(tab)} className="w-28 flex flex-col items-center gap-3 relative h-full justify-end">
+                  <button key={tab} type="button" className="w-28 flex flex-col items-center gap-3 relative h-full justify-end">
                     <span className={cn("text-base font-medium pb-3", isActive ? "text-white" : "text-white/60 hover:text-white transition-colors")}>{tab}</span>
                     <div className={cn("absolute bottom-0 left-2 right-2 h-0.5 rounded-full transition-opacity", isActive ? "opacity-100" : "opacity-0")} style={{ background: "var(--gradient-cta)" }} />
                   </button>
@@ -820,7 +830,7 @@ export default function SchedulePage() {
       <div className="w-full lg:w-[320px] lg:shrink-0 flex flex-col gap-6">
         <NextGameCard game={nextGame} />
         <MiniCalendar games={games} />
-        <ScheduleTools onAddGame={() => setShowAddModal(true)} />
+        {!isTournament && <ScheduleTools onAddGame={() => setShowAddModal(true)} />}
       </div>
     </div>
   );

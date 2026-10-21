@@ -9,6 +9,7 @@ import EditTeamModal from "@/components/organization/teams/edit-team-modal";
 import SportModal from "@/components/organization/teams/sport-modal";
 import SportsList from "@/components/organization/teams/sports-list";
 import { useOrgTeams, type Department, type DepartmentTeam } from "@/components/organization/teams/use-org-teams";
+import { orgKindOf, useAuth } from "@/context/auth";
 import { useSetup } from "@/context/setup";
 import { routes } from "@/utils/routes";
 
@@ -20,6 +21,9 @@ type SportEditing = { sport: Department | null } | null;
 export default function TeamsPage() {
   const router = useRouter();
   const { savedSchool } = useSetup();
+  // A tournament doesn't add teams of its own.
+  const { org } = useAuth();
+  const canAddTeam = orgKindOf(org) !== "tournament";
   const { departments, teams, loading, reload } = useOrgTeams();
   const [sportEditing, setSportEditing] = useState<SportEditing>(null);
   const [teamEditing, setTeamEditing] = useState<{ team: DepartmentTeam; sport: Department } | null>(null);
@@ -45,7 +49,7 @@ export default function TeamsPage() {
         </div>
         <div className="flex flex-wrap gap-3 shrink-0">
           <Button label="Add Activity" icon={<Plus className="size-5" />} onClick={() => setSportEditing({ sport: null })} />
-          <Button variant="cta" label="Add Team" className="px-12" onClick={() => router.push(routes.ui.addTeam)} />
+          {canAddTeam && <Button variant="cta" label="Add Team" className="px-12" onClick={() => router.push(routes.ui.addTeam)} />}
         </div>
       </div>
 
