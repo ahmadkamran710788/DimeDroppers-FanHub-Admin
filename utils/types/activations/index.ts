@@ -1,8 +1,11 @@
 // FanHub Activations (fanhub/org/activations) — see docs/endpoints/FANHUB_ACTIVATIONS_FRONTEND.md.
 
-export type ActivationCategory = "FAN_ZONE" | "COMMUNITY" | "PLAY" | "PHYSICAL_ADD_ON";
+export type ActivationCategory = "PRE_GAME" | "LIVE" | "POST_GAME" | "ADD_ON" | "EXCLUSIVITY";
 export type GamePhase = "PRE_GAME" | "LIVE" | "POST_GAME" | "FULL_GAME";
 export type ActivationOrganizationType = "SCHOOL" | "TOURNAMENT" | "CLUB_TEAM" | "LEAGUE";
+// CATEGORY_BASE: the value is Dime's base value for the category. ORGANIZATION: the org set it
+// (Exclusivity only).
+export type ValueSource = "CATEGORY_BASE" | "ORGANIZATION";
 export type Capability =
   | "IMPRESSION"
   | "CLICK_THROUGH"
@@ -38,11 +41,11 @@ export interface CatalogItem {
   key: string;
   name: string;
   description: string;
+  // e.g. "12 x 12 ft" on banners.
+  size: string | null;
   isRecommended: boolean;
   defaultPhase: GamePhase;
   defaultCapabilities: Capability[];
-  // The slot's starting value (whole dollars).
-  defaultValue: number;
   sortOrder: number;
 }
 
@@ -50,6 +53,10 @@ export interface CatalogCategory {
   category: ActivationCategory;
   label: string;
   description: string;
+  // Dime's value for every slot in the category (whole dollars).
+  baseValue: number;
+  // Only Exclusivity: the org can set its slots' value and size.
+  isEditable: boolean;
   itemCount: number;
   recommendedCount: number;
   items: CatalogItem[];
@@ -63,7 +70,7 @@ export interface ActivationCatalog {
   capabilities: CapabilityOption[];
 }
 
-// ---- GET / POST / PUT / (the inventory view) ----
+// ---- GET / PUT (the inventory view) ----
 
 export interface ActivationLevel {
   id: string;
@@ -95,8 +102,13 @@ export interface InventoryActivation {
   isRecommended: boolean;
   name: string;
   description: string | null;
-  // The slot's value (whole dollars); starts at the catalog defaultValue.
+  // The effective size: the org's own, else the catalog's.
+  size: string | null;
+  // The effective value (whole dollars): the org's own, else the category base value.
   value: number;
+  valueSource: ValueSource;
+  // Only Exclusivity slots: value and size can be changed.
+  isEditable: boolean;
   // The checkbox: sponsors can see this slot.
   isAvailableForSponsors: boolean;
   sortOrder: number;
@@ -109,6 +121,8 @@ export interface InventoryCategory {
   category: ActivationCategory;
   label: string;
   description: string;
+  baseValue: number;
+  isEditable: boolean;
   // Slots in the column (the Select All (n) number).
   activationCount: number;
   // Ticked slots, and the sum of their value.
@@ -154,10 +168,10 @@ export interface ActivationInventory {
   };
 }
 
-// ---- POST / PUT body ----
-// Array order is display order; the backend renumbers sortOrder. Left out of the body: a catalog
-// slot is kept as it is, but a custom slot or a level is deleted, and so is a placement left out of
-// a slot that is sent.
+// ---- PUT body ----
+// Array order is display order: sent slots are numbered first, in the order sent, and slots left
+// out follow. Left out of the body: a catalog slot is kept as it is, but a custom slot or a level
+// is deleted, and so is a placement left out of a slot that is sent.
 
 export interface LevelInput {
   id?: string;
@@ -184,8 +198,10 @@ export interface ActivationInput {
   category?: ActivationCategory;
   name?: string;
   description?: string | null;
-  // Whole dollars, 0 – 1,000,000. Left out: unchanged (new slot: the catalog default).
-  value?: number;
+  // Exclusivity only. Whole dollars, 0 – 1,000,000; null = back to the default. Left out: unchanged.
+  value?: number | null;
+  // Exclusivity only. 1 – 40 chars; null = back to the catalog size. Left out: unchanged.
+  size?: string | null;
   isAvailableForSponsors?: boolean;
   // Defaults to [] — so a slot sent without them loses its placements.
   placements?: PlacementInput[];

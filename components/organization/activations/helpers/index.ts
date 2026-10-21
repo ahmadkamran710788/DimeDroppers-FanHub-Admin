@@ -1,20 +1,27 @@
-import { CATEGORY_ORDER, FALLBACK_VALUE, MAX_SLOT_VALUE } from "@/components/organization/activations/data";
+import { CATEGORY_ORDER, MAX_SIZE_LENGTH, MAX_SLOT_VALUE } from "@/components/organization/activations/data";
 import type {
   ActivationCatalog,
   ActivationCategory,
   ActivationInput,
   ActivationInventory,
   ActivationInventoryRequest,
-  CatalogItem,
   InventoryActivation,
   LevelInput,
   PlacementInput,
 } from "@/utils/types/activations";
 
 // ---- Form model ----
-// One row per slot (every slot for the org's type is listed). The page edits only the checkbox
-// (`enabled`), the value and the order; levels and placements aren't edited here but are sent back
-// unchanged, because a save deletes levels — and placements of a sent slot — left out of the body.
+// One row per slot (every slot for the org's type is listed). The page edits the checkbox
+// (`enabled`) and the order of every slot, plus the value and size of Exclusivity slots; levels and
+// placements aren't edited here but are sent back unchanged, because a save deletes levels — and
+// placements of a sent slot — left out of the body.
+
+// The editable fields as they were loaded, so a save sends only what changed.
+export interface SlotInitial {
+  enabled: boolean;
+  value: string;
+  size: string;
+}
 
 export interface FormSlot {
   // Stable on-screen key: the catalog key, or the custom slot's id.
@@ -30,8 +37,15 @@ export interface FormSlot {
   retired: boolean;
   // The checkbox: shown to sponsors.
   enabled: boolean;
-  // Whole dollars, as typed.
+  // Exclusivity: the org sets the value and size.
+  priceEditable: boolean;
+  // Dime's value for the category: the slot's value, or the default of an Exclusivity slot.
+  baseValue: number;
+  // Exclusivity: whole dollars, as typed; "" = the default (baseValue).
   value: string;
+  // As typed on Exclusivity slots ("" = the catalog size); the catalog size elsewhere.
+  size: string;
+  initial: SlotInitial;
   placements: PlacementInput[];
 }
 
@@ -44,23 +58,13 @@ export const catalogRowKey = (catalogKey: string) => `catalog:${catalogKey.toUpp
 
 const byOrder = <T extends { sortOrder: number }>(a: T, b: T) => a.sortOrder - b.sortOrder;
 
-const startingValue = (item: CatalogItem) => String(item.defaultValue ?? FALLBACK_VALUE);
-
-const fromCatalog = (item: CatalogItem): FormSlot => ({
-  rowKey: catalogRowKey(item.key),
-  id: null,
-  catalogKey: item.key.toUpperCase(),
-  name: item.name,
-  description: item.description,
-  isRecommended: item.isRecommended,
-  retired: false,
-  enabled: false,
-  value: startingValue(item),
-  placements: [],
-});
-
-const fromView = (a: InventoryActivation, offered: Set<string>): FormSlot => {
+const fromView = (a: InventoryActivation, baseValue: number, offered: Set<string>): FormSlot => {
   const catalogKey = a.catalogKey ? a.catalogKey.toUpperCase() : null;
+  const initial: SlotInitial = {
+    enabled: a.isAvailableForSponsors,
+    value: a.isEditable && a.valueSource === "ORGANIZATION" ? String(a.value) : "",
+    size: a.size ?? "",
+  };
   return {
     rowKey: catalogKey ? catalogRowKey(catalogKey) : `custom:${a.id}`,
     id: a.id,
@@ -69,8 +73,10 @@ const fromView = (a: InventoryActivation, offered: Set<string>): FormSlot => {
     description: a.description,
     isRecommended: a.isRecommended,
     retired: !!catalogKey && !offered.has(catalogKey),
-    enabled: a.isAvailableForSponsors ?? false,
-    value: String(a.value ?? FALLBACK_VALUE),
+    priceEditable: a.isEditable,
+    baseValue,
+    ...initial,
+    initial,
     placements: [...a.placements].sort(byOrder).map((p) => ({
       id: p.id,
       levelName: p.levelName,
@@ -82,13 +88,13 @@ const fromView = (a: InventoryActivation, offered: Set<string>): FormSlot => {
   };
 };
 
-// Builds the form from the catalog and the saved inventory. With no inventory yet (first visit),
-// every catalog slot starts at its default value, unticked. `prevColumns` (after a save) keeps the
-// rows in their on-screen order: catalog slots by key, custom ones by position, since the API keeps
-// the order it was sent.
+// Builds the form from the inventory (which lists every offered slot, saved or not); the catalog
+// only tells which saved slots are no longer offered. `prevColumns` (after a save) keeps the rows in
+// their on-screen order: catalog slots by key, custom ones by position, since the API keeps the
+// order it was sent.
 export function buildForm(
   catalog: ActivationCatalog,
-  inventory: ActivationInventory | null,
+  inventory: ActivationInventory,
   prevColumns?: InventoryForm["columns"]
 ): InventoryForm {
   const columns = {} as InventoryForm["columns"];
@@ -96,11 +102,8 @@ export function buildForm(
   for (const category of CATEGORY_ORDER) {
     const items = catalog.categories.find((c) => c.category === category)?.items ?? [];
     const offered = new Set(items.map((item) => item.key.toUpperCase()));
-    let slots = inventory
-      ? [...(inventory.categories.find((c) => c.category === category)?.activations ?? [])]
-          .sort(byOrder)
-          .map((a) => fromView(a, offered))
-      : items.map(fromCatalog);
+    const view = inventory.categories.find((c) => c.category === category);
+    let slots = [...(view?.activations ?? [])].sort(byOrder).map((a) => fromView(a, view?.baseValue ?? 0, offered));
 
     if (prevColumns) {
       const byKey = new Map(slots.filter((s) => s.catalogKey).map((s) => [s.rowKey, s]));
@@ -113,23 +116,35 @@ export function buildForm(
       slots = [...ordered, ...byKey.values(), ...custom];
     }
 
-    // Catalog items the inventory doesn't list yet still show, unticked.
-    const listed = new Set(slots.map((s) => s.rowKey));
-    for (const item of items) {
-      if (!listed.has(catalogRowKey(item.key))) slots.push(fromCatalog(item));
-    }
     columns[category] = slots;
   }
 
   return {
-    levels: [...(inventory?.levels ?? [])].sort(byOrder).map((l) => ({ id: l.id, name: l.name })),
+    levels: [...inventory.levels].sort(byOrder).map((l) => ({ id: l.id, name: l.name })),
     columns,
   };
 }
 
-// The POST / PUT body: every slot (shown or not) with its value and checkbox, in display order,
-// and the levels and placements as they were. `indexMap[i]` is the row behind `activations.{i}`,
-// so validation paths from a 400 can be traced back to the screen.
+// The changed value and size of an Exclusivity slot: "" goes back to the default. Fields that
+// don't pass validation are left out, so the saved ones stay.
+function exclusivityChanges(slot: FormSlot): Pick<ActivationInput, "value" | "size"> {
+  const changes: Pick<ActivationInput, "value" | "size"> = {};
+  if (!slot.priceEditable) return changes;
+  const value = slot.value.trim();
+  if (value !== slot.initial.value && (value === "" || isWholeNumber(value))) {
+    changes.value = value === "" ? null : Number(value);
+  }
+  const size = slot.size.trim();
+  if (size !== slot.initial.size.trim() && size.length <= MAX_SIZE_LENGTH) {
+    changes.size = size || null;
+  }
+  return changes;
+}
+
+// The PUT body: every slot in display order (the backend numbers the sent slots first, so leaving
+// one out would move it), sending only the checkbox, value and size that changed, and the levels
+// and placements as they were. `indexMap[i]` is the row behind `activations.{i}`, so validation
+// paths from a 400 can be traced back to the screen.
 export function toRequest(form: InventoryForm): { body: ActivationInventoryRequest; indexMap: string[] } {
   const activations: ActivationInput[] = [];
   const indexMap: string[] = [];
@@ -144,10 +159,8 @@ export function toRequest(form: InventoryForm): { body: ActivationInventoryReque
         ...(slot.catalogKey
           ? { catalogKey: slot.catalogKey }
           : { category, name: slot.name, description: slot.description }),
-        // Ticked slots are validated before saving; an unticked one whose (hidden) field holds
-        // something invalid leaves the value out, so the saved value stays.
-        ...(isWholeNumber(slot.value) && { value: Number(slot.value) }),
-        isAvailableForSponsors: slot.enabled,
+        ...(slot.enabled !== slot.initial.enabled && { isAvailableForSponsors: slot.enabled }),
+        ...exclusivityChanges(slot),
         placements: slot.placements,
       });
     }
@@ -162,10 +175,14 @@ function isWholeNumber(v: string) {
   return /^\d+$/.test(v.trim()) && Number(v) <= MAX_SLOT_VALUE;
 }
 
-const toInt = (v: string) => (isWholeNumber(v) ? Number(v) : 0);
+// What the slot is worth: the typed Exclusivity value, else the category base value.
+export const effectiveValue = (slot: FormSlot) => {
+  if (!slot.priceEditable || slot.value.trim() === "") return slot.baseValue;
+  return isWholeNumber(slot.value) ? Number(slot.value) : 0;
+};
 
 // Sum of the ticked slots' values.
-export const selectedValue = (slots: FormSlot[]) => slots.reduce((sum, s) => sum + (s.enabled ? toInt(s.value) : 0), 0);
+export const selectedValue = (slots: FormSlot[]) => slots.reduce((sum, s) => sum + (s.enabled ? effectiveValue(s) : 0), 0);
 
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 

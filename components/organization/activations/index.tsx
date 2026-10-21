@@ -2,7 +2,7 @@
 
 import ActivationSummary from "@/components/organization/activations/activation-summary";
 import CategoryColumn from "@/components/organization/activations/category-column";
-import { CATEGORY_ORDER, CATEGORY_STYLE, VISIBLE_CATEGORIES } from "@/components/organization/activations/data";
+import { CATEGORY_ORDER, CATEGORY_STYLE } from "@/components/organization/activations/data";
 import RecommendedCard, { type RecommendedEntry } from "@/components/organization/activations/recommended-card";
 import { useActivationInventory } from "@/components/organization/activations/use-activation-inventory";
 import Button from "@/components/common/button";
@@ -39,7 +39,10 @@ export default function ActivationsPage() {
       <h2 className="font-display font-black text-[32px] sm:text-[40px] lg:text-[56px] uppercase text-white leading-none">
         Activations
       </h2>
-      <p className="text-base text-white/80">Select the fan experience and features you want to offer in your Fan Hub.</p>
+      <p className="text-base text-white/80">
+        Choose the activations sponsors can see in your Fan Hub. Pre Game, Live, Post Game and Add-ons use Dime&apos;s
+        base values; set your own value and size for Exclusivity.
+      </p>
     </div>
   );
 
@@ -65,7 +68,9 @@ export default function ActivationsPage() {
     CATEGORY_ORDER.map((c) => [c, categoryInfo(c)?.label ?? c])
   ) as Record<ActivationCategory, string>;
 
-  const ticked = VISIBLE_CATEGORIES.flatMap((c) => form.columns[c]).filter((s) => s.enabled);
+  const isEditable = (category: ActivationCategory) => !!categoryInfo(category)?.isEditable;
+
+  const ticked = CATEGORY_ORDER.flatMap((c) => form.columns[c]).filter((s) => s.enabled);
 
   // Total = ticked slots. Active / Draft / Scheduled / Completed have no source yet (Active was
   // "ticked with a link", and links aren't on this page any more) — shown as "—" until the
@@ -78,8 +83,27 @@ export default function ActivationsPage() {
     { label: "Completed", value: "—", caption: "This Month" },
   ];
 
-  const recommended: RecommendedEntry[] = VISIBLE_CATEGORIES.flatMap((category) =>
+  const recommended: RecommendedEntry[] = CATEGORY_ORDER.flatMap((category) =>
     form.columns[category].filter((slot) => slot.isRecommended && !slot.retired).map((slot) => ({ category, slot }))
+  );
+
+  const column = (category: ActivationCategory) => (
+    <CategoryColumn
+      key={category}
+      label={categoryLabels[category]}
+      description={categoryInfo(category)?.description ?? ""}
+      baseValue={categoryInfo(category)?.baseValue ?? 0}
+      editable={isEditable(category)}
+      color={CATEGORY_STYLE[category].color}
+      slots={form.columns[category]}
+      rowErrors={inv.rowErrors}
+      onToggle={(rowKey) => inv.toggle(category, rowKey)}
+      onValueChange={(rowKey, value) => inv.setValue(category, rowKey, value)}
+      onSizeChange={(rowKey, size) => inv.setSize(category, rowKey, size)}
+      onSelectAll={() => inv.selectAll(category)}
+      onClearAll={() => inv.clearAll(category)}
+      onReorder={(from, to) => inv.reorder(category, from, to)}
+    />
   );
 
   return (
@@ -93,34 +117,20 @@ export default function ActivationsPage() {
         ))}
       </div>
 
-      {/* 4-column row: 3 category cards + right rail */}
-      <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-start">
-        {VISIBLE_CATEGORIES.map((category) => (
-          <CategoryColumn
-            key={category}
-            label={categoryLabels[category]}
-            description={categoryInfo(category)?.description ?? ""}
-            color={CATEGORY_STYLE[category].color}
-            slots={form.columns[category]}
-            rowErrors={inv.rowErrors}
-            onValueChange={(rowKey, value) => inv.setValue(category, rowKey, value)}
-            onToggle={(rowKey) => inv.toggle(category, rowKey)}
-            onSelectAll={() => inv.selectAll(category)}
-            onClearAll={() => inv.clearAll(category)}
-            onReorder={(from, to) => inv.reorder(category, from, to)}
-          />
-        ))}
+      {/* All five categories in one row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 xl:gap-4 2xl:gap-6 items-start">
+        {CATEGORY_ORDER.map(column)}
+      </div>
 
-        {/* Right rail */}
-        <div className="w-full lg:flex-1 min-w-0 flex flex-col gap-10">
-          <ActivationSummary columns={form.columns} categoryLabels={categoryLabels} />
-          <RecommendedCard
-            entries={recommended}
-            organizationTypeLabel={catalog.organizationTypeLabel}
-            onToggle={({ category, slot }) => inv.toggle(category, slot.rowKey)}
-            onApply={inv.selectRecommended}
-          />
-        </div>
+      {/* Summary + recommended */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-start">
+        <ActivationSummary columns={form.columns} categoryLabels={categoryLabels} />
+        <RecommendedCard
+          entries={recommended}
+          organizationTypeLabel={catalog.organizationTypeLabel}
+          onToggle={({ category, slot }) => inv.toggle(category, slot.rowKey)}
+          onApply={inv.selectRecommended}
+        />
       </div>
 
       {/* Footer action */}

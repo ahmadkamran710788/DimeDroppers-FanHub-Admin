@@ -11,7 +11,7 @@ export interface RecommendedEntry {
 }
 
 interface RecommendedCardProps {
-  // The recommended slots of the visible columns.
+  // The recommended slots of every column.
   entries: RecommendedEntry[];
   organizationTypeLabel: string;
   onToggle: (entry: RecommendedEntry) => void;
