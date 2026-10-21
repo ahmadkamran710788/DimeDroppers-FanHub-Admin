@@ -11,14 +11,14 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "Brand",
     items: [
-      { icon: <ImageIcon className="size-6" strokeWidth={1.5} />, label: "Brand Assets", href: "#" },
+      { icon: <ImageIcon className="size-6" strokeWidth={1.5} />, label: "Brand Assets", href: routes.ui.sponsor.brandAssets },
       { icon: "/icons/icon-user.svg", label: "Sponsor Profile", href: "#" },
     ],
   },
   {
     title: "Sponsorship",
     items: [
-      { icon: <Search className="size-6" strokeWidth={1.5} />, label: "Find Organizations", href: "#" },
+      { icon: <Search className="size-6" strokeWidth={1.5} />, label: "Find Organizations", href: routes.ui.sponsor.findOrganizations },
       { icon: <Heart className="size-6" strokeWidth={1.5} />, label: "Fundable Needs", href: routes.ui.sponsor.fundableNeeds },
       { icon: "/icons/icon-calendar.svg", label: "My Sponsorships", href: "#" },
     ],
@@ -28,7 +28,7 @@ const NAV_SECTIONS: NavSection[] = [
 // Campaign Planner is for national accounts only.
 const DIME_AI_SECTION: NavSection = {
   title: "Dime AI",
-  items: [{ icon: <Sparkles className="size-6" strokeWidth={1.5} />, label: "Campaign Planner", href: "#", badge: "NATIONAL" }],
+  items: [{ icon: <Sparkles className="size-6" strokeWidth={1.5} />, label: "Campaign Planner", href: routes.ui.sponsor.campaignPlanner, badge: "NATIONAL" }],
 };
 
 interface SponsorSidebarProps {

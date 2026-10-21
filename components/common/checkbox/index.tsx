@@ -5,10 +5,25 @@ interface CheckboxProps {
   checked: boolean;
   // Some-but-not-all selected (e.g. a "Select All" row) — renders a filled square.
   indeterminate?: boolean;
-  // "blue": 24px steel-blue box (Setup Wizard). "white": 16px white box with a navy tick.
-  variant?: "blue" | "white";
+  // "blue": 24px steel-blue box (Setup Wizard). "violet": 22px purple box (sponsor pages).
+  // "white": 16px white box with a navy tick.
+  variant?: "blue" | "violet" | "white";
   className?: string;
 }
+
+// Box size and on/off colors of the variants that share the white tick.
+const BOX_STYLES = {
+  blue: {
+    box: "w-6 h-6 rounded border-2",
+    on: "bg-steel-blue border-steel-blue",
+    off: "border-[rgba(255,255,255,0.3)] bg-transparent",
+  },
+  violet: {
+    box: "w-[22px] h-[22px] rounded-[6px] border",
+    on: "bg-[#6a4be6] border-[#6a4be6]",
+    off: "border-[1.5px] border-[#666] bg-transparent",
+  },
+};
 
 // Visual-only checkbox; the clickable element (button/label) is owned by the caller.
 export default function Checkbox({ checked, indeterminate = false, variant = "blue", className }: CheckboxProps) {
@@ -29,11 +44,13 @@ export default function Checkbox({ checked, indeterminate = false, variant = "bl
     );
   }
 
+  const style = BOX_STYLES[variant];
   return (
     <span
       className={cn(
-        "w-6 h-6 rounded shrink-0 flex items-center justify-center border-2 transition-colors",
-        on ? "bg-steel-blue border-steel-blue" : "border-[rgba(255,255,255,0.3)] bg-transparent",
+        style.box,
+        "shrink-0 flex items-center justify-center transition-colors",
+        on ? style.on : style.off,
         className
       )}
     >

@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { cn } from "@/utils/cn";
-import Button from "@/components/common/button";
 import FilterChipMenu from "@/components/common/filter-chip-menu";
+import FilterChips from "@/components/common/filter-chips";
 import StatCard from "@/components/common/stat-card";
 import NeedCard from "@/components/sponsor/fundable-needs/need-card";
 import FundPanel from "@/components/sponsor/fundable-needs/fund-panel";
 import {
   AREA_OPTIONS,
-  CATEGORIES,
+  CATEGORY_OPTIONS,
   NEEDS,
   SORT_OPTIONS,
   STATS,
@@ -56,23 +55,7 @@ export default function FundableNeeds() {
       </div>
 
       <div className="flex flex-wrap gap-4 items-center justify-between">
-        <div role="group" aria-label="Category" className="flex flex-wrap gap-[10px]">
-          {CATEGORIES.map((c) => {
-            const on = category === c;
-            return (
-              <Button
-                key={c}
-                label={c}
-                onClick={() => setCategory(c)}
-                aria-pressed={on}
-                className={cn(
-                  "h-11 min-w-0 px-4 rounded-full text-[15px] font-semibold border backdrop-blur-none transition-none",
-                  on ? "bg-[#2a2148] text-white border-[#8b6dff]" : "bg-[#0b0b0b] text-[#cfcfcf] border-[#333]"
-                )}
-              />
-            );
-          })}
-        </div>
+        <FilterChips variant="pill" ariaLabel="Category" options={CATEGORY_OPTIONS} value={category} onChange={setCategory} />
         <div className="flex gap-3 flex-wrap">
           <FilterChipMenu
             label={`Area: ${area}`}

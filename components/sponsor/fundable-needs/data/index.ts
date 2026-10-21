@@ -1,3 +1,4 @@
+import { toOptions } from "@/utils/helper";
 import type { Crest } from "@/components/sponsor/org-crest";
 import type { Stat } from "@/components/common/stat-card";
 
@@ -5,6 +6,7 @@ import type { Stat } from "@/components/common/stat-card";
 
 export const CATEGORIES = ["All", "Equipment", "Travel", "Tech", "Scholarships", "Facilities"] as const;
 export type Category = (typeof CATEGORIES)[number];
+export const CATEGORY_OPTIONS = CATEGORIES.map((c) => ({ label: c, value: c }));
 
 export interface FundableNeed extends Crest {
   id: number;
@@ -43,8 +45,6 @@ export const STATS: Stat[] = [
 
 // Preset amounts; the panel adds a fourth, "Fund rest", for what the need still lacks.
 export const PRESET_AMOUNTS = [250, 500, 1000];
-
-const toOptions = (labels: string[]) => labels.map((label) => ({ label, value: label }));
 
 export const AREA_OPTIONS = toOptions(["Within 25 mi", "Within 50 mi", "Statewide"]);
 export const SORT_OPTIONS = toOptions(["Closing soonest", "Closest to goal", "Smallest ask"]);

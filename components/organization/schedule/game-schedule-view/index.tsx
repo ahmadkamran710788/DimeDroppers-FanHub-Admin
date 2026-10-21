@@ -3,6 +3,7 @@
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import GenericTable, { type Column } from "@/components/common/generic-table";
+import Select from "@/components/common/select";
 import StatusPill from "@/components/common/status-pill";
 import { getScorekeeperEmail, getScorekeeperName } from "@/utils/helper";
 import type { ExposureGame } from "@/utils/types/exposure-event";
@@ -11,7 +12,7 @@ import type {
   ScorekeeperPoolMember,
   ScorekeeperPoolResponse,
 } from "@/utils/types/scorekeeper";
-import { ChevronDown, Loader2, UserPlus, X } from "lucide-react";
+import { Loader2, UserPlus, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 // ─── Local presentational helpers (kept self-contained; the modal has private copies) ──
@@ -214,28 +215,21 @@ export default function GameScheduleView({ games }: { games: ExposureGame[] }) {
                   {poolLoaded ? "No active scorekeepers." : "Couldn't load scorekeepers."}
                 </span>
               ) : (
-                <div className="relative inline-flex items-center">
-                  <select
-                    value={selectedFanId ?? ""}
-                    onChange={(e) => selectScorekeeper(e.target.value || null)}
-                    aria-label="Select scorekeeper"
-                    className="h-9 w-56 appearance-none truncate rounded-lg bg-white/10 text-white text-xs font-medium pl-3 pr-8 border border-white/15 outline-none focus:border-sky-400 transition-colors cursor-pointer"
-                  >
-                    <option value="" disabled className="text-slate-900">
-                      Select scorekeeper…
-                    </option>
-                    {pool.map((m) => {
-                      const email = getScorekeeperEmail(m);
-                      return (
-                        <option key={m.id} value={m.fanId as string} className="text-slate-900">
-                          {getScorekeeperName(m)}
-                          {email ? ` — ${email}` : ""}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  <ChevronDown className="absolute right-2 w-4 h-4 text-white/60 pointer-events-none" />
-                </div>
+                <Select
+                  variant="dark"
+                  label="Select scorekeeper"
+                  name="scorekeeper"
+                  value={selectedFanId ?? ""}
+                  onChange={(e) => selectScorekeeper(e.target.value || null)}
+                  placeholder="Select scorekeeper…"
+                  options={pool.map((m) => {
+                    const email = getScorekeeperEmail(m);
+                    return { label: `${getScorekeeperName(m)}${email ? ` — ${email}` : ""}`, value: m.fanId as string };
+                  })}
+                  className="w-56"
+                  labelClassName="sr-only"
+                  selectClassName="h-9 rounded-lg bg-white/10 text-xs pl-3 border-white/15 focus:border-sky-400"
+                />
               )}
 
               {inSelection && (

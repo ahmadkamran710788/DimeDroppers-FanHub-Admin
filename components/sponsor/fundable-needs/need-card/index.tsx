@@ -1,6 +1,7 @@
 import { cn } from "@/utils/cn";
 import { formatMoney } from "@/utils/helper";
 import Button from "@/components/common/button";
+import ProgressBar from "@/components/common/progress-bar";
 import OrgCrest from "@/components/sponsor/org-crest";
 import type { FundableNeed } from "@/components/sponsor/fundable-needs/data";
 
@@ -14,7 +15,7 @@ interface NeedCardProps {
 }
 
 export default function NeedCard({ need, selected, onSelect }: NeedCardProps) {
-  const pct = `${Math.round((need.raised / need.goal) * 100)}%`;
+  const percent = Math.round((need.raised / need.goal) * 100);
   return (
     <article
       className={cn(
@@ -38,14 +39,12 @@ export default function NeedCard({ need, selected, onSelect }: NeedCardProps) {
         </div>
       </div>
       <div className="flex flex-col gap-2">
-        <div className="h-2 rounded-full bg-[#262626] overflow-hidden">
-          <div className="h-2 rounded-full bg-[#7cc97e]" style={{ width: pct }} />
-        </div>
+        <ProgressBar percent={percent} ariaLabel={`${need.title} funded`} barClassName="bg-[#7cc97e]" />
         <div className="flex justify-between text-[14px]">
           <span>
             <strong>{formatMoney(need.raised)}</strong> <span className="text-[#a8a8a8]">of {formatMoney(need.goal)}</span>
           </span>
-          <span className="text-[#a8a8a8]">{pct}</span>
+          <span className="text-[#a8a8a8]">{`${percent}%`}</span>
         </div>
       </div>
       <div className="text-[14px] text-[#d4d4d4] leading-[1.45]">
