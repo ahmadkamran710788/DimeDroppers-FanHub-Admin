@@ -6,21 +6,26 @@ import { routes } from "@/utils/routes";
 import type { CommandCenterOverview } from "@/utils/types/command-center";
 
 // The stat cards and Event Readiness from GET /command-center/overview (`data` holds one element).
-export function useCommandCenterOverview() {
-  const [overview, setOverview] = useState<CommandCenterOverview | null>(null);
-  const [loading, setLoading] = useState(true);
+// `eventId` (a tournament's FanHubSchoolEvent id, "" for all) scopes it to that event.
+export function useCommandCenterOverview(eventId = "") {
+  // The answer and the event it is for, so a switch shows the loader instead of the old event's data.
+  const [loaded, setLoaded] = useState<{ eventId: string; overview: CommandCenterOverview | null } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    apiCall<{ data: CommandCenterOverview[] }>({ endpoint: routes.api.commandCenterOverview, method: "GET" }).then((result) => {
+    apiCall<{ data: CommandCenterOverview[] }>({
+      endpoint: routes.api.commandCenterOverview,
+      method: "GET",
+      ...(eventId && { data: { eventId } }),
+    }).then((result) => {
       if (cancelled) return;
-      if (result.success) setOverview(result.data?.data?.[0] ?? null);
-      setLoading(false);
+      setLoaded({ eventId, overview: result.success ? (result.data?.data?.[0] ?? null) : null });
     });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [eventId]);
 
-  return { overview, loading };
+  const loading = loaded?.eventId !== eventId;
+  return { overview: loading ? null : (loaded?.overview ?? null), loading };
 }

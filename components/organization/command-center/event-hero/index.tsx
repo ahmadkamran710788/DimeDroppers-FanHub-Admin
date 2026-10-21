@@ -15,7 +15,8 @@ export default function EventHero({ overview }: { overview: CommandCenterOvervie
   const n = (v?: number | null) => (v ?? 0).toLocaleString("en-US");
   const games = overview?.cards.games;
   const teams = overview?.cards.teams;
-  const name = overview?.organisation.name ?? "Your event";
+  // The picked event's name, else the organisation's.
+  const name = overview?.event?.name ?? overview?.organisation.name ?? "Your event";
   return (
     <section
       className="relative overflow-hidden rounded-[8px] p-6 lg:p-8 flex flex-col justify-center gap-5 bg-surface-07 backdrop-blur-[24px] outline outline-1 outline-white/10"

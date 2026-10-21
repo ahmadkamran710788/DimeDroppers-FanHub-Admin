@@ -13,24 +13,30 @@ const LIMIT = 20;
 
 // Command Center Live Games: the org's games in play right now, from GET /command-center/live-games.
 // Polled with backendFetch, since apiCall would answer repeat GETs from its cache.
-export default function GameCards() {
-  const [games, setGames] = useState<LiveGame[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+// `eventId` (a tournament's FanHubSchoolEvent id, "" for all) keeps the strip to that event.
+export default function GameCards({ eventId = "" }: { eventId?: string }) {
+  // The latest answer and the event it is for, so a switch shows the loader, not the old event's games.
+  const [loaded, setLoaded] = useState<{ eventId: string; games: LiveGame[]; total: number } | null>(null);
+  const loading = loaded?.eventId !== eventId;
+  const games = loading ? [] : (loaded?.games ?? []);
+  const total = loading ? 0 : (loaded?.total ?? 0);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      const res = await backendFetch(`${routes.api.commandCenterLiveGames}?limit=${LIMIT}`).catch(() => null);
+      const query = new URLSearchParams({ limit: String(LIMIT), ...(eventId && { eventId }) });
+      const res = await backendFetch(`${routes.api.commandCenterLiveGames}?${query}`).catch(() => null);
       const body = res?.ok ? ((await res.json().catch(() => null)) as { data?: LiveGamesPage[] } | null) : null;
       if (cancelled) return;
       // A failed poll keeps the last games on screen.
       const page = body?.data?.[0];
-      if (page) {
-        setGames(page.games);
-        setTotal(page.total);
-      }
-      setLoading(false);
+      setLoaded((prev) =>
+        page
+          ? { eventId, games: page.games, total: page.total }
+          : prev?.eventId === eventId
+            ? prev
+            : { eventId, games: [], total: 0 }
+      );
     };
     load();
     const id = setInterval(load, POLL_MS);
@@ -38,7 +44,7 @@ export default function GameCards() {
       cancelled = true;
       clearInterval(id);
     };
-  }, []);
+  }, [eventId]);
 
   return (
     <section className="rounded-[8px] p-6 flex flex-col gap-5 bg-surface-07 backdrop-blur-[24px]">

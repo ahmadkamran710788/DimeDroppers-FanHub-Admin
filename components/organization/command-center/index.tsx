@@ -36,12 +36,13 @@ const HEADING: Record<
 // Command Center: one real-time view of live games, requests and fans, all from the command-center
 // API (overview for the hero, stat cards and Event Readiness; live-games for the strip).
 export default function CommandCenterPage() {
-  const { overview, loading } = useCommandCenterOverview();
   const { org } = useAuth();
   const kind = orgKindOf(org);
   const heading = HEADING[kind ?? "unknown"];
   // The tournament event picked on the right of the title ("" = all events).
   const [eventId, setEventId] = useState("");
+  // The stat cards, readiness, hero and live games follow the picked event (all events when none).
+  const { overview, loading } = useCommandCenterOverview(eventId);
 
   return (
     <div className="flex flex-col gap-10">
@@ -71,7 +72,7 @@ export default function CommandCenterPage() {
         ))}
       </div>
 
-      <GameCards />
+      <GameCards eventId={eventId} />
     </div>
   );
 }
