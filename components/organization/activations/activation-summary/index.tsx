@@ -1,5 +1,5 @@
 import { CATEGORY_ORDER, CATEGORY_STYLE } from "@/components/organization/activations/data";
-import { formatUsd, selectedValue, type InventoryForm } from "@/components/organization/activations/helpers";
+import type { InventoryForm } from "@/components/organization/activations/helpers";
 import ActivationDonut from "@/components/organization/setup/activation-donut";
 import type { ActivationCategory } from "@/utils/types/activations";
 
@@ -8,16 +8,14 @@ interface ActivationSummaryProps {
   categoryLabels: Record<ActivationCategory, string>;
 }
 
-// The right rail summary: ticked slots per category (donut) and their total value, live from the
-// form so unsaved changes show.
+// The summary: ticked slots per category (donut), live from the form so unsaved changes show.
 export default function ActivationSummary({ columns, categoryLabels }: ActivationSummaryProps) {
   const lines = CATEGORY_ORDER.map((c) => ({
     category: c,
     count: columns[c].filter((s) => s.enabled).length,
-    value: selectedValue(columns[c]),
+    of: columns[c].length,
   }));
   const total = lines.reduce((n, l) => n + l.count, 0);
-  const totalValue = lines.reduce((n, l) => n + l.value, 0);
 
   return (
     <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px] bg-surface-07">
@@ -37,14 +35,11 @@ export default function ActivationSummary({ columns, categoryLabels }: Activatio
               <span className="w-4 h-4 rounded-full shrink-0" style={{ background: CATEGORY_STYLE[l.category].accent }} />
               <span className="text-base font-semibold text-white truncate">{categoryLabels[l.category]}</span>
             </span>
-            <span className="text-sm text-white/70 shrink-0">{formatUsd(l.value)}</span>
+            <span className="text-sm text-white/70 shrink-0">
+              {l.count} of {l.of}
+            </span>
           </div>
         ))}
-      </div>
-      <div className="h-px bg-border-divider" />
-      <div className="flex flex-col gap-1">
-        <span className="text-sm text-white/70">Selected value</span>
-        <span className="font-display font-black text-[40px] text-white leading-none">{formatUsd(totalValue)}</span>
       </div>
       <div className="h-px bg-border-divider" />
       <div className="flex flex-col gap-1">

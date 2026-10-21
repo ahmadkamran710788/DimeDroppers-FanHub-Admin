@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import ActivationRow from "@/components/organization/activations/activation-row";
-import { formatUsd, selectedValue, type FormSlot } from "@/components/organization/activations/helpers";
+import type { FormSlot } from "@/components/organization/activations/helpers";
 import type { RowErrors } from "@/components/organization/activations/use-activation-inventory";
 import Button from "@/components/common/button";
 import Checkbox from "@/components/common/checkbox";
@@ -10,10 +10,6 @@ import Checkbox from "@/components/common/checkbox";
 interface CategoryColumnProps {
   label: string;
   description: string;
-  // Dime's value for the category: every slot's value, or the Exclusivity default.
-  baseValue: number;
-  // Exclusivity: the org sets each slot's value and size.
-  editable: boolean;
   // Card background tint.
   color: string;
   slots: FormSlot[];
@@ -26,13 +22,11 @@ interface CategoryColumnProps {
   onReorder: (fromKey: string, toKey: string) => void;
 }
 
-// One category (Pre Game, Live, Post Game, Add-ons, Exclusivity): every slot with its checkbox and
-// value, with Select All / Clear All and drag to reorder.
+// One category (Pre Game, Live, Post Game, Add-ons, Exclusivity): every slot, with Select All /
+// Clear All (the only on/off for the first four) and drag to reorder.
 export default function CategoryColumn({
   label,
   description,
-  baseValue,
-  editable,
   color,
   slots,
   rowErrors,
@@ -65,9 +59,6 @@ export default function CategoryColumn({
         <div className="flex flex-col gap-2 min-w-0">
           <h3 className="font-display font-black text-[28px] uppercase text-white leading-tight">{label}</h3>
           <p className="text-xs text-white">{description}</p>
-          <span className="self-start text-xs font-semibold text-white bg-[rgba(0,0,0,0.4)] px-2 py-1 rounded-[70px] leading-none">
-            {editable ? `Default value ${formatUsd(baseValue)}` : `Base value ${formatUsd(baseValue)}`}
-          </span>
         </div>
         <span className="w-16 h-16 rounded-[8px] bg-[rgba(0,0,0,0.4)] flex flex-col items-center justify-center shrink-0">
           <span className="font-display font-black text-[28px] text-white leading-none">{selected}</span>
@@ -135,7 +126,7 @@ export default function CategoryColumn({
 
       {/* Footer count */}
       <p className="text-base text-white text-center">
-        {selected} of {slots.length} selected · {formatUsd(selectedValue(slots))}
+        {selected} of {slots.length} selected
       </p>
     </div>
   );
