@@ -3,9 +3,11 @@
 import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import toast from "react-hot-toast";
+import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
 import ConfirmModal from "@/components/common/confirm-modal";
 import FilterChips from "@/components/common/filter-chips";
+import { PRIMARY_BUTTON } from "@/components/sponsor/styles";
 import AssetCard from "@/components/sponsor/brand-assets/asset-card";
 import AssetDropzone from "@/components/sponsor/brand-assets/asset-dropzone";
 import BrandProfile from "@/components/sponsor/brand-assets/brand-profile";
@@ -40,7 +42,7 @@ export default function BrandAssets() {
           label="Upload assets"
           icon={<Upload className="size-5" strokeWidth={2} />}
           onClick={() => uploadRef.current?.click()}
-          className="h-[52px] min-w-0 px-[22px] gap-[10px] bg-[#6a4be6] text-white rounded-[12px] text-base font-bold backdrop-blur-none"
+          className={cn(PRIMARY_BUTTON, "h-[52px] px-[22px] gap-[10px] rounded-[12px] text-base")}
         />
       </div>
 

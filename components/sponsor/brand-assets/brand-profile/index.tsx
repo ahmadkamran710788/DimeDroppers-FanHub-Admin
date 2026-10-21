@@ -86,7 +86,7 @@ export default function BrandProfile() {
           onChange={setField("category")}
           options={CATEGORY_OPTIONS}
           error={errors.category}
-          nativeArrow
+          variant="dark"
           className="min-w-0"
           labelClassName={SECTION_LABEL}
           selectClassName={cn(FIELD, "h-12 px-[10px] text-[16px] min-w-0")}

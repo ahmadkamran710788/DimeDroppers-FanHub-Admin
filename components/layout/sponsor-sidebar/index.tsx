@@ -28,7 +28,7 @@ const NAV_SECTIONS: NavSection[] = [
 // Campaign Planner is for national accounts only.
 const DIME_AI_SECTION: NavSection = {
   title: "Dime AI",
-  items: [{ icon: <Sparkles className="size-6" strokeWidth={1.5} />, label: "Campaign Planner", href: "#", badge: "NATIONAL" }],
+  items: [{ icon: <Sparkles className="size-6" strokeWidth={1.5} />, label: "Campaign Planner", href: routes.ui.sponsor.campaignPlanner, badge: "NATIONAL" }],
 };
 
 interface SponsorSidebarProps {

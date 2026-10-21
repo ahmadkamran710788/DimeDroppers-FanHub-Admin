@@ -9,6 +9,7 @@ import HiddenFileInput from "@/components/common/hidden-file-input";
 import RowActionsMenu from "@/components/common/row-actions-menu";
 import StatusPill from "@/components/common/status-pill";
 import BrandLogo from "@/components/sponsor/brand-logo";
+import { OUTLINE_BUTTON } from "@/components/sponsor/styles";
 import { BRAND_LOGO, UPLOAD_ACCEPT, type AssetStatus, type BrandAsset } from "@/components/sponsor/brand-assets/data";
 
 // Status pill fill and text colors.
@@ -19,7 +20,7 @@ const STATUS_STYLES: Record<AssetStatus, { color: string; text: string }> = {
 };
 
 // The outlined look of the card's Replace and "More actions" buttons.
-const CARD_BUTTON = "h-11 rounded-[10px] bg-transparent border border-[#3a3a3a] text-white backdrop-blur-none";
+const CARD_BUTTON = cn(OUTLINE_BUTTON, "h-11 rounded-[10px]");
 
 interface AssetCardProps {
   asset: BrandAsset;
@@ -65,7 +66,7 @@ export default function AssetCard({ asset, onReplace, onDelete }: AssetCardProps
           <Button
             label="Replace"
             onClick={() => replaceRef.current?.click()}
-            className={cn(CARD_BUTTON, "flex-1 min-w-0 px-3 text-sm font-semibold")}
+            className={cn(CARD_BUTTON, "flex-1 px-3 text-sm font-semibold")}
           />
           <RowActionsMenu
             ariaLabel={`More actions for ${asset.name}`}

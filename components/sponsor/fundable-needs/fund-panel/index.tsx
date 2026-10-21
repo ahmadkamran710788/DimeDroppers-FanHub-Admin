@@ -8,7 +8,7 @@ import Input from "@/components/common/input";
 import Select from "@/components/common/select";
 import Textarea from "@/components/common/textarea";
 import OrgCrest from "@/components/sponsor/org-crest";
-import { FIELD, SECTION_LABEL } from "@/components/sponsor/styles";
+import { FIELD, PRIMARY_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
 import { BRAND_ASSET_OPTIONS, PRESET_AMOUNTS, type FundableNeed } from "@/components/sponsor/fundable-needs/data";
 
 interface FundPanelProps {
@@ -87,7 +87,7 @@ export default function FundPanel({ need, amountIndex, onAmountChange }: FundPan
         value={brandAsset}
         onChange={(e) => setBrandAsset(e.target.value)}
         options={BRAND_ASSET_OPTIONS}
-        nativeArrow
+        variant="dark"
         labelClassName={SECTION_LABEL}
         selectClassName={cn(FIELD, "h-12 px-3 text-[16px]")}
       />
@@ -108,7 +108,7 @@ export default function FundPanel({ need, amountIndex, onAmountChange }: FundPan
       <Button
         label={`Fund ${formatMoney(amounts[amountIndex])}`}
         fullWidth
-        className="h-[54px] min-w-0 px-[6px] bg-[#6a4be6] text-white rounded-[12px] text-[17px] font-bold backdrop-blur-none"
+        className={cn(PRIMARY_BUTTON, "h-[54px] px-[6px] rounded-[12px] text-[17px]")}
       />
       <div className="text-[13px] text-[#a8a8a8] text-center">Funds are held until the organization confirms the purchase.</div>
     </aside>

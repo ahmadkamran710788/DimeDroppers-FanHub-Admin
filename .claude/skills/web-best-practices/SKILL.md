@@ -153,7 +153,7 @@ These are the conventional shared primitives this stack relies on. **They may no
 |-----------|----------|---------|
 | `Button` | `common/button` | All buttons, icon-only ones included — variants, sizes and props in §5 |
 | `Input` | `common/input` | Text inputs — supports `error`, `startIcon`, `search` props |
-| `Select` | `common/select` | Dropdowns — supports `searchable`, `fullWidth`, `error`, `startIcon` |
+| `Select` | `common/select` | Every dropdown field — draws its own chevron and opens its options in the shared navy panel (`common/floating-panel`, the same one as `FilterChipMenu` / `RowActionsMenu`); supports `error`, `icon`, `placeholder`, `variant` (`"dark"` on dark cards) |
 | `SearchInput` | `common/search-input` | Debounced search with live API calls |
 | `GenericTable` | `common/generic-table` | Typed, paginated, sortable table |
 | `Loader` | `common/loader` | Animated dot loader |
@@ -206,7 +206,9 @@ export default Textarea;
 
 ## 4. Form Field Components — Always Componentise Inputs
 
-Every reusable form control (input, textarea, select, checkbox, radio, file upload) must be a standalone component in `common/`. Never write bare `<input>` or `<textarea>` tags inside feature components — always reach for the common component.
+Every reusable form control (input, textarea, select, checkbox, radio, file upload) must be a standalone component in `common/`. Never write bare `<input>`, `<textarea>` or `<select>` tags inside feature components — always reach for the common component.
+
+A native `<select>` opens the operating system's option list (grey, unstyleable) and its arrow sits against the field border, so it never matches the app. Every dropdown uses `Select` from `common/select`; on a dark card pass `variant="dark"` so the chevron and placeholder stay visible. A menu of actions (not a form value) uses `FilterChipMenu` / `RowActionsMenu`, which open in the same panel.
 
 ### The standard form field contract
 

@@ -51,6 +51,7 @@ export const routes = {
     sponsor: {
       fundableNeeds: "/sponsor/fundable-needs",
       brandAssets: "/sponsor/brand-assets",
+      campaignPlanner: "/sponsor/campaign-planner",
     },
   },
 

@@ -9,6 +9,7 @@ import SponsorHeader from "@/components/layout/sponsor-header";
 const PAGE_TITLES: Record<string, string> = {
   [routes.ui.sponsor.fundableNeeds]: "Sponsorship",
   [routes.ui.sponsor.brandAssets]: "Brand",
+  [routes.ui.sponsor.campaignPlanner]: "Dime AI",
 };
 
 // App shell for the sponsor pages: the shared sidebar, the sponsor header and the page area, on the

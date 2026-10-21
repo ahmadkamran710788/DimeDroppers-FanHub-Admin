@@ -5,6 +5,7 @@ import { Upload } from "lucide-react";
 import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
 import HiddenFileInput from "@/components/common/hidden-file-input";
+import { OUTLINE_BUTTON } from "@/components/sponsor/styles";
 import { UPLOAD_ACCEPT, UPLOAD_LIMITS } from "@/components/sponsor/brand-assets/data";
 
 interface AssetDropzoneProps {
@@ -49,7 +50,7 @@ export default function AssetDropzone({ inputRef, onFiles }: AssetDropzoneProps)
       <Button
         label="Browse files"
         onClick={() => inputRef.current?.click()}
-        className="h-11 min-w-0 px-[18px] bg-transparent border border-[#3a3a3a] text-white rounded-[10px] text-[15px] font-semibold backdrop-blur-none"
+        className={cn(OUTLINE_BUTTON, "h-11 px-[18px] rounded-[10px] text-[15px] font-semibold")}
       />
       <HiddenFileInput ref={inputRef} accept={UPLOAD_ACCEPT.all} multiple onFiles={onFiles} />
     </div>

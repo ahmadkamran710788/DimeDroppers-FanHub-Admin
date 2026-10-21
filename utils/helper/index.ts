@@ -28,3 +28,9 @@ export const formatFileSize = (bytes: number): string => {
   const mb = bytes / (1024 * 1024);
   return `${mb < 10 ? mb.toFixed(1) : Math.round(mb)} MB`;
 };
+
+// Dollar amount typed by a user ("$60,000" → 60000); NaN when it isn't a number.
+export const parseMoney = (text: string): number => {
+  const digits = text.replace(/[$,\s]/g, "");
+  return digits ? Number(digits) : NaN;
+};
