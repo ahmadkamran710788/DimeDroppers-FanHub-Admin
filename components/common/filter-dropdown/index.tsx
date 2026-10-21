@@ -21,6 +21,11 @@ interface FilterDropdownProps {
   clearable?: boolean;
   align?: "left" | "right";
   className?: string;
+  // Infinite scroll for long, paged option lists: called when the list is scrolled near its end.
+  // Set, the list scrolls inside a capped height.
+  onLoadMore?: () => void;
+  // Shows a loading row under the options while the next page loads.
+  loadingMore?: boolean;
 }
 
 // Single-select dropdown filter: a pill trigger with a teal option list beneath it.
@@ -34,6 +39,8 @@ export default function FilterDropdown({
   clearable = true,
   align = "left",
   className,
+  onLoadMore,
+  loadingMore = false,
 }: FilterDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -82,8 +89,17 @@ export default function FilterDropdown({
           aria-label={label}
           className={cn(
             "absolute top-full mt-2 z-30 min-w-full flex flex-col py-2 bg-teal rounded-xl shadow-xl overflow-hidden",
-            align === "right" ? "right-0" : "left-0"
+            align === "right" ? "right-0" : "left-0",
+            onLoadMore && "max-h-80 overflow-y-auto"
           )}
+          onScroll={
+            onLoadMore
+              ? (e) => {
+                  const el = e.currentTarget;
+                  if (!loadingMore && el.scrollHeight - el.scrollTop - el.clientHeight < 48) onLoadMore();
+                }
+              : undefined
+          }
         >
           {options.map((o) => {
             const isActive = o.value === value;
@@ -106,6 +122,7 @@ export default function FilterDropdown({
               </button>
             );
           })}
+          {loadingMore && <span className="px-5 py-2.5 text-sm text-white/70">Loading…</span>}
         </div>
       )}
     </div>

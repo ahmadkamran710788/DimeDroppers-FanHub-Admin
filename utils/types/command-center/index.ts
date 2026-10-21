@@ -2,6 +2,8 @@
 export interface CommandCenterOverview {
   // `kind` / `level` say whether it is a school or a tournament (e.g. "TOURNAMENT" / "Tournament").
   organisation: { id: string; name: string; kind: string; level: string | null; logoUrl: string | null };
+  // The event picked with ?eventId= (null without one).
+  event?: { id: string; name: string } | null;
   generatedAt: string;
   cards: {
     teams: { total: number; addedLast12Months: number; divisions?: number | null };
