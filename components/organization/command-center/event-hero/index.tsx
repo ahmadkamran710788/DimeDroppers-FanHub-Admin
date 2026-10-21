@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import Button from "@/components/common/button";
+import { orgKindOf, useAuth } from "@/context/auth";
 import { routes } from "@/utils/routes";
 import type { CommandCenterOverview } from "@/utils/types/command-center";
 
@@ -12,6 +13,9 @@ const comingSoon = () => toast("Coming soon.");
 // Headline card: is the event ready, plus shortcuts into the live tools.
 export default function EventHero({ overview }: { overview: CommandCenterOverview | null }) {
   const router = useRouter();
+  // A tournament's Schedule page lists its events, so the button says so.
+  const { org } = useAuth();
+  const isTournament = orgKindOf(org) === "tournament";
   const n = (v?: number | null) => (v ?? 0).toLocaleString("en-US");
   const games = overview?.cards.games;
   const teams = overview?.cards.teams;
@@ -33,7 +37,7 @@ export default function EventHero({ overview }: { overview: CommandCenterOvervie
       </p>
       <div className="flex flex-wrap gap-3">
         <Button variant="cta" label="Open Live Operations Board" onClick={comingSoon} />
-        <Button variant="ghost" label="View Schedule" onClick={() => router.push(routes.ui.schedule)} />
+        <Button variant="ghost" label={isTournament ? "View Events" : "View Schedule"} onClick={() => router.push(routes.ui.schedule)} />
         <Button variant="ghost" label="Sponsor Activations" onClick={() => router.push(routes.ui.activations)} />
       </div>
     </section>
