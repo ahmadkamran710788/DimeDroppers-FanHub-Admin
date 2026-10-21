@@ -22,8 +22,12 @@ import {
   SCHEDULE_SEASON_FILTERS,
   SCHEDULE_VENUE_FILTERS,
   SCHEDULE_VIEW_FILTERS,
+  SPORTS_OPTIONS,
 } from "@/utils/constants/schedule";
 import type { ScheduleItem, ScheduleListResponse, SchedulePagination, ScheduleSummary } from "@/utils/types/schedule";
+import DateField from "@/components/common/date-field";
+import Pagination from "@/components/common/pagination";
+import { US_STATE_OPTIONS } from "@/components/organization/org-form/form";
 import type { ExposureEvent, ExposureEventsResponse, ExposureEventView } from "@/utils/types/exposure-event";
 import {
   ChevronDown,
@@ -108,6 +112,25 @@ function buildMonthGrid(year: number, month: number): (number | null)[] {
   while (grid.length % 7 !== 0) grid.push(null);
   return grid;
 }
+
+// Events tab status filter (GET /exposure/events ?status=), with the summary key for its count.
+const EVENT_STATUSES = [
+  { value: "all", label: "All Events" },
+  { value: "upcoming", label: "Upcoming" },
+  { value: "live", label: "Live" },
+  { value: "past", label: "Past" },
+] as const;
+type EventStatus = (typeof EVENT_STATUSES)[number]["value"];
+const EVENTS_PAGE_SIZE = 20;
+
+// The other Events tab filters (sport / state exact match, startDate range) and the sort.
+const EVENT_SORTS = [
+  { value: "startDate_desc", label: "Newest first" },
+  { value: "startDate_asc", label: "Oldest first" },
+  { value: "name_asc", label: "Name A–Z" },
+];
+const DEFAULT_EVENT_FILTERS = { sport: "", state: "", from: "", to: "", sort: "startDate_desc" };
+type EventFilters = typeof DEFAULT_EVENT_FILTERS;
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 
@@ -498,9 +521,22 @@ export default function SchedulePage() {
   const [editGame, setEditGame] = useState<ScheduleItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ScheduleItem | null>(null);
 
-  // Synced Exposure events (lazy-loaded when the Events tab is first opened)
+  // Synced Exposure events (loaded while the Events tab is open), paged and filtered by the API.
   const [events, setEvents] = useState<ExposureEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventStatus, setEventStatus] = useState<EventStatus>("all");
+  const [eventPage, setEventPage] = useState(1);
+  const [eventFilters, setEventFilters] = useState<EventFilters>(DEFAULT_EVENT_FILTERS);
+  const setEventFilter = (key: keyof EventFilters) => (value: string) => {
+    setEventFilters((f) => ({ ...f, [key]: value }));
+    setEventPage(1);
+  };
+  const eventFilterCount = [eventFilters.sport, eventFilters.state, eventFilters.from, eventFilters.to].filter(Boolean).length;
+  const [eventsPaging, setEventsPaging] = useState<{ total: number; totalPages: number } | null>(null);
+  // Counts per status (for the filter options and the Events stat card), after the search.
+  const [eventsSummary, setEventsSummary] = useState<ExposureEventsResponse["data"][number]["summary"] | null>(null);
+  // Every synced event, kept from an unfiltered answer, for the Events stat card.
+  const [eventsOrgTotal, setEventsOrgTotal] = useState<number | null>(null);
   // Which event + view the details modal is showing (null = closed).
   const [eventView, setEventView] = useState<{ event: ExposureEvent; view: ExposureEventView } | null>(null);
 
@@ -518,6 +554,7 @@ export default function SchedulePage() {
       setDebouncedSearch(search);
        
       setPage(1);
+      setEventPage(1);
     }, 300);
     return () => clearTimeout(t);
   }, [search]);
@@ -568,17 +605,37 @@ export default function SchedulePage() {
     apiCall<ExposureEventsResponse>({
       endpoint: routes.api.listExposureEvents,
       method: "GET",
+      data: {
+        page: eventPage,
+        limit: EVENTS_PAGE_SIZE,
+        status: eventStatus,
+        sort: eventFilters.sort,
+        ...(debouncedSearch && { search: debouncedSearch }),
+        ...(eventFilters.sport && { sport: eventFilters.sport }),
+        ...(eventFilters.state && { state: eventFilters.state }),
+        ...(eventFilters.from && { from: eventFilters.from }),
+        ...(eventFilters.to && { to: eventFilters.to }),
+      },
     }).then((result) => {
       if (cancelled) return;
-      // The API now pages the events; this shows its first page.
-      if (result.success && result.data) setEvents(result.data.data?.[0]?.items ?? []);
+      const body = result.success ? result.data?.data?.[0] : undefined;
+      setEvents(body?.items ?? []);
+      setEventsPaging(body ? { total: body.pagination.total, totalPages: body.pagination.totalPages } : null);
+      if (body) setEventsSummary(body.summary);
+      const unfiltered = !debouncedSearch && !eventFilters.sport && !eventFilters.state && !eventFilters.from && !eventFilters.to;
+      if (body && unfiltered) setEventsOrgTotal(body.summary.all);
       setEventsLoading(false);
     });
     return () => { cancelled = true; };
-  }, [activeTab]);
+  }, [activeTab, eventPage, eventStatus, debouncedSearch, eventFilters]);
 
   const nextGame = games.find((g) => new Date(g.start) > new Date()) ?? null;
-  const stats = summary ? buildStatsFromSummary(summary) : buildStatsFromGames(games);
+  const gameStats = summary ? buildStatsFromSummary(summary) : buildStatsFromGames(games);
+  // A tournament's Events card counts its synced events (the games summary's "events" isn't that).
+  const stats = isTournament
+    ? gameStats.map((st) => (st.label === "Events" ? { ...st, subtitle: "Synced events", value: eventsOrgTotal ?? 0 } : st))
+    : gameStats;
+  const eventStatusLabel = EVENT_STATUSES.find((o) => o.value === eventStatus)?.label ?? "All Events";
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-start">
@@ -672,7 +729,43 @@ export default function SchedulePage() {
             </div>
           </div>
 
-          {/* Filters */}
+          {/* Filters: the Events tab filters by status; the game filters belong to the Games tab. */}
+          {activeTab === "Events" ? (
+          // Bottom-aligned: the date fields carry a label above their box.
+          <div className="flex flex-wrap items-end gap-3">
+            <FilterDropdown
+              label="All Events"
+              variant="accent"
+              clearable={false}
+              options={EVENT_STATUSES.map((o) => ({
+                value: o.value,
+                label: eventsSummary ? `${o.label} (${eventsSummary[o.value]})` : o.label,
+              }))}
+              value={eventStatus}
+              onChange={(v) => {
+                setEventStatus(v as EventStatus);
+                setEventPage(1);
+              }}
+            />
+            <FilterDropdown label="Sport" icon={<Trophy className="w-5 h-5" strokeWidth={1.5} />} options={SPORTS_OPTIONS} value={eventFilters.sport} onChange={setEventFilter("sport")} />
+            <FilterDropdown label="State" icon={<MapPin className="w-5 h-5" strokeWidth={1.5} />} options={US_STATE_OPTIONS} value={eventFilters.state} onChange={setEventFilter("state")} />
+            <FilterDropdown label="Newest first" clearable={false} options={EVENT_SORTS} value={eventFilters.sort} onChange={setEventFilter("sort")} />
+            <DateField label="From" name="eventsFrom" value={eventFilters.from} onChange={setEventFilter("from")} placeholder="Start date" className="w-44" labelClassName="text-sm" />
+            <DateField label="To" name="eventsTo" value={eventFilters.to} min={eventFilters.from || undefined} onChange={setEventFilter("to")} placeholder="End date" className="w-44" labelClassName="text-sm" />
+            {eventFilterCount > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEventFilters((f) => ({ ...DEFAULT_EVENT_FILTERS, sort: f.sort }));
+                  setEventPage(1);
+                }}
+                className="cursor-pointer text-sm font-medium text-white/70 hover:text-white transition-colors"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+          ) : (
           <div className="flex flex-wrap items-center gap-3">
             <FilterDropdown
               label="Upcoming"
@@ -700,6 +793,7 @@ export default function SchedulePage() {
               </button>
             )}
           </div>
+          )}
 
           {activeTab === "Games" && (
             <div className="flex flex-col">
@@ -775,7 +869,7 @@ export default function SchedulePage() {
             <div className="flex flex-col">
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-white text-3xl font-extrabold font-display uppercase">
-                  Synced Events ({events.length})
+                  {eventStatusLabel} ({eventsPaging?.total ?? events.length})
                 </span>
               </div>
 
@@ -821,6 +915,15 @@ export default function SchedulePage() {
                   />
                 ))}
               </div>
+
+              {!eventsLoading && eventsPaging && eventsPaging.total > EVENTS_PAGE_SIZE && (
+                <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <span className="text-sm text-white/60">
+                    {`Showing ${(eventPage - 1) * EVENTS_PAGE_SIZE + 1} to ${Math.min(eventPage * EVENTS_PAGE_SIZE, eventsPaging.total)} of ${eventsPaging.total} events`}
+                  </span>
+                  <Pagination page={eventPage} pageCount={Math.max(1, eventsPaging.totalPages)} onChange={setEventPage} />
+                </div>
+              )}
             </div>
           )}
 
