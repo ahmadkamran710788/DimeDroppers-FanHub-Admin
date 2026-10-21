@@ -140,6 +140,9 @@ export const routes = {
     exposureSyncStatus: "fanhub/org/exposure/sync/status",
     // List synced Exposure events (the FanHubSchoolEvent rows)
     listExposureEvents: "fanhub/org/exposure/events",
+    // Tournament Teams page: a page of events, each with its divisions and their teams
+    // (?page=&limit= up to 50, newest first; ?search= filters team names; ?eventId=, ?divisionId=).
+    exposureEventsDivisionTeams: "fanhub/org/exposure/events/division-teams",
     // Per-event sub-resources. The :id is the FanHubSchoolEvent id (e.g. evt-uuid-1111),
     // NOT the numeric exposureEventId.
     exposureEventDivisions: (id: string) => `fanhub/org/exposure/events/${id}/divisions`,

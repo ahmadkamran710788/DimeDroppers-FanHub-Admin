@@ -570,7 +570,8 @@ export default function SchedulePage() {
       method: "GET",
     }).then((result) => {
       if (cancelled) return;
-      if (result.success && result.data) setEvents(result.data.data ?? []);
+      // The API now pages the events; this shows its first page.
+      if (result.success && result.data) setEvents(result.data.data?.[0]?.items ?? []);
       setEventsLoading(false);
     });
     return () => { cancelled = true; };

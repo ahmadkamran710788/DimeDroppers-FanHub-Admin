@@ -20,7 +20,8 @@ export default function EventSelect({ value, onChange }: EventSelectProps) {
   useEffect(() => {
     let cancelled = false;
     apiCall<ExposureEventsResponse>({ endpoint: routes.api.listExposureEvents, method: "GET" }).then((result) => {
-      if (!cancelled && result.success) setEvents(result.data?.data ?? []);
+      // The API pages the events (newest first); the dropdown lists the first page.
+      if (!cancelled && result.success) setEvents(result.data?.data?.[0]?.items ?? []);
     });
     return () => {
       cancelled = true;
