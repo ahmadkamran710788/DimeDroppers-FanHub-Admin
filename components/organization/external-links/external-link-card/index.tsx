@@ -37,9 +37,13 @@ export default function ExternalLinkCard({ config }: ExternalLinkCardProps) {
     if (!url) setUrl(savedUrl);
   }
 
-  const validate = (): string | null => {
+  const validate = (forTest = false): string | null => {
     const value = url.trim();
-    if (!value) return `${config.label} is required.`;
+    // An optional link may be saved empty (clears it), but there is nothing to test.
+    if (!value) {
+      if (!config.optional) return `${config.label} is required.`;
+      return forTest ? "Enter a link to test it." : null;
+    }
     try {
       const parsed = new URL(value);
       if (parsed.protocol !== "https:") return "Link must start with https://";
@@ -50,7 +54,7 @@ export default function ExternalLinkCard({ config }: ExternalLinkCardProps) {
   };
 
   const testConnection = async () => {
-    const problem = validate();
+    const problem = validate(true);
     if (problem) {
       setError(problem);
       return;
@@ -98,7 +102,7 @@ export default function ExternalLinkCard({ config }: ExternalLinkCardProps) {
         method: "PATCH",
         data: { [config.payloadKey]: url.trim() },
         showSuccessToast: true,
-        successMessage: `${config.title} link saved.`,
+        successMessage: url.trim() ? `${config.title} link saved.` : `${config.title} link removed.`,
       });
       if (success) await refreshSchool();
     } finally {
