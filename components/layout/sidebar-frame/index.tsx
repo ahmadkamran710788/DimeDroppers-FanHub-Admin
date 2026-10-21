@@ -75,7 +75,8 @@ export default function SidebarFrame({ logo, sections, profileName, profileRole,
       )}
     >
       {/* Logo */}
-      <div className="h-[104px] flex items-start pt-[27px] px-6">{logo}</div>
+      {/* shrink-0: the aside is a flex column, which would otherwise squeeze this box to the logo's own height. */}
+      <div className="h-[104px] shrink-0 flex items-start pt-[27px] px-6">{logo}</div>
 
       {/* Nav */}
       <nav className="flex-1 py-2 flex flex-col gap-5 px-4">

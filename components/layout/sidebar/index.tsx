@@ -2,7 +2,8 @@
 
 import { routes } from "@/utils/routes";
 import { useSetup } from "@/context/setup";
-import { useAuth } from "@/context/auth";
+import Image from "next/image";
+import { orgKindOf, useAuth, type OrgKind } from "@/context/auth";
 import SidebarFrame, { type NavSection } from "@/components/layout/sidebar-frame";
 import { BotMessageSquare, ClipboardList, Gem, LayoutDashboard, MessagesSquare, ShoppingBag, Sparkles, Star, Video } from "lucide-react";
 
@@ -68,6 +69,13 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
+// The logo says which panel this is (162×46: the wordmark plus "SCHOOL" / "TOURNAMENT" under it);
+// the plain 162×32 one shows until the org's type is known.
+const LOGOS: Record<OrgKind, { src: string; alt: string }> = {
+  school: { src: "/DDLogo-school.svg", alt: "Dime Dropper School" },
+  tournament: { src: "/DDLogo-tournament.svg", alt: "Dime Dropper Tournament" },
+};
+
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
@@ -76,12 +84,17 @@ interface SidebarProps {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const { savedSchool } = useSetup();
   const { org } = useAuth();
+  const kind = orgKindOf(org);
+  const logo = kind ? LOGOS[kind] : null;
 
   return (
     <SidebarFrame
       logo={
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src="/DDLogo.svg" alt="Dime Dropper" width={162} height={32} className="shrink-0" />
+        logo ? (
+          <Image src={logo.src} alt={logo.alt} width={162} height={46} className="shrink-0" priority />
+        ) : (
+          <Image src="/DDLogo.svg" alt="Dime Dropper" width={162} height={32} className="shrink-0" priority />
+        )
       }
       sections={NAV_SECTIONS}
       profileName={savedSchool?.name ?? org?.name ?? "Organization"}
