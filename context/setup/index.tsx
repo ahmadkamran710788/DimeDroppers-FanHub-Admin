@@ -8,6 +8,8 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { useAuth } from "@/context/auth";
+import { setFanhubSchoolId, SCHOOL_ID_KEY } from "@/utils/auth/session";
 import { getSavedSchool } from "@/utils/fanhub/get-saved-school";
 import type { SavedSchool } from "@/utils/types/school";
 
@@ -31,9 +33,16 @@ export function SetupProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  // Fetch once when the setup shell mounts — all wizard steps share this result.
+  // The school id lives in sessionStorage, which a new tab starts without; the auth session
+  // (/me) knows it, so wait for it and seed the id before reading the school.
+  const { org, isLoading: authLoading } = useAuth();
+  const orgId = org?.id;
+
+  // Fetch once when the shell mounts (after auth) — all pages share this result.
   // isLoading already starts true, so only set state once the request resolves.
   useEffect(() => {
+    if (authLoading) return;
+    if (orgId && !sessionStorage.getItem(SCHOOL_ID_KEY)) setFanhubSchoolId(orgId);
     let cancelled = false;
     getSavedSchool().then((school) => {
       if (cancelled) return;
@@ -43,7 +52,7 @@ export function SetupProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authLoading, orgId]);
 
   return (
     <SetupContext.Provider

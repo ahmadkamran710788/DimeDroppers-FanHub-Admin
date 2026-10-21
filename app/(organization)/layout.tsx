@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import Header from "@/components/layout/header";
+import SetupGuard from "@/components/layout/setup-guard";
 import Sidebar from "@/components/layout/sidebar";
 import { routes } from "@/utils/routes";
 import { SetupProvider } from "@/context/setup";
@@ -41,13 +42,19 @@ const PAGE_TITLES: Record<string, string> = {
   [routes.ui.sponsorAddOns]: "Sponsors",
 };
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   // Detail pages (e.g. /teams/team-3) take the title of their parent section.
   const title =
     PAGE_TITLES[pathname] ??
-    Object.entries(PAGE_TITLES).find(([path]) => pathname.startsWith(`${path}/`))?.[1] ??
+    Object.entries(PAGE_TITLES).find(([path]) =>
+      pathname.startsWith(`${path}/`),
+    )?.[1] ??
     "Schedule";
 
   // The setup wizard sits in this group too but is full-screen: its own (setup) layout draws it.
@@ -55,36 +62,47 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <SetupProvider>
-      <TeamShopProvider>
-        <OrgChatProvider>
-          <div className="flex h-screen bg-black overflow-hidden">
-            <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-            <div className="relative flex flex-col flex-1 overflow-hidden">
-              <Image
-                src="/images/hub-bg-3c75bf.png"
-                alt=""
-                width={1440}
-                height={1757}
-                aria-hidden="true"
-                className="absolute pointer-events-none select-none"
-                style={{
-                  top: 0,
-                  right: 0,
-                  width: "80%",
-                  height: "100%",
-                  objectFit: "cover",
-                  objectPosition: "top right",
-                  filter: "blur(72px)",
-                  opacity: 0.6,
-                  zIndex: 0,
-                }}
+      {/* Until the setup form is saved, every admin page sends back to it. */}
+      <SetupGuard require="complete">
+        <TeamShopProvider>
+          <OrgChatProvider>
+            <div className="flex h-screen bg-black overflow-hidden">
+              <Sidebar
+                open={sidebarOpen}
+                onClose={() => setSidebarOpen(false)}
               />
-              <Header title={title} onMenuClick={() => setSidebarOpen(true)} />
-              <main className="relative z-10 flex-1 overflow-y-auto px-4 py-4 lg:px-10 lg:py-8">{children}</main>
+              <div className="relative flex flex-col flex-1 overflow-hidden">
+                <Image
+                  src="/images/hub-bg-3c75bf.png"
+                  alt=""
+                  width={1440}
+                  height={1757}
+                  aria-hidden="true"
+                  className="absolute pointer-events-none select-none"
+                  style={{
+                    top: 0,
+                    right: 0,
+                    width: "80%",
+                    height: "100%",
+                    objectFit: "cover",
+                    objectPosition: "top right",
+                    filter: "blur(72px)",
+                    opacity: 0.6,
+                    zIndex: 0,
+                  }}
+                />
+                <Header
+                  title={title}
+                  onMenuClick={() => setSidebarOpen(true)}
+                />
+                <main className="relative z-10 flex-1 overflow-y-auto px-4 py-4 lg:px-10 lg:py-8">
+                  {children}
+                </main>
+              </div>
             </div>
-          </div>
-        </OrgChatProvider>
-      </TeamShopProvider>
+          </OrgChatProvider>
+        </TeamShopProvider>
+      </SetupGuard>
     </SetupProvider>
   );
 }
