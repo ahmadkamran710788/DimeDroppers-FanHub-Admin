@@ -31,7 +31,15 @@ export interface ExposureListResponse<T> {
   data: T[];
 }
 
-export type ExposureEventsResponse = ExposureListResponse<ExposureEvent>;
+// GET /exposure/events now pages the events (?page=&limit=, newest first) and answers one envelope:
+// the page's items, counts by status, the filter echoed back and the pagination.
+export interface ExposureEventsResponse {
+  data: {
+    items: ExposureEvent[];
+    summary: { all: number; upcoming: number; live: number; past: number };
+    pagination: { page: number; limit: number; total: number; totalPages: number; isLast: boolean };
+  }[];
+}
 
 // ─── Brackets (GET /events/:id/divisions — divisions with nested brackets) ──────
 
@@ -173,4 +181,66 @@ export interface ExposurePlayer {
   graduationYear: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+// ─── Tournament Teams tree (GET /events/division-teams) ─────────────────────────
+// A page of events, each with its divisions and their teams; counts are after the filters.
+
+export interface TreeTeam {
+  id: string;
+  exposureTeamId: number;
+  name: string;
+  pool: string | null;
+  grade: string | null;
+  age: string | null;
+  gender: string | null;
+  // Synced roster size.
+  playerCount: number;
+  // Fans following the team in the app.
+  followerCount: number;
+}
+
+export interface TreeDivision {
+  id: string;
+  exposureDivisionId: number;
+  name: string;
+  // Exposure's label; "unspecified" when Exposure sent none.
+  gender: string | null;
+  order: number | null;
+  active: boolean;
+  teamCount: number;
+  teams: TreeTeam[];
+}
+
+export interface TreeEvent {
+  id: string;
+  exposureEventId: number;
+  name: string;
+  sport: string | null;
+  city: string | null;
+  state: string | null;
+  startDate: string;
+  endDate: string | null;
+  divisionCount: number;
+  teamCount: number;
+  divisions: TreeDivision[];
+  // Teams with no division; null when a divisionId filter is sent.
+  unassigned: { teamCount: number; teams: TreeTeam[] } | null;
+}
+
+// Organisation-wide counts, the same whatever the filter (cached 5 min server-side).
+export interface TournamentTotals {
+  events: number;
+  divisions: number;
+  teams: number;
+  games: number;
+}
+
+export interface DivisionTeamsTreeResponse {
+  data: {
+    totals: TournamentTotals;
+    filter: { eventId: string | null; divisionId: string | null; search: string | null };
+    events: TreeEvent[];
+    pagination: { page: number; limit: number; total: number; totalPages: number; isLast: boolean };
+  }[];
 }
