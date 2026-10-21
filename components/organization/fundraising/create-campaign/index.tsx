@@ -15,6 +15,7 @@ import {
   IMPACT_OPTIONS,
   createCampaignSchema,
   DESCRIPTION_MAX,
+  NAME_MAX,
   type CampaignImpact,
 } from "@/components/organization/fundraising/create-campaign/schema";
 import { useOrgTeams } from "@/components/organization/teams/use-org-teams";
@@ -196,7 +197,8 @@ export default function CreateCampaignPage({ campaignId }: CampaignFormProps) {
               name="name"
               value={form.name}
               onChange={(e) => update("name", e.target.value)}
-              placeholder="Twin Lakes Boys Basketball"
+              placeholder="Twin Lakes Boys Basketball: new uniforms"
+              maxLength={NAME_MAX}
               error={errors.name}
               labelClassName={LABEL}
               inputClassName={FIELD}

@@ -26,6 +26,8 @@ interface InputProps {
   variant?: "light" | "dark";
   // Muted helper line under the field (hidden while an error is shown).
   hint?: string;
+  // Stops typing at this many characters and shows a live "42/60" counter under the field.
+  maxLength?: number;
 }
 
 export default function Input({
@@ -45,6 +47,7 @@ export default function Input({
   inputClassName,
   variant = "light",
   hint,
+  maxLength,
 }: InputProps) {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === "password";
@@ -76,6 +79,7 @@ export default function Input({
           onBlur={onBlur}
           placeholder={placeholder}
           disabled={disabled}
+          maxLength={maxLength}
           className={cn(
             "w-full h-12 rounded-[8px] text-base font-medium px-4 py-3 border outline-none",
             "focus:border-steel-blue transition-colors disabled:opacity-50",
@@ -101,10 +105,19 @@ export default function Input({
           </button>
         )}
       </div>
-      {error ? (
-        <p className="text-sm text-error">{error}</p>
-      ) : (
-        hint && <p className={cn("text-sm", dark ? "text-white/70" : "text-midnight-navy/60")}>{hint}</p>
+      {(error || hint || maxLength !== undefined) && (
+        <div className="flex items-start justify-between gap-3">
+          {error ? (
+            <p className="text-sm text-error">{error}</p>
+          ) : (
+            hint && <p className={cn("text-sm", dark ? "text-white/70" : "text-midnight-navy/60")}>{hint}</p>
+          )}
+          {maxLength !== undefined && (
+            <span className={cn("ml-auto shrink-0 text-sm tabular-nums", dark ? "text-white/70" : "text-midnight-navy/60")}>
+              {`${value.length}/${maxLength}`}
+            </span>
+          )}
+        </div>
       )}
     </div>
   );
