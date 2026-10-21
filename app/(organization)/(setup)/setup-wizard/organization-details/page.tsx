@@ -10,7 +10,8 @@ import LocationFields from "@/components/organization/org-form/location-fields";
 import OrgTeamFields from "@/components/organization/org-form/org-team-fields";
 import SocialFields from "@/components/organization/org-form/social-fields";
 import SportLevelFields from "@/components/organization/org-form/sport-level-fields";
-import type { OrgFormState } from "@/components/organization/org-form/form";
+import { isClubTeam, type OrgFormState } from "@/components/organization/org-form/form";
+import toast from "react-hot-toast";
 import PreviewCard from "@/components/organization/org-form/preview-card";
 import { useOrganizationForm } from "@/components/organization/org-form/use-organization-form";
 import { routes } from "@/utils/routes";
@@ -20,26 +21,32 @@ import { useRouter } from "next/navigation";
 type ChecklistItem = {
   label: string;
   done: (f: OrgFormState, logoUploaded: boolean) => boolean;
+  // Optional items don't block finishing setup.
+  optional?: boolean;
+  // Shown only for a club team (the form hides these fields otherwise).
+  clubOnly?: boolean;
 };
 
 const CHECKLIST: ChecklistItem[] = [
   { label: "Organization Name", done: (f) => !!f.organizationName },
   { label: "Organization Type", done: (f) => !!f.organizationType },
-  { label: "Team Name", done: (f) => !!f.teamName },
-  { label: "Sport", done: (f) => !!f.sport },
-  { label: "Level", done: (f) => !!f.level },
+  { label: "Team Name", done: (f) => !!f.teamName, clubOnly: true },
+  { label: "Sport", done: (f) => !!f.sport, clubOnly: true },
+  { label: "Level", done: (f) => !!f.level, clubOnly: true },
   { label: "Address", done: (f) => !!(f.streetAddress && f.city && f.state && f.zipCode) },
   { label: "Conference\\League", done: (f) => !!f.conference },
-  { label: "Description", done: (f) => !!f.description },
+  { label: "Description (Optional)", done: (f) => !!f.description, optional: true },
   { label: "Contact Information", done: (f) => !!(f.contactName && f.contactPosition && f.phone && f.email && f.website) },
   {
     label: "Social Media (Optional)",
     done: (f) => !!(f.facebookUrl || f.instagramUrl || f.xUrl || f.youtubeUrl || f.tiktokUrl),
+    optional: true,
   },
   {
     label: "Branding (Optional)",
     done: (f, logoUploaded) =>
       logoUploaded || f.primaryColor !== "#000000" || f.secondaryColor !== "#000000" || f.accentColor !== "#231F20",
+    optional: true,
   },
 ];
 
@@ -48,7 +55,15 @@ export default function OrganizationDetailsPage() {
   const org = useOrganizationForm();
   const { form, logoUrl, saving, savedSchool } = org;
 
+  const checklist = CHECKLIST.filter((item) => !item.clubOnly || isClubTeam(form.organizationType));
+
   const handleNext = async () => {
+    // Setup finishes only once every required checklist item is ticked; the admin panel stays
+    // closed until then (SetupGuard reads the same rule from the saved school).
+    if (checklist.some((item) => !item.optional && !item.done(form, !!logoUrl))) {
+      toast.error("Complete every required item in the checklist to finish setup.");
+      return;
+    }
     // Setup is this one step: once saved, the organization lives on the Profile page.
     if (await org.save()) router.push(routes.ui.profile);
   };
@@ -102,7 +117,7 @@ export default function OrganizationDetailsPage() {
           <div className="rounded-[8px] p-6 bg-[rgba(255,255,255,0.06)] flex flex-col gap-4">
             <h3 className="font-display font-black text-[28px] uppercase text-white leading-none">Completion Checklist</h3>
             <div className="flex flex-col gap-3">
-              {CHECKLIST.map((item) => {
+              {checklist.map((item) => {
                 const done = item.done(form, !!logoUrl);
                 return (
                   <div key={item.label} className="flex items-center gap-2">
