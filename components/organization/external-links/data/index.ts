@@ -23,6 +23,8 @@ export interface ExternalLinkConfig {
   payloadKey: "buyTickets" | "watchGame" | "teamStores";
   // Field the school GET returns the saved link under.
   savedField: keyof SavedSchool;
+  // May be saved empty, which clears the link (GoFan, so a school can sell through in-app tickets).
+  optional?: boolean;
   // Shown to schools only (GoFan ticketing, NFHS Network streaming), not to tournaments.
   schoolOnly?: boolean;
 }
@@ -45,6 +47,7 @@ export const EXTERNAL_LINKS: ExternalLinkConfig[] = [
     saveLabel: "Save Ticketing Link",
     payloadKey: "buyTickets",
     savedField: "gofanSchoolPage",
+    optional: true,
     schoolOnly: true,
   },
   {
