@@ -23,6 +23,8 @@ export interface ExternalLinkConfig {
   payloadKey: "buyTickets" | "watchGame" | "teamStores";
   // Field the school GET returns the saved link under.
   savedField: keyof SavedSchool;
+  // Shown to schools only (GoFan ticketing, NFHS Network streaming), not to tournaments.
+  schoolOnly?: boolean;
 }
 
 export const EXTERNAL_LINKS: ExternalLinkConfig[] = [
@@ -43,6 +45,7 @@ export const EXTERNAL_LINKS: ExternalLinkConfig[] = [
     saveLabel: "Save Ticketing Link",
     payloadKey: "buyTickets",
     savedField: "gofanSchoolPage",
+    schoolOnly: true,
   },
   {
     id: "streaming",
@@ -61,6 +64,7 @@ export const EXTERNAL_LINKS: ExternalLinkConfig[] = [
     saveLabel: "Save Streaming Link",
     payloadKey: "watchGame",
     savedField: "nfhsNetworkLink",
+    schoolOnly: true,
   },
   {
     id: "store",
