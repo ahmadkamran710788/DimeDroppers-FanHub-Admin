@@ -3,22 +3,12 @@ import { formatMoney } from "@/utils/helper";
 import Button from "@/components/common/button";
 import Checkbox from "@/components/common/checkbox";
 import FilterChips from "@/components/common/filter-chips";
-import StatusPill from "@/components/common/status-pill";
+import TierBadge from "@/components/sponsor/tier-badge";
 import { CARD } from "@/components/sponsor/styles";
-import {
-  MARKET_FILTER_OPTIONS,
-  type MarketFilter,
-  type Placement,
-  type Tier,
-} from "@/components/sponsor/campaign-planner/data";
+import { MARKET_FILTER_OPTIONS, type MarketFilter, type Placement } from "@/components/sponsor/campaign-planner/data";
 
 // Shared by the header and the rows so the columns line up.
 const COLUMNS = "grid grid-cols-[44px_2.2fr_0.9fr_1fr_2fr_1.8fr_0.9fr] gap-[14px] items-center px-[14px]";
-
-const TIER_STYLES: Record<Tier, string> = {
-  PLATINUM: "bg-[#e4e8ee]",
-  GOLD: "bg-[#e8c26a]",
-};
 
 interface PlacementsTableProps {
   // The lines in the selected market.
@@ -80,12 +70,7 @@ export default function PlacementsTable({ placements, market, onMarketChange, ex
                   </div>
                   <div className="text-sm">{p.market}</div>
                   <div>
-                    <StatusPill
-                      label={p.tier}
-                      color={TIER_STYLES[p.tier]}
-                      className="h-auto px-[9px] py-1"
-                      textClassName="text-[11px] font-bold tracking-[1.2px] text-[#111]"
-                    />
+                    <TierBadge tier={p.tier} />
                   </div>
                   <div className="flex flex-wrap gap-[6px]">
                     {p.inventory.map((item) => (

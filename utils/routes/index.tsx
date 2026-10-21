@@ -50,6 +50,7 @@ export const routes = {
     // Sponsor role (app/(sponsor)). Fundable Needs is where a sponsor lands after sign-in.
     sponsor: {
       fundableNeeds: "/sponsor/fundable-needs",
+      findOrganizations: "/sponsor/find-organizations",
       brandAssets: "/sponsor/brand-assets",
       campaignPlanner: "/sponsor/campaign-planner",
     },

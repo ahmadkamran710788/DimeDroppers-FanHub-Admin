@@ -8,6 +8,7 @@ import SponsorHeader from "@/components/layout/sponsor-header";
 
 const PAGE_TITLES: Record<string, string> = {
   [routes.ui.sponsor.fundableNeeds]: "Sponsorship",
+  [routes.ui.sponsor.findOrganizations]: "Sponsorship",
   [routes.ui.sponsor.brandAssets]: "Brand",
   [routes.ui.sponsor.campaignPlanner]: "Dime AI",
 };

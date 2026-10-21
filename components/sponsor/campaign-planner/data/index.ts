@@ -1,5 +1,5 @@
 import { toOptions } from "@/utils/helper";
-import { SPONSOR_PROFILE } from "@/components/sponsor/data";
+import { SPONSOR_PROFILE, type Tier } from "@/components/sponsor/data";
 
 // Mock data for the Campaign Planner until the Dime AI API is integrated: the plan Dime AI
 // returns for the default request.
@@ -10,8 +10,6 @@ export type Market = (typeof MARKETS)[number];
 export const MARKET_FILTERS = ["All", ...MARKETS] as const;
 export type MarketFilter = (typeof MARKET_FILTERS)[number];
 export const MARKET_FILTER_OPTIONS = MARKET_FILTERS.map((m) => ({ label: m, value: m }));
-
-export type Tier = "PLATINUM" | "GOLD";
 
 // In-app inventory, in the order the inventory mix lists it.
 export const INVENTORY = ["Watch Live", "Predictions", "Schedule", "Quests", "Voting", "Challenges"] as const;
