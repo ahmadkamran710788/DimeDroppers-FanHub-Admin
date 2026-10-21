@@ -8,7 +8,10 @@ interface ColorPickerProps {
   name: string;
   value: string;
   onChange: (value: string) => void;
+  error?: string;
   className?: string;
+  // E.g. a navy label inside a white dialog.
+  labelClassName?: string;
 }
 
 export default function ColorPicker({
@@ -16,7 +19,9 @@ export default function ColorPicker({
   name,
   value,
   onChange,
+  error,
   className,
+  labelClassName,
 }: ColorPickerProps) {
   const colorInputRef = useRef<HTMLInputElement>(null);
 
@@ -30,10 +35,15 @@ export default function ColorPicker({
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <label htmlFor={`${name}-hex`} className="text-base font-medium text-white">
+      <label htmlFor={`${name}-hex`} className={cn("text-base font-medium text-white", labelClassName)}>
         {label}
       </label>
-      <div className="relative flex items-center h-12 rounded-[8px] bg-white border-2 border-[rgba(11,28,45,0.11)] overflow-hidden">
+      <div
+        className={cn(
+          "relative flex items-center h-12 rounded-[8px] bg-white border-2 border-[rgba(11,28,45,0.11)] overflow-hidden",
+          error && "border-error"
+        )}
+      >
         <button
           type="button"
           onClick={() => colorInputRef.current?.click()}
@@ -63,6 +73,7 @@ export default function ColorPicker({
           tabIndex={-1}
         />
       </div>
+      {error && <p className="text-sm text-error">{error}</p>}
     </div>
   );
 }

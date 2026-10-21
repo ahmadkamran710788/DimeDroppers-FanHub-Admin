@@ -8,10 +8,8 @@ import Input from "@/components/common/input";
 import Select from "@/components/common/select";
 import Textarea from "@/components/common/textarea";
 import OrgCrest from "@/components/sponsor/org-crest";
+import { FIELD, SECTION_LABEL } from "@/components/sponsor/styles";
 import { BRAND_ASSET_OPTIONS, PRESET_AMOUNTS, type FundableNeed } from "@/components/sponsor/fundable-needs/data";
-
-const SECTION_LABEL = "text-[13px] font-semibold tracking-[1px] text-[#c4c4c4]";
-const FIELD = "rounded-[10px] font-normal leading-[normal] bg-[#0b0b0b] text-white border-[#333]";
 
 interface FundPanelProps {
   need: FundableNeed;
