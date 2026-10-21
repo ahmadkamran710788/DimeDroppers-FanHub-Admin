@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Team } from "@/components/organization/teams/data";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 
-interface DepartmentTeam {
+export interface DepartmentTeam {
   id: string;
   name: string;
   level: string | null;
+  // Boys / Girls / Coed; null when the team's name says nothing.
+  gender?: string | null;
   logoUrl: string | null;
 }
 
-interface Department {
+// A sport ("department") and its teams.
+export interface Department {
   id: string;
   name: string;
   teams: DepartmentTeam[];
@@ -26,6 +29,8 @@ interface DepartmentsResponse {
 // Ring around the crest, by sport, so teams of one sport read as a group.
 const RING: Record<string, string> = { Basketball: "#9CA3AF", Football: "#3B84C9", Soccer: "#C0392B" };
 
+export const sportRing = (sport: string) => RING[sport] ?? "#638BFE";
+
 const toTeam = (department: Department, t: DepartmentTeam): Team => ({
   id: t.id,
   name: t.name,
@@ -36,26 +41,30 @@ const toTeam = (department: Department, t: DepartmentTeam): Team => ({
   // The departments endpoint has no coach or roster counts yet.
   headCoach: "—",
   status: "Active",
-  ring: RING[department.name] ?? "#638BFE",
+  ring: sportRing(department.name),
 });
 
-// The organisation's real teams. Each team id is the schoolTeamId the roster and staff calls take.
+// The organisation's sports and real teams. Each team id is the schoolTeamId the roster and staff
+// calls take. `reload` refetches after a sport or team is added or edited (those calls clear the cache).
 export function useOrgTeams() {
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     apiCall<DepartmentsResponse>({ endpoint: routes.api.orgDepartments, method: "GET" }).then((result) => {
       if (cancelled) return;
-      const departments = result.success ? (result.data?.data?.[0]?.departments ?? []) : [];
-      setTeams(departments.flatMap((d) => d.teams.map((t) => toTeam(d, t))));
+      if (result.success) setDepartments(result.data?.data?.[0]?.departments ?? []);
       setLoading(false);
     });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [version]);
 
-  return { teams, loading };
+  const reload = useCallback(() => setVersion((v) => v + 1), []);
+  const teams = departments.flatMap((d) => d.teams.map((t) => toTeam(d, t)));
+
+  return { departments, teams, loading, reload };
 }

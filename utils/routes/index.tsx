@@ -189,6 +189,12 @@ export const routes = {
     ticketGames: "fanhub/org/tickets/games",
     // The org's teams, grouped by sport department. teams[].id is the schoolTeamId the roster calls take.
     orgDepartments: "fanhub/org/departments",
+    // A sport (department): POST orgDepartments adds one { name }; PATCH renames it.
+    orgDepartment: (departmentId: string) => `fanhub/org/departments/${departmentId}`,
+    // POST adds a team { sport, name, level?, gender? } (an unknown sport is created with it).
+    orgTeams: "fanhub/org/teams",
+    // PATCH edits a team: any of name, level, gender, sport (moves it to that sport).
+    orgTeam: (teamId: string) => `fanhub/org/teams/${teamId}`,
     // A team's staff (coaches): GET ?schoolTeamId= lists them, POST adds one.
     rosterStaff: "fanhub/org/roster/staff",
     // One staff entry: PATCH edits it, DELETE removes it from the staff list.
