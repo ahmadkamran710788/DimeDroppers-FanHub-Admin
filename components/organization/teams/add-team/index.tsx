@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,6 +14,7 @@ import { TEAM_GENDER_OPTIONS, TEAM_LEVEL_OPTIONS } from "@/components/organizati
 import { useOrgTeams } from "@/components/organization/teams/use-org-teams";
 import AthletesTab from "@/components/organization/teams/add-team/athletes-tab";
 import { addTeamSchema } from "@/components/organization/teams/add-team/schema";
+import { orgKindOf, useAuth } from "@/context/auth";
 import { useSetup } from "@/context/setup";
 import { cn } from "@/utils/cn";
 import apiCall from "@/utils/api-call";
@@ -42,6 +43,12 @@ export default function AddTeamPage() {
   const router = useRouter();
   const { savedSchool } = useSetup();
   const { departments } = useOrgTeams();
+  // A tournament doesn't add teams of its own: opened directly, send it back to Teams.
+  const { org } = useAuth();
+  const isTournament = orgKindOf(org) === "tournament";
+  useEffect(() => {
+    if (isTournament) router.replace(routes.ui.teams);
+  }, [isTournament, router]);
   const [tab, setTab] = useState<Tab>("Team Info");
   const [form, setForm] = useState<Form>(INITIAL_FORM);
   const [saving, setSaving] = useState(false);
