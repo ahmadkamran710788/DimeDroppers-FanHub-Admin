@@ -3,7 +3,6 @@
 import ActivationSummary from "@/components/organization/activations/activation-summary";
 import CategoryColumn from "@/components/organization/activations/category-column";
 import { CATEGORY_ORDER, CATEGORY_STYLE } from "@/components/organization/activations/data";
-import RecommendedCard, { type RecommendedEntry } from "@/components/organization/activations/recommended-card";
 import { useActivationInventory } from "@/components/organization/activations/use-activation-inventory";
 import Button from "@/components/common/button";
 import Loader from "@/components/common/loader";
@@ -40,8 +39,8 @@ export default function ActivationsPage() {
         Activations
       </h2>
       <p className="text-base text-white/80">
-        Choose the activations sponsors can see in your Fan Hub. Pre Game, Live, Post Game and Add-ons use Dime&apos;s
-        base values; set your own value and size for Exclusivity.
+        Choose the activations sponsors can see in your Fan Hub. Turn Pre Game, Live, Post Game and Add-ons on or off
+        as a whole; pick each Exclusivity placement and set its value and size.
       </p>
     </div>
   );
@@ -68,8 +67,6 @@ export default function ActivationsPage() {
     CATEGORY_ORDER.map((c) => [c, categoryInfo(c)?.label ?? c])
   ) as Record<ActivationCategory, string>;
 
-  const isEditable = (category: ActivationCategory) => !!categoryInfo(category)?.isEditable;
-
   const ticked = CATEGORY_ORDER.flatMap((c) => form.columns[c]).filter((s) => s.enabled);
 
   // Total = ticked slots. Active / Draft / Scheduled / Completed have no source yet (Active was
@@ -83,17 +80,11 @@ export default function ActivationsPage() {
     { label: "Completed", value: "—", caption: "This Month" },
   ];
 
-  const recommended: RecommendedEntry[] = CATEGORY_ORDER.flatMap((category) =>
-    form.columns[category].filter((slot) => slot.isRecommended && !slot.retired).map((slot) => ({ category, slot }))
-  );
-
   const column = (category: ActivationCategory) => (
     <CategoryColumn
       key={category}
       label={categoryLabels[category]}
       description={categoryInfo(category)?.description ?? ""}
-      baseValue={categoryInfo(category)?.baseValue ?? 0}
-      editable={isEditable(category)}
       color={CATEGORY_STYLE[category].color}
       slots={form.columns[category]}
       rowErrors={inv.rowErrors}
@@ -122,15 +113,9 @@ export default function ActivationsPage() {
         {CATEGORY_ORDER.map(column)}
       </div>
 
-      {/* Summary + recommended */}
+      {/* Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-start">
         <ActivationSummary columns={form.columns} categoryLabels={categoryLabels} />
-        <RecommendedCard
-          entries={recommended}
-          organizationTypeLabel={catalog.organizationTypeLabel}
-          onToggle={({ category, slot }) => inv.toggle(category, slot.rowKey)}
-          onApply={inv.selectRecommended}
-        />
       </div>
 
       {/* Footer action */}

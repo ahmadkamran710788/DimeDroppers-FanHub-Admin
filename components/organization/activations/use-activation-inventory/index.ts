@@ -109,28 +109,24 @@ export function useActivationInventory() {
   };
 
   // ---- Checkbox, value, size and order ----
-  // Unticking only hides the slot from sponsors: its value, size (and any placements) are kept.
+  // Exclusivity slots are ticked one by one; the other columns only all at once (Select All /
+  // Clear All). Unticking only hides the slot from sponsors: its value, size (and any placements)
+  // are kept.
 
   const toggle = (category: ActivationCategory, rowKey: string) =>
     updateSlot(category, rowKey, (s) => ({ ...s, enabled: !s.enabled }));
 
   const setValue = (category: ActivationCategory, rowKey: string, value: string) =>
-    updateSlot(category, rowKey, (s) => (s.priceEditable ? { ...s, value } : s));
+    updateSlot(category, rowKey, (s) => (s.editable ? { ...s, value } : s));
 
   const setSize = (category: ActivationCategory, rowKey: string, size: string) =>
-    updateSlot(category, rowKey, (s) => (s.priceEditable ? { ...s, size } : s));
+    updateSlot(category, rowKey, (s) => (s.editable ? { ...s, size } : s));
 
   const selectAll = (category: ActivationCategory) =>
     updateColumn(category, (slots) => slots.map((s) => ({ ...s, enabled: true })));
 
   const clearAll = (category: ActivationCategory) =>
     updateColumn(category, (slots) => slots.map((s) => ({ ...s, enabled: false })));
-
-  const selectRecommended = () =>
-    update((f) => ({
-      ...f,
-      columns: mapColumns(f.columns, (s) => (s.isRecommended && !s.retired ? { ...s, enabled: true } : s)),
-    }));
 
   // Drag to reorder within a column; the order is saved.
   const reorder = (category: ActivationCategory, fromKey: string, toKey: string) => {
@@ -153,7 +149,7 @@ export function useActivationInventory() {
     const found: RowErrors = {};
     const messages: string[] = [];
     for (const slot of CATEGORY_ORDER.flatMap((c) => f.columns[c])) {
-      if (!slot.priceEditable) continue;
+      if (!slot.editable) continue;
       const errors = await validateForm(exclusivitySlotSchema, { value: slot.value, size: slot.size });
       if (!errors.value && !errors.size) continue;
       found[slot.rowKey] = { value: errors.value, size: errors.size };
@@ -232,7 +228,6 @@ export function useActivationInventory() {
     setSize,
     selectAll,
     clearAll,
-    selectRecommended,
     reorder,
     save,
   };
@@ -242,11 +237,4 @@ function without(errors: RowErrors, key: string): RowErrors {
   const next = { ...errors };
   delete next[key];
   return next;
-}
-
-function mapColumns(
-  columns: InventoryForm["columns"],
-  fn: (slot: FormSlot, category: ActivationCategory) => FormSlot
-): InventoryForm["columns"] {
-  return Object.fromEntries(CATEGORY_ORDER.map((c) => [c, columns[c].map((s) => fn(s, c))])) as InventoryForm["columns"];
 }

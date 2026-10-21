@@ -2,7 +2,6 @@
 
 import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import Loader from "@/components/common/loader";
 import { useSetup } from "@/context/setup";
 import { getResumeStep, isSetupComplete } from "@/utils/fanhub/get-resume-step";
 import { routes } from "@/utils/routes";
@@ -15,8 +14,8 @@ interface SetupGuardProps {
 }
 
 // Keeps a new organisation on the setup form until it has saved it, even when the URL is changed
-// by hand, and keeps a set-up one out of the form. Renders only a loader until the saved school has
-// loaded, so the wrong screen never flashes. Needs a SetupProvider above it.
+// by hand, and keeps a set-up one out of the form. The page shows straight away; once the saved
+// school has loaded, the wrong one redirects. Needs a SetupProvider above it.
 export default function SetupGuard({ require, children }: SetupGuardProps) {
   const router = useRouter();
   const { savedSchool, isLoading } = useSetup();
@@ -28,12 +27,5 @@ export default function SetupGuard({ require, children }: SetupGuardProps) {
     router.replace(require === "complete" ? getResumeStep() : routes.ui.profile);
   }, [isLoading, allowed, require, router]);
 
-  if (isLoading || !allowed) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-black">
-        <Loader />
-      </div>
-    );
-  }
   return children;
 }

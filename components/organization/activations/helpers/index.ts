@@ -37,11 +37,10 @@ export interface FormSlot {
   retired: boolean;
   // The checkbox: shown to sponsors.
   enabled: boolean;
-  // Exclusivity: the org sets the value and size.
-  priceEditable: boolean;
-  // Dime's value for the category: the slot's value, or the default of an Exclusivity slot.
-  baseValue: number;
-  // Exclusivity: whole dollars, as typed; "" = the default (baseValue).
+  // Exclusivity: each slot has its own checkbox, value and size. The other categories switch on
+  // and off as a whole column.
+  editable: boolean;
+  // Exclusivity: whole dollars, as typed; "" = the default (the Add-ons base value).
   value: string;
   // As typed on Exclusivity slots ("" = the catalog size); the catalog size elsewhere.
   size: string;
@@ -58,7 +57,7 @@ export const catalogRowKey = (catalogKey: string) => `catalog:${catalogKey.toUpp
 
 const byOrder = <T extends { sortOrder: number }>(a: T, b: T) => a.sortOrder - b.sortOrder;
 
-const fromView = (a: InventoryActivation, baseValue: number, offered: Set<string>): FormSlot => {
+const fromView = (a: InventoryActivation, offered: Set<string>): FormSlot => {
   const catalogKey = a.catalogKey ? a.catalogKey.toUpperCase() : null;
   const initial: SlotInitial = {
     enabled: a.isAvailableForSponsors,
@@ -73,8 +72,7 @@ const fromView = (a: InventoryActivation, baseValue: number, offered: Set<string
     description: a.description,
     isRecommended: a.isRecommended,
     retired: !!catalogKey && !offered.has(catalogKey),
-    priceEditable: a.isEditable,
-    baseValue,
+    editable: a.isEditable,
     ...initial,
     initial,
     placements: [...a.placements].sort(byOrder).map((p) => ({
@@ -103,7 +101,7 @@ export function buildForm(
     const items = catalog.categories.find((c) => c.category === category)?.items ?? [];
     const offered = new Set(items.map((item) => item.key.toUpperCase()));
     const view = inventory.categories.find((c) => c.category === category);
-    let slots = [...(view?.activations ?? [])].sort(byOrder).map((a) => fromView(a, view?.baseValue ?? 0, offered));
+    let slots = [...(view?.activations ?? [])].sort(byOrder).map((a) => fromView(a, offered));
 
     if (prevColumns) {
       const byKey = new Map(slots.filter((s) => s.catalogKey).map((s) => [s.rowKey, s]));
@@ -129,7 +127,7 @@ export function buildForm(
 // don't pass validation are left out, so the saved ones stay.
 function exclusivityChanges(slot: FormSlot): Pick<ActivationInput, "value" | "size"> {
   const changes: Pick<ActivationInput, "value" | "size"> = {};
-  if (!slot.priceEditable) return changes;
+  if (!slot.editable) return changes;
   const value = slot.value.trim();
   if (value !== slot.initial.value && (value === "" || isWholeNumber(value))) {
     changes.value = value === "" ? null : Number(value);
@@ -169,22 +167,6 @@ export function toRequest(form: InventoryForm): { body: ActivationInventoryReque
   return { body: { levels: form.levels, activations }, indexMap };
 }
 
-// ---- Totals ----
-
 function isWholeNumber(v: string) {
   return /^\d+$/.test(v.trim()) && Number(v) <= MAX_SLOT_VALUE;
 }
-
-// What the slot is worth: the typed Exclusivity value, else the category base value.
-export const effectiveValue = (slot: FormSlot) => {
-  if (!slot.priceEditable || slot.value.trim() === "") return slot.baseValue;
-  return isWholeNumber(slot.value) ? Number(slot.value) : 0;
-};
-
-// Sum of the ticked slots' values.
-export const selectedValue = (slots: FormSlot[]) => slots.reduce((sum, s) => sum + (s.enabled ? effectiveValue(s) : 0), 0);
-
-const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-
-// Values are whole US dollars.
-export const formatUsd = (amount: number) => usd.format(amount);
