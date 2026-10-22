@@ -29,21 +29,28 @@ export interface PlayEvent {
 export type InsightPeriod = "All" | "H1" | "H2";
 
 export interface InsightPoint {
-  title: string;
+  // Bold label before the text; the rule-based insights have none.
+  title?: string;
   text: string;
 }
 
 export interface TeamInsight {
   team: MediaTeam;
   points: number;
-  season: string;
+  season: string | null;
   // School and city line, e.g. "Twin Lakes Academy Middle, JACKSONVILLE, FL".
-  location: string;
-  players: number;
+  location: string | null;
+  players: number | null;
   strengths: InsightPoint[];
+  areasForImprovement?: InsightPoint[];
 }
 
 export interface MediaGame {
+  // A school game from the API (its id is the scheduleEventId): its thread, recap and insights load
+  // from the game-detail endpoints instead of the fields below.
+  fromApi?: boolean;
+  // A tournament game (GET /exposure/schedules): its thread and details have no API yet.
+  tournament?: boolean;
   id: string;
   // ISO date-time.
   start: string;

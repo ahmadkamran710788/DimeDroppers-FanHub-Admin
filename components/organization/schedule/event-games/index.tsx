@@ -132,7 +132,8 @@ export default function EventGames({ eventId, eventName }: EventGamesProps) {
                 value={divisionId}
                 onChange={(id) => {
                   setDivisionId(id);
-                  setTeamId("");
+                  // The division's first team opens straight away.
+                  setTeamId(divisions.find((d) => d.id === id)?.teams[0]?.id ?? "");
                 }}
               />
             )}

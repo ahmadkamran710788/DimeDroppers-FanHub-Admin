@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import toast from "react-hot-toast";
+import Loader from "@/components/common/loader";
 import SegmentedControl from "@/components/common/segmented-control";
+import { useGameDetail } from "@/components/organization/media/use-game-detail";
+import { routes } from "@/utils/routes";
+import type { GameRecapDetail } from "@/utils/types/game-detail";
 import type { MediaGame } from "@/components/organization/media/data";
 import { fullDate } from "@/components/organization/media/format";
 import GameInsights from "@/components/organization/media/game-insights";
@@ -21,6 +25,28 @@ const comingSoon = () => toast("Coming soon.");
 const VIDEO_PRICE = { price: 1.99, dimes: 300 };
 // Sizes a game merch item is sold in until the shop API defines them.
 const DEFAULT_SIZES = ["S", "M", "L", "XL"];
+
+function RecapArticle({ recap }: { recap: { headline: string; paragraphs: string[] } }) {
+  return (
+    <article className="flex flex-col gap-6 text-white">
+      <h3 className="font-display font-extrabold text-[30px] leading-tight">{recap.headline}</h3>
+      {recap.paragraphs.map((p) => (
+        <p key={p.slice(0, 32)} className="text-[17px] leading-[26px] text-white/85">
+          {p}
+        </p>
+      ))}
+    </article>
+  );
+}
+
+// A school game's recap from GET /game-detail/games/{id}/recap. The first call can take a few seconds
+// while the recap is written; `recap` is null until the game has official scoring.
+function ApiRecap({ gameId }: { gameId: string }) {
+  const { data, error, loading } = useGameDetail<GameRecapDetail>(routes.api.gameDetailRecap(gameId));
+  if (loading) return <Loader className="m-10" />;
+  if (data?.recap) return <RecapArticle recap={data.recap} />;
+  return <p className="py-10 text-center text-sm text-white/50">{error ?? "The recap will appear here after the game."}</p>;
+}
 
 // "Game Details" tab: recap, insights, highlight videos and game merch — videos and merch can be added to a team shop.
 export default function GameDetails({ game }: { game: MediaGame }) {
@@ -84,15 +110,10 @@ export default function GameDetails({ game }: { game: MediaGame }) {
           )}
           className="p-0"
         />
+      ) : section === "Recap" && game.fromApi ? (
+        <ApiRecap gameId={game.id} />
       ) : section === "Recap" && game.recap ? (
-        <article className="flex flex-col gap-6 text-white">
-          <h3 className="font-display font-extrabold text-[30px] leading-tight">{game.recap.headline}</h3>
-          {game.recap.paragraphs.map((p) => (
-            <p key={p.slice(0, 32)} className="text-[17px] leading-[26px] text-white/85">
-              {p}
-            </p>
-          ))}
-        </article>
+        <RecapArticle recap={game.recap} />
       ) : (
         <p className="py-10 text-center text-sm text-white/50">
           {section === "Recap"
