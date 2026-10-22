@@ -33,6 +33,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { orgKindOf, useAuth } from "@/context/auth";
 import toast from "react-hot-toast";
 
 const ACCEPTED_UPLOAD_EXTENSIONS = ["pdf", "jpg", "jpeg", "png"] as const;
@@ -202,6 +203,10 @@ function PlatformBadge({ logo, size }: { logo: PlatformLogo; size: 48 | 64 }) {
  * Schedule → Import Schedule page, which supplies the heading and footer.
  */
 export default function ImportScheduleContent() {
+  // A tournament imports through an API connection (Exposure) only; a school also gets the file
+  // upload and the calendar link.
+  const { org } = useAuth();
+  const isTournament = orgKindOf(org) === "tournament";
   const { savedSchool } = useSetup();
   const [icsUrls, setIcsUrls] = useState<string[]>(ICS_DEFAULTS);
   const [autoSync, setAutoSync] = useState(true);
@@ -645,6 +650,8 @@ export default function ImportScheduleContent() {
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-start">
         {/* LEFT COLUMN */}
         <div className="w-full lg:w-[639px] lg:shrink-0 flex flex-col gap-6 lg:gap-10">
+          {!isTournament && (
+          <>
           {/* A — Schedule file upload (pdf/jpg/png) → MaxPreps scrape */}
           <SectionCard
             badge="A"
@@ -789,10 +796,13 @@ export default function ImportScheduleContent() {
               </div>
             </div>
           </SectionCard>
+          </>
+          )}
 
-          {/* C — API Connections */}
+          {/* API connections — tournament only (a school imports by file or calendar link) */}
+          {isTournament && (
           <SectionCard
-            badge="C"
+            badge="A"
             title="Sync via API Connection"
             description="Connect your account and import teams and schedule."
           >
@@ -875,6 +885,7 @@ export default function ImportScheduleContent() {
               <Button variant="ghost" label="Connect" onClick={() => openConnect("")} className="w-auto" />
             </div>
           </SectionCard>
+          )}
         </div>
 
         {/* RIGHT COLUMN */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useState, ViewTransition } from "react";
+import { startTransition, useState, ViewTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import BadgeStatCard, {
@@ -11,6 +11,7 @@ import Button from "@/components/common/button";
 import EditTeamModal from "@/components/organization/teams/edit-team-modal";
 import SportModal from "@/components/organization/teams/sport-modal";
 import SportsList from "@/components/organization/teams/sports-list";
+import EventSelect from "@/components/organization/event-select";
 import TournamentTeams, { type TournamentFocus } from "@/components/organization/teams/tournament-teams";
 import type { TournamentTotals } from "@/utils/types/exposure-event";
 import {
@@ -37,8 +38,11 @@ export default function TeamsPage() {
   // narrowed to the open event and then to its open division.
   const [totals, setTotals] = useState<TournamentTotals | null>(null);
   const [focus, setFocus] = useState<TournamentFocus | null>(null);
+  // The tournament event picked in the header (the newest at first).
+  const [pickedEvent, setPickedEvent] = useState<{ id: string; name: string } | null>(null);
   // In a transition, so the cards that leave or move animate (the ViewTransitions below).
-  const changeFocus = (next: TournamentFocus | null) => startTransition(() => setFocus(next));
+  // Stable, since TournamentTeams refetches when it changes.
+  const changeFocus = useCallback((next: TournamentFocus | null) => startTransition(() => setFocus(next)), []);
   const { departments, teams, loading, reload } = useOrgTeams();
   const [sportEditing, setSportEditing] = useState<SportEditing>(null);
   const [teamEditing, setTeamEditing] = useState<{
@@ -129,7 +133,15 @@ export default function TeamsPage() {
               : "Manage your activities, teams, rosters, staff, and team information."}
           </p>
         </div>
-        {/* A tournament's teams come from its events; it adds nothing here. */}
+        {/* A tournament's teams come from its events: it picks one here and adds nothing. */}
+        {isTournament && (
+          <EventSelect
+            value={pickedEvent?.id ?? ""}
+            onChange={(id, name) => setPickedEvent(id ? { id, name } : null)}
+            allowAll={false}
+            selectedName={pickedEvent?.name}
+          />
+        )}
         {!isTournament && (
           <div className="flex flex-wrap gap-3 shrink-0">
             <Button
@@ -160,7 +172,7 @@ export default function TeamsPage() {
       {/* Sports and their teams */}
       <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px] bg-surface-07">
         {isTournament ? (
-          <TournamentTeams onTotals={setTotals} focus={focus} onFocus={changeFocus} />
+          <TournamentTeams key={pickedEvent?.id ?? "none"} eventId={pickedEvent?.id ?? ""} onTotals={setTotals} focus={focus} onFocus={changeFocus} />
         ) : (
           <SportsList
             departments={departments}

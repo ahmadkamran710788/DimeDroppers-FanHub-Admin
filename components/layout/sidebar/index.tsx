@@ -5,7 +5,7 @@ import { useSetup } from "@/context/setup";
 import Image from "next/image";
 import { orgKindOf, useAuth, type OrgKind } from "@/context/auth";
 import SidebarFrame, { type NavSection } from "@/components/layout/sidebar-frame";
-import { BotMessageSquare, ClipboardList, Gem, LayoutDashboard, MessagesSquare, ShoppingBag, Sparkles, Star, Video } from "lucide-react";
+import { BotMessageSquare, ClipboardList, Gem, GitFork, LayoutDashboard, Layers, MapPin, MessagesSquare, ShoppingBag, Sparkles, Star, Trophy, Video } from "lucide-react";
 
 // Setup Wizard is not in the sidebar: first-time setup is a full-screen flow after
 // sign-in, and afterwards the organization is edited from Profile.
@@ -69,6 +69,21 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
+// Tournament only: one event's data, under Schedule in the Command section.
+const TOURNAMENT_COMMAND_ITEMS: NavSection["items"] = [
+  { icon: <Layers className="size-6" strokeWidth={1.5} />, label: "Divisions", href: routes.ui.divisions },
+  { icon: <MapPin className="size-6" strokeWidth={1.5} />, label: "Venues", href: routes.ui.venues },
+  { icon: <Trophy className="size-6" strokeWidth={1.5} />, label: "Standings", href: routes.ui.standings },
+  { icon: <GitFork className="size-6" strokeWidth={1.5} />, label: "Brackets", href: routes.ui.brackets },
+];
+
+// The sections for this org: a tournament gets its event pages after Schedule; a school's sidebar is
+// unchanged.
+const sectionsFor = (isTournament: boolean): NavSection[] =>
+  isTournament
+    ? NAV_SECTIONS.map((s) => (s.title === "Command" ? { ...s, items: [...s.items, ...TOURNAMENT_COMMAND_ITEMS] } : s))
+    : NAV_SECTIONS;
+
 // The logo says which panel this is (162×46: the wordmark plus "SCHOOL" / "TOURNAMENT" under it);
 // the plain 162×32 one shows until the org's type is known.
 const LOGOS: Record<OrgKind, { src: string; alt: string }> = {
@@ -96,7 +111,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           <Image src="/DDLogo.svg" alt="Dime Dropper" width={162} height={32} className="shrink-0" priority />
         )
       }
-      sections={NAV_SECTIONS}
+      sections={sectionsFor(kind === "tournament")}
       profileName={savedSchool?.name ?? org?.name ?? "Organization"}
       profileRole="Admin"
       open={open}

@@ -27,6 +27,8 @@ import {
 import type { ScheduleItem, ScheduleListResponse, SchedulePagination, ScheduleSummary } from "@/utils/types/schedule";
 import DateField from "@/components/common/date-field";
 import Pagination from "@/components/common/pagination";
+import EventSelect from "@/components/organization/event-select";
+import EventGames from "@/components/organization/schedule/event-games";
 import { US_STATE_OPTIONS } from "@/components/organization/org-form/form";
 import type { ExposureEvent, ExposureEventsResponse, ExposureEventView } from "@/utils/types/exposure-event";
 import {
@@ -113,14 +115,6 @@ function buildMonthGrid(year: number, month: number): (number | null)[] {
   return grid;
 }
 
-// Events tab status filter (GET /exposure/events ?status=), with the summary key for its count.
-const EVENT_STATUSES = [
-  { value: "all", label: "All Events" },
-  { value: "upcoming", label: "Upcoming" },
-  { value: "live", label: "Live" },
-  { value: "past", label: "Past" },
-] as const;
-type EventStatus = (typeof EVENT_STATUSES)[number]["value"];
 const EVENTS_PAGE_SIZE = 20;
 
 // The other Events tab filters (sport / state exact match, startDate range) and the sort.
@@ -524,7 +518,8 @@ export default function SchedulePage() {
   // Synced Exposure events (loaded while the Events tab is open), paged and filtered by the API.
   const [events, setEvents] = useState<ExposureEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
-  const [eventStatus, setEventStatus] = useState<EventStatus>("all");
+  // The event picked at the top (tournament): its games replace the events list.
+  const [pickedEvent, setPickedEvent] = useState<{ id: string; name: string } | null>(null);
   const [eventPage, setEventPage] = useState(1);
   const [eventFilters, setEventFilters] = useState<EventFilters>(DEFAULT_EVENT_FILTERS);
   const setEventFilter = (key: keyof EventFilters) => (value: string) => {
@@ -534,7 +529,6 @@ export default function SchedulePage() {
   const eventFilterCount = [eventFilters.sport, eventFilters.state, eventFilters.from, eventFilters.to].filter(Boolean).length;
   const [eventsPaging, setEventsPaging] = useState<{ total: number; totalPages: number } | null>(null);
   // Counts per status (for the filter options and the Events stat card), after the search.
-  const [eventsSummary, setEventsSummary] = useState<ExposureEventsResponse["data"][number]["summary"] | null>(null);
   // Every synced event, kept from an unfiltered answer, for the Events stat card.
   const [eventsOrgTotal, setEventsOrgTotal] = useState<number | null>(null);
   // Which event + view the details modal is showing (null = closed).
@@ -608,7 +602,6 @@ export default function SchedulePage() {
       data: {
         page: eventPage,
         limit: EVENTS_PAGE_SIZE,
-        status: eventStatus,
         sort: eventFilters.sort,
         ...(debouncedSearch && { search: debouncedSearch }),
         ...(eventFilters.sport && { sport: eventFilters.sport }),
@@ -621,13 +614,12 @@ export default function SchedulePage() {
       const body = result.success ? result.data?.data?.[0] : undefined;
       setEvents(body?.items ?? []);
       setEventsPaging(body ? { total: body.pagination.total, totalPages: body.pagination.totalPages } : null);
-      if (body) setEventsSummary(body.summary);
       const unfiltered = !debouncedSearch && !eventFilters.sport && !eventFilters.state && !eventFilters.from && !eventFilters.to;
       if (body && unfiltered) setEventsOrgTotal(body.summary.all);
       setEventsLoading(false);
     });
     return () => { cancelled = true; };
-  }, [activeTab, eventPage, eventStatus, debouncedSearch, eventFilters]);
+  }, [activeTab, eventPage, debouncedSearch, eventFilters]);
 
   const nextGame = games.find((g) => new Date(g.start) > new Date()) ?? null;
   const gameStats = summary ? buildStatsFromSummary(summary) : buildStatsFromGames(games);
@@ -635,7 +627,8 @@ export default function SchedulePage() {
   const stats = isTournament
     ? gameStats.map((st) => (st.label === "Events" ? { ...st, subtitle: "Synced events", value: eventsOrgTotal ?? 0 } : st))
     : gameStats;
-  const eventStatusLabel = EVENT_STATUSES.find((o) => o.value === eventStatus)?.label ?? "All Events";
+  // A tournament's Events tab always shows one event (the newest until another is picked).
+  const showEventGames = activeTab === "Events" && (isTournament || !!pickedEvent);
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-start">
@@ -671,6 +664,15 @@ export default function SchedulePage() {
             <p className="text-white text-base font-normal mt-1">Manage your games, events, and schedule information.</p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-4">
+            {/* Tournament: one event at a time (the newest at first), to drill into its divisions and teams. */}
+            {isTournament && (
+              <EventSelect
+                value={pickedEvent?.id ?? ""}
+                allowAll={false}
+                selectedName={pickedEvent?.name}
+                onChange={(id, name) => setPickedEvent(id ? { id, name } : null)}
+              />
+            )}
             <Button
               className="cursor-pointer"
               variant="ghost"
@@ -707,7 +709,9 @@ export default function SchedulePage() {
                 const isActive = activeTab === tab;
                 return (
                   <button key={tab} type="button" className="w-28 flex flex-col items-center gap-3 relative h-full justify-end">
-                    <span className={cn("text-base font-medium pb-3", isActive ? "text-white" : "text-white/60 hover:text-white transition-colors")}>{tab}</span>
+                    <span className={cn("text-base font-medium pb-3", isActive ? "text-white" : "text-white/60 hover:text-white transition-colors")}>
+                      {isTournament && tab === "Events" ? "Schedule" : tab}
+                    </span>
                     <div className={cn("absolute bottom-0 left-2 right-2 h-0.5 rounded-full transition-opacity", isActive ? "opacity-100" : "opacity-0")} style={{ background: "var(--gradient-cta)" }} />
                   </button>
                 );
@@ -715,7 +719,8 @@ export default function SchedulePage() {
             </div>
           </div>
 
-          {/* Search + Filters */}
+          {/* Search + Filters (not while one event's games are shown) */}
+          {!showEventGames && (
           <div className="flex items-center gap-6">
             <div className="flex-1 h-12 px-4 py-3 bg-white rounded-lg shadow-[inset_0px_1px_0px_0px_rgba(255,255,255,0.16)] outline outline-2 outline-offset-[-2px] outline-slate-900/10 backdrop-blur-[32px] flex items-center gap-2">
               <Search className="w-5 h-5 text-slate-900 shrink-0" strokeWidth={2} />
@@ -728,25 +733,12 @@ export default function SchedulePage() {
               />
             </div>
           </div>
+          )}
 
           {/* Filters: the Events tab filters by status; the game filters belong to the Games tab. */}
-          {activeTab === "Events" ? (
+          {showEventGames ? null : activeTab === "Events" ? (
           // Bottom-aligned: the date fields carry a label above their box.
           <div className="flex flex-wrap items-end gap-3">
-            <FilterDropdown
-              label="All Events"
-              variant="accent"
-              clearable={false}
-              options={EVENT_STATUSES.map((o) => ({
-                value: o.value,
-                label: eventsSummary ? `${o.label} (${eventsSummary[o.value]})` : o.label,
-              }))}
-              value={eventStatus}
-              onChange={(v) => {
-                setEventStatus(v as EventStatus);
-                setEventPage(1);
-              }}
-            />
             <FilterDropdown label="Sport" icon={<Trophy className="w-5 h-5" strokeWidth={1.5} />} options={SPORTS_OPTIONS} value={eventFilters.sport} onChange={setEventFilter("sport")} />
             <FilterDropdown label="State" icon={<MapPin className="w-5 h-5" strokeWidth={1.5} />} options={US_STATE_OPTIONS} value={eventFilters.state} onChange={setEventFilter("state")} />
             <FilterDropdown label="Newest first" clearable={false} options={EVENT_SORTS} value={eventFilters.sort} onChange={setEventFilter("sort")} />
@@ -865,11 +857,20 @@ export default function SchedulePage() {
             </div>
           )}
 
-          {activeTab === "Events" && (
+          {showEventGames &&
+            (pickedEvent ? (
+              <EventGames key={pickedEvent.id} eventId={pickedEvent.id} eventName={pickedEvent.name} />
+            ) : (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="w-6 h-6 text-white/50 animate-spin" />
+              </div>
+            ))}
+
+          {activeTab === "Events" && !showEventGames && (
             <div className="flex flex-col">
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-white text-3xl font-extrabold font-display uppercase">
-                  {eventStatusLabel} ({eventsPaging?.total ?? events.length})
+                  All Events ({eventsPaging?.total ?? events.length})
                 </span>
               </div>
 

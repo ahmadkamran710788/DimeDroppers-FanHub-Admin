@@ -3,7 +3,7 @@
 import { useState } from "react";
 import StatCard from "@/components/common/stat-card";
 import { commandStats } from "@/components/organization/command-center/command-stats";
-import EventSelect from "@/components/organization/command-center/event-select";
+import EventSelect from "@/components/organization/event-select";
 import EventHero from "@/components/organization/command-center/event-hero";
 import GameCards from "@/components/organization/command-center/game-cards";
 import ReadinessCard from "@/components/organization/command-center/readiness-card";
