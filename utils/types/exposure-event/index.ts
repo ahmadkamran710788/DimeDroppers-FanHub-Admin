@@ -244,3 +244,35 @@ export interface DivisionTeamsTreeResponse {
     pagination: { page: number; limit: number; total: number; totalPages: number; isLast: boolean };
   }[];
 }
+
+// ─── Tournament schedule (GET /exposure/schedules) ──────────────────────────────
+
+export interface TournamentScheduleSide {
+  teamId: string | null;
+  teamName: string | null;
+  logoUrl: string | null;
+}
+
+export interface TournamentScheduleGame {
+  id: string;
+  title: string | null;
+  start: string;
+  // The real start instant (`start` is the venue's wall-clock time).
+  utcTime: string | null;
+  matchStatus: "pending" | "live" | "final" | string;
+  result: string | null;
+  location: string | null;
+  home: TournamentScheduleSide;
+  away: TournamentScheduleSide;
+  event: { id: string; name: string } | null;
+  division: { id: string; name: string } | null;
+  finalScore: { home: number; away: number } | null;
+  liveScore: { home: number; away: number } | null;
+}
+
+export interface TournamentScheduleResponse {
+  data: {
+    items: TournamentScheduleGame[];
+    pagination: { page: number; limit: number; total: number; totalPages: number; isLast: boolean };
+  }[];
+}

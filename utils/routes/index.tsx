@@ -18,6 +18,8 @@ export const routes = {
     teams: "/teams",
     addTeam: "/teams/add",
     teamDetails: (teamId: string) => `/teams/${teamId}`,
+    // A tournament team (Exposure team of one event): players, parents, staff, followers, stats, schedule.
+    tournamentTeam: (eventId: string, teamId: string) => `/teams/events/${eventId}/${teamId}`,
     buyTickets: "/buy-tickets",
     fundraising: "/fundraising",
     communications: "/communications",
@@ -27,6 +29,11 @@ export const routes = {
     inboxChat: (conversationId: string) => `/inbox?chat=${conversationId}`,
     fanhubAi: "/fanhub-ai",
     commandCenter: "/command-center",
+    // Tournament: one event's divisions, venues, standings and brackets (event picked at the top).
+    divisions: "/divisions",
+    venues: "/venues",
+    standings: "/standings",
+    brackets: "/brackets",
     engagement: "/engagement",
     createFundraisingCampaign: "/fundraising/create",
     editFundraisingCampaign: (id: string) => `/fundraising/${id}/edit`,
@@ -153,6 +160,10 @@ export const routes = {
     // Players for a team. The :teamId is the FanHubTeam id (e.g. team-uuid-001).
     // Note: this lives under exposure/teams/:teamId, NOT under events/:id.
     exposureTeamPlayers: (teamId: string) => `fanhub/org/exposure/teams/${teamId}/players`,
+    // Tournament only: games filtered by ?eventId=&divisionId=&teamId=&status=&date=&search=&page=&limit= (teams by id).
+    exposureSchedules: "fanhub/org/exposure/schedules",
+    // Tournament only: one team's record, points, streak, standings row and game-by-game results.
+    exposureTeamStats: (teamId: string) => `fanhub/org/exposure/teams/${teamId}/stats`,
     // Fundraising campaigns — a campaign belongs to one of the school's teams (teamId).
     // GET lists them (?status=&teamId=&search=&page=&limit=, plus per-status counts); POST creates one.
     campaigns: "fanhub/org/campaigns",

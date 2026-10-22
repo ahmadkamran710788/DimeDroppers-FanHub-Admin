@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Heart, Users } from "lucide-react";
+import Link from "next/link";
+import { ChevronDown, ChevronRight, Heart, Users } from "lucide-react";
 import { cn } from "@/utils/cn";
 import type { TreeEvent, TreeTeam } from "@/utils/types/exposure-event";
 
@@ -12,20 +13,21 @@ const dates = (e: TreeEvent) => (e.endDate && e.endDate !== e.startDate ? `${fmt
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-interface DivisionGroup {
+export interface DivisionGroup {
   id: string;
   name: string;
   teamCount: number;
   teams: TreeTeam[];
 }
 
-// One team: name, pool / grade / age / gender, with its player and follower counts.
-function TeamRow({ team }: { team: TreeTeam }) {
+// One team: name, pool / grade / age / gender, with its player and follower counts. With `href` the
+// row opens the team's page.
+export function TeamRow({ team, href }: { team: TreeTeam; href?: string }) {
   const meta = [team.pool && `Pool ${team.pool}`, team.grade, team.age, team.gender && team.gender !== "unspecified" && team.gender]
     .filter(Boolean)
     .join(" · ");
-  return (
-    <li className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10 last:border-b-0">
+  const body = (
+    <>
       <div className="flex flex-col gap-0.5 min-w-0">
         <span className="text-sm font-medium text-white break-words">{team.name}</span>
         {meta && <span className="text-xs text-white/50 capitalize">{meta}</span>}
@@ -39,13 +41,28 @@ function TeamRow({ team }: { team: TreeTeam }) {
           <Heart className="size-4" strokeWidth={1.5} />
           {plural(team.followerCount, "follower", "followers")}
         </span>
+        {href && <ChevronRight className="size-4" />}
       </div>
+    </>
+  );
+  const row = "flex items-center justify-between gap-3 px-4 py-3";
+  return (
+    <li className="border-b border-white/10 last:border-b-0">
+      {href ? (
+        <Link href={href} className={cn(row, "hover:bg-white/5 transition-colors")}>
+          {body}
+        </Link>
+      ) : (
+        <div className={row}>{body}</div>
+      )}
     </li>
   );
 }
 
 interface DivisionRowProps {
   division: DivisionGroup;
+  // Each team row links here when set.
+  teamHref?: (team: TreeTeam) => string;
   defaultOpen: boolean;
   // Set by the page's accordion: whether this is the event's open division, and the toggle.
   open?: boolean;
@@ -53,7 +70,7 @@ interface DivisionRowProps {
 }
 
 // Second layer: one division, opening to its teams.
-function DivisionRow({ division, defaultOpen, open: openProp, onToggle }: DivisionRowProps) {
+export function DivisionRow({ division, teamHref, defaultOpen, open: openProp, onToggle }: DivisionRowProps) {
   const [localOpen, setLocalOpen] = useState(defaultOpen);
   const open = openProp ?? localOpen;
   return (
@@ -77,7 +94,7 @@ function DivisionRow({ division, defaultOpen, open: openProp, onToggle }: Divisi
         ) : (
           <ul>
             {division.teams.map((t) => (
-              <TeamRow key={t.id} team={t} />
+              <TeamRow key={t.id} team={t} href={teamHref?.(t)} />
             ))}
           </ul>
         ))}
