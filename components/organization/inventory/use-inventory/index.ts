@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { CATEGORY_ORDER } from "@/components/organization/activations/data";
-import { buildForm, toRequest, type FormSlot, type InventoryForm } from "@/components/organization/activations/helpers";
-import { exclusivitySlotSchema } from "@/components/organization/activations/schema";
+import { CATEGORY_ORDER } from "@/components/organization/inventory/data";
+import { buildForm, toRequest, type FormSlot, type InventoryForm } from "@/components/organization/inventory/helpers";
+import { customSlotSchema } from "@/components/organization/inventory/schema";
 import { backendFetch, forceSignOut } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type {
@@ -57,10 +57,10 @@ interface Loaded {
   form: InventoryForm;
 }
 
-// State and saving for the Activations page: every slot of the org's type with its checkbox
-// ("show to sponsors"), and the value and size of Exclusivity slots. The first GET creates the
+// State and saving for the Inventory page: every slot of the org's type with its toggle ("show to
+// sponsors"), and the value and size of the Custom Exclusivity slot. The first GET creates the
 // inventory, so saving is always a PUT.
-export function useActivationInventory() {
+export function useInventory() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loads, setLoads] = useState(0);
   // The load (by `loads` count) that finished, failed or not.
@@ -108,10 +108,9 @@ export function useActivationInventory() {
     updateColumn(category, (slots) => slots.map((s) => (s.rowKey === rowKey ? fn(s) : s)));
   };
 
-  // ---- Checkbox, value, size and order ----
-  // Exclusivity slots are ticked one by one; the other columns only all at once (Select All /
-  // Clear All). Unticking only hides the slot from sponsors: its value, size (and any placements)
-  // are kept.
+  // ---- Toggle, value, size and order ----
+  // Every slot switches on and off by itself, or a whole column at once (Select All / Clear All).
+  // Switching off only hides the slot from sponsors: its value, size (and any placements) are kept.
 
   const toggle = (category: ActivationCategory, rowKey: string) =>
     updateSlot(category, rowKey, (s) => ({ ...s, enabled: !s.enabled }));
@@ -144,13 +143,14 @@ export function useActivationInventory() {
 
   // ---- Save ----
 
-  // Every Exclusivity slot, ticked or not, since its value and size fields always show.
+  // The Custom slot while it's on (its fields are hidden while off, and a save then keeps the saved
+  // value and size of any field that doesn't pass).
   const findFieldErrors = async (f: InventoryForm) => {
     const found: RowErrors = {};
     const messages: string[] = [];
     for (const slot of CATEGORY_ORDER.flatMap((c) => f.columns[c])) {
-      if (!slot.editable) continue;
-      const errors = await validateForm(exclusivitySlotSchema, { value: slot.value, size: slot.size });
+      if (!slot.editable || !slot.enabled) continue;
+      const errors = await validateForm(customSlotSchema, { value: slot.value, size: slot.size });
       if (!errors.value && !errors.size) continue;
       found[slot.rowKey] = { value: errors.value, size: errors.size };
       messages.push(`${slot.name}: ${errors.value ?? errors.size}`);
@@ -201,7 +201,7 @@ export function useActivationInventory() {
       // Replace the form with the saved view so new slots carry their ids into the next PUT.
       setLoaded({ catalog, form: buildForm(catalog, result.view, current.columns) });
       setDirty(false);
-      toast.success("Activations saved.");
+      toast.success("Inventory saved.");
     } finally {
       setSaving(false);
     }

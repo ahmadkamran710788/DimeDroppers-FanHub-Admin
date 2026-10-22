@@ -14,7 +14,7 @@ export const routes = {
     gameHighlights: (gameId: string) => `/schedule/games/${gameId}/highlights`,
     gameShop: (gameId: string) => `/schedule/games/${gameId}/shop`,
     externalLinks: "/external-links",
-    activations: "/activations",
+    inventory: "/inventory",
     teams: "/teams",
     addTeam: "/teams/add",
     teamDetails: (teamId: string) => `/teams/${teamId}`,

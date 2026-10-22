@@ -39,7 +39,7 @@ export default function EventHero({ overview }: { overview: CommandCenterOvervie
       <div className="flex flex-wrap gap-3">
         <Button variant="cta" label="Open Live Operations Board" onClick={comingSoon} />
         <Button variant="ghost" label={isTournament ? "View Events" : "View Schedule"} onClick={() => router.push(routes.ui.schedule)} />
-        <Button variant="ghost" label="Sponsor Activations" onClick={() => router.push(routes.ui.activations)} />
+        <Button variant="ghost" label="Sponsor Inventory" onClick={() => router.push(routes.ui.inventory)} />
       </div>
     </section>
   );

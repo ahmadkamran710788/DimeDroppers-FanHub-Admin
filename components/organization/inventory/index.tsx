@@ -1,9 +1,9 @@
 "use client";
 
-import ActivationSummary from "@/components/organization/activations/activation-summary";
-import CategoryColumn from "@/components/organization/activations/category-column";
-import { CATEGORY_ORDER, CATEGORY_STYLE } from "@/components/organization/activations/data";
-import { useActivationInventory } from "@/components/organization/activations/use-activation-inventory";
+import InventorySummary from "@/components/organization/inventory/inventory-summary";
+import CategoryColumn from "@/components/organization/inventory/category-column";
+import { CATEGORY_ORDER, CATEGORY_STYLE } from "@/components/organization/inventory/data";
+import { useInventory } from "@/components/organization/inventory/use-inventory";
 import Button from "@/components/common/button";
 import Loader from "@/components/common/loader";
 import type { ActivationCategory } from "@/utils/types/activations";
@@ -30,17 +30,17 @@ function StatCard({ label, value, caption }: Stat) {
   );
 }
 
-export default function ActivationsPage() {
-  const inv = useActivationInventory();
+export default function InventoryPage() {
+  const inv = useInventory();
 
   const header = (
     <div className="flex flex-col gap-2">
       <h2 className="font-display font-black text-[32px] sm:text-[40px] lg:text-[56px] uppercase text-white leading-none">
-        Activations
+        Inventory
       </h2>
       <p className="text-base text-white/80">
-        Choose the activations sponsors can see in your Fan Hub. Turn Pre Game, Live, Post Game and Add-ons on or off
-        as a whole; pick each Exclusivity placement and set its value and size.
+        Choose what sponsors can see in your Fan Hub. Switch each item on or off, and add a Custom Exclusivity
+        placement with its own size and value.
       </p>
     </div>
   );
@@ -54,7 +54,7 @@ export default function ActivationsPage() {
           <Loader />
         ) : (
           <div className="flex flex-col items-start gap-4">
-            <p className="text-base text-white/80">We couldn&apos;t load your activations.</p>
+            <p className="text-base text-white/80">We couldn&apos;t load your inventory.</p>
             <Button label="Try again" onClick={inv.reload} />
           </div>
         )}
@@ -69,11 +69,11 @@ export default function ActivationsPage() {
 
   const ticked = CATEGORY_ORDER.flatMap((c) => form.columns[c]).filter((s) => s.enabled);
 
-  // Total = ticked slots. Active / Draft / Scheduled / Completed have no source yet (Active was
+  // Total = switched-on slots. Active / Draft / Scheduled / Completed have no source yet (Active was
   // "ticked with a link", and links aren't on this page any more) — shown as "—" until the
   // stat cards get their data.
   const stats: Stat[] = [
-    { label: "Total Activations", value: String(ticked.length), caption: "All Time" },
+    { label: "Total Inventory", value: String(ticked.length), caption: "All Time" },
     { label: "Active", value: "—", caption: "of Total" },
     { label: "Draft", value: "—", caption: "of Total" },
     { label: "Scheduled", value: "—", caption: "All Time" },
@@ -115,7 +115,7 @@ export default function ActivationsPage() {
 
       {/* Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-start">
-        <ActivationSummary columns={form.columns} categoryLabels={categoryLabels} />
+        <InventorySummary columns={form.columns} categoryLabels={categoryLabels} />
       </div>
 
       {/* Footer action */}
@@ -123,7 +123,7 @@ export default function ActivationsPage() {
         {inv.dirty && <span className="text-sm text-white/70">You have unsaved changes</span>}
         <Button
           variant="cta"
-          label={inv.saving ? "Saving…" : "Save Activations"}
+          label={inv.saving ? "Saving…" : "Save Inventory"}
           disabled={inv.saving}
           onClick={inv.save}
         />

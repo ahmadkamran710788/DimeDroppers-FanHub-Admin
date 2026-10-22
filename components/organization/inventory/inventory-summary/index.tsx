@@ -1,15 +1,15 @@
-import { CATEGORY_ORDER, CATEGORY_STYLE } from "@/components/organization/activations/data";
-import type { InventoryForm } from "@/components/organization/activations/helpers";
+import { CATEGORY_ORDER, CATEGORY_STYLE } from "@/components/organization/inventory/data";
+import type { InventoryForm } from "@/components/organization/inventory/helpers";
 import ActivationDonut from "@/components/organization/setup/activation-donut";
 import type { ActivationCategory } from "@/utils/types/activations";
 
-interface ActivationSummaryProps {
+interface InventorySummaryProps {
   columns: InventoryForm["columns"];
   categoryLabels: Record<ActivationCategory, string>;
 }
 
-// The summary: ticked slots per category (donut), live from the form so unsaved changes show.
-export default function ActivationSummary({ columns, categoryLabels }: ActivationSummaryProps) {
+// The summary: switched-on slots per category (donut), live from the form so unsaved changes show.
+export default function InventorySummary({ columns, categoryLabels }: InventorySummaryProps) {
   const lines = CATEGORY_ORDER.map((c) => ({
     category: c,
     count: columns[c].filter((s) => s.enabled).length,
@@ -19,7 +19,7 @@ export default function ActivationSummary({ columns, categoryLabels }: Activatio
 
   return (
     <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px] bg-surface-07">
-      <h3 className="font-display font-black text-[28px] uppercase text-white leading-tight">Activation Summary</h3>
+      <h3 className="font-display font-black text-[28px] uppercase text-white leading-tight">Inventory Summary</h3>
       <div className="h-px bg-border-divider" />
       <div className="flex justify-center">
         <ActivationDonut
@@ -45,7 +45,7 @@ export default function ActivationSummary({ columns, categoryLabels }: Activatio
       <div className="flex flex-col gap-1">
         <p className="text-2xl font-bold text-success leading-none">Great mix!</p>
         <p className="text-xs text-white">
-          {total > 0 ? "You've selected a well-balanced set of activations." : "Select activations to build your fan experience."}
+          {total > 0 ? "You've built a well-balanced inventory." : "Switch on inventory to build your fan experience."}
         </p>
       </div>
     </div>

@@ -20,7 +20,7 @@ const PAGE_TITLES: Record<string, string> = {
   [routes.ui.videographerRequests]: "Video Grapher Requests",
   [routes.ui.importSchedule]: "Schedule",
   [routes.ui.externalLinks]: "Organization Settings",
-  [routes.ui.activations]: "Activations",
+  [routes.ui.inventory]: "Inventory",
   [routes.ui.teams]: "Teams",
   [routes.ui.addTeam]: "Teams",
   [routes.ui.buyTickets]: "Buy Tickets",

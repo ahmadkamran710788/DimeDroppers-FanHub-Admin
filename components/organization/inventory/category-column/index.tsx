@@ -1,11 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import ActivationRow from "@/components/organization/activations/activation-row";
-import type { FormSlot } from "@/components/organization/activations/helpers";
-import type { RowErrors } from "@/components/organization/activations/use-activation-inventory";
+import InventoryRow from "@/components/organization/inventory/inventory-row";
+import type { FormSlot } from "@/components/organization/inventory/helpers";
+import type { RowErrors } from "@/components/organization/inventory/use-inventory";
 import Button from "@/components/common/button";
-import Checkbox from "@/components/common/checkbox";
+import Toggle from "@/components/common/toggle";
 
 interface CategoryColumnProps {
   label: string;
@@ -22,8 +22,8 @@ interface CategoryColumnProps {
   onReorder: (fromKey: string, toKey: string) => void;
 }
 
-// One category (Pre Game, Live, Post Game, Add-ons, Exclusivity): every slot, with Select All /
-// Clear All (the only on/off for the first four) and drag to reorder.
+// One category (Pre Game, Live, Post Game, Add-ons, Exclusivity): every slot with its toggle, with
+// Select All / Clear All and drag to reorder.
 export default function CategoryColumn({
   label,
   description,
@@ -70,16 +70,17 @@ export default function CategoryColumn({
 
       {/* Select All / Clear All */}
       <div className="flex items-center justify-between gap-2">
-        <Button
-          variant="text"
-          size="sm"
-          label={`Select All (${slots.length})`}
-          icon={<Checkbox variant="white" checked={allSelected} indeterminate={!allSelected && selected > 0} />}
-          // A toggle: ticks the rest, or unticks the column when everything is already ticked.
-          onClick={allSelected ? onClearAll : onSelectAll}
-          disabled={slots.length === 0}
-          className="text-base font-normal text-white hover:text-white"
-        />
+        {slots.length > 0 && (
+          <Toggle
+            size="sm"
+            label={`Select All (${slots.length})`}
+            labelPosition="right"
+            labelClassName="font-normal"
+            checked={allSelected}
+            // Switches the rest on, or the whole column off when everything is already on.
+            onChange={(on) => (on ? onSelectAll() : onClearAll())}
+          />
+        )}
         <Button
           variant="text"
           size="sm"
@@ -94,9 +95,9 @@ export default function CategoryColumn({
 
       {/* Slot list */}
       <div className="flex flex-col gap-6">
-        {slots.length === 0 && <p className="text-sm text-white/60">No activations available yet.</p>}
+        {slots.length === 0 && <p className="text-sm text-white/60">Nothing available yet.</p>}
         {slots.map((slot) => (
-          <ActivationRow
+          <InventoryRow
             key={slot.rowKey}
             slot={slot}
             onToggle={() => onToggle(slot.rowKey)}

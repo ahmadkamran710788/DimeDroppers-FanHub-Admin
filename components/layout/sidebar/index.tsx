@@ -55,7 +55,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Business",
     items: [
       { icon: "/icons/icon-business.svg", label: "Sponsors", href: routes.ui.sponsors },
-      { icon: "/icons/icon-bolt.svg", label: "Activations", href: routes.ui.activations },
+      { icon: "/icons/icon-bolt.svg", label: "Inventory", href: routes.ui.inventory },
     ],
   },
   {

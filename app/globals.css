@@ -66,3 +66,40 @@ body {
   color: #ffffff;
   font-family: var(--font-inter), Inter, sans-serif;
 }
+
+/* Teams stat cards (<ViewTransition> classes): a card that leaves fades and shrinks away, one that
+   returns grows back in, and the rest slide into their new place. */
+::view-transition-group(.stat-card-move) {
+  animation-duration: 350ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+::view-transition-old(.stat-card-exit) {
+  animation: stat-card-out 200ms ease-in both;
+}
+
+::view-transition-new(.stat-card-enter) {
+  animation: stat-card-in 300ms ease-out 120ms both;
+}
+
+@keyframes stat-card-out {
+  to {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+@keyframes stat-card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(.stat-card-move),
+  ::view-transition-old(.stat-card-exit),
+  ::view-transition-new(.stat-card-enter) {
+    animation: none;
+  }
+}
