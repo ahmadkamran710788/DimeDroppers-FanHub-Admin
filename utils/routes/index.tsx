@@ -68,6 +68,10 @@ export const routes = {
     commandCenterOverview: "fanhub/org/command-center/overview",
     commandCenterLiveGames: "fanhub/org/command-center/live-games",
     commandCenterGameRecap: (scheduleEventId: string) => `fanhub/org/command-center/games/${scheduleEventId}/recap`,
+    // Media → a school game's recap, insights and thread (docs ORG_GAME_RECAP_THREAD_FRONTEND).
+    gameDetailRecap: (scheduleEventId: string) => `fanhub/org/game-detail/games/${scheduleEventId}/recap`,
+    gameDetailInsights: (scheduleEventId: string) => `fanhub/org/game-detail/games/${scheduleEventId}/insights`,
+    gameDetailThread: (scheduleEventId: string) => `fanhub/org/game-detail/games/${scheduleEventId}/thread`,
     getArea: "areas",
     editArea: (id: string | number) => `areas/${id}`,
     // FanHub Org Auth. `auth*` are the upstream paths appended to config.apiUrl on the
