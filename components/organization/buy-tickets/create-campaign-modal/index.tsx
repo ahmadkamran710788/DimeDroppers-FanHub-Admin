@@ -7,7 +7,9 @@ import Input from "@/components/common/input";
 import Modal from "@/components/common/modal";
 import CampaignFields from "@/components/organization/buy-tickets/campaign-fields";
 import { gameChanges, inputFor, newRow, type TicketTypeRow, type TierField } from "@/components/organization/buy-tickets/campaign-tier";
+import EventGamePicker, { type PickedEvent } from "@/components/organization/buy-tickets/event-game-picker";
 import GamePicker, { type PickerGame } from "@/components/organization/buy-tickets/game-picker";
+import { orgKindOf, useAuth } from "@/context/auth";
 import { campaignSchema } from "@/components/organization/buy-tickets/schema";
 import apiCall from "@/utils/api-call";
 import { formatMoney } from "@/utils/helper";
@@ -47,7 +49,7 @@ const toPickerGame = (e: ScheduleGame, schoolId: string): PickerGame => ({
   level: e.level,
 });
 
-// Create / Edit Campaign dialog. Create: the ticketing type (campaign title), its ticket types ("+ Add"
+// Create / Edit Campaign dialog. Create: the campaign type (campaign title), its ticket types ("+ Add"
 // blocks, each with an amount and tickets per game) and the games it sells for. Edit: those details
 // read-only, only the games change. A game sells through one active campaign at a time, so games of
 // another campaign show but can't be picked. Mount it per open.
@@ -62,6 +64,11 @@ export default function CreateCampaignModal({ onClose, campaign, onSaved }: Crea
   // Upcoming events (not started), each marked with another campaign it sells through.
   const [upcoming, setUpcoming] = useState<PickerGame[]>([]);
   const [gamesLoading, setGamesLoading] = useState(true);
+  // A tournament campaign belongs to one event, picked first; its games come from that event. A
+  // school picks from its schedule.
+  const { org } = useAuth();
+  const isTournament = orgKindOf(org) === "tournament";
+  const [event, setEvent] = useState<PickedEvent | null>(campaign?.event ?? null);
   // "Now" when the games loaded, so "Ended" stays stable across renders.
   const [loadedAt, setLoadedAt] = useState(0);
 
@@ -132,7 +139,13 @@ export default function CreateCampaignModal({ onClose, campaign, onSaved }: Crea
     const { success } = await apiCall({
       endpoint: routes.api.ticketCampaigns,
       method: "POST",
-      data: { title: title.trim(), ticketTypes: rows.map(inputFor), scheduleEventIds: gameIds },
+      data: {
+        title: title.trim(),
+        ticketTypes: rows.map(inputFor),
+        scheduleEventIds: gameIds,
+        // Required for a tournament (400 "Pick the event first"); a school sends none.
+        ...(isTournament && event && { eventId: event.id }),
+      },
       invalidates: INVALIDATES,
       showSuccessToast: true,
       successMessage: "Campaign created",
@@ -156,7 +169,13 @@ export default function CreateCampaignModal({ onClose, campaign, onSaved }: Crea
   };
 
   const handleSave = async () => {
-    if (!isEdit && !(await validateAndSetErrors(campaignSchema, { title, types: rows }, setErrors))) return;
+    if (!isEdit) {
+      const valid = await validateAndSetErrors(campaignSchema, { title, types: rows }, setErrors);
+      // The event error shows with the field errors, not only once they're fixed.
+      const eventMissing = isTournament && !event;
+      if (eventMissing) setErrors((prev) => ({ ...prev, event: "Pick the event first" }));
+      if (!valid || eventMissing) return;
+    }
     setSaving(true);
     const ok = campaign ? await saveEdits(campaign) : await create();
     setSaving(false);
@@ -178,7 +197,7 @@ export default function CreateCampaignModal({ onClose, campaign, onSaved }: Crea
           // Edit: the campaign's details are read-only; only its games can change.
           <div className="w-full shrink-0 flex flex-col gap-3">
             <div className="flex flex-col gap-1">
-              <span className={LABEL}>Ticketing Type</span>
+              <span className={LABEL}>Campaign Type</span>
               <span className="text-base font-semibold text-midnight-navy">{campaign.title}</span>
             </div>
             <div className="flex flex-col rounded-[12px] border border-[rgba(11,28,45,0.12)] overflow-hidden">
@@ -204,7 +223,7 @@ export default function CreateCampaignModal({ onClose, campaign, onSaved }: Crea
         ) : (
           <>
           <Input
-            label="Ticketing Type"
+            label="Campaign Type"
             name="campaignTitle"
             required
             value={title}
@@ -264,13 +283,28 @@ export default function CreateCampaignModal({ onClose, campaign, onSaved }: Crea
           </>
         )}
 
-        <GamePicker
-          label={isEdit ? "Games for this campaign" : "Games"}
-          games={games}
-          loading={gamesLoading}
-          selected={gameIds}
-          onChange={setGameIds}
-        />
+        {isTournament ? (
+          <EventGamePicker
+            event={event}
+            onEventChange={(e) => {
+              setEvent(e);
+              if (errors.event) setErrors((prev) => ({ ...prev, event: "" }));
+            }}
+            eventLocked={isEdit}
+            campaignId={campaign?.id}
+            selected={gameIds}
+            onChange={setGameIds}
+            eventError={errors.event}
+          />
+        ) : (
+          <GamePicker
+            label={isEdit ? "Games for this campaign" : "Games"}
+            games={games}
+            loading={gamesLoading}
+            selected={gameIds}
+            onChange={setGameIds}
+          />
+        )}
       </div>
 
       <div className="w-full flex gap-3">

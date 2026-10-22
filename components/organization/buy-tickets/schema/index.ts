@@ -12,8 +12,8 @@ export const ticketTypeSchema = yup.object({
   tickets: yup.number().integer().min(1, "At least 1 ticket").required(),
 });
 
-// The Create Campaign dialog: the ticketing type (campaign title) and 1 to 20 ticket types.
+// The Create Campaign dialog: the campaign type (campaign title) and 1 to 20 ticket types.
 export const campaignSchema = yup.object({
-  title: yup.string().trim().required("Ticketing type is required").max(200, "Keep the title under 200 characters"),
+  title: yup.string().trim().required("Campaign type is required").max(200, "Keep the title under 200 characters"),
   types: yup.array().of(ticketTypeSchema).min(1, "Add at least one ticket").max(20, "A campaign can have up to 20 tickets"),
 });

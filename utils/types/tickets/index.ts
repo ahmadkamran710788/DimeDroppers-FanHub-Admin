@@ -32,6 +32,8 @@ export interface TicketCampaign {
   id: string;
   title: string;
   status: TicketCampaignStatus;
+  // A tournament campaign's event (null for a school campaign).
+  event?: { id: string; name: string } | null;
   ticketTypes: TicketType[];
   gamesCount: number;
   games: TicketGame[];
