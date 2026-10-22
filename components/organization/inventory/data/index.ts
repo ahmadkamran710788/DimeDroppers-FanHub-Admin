@@ -17,3 +17,8 @@ export const MAX_SLOT_VALUE = 1_000_000;
 
 // An Exclusivity slot's size, e.g. "12 x 12 ft".
 export const MAX_SIZE_LENGTH = 40;
+
+// The one custom Exclusivity slot, always listed last in the column: the org switches it on and
+// types its own value and size. Saved as a custom slot of this name.
+export const CUSTOM_SLOT_NAME = "Custom";
+export const CUSTOM_SLOT_DESCRIPTION = "Your own placement, with its own size and value.";

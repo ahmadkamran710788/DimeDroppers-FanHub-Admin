@@ -20,15 +20,24 @@ interface Loaded {
   totalPages: number;
 }
 
+// The open event and its open division (if any), which the page's stat cards narrow to.
+export interface TournamentFocus {
+  event: TreeEvent;
+  division: { id: string; teamCount: number } | null;
+}
+
 interface TournamentTeamsProps {
   // Hands the organisation-wide totals (every answer carries them) to the page's stat cards.
   onTotals: (totals: TournamentTotals) => void;
+  // While browsing, one event and one of its divisions are open at a time; null when none is.
+  focus: TournamentFocus | null;
+  onFocus: (focus: TournamentFocus | null) => void;
 }
 
 // A tournament's Teams page body, in three layers: Events → Divisions → Teams, from GET
 // /fanhub/org/exposure/events/division-teams. The API pages the events (newest first) and the
 // search matches team names: only events with a matching team come back, with just those teams.
-export default function TournamentTeams({ onTotals }: TournamentTeamsProps) {
+export default function TournamentTeams({ onTotals, focus, onFocus }: TournamentTeamsProps) {
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -75,6 +84,7 @@ export default function TournamentTeams({ onTotals }: TournamentTeamsProps) {
         onChange={(e) => {
           setQuery(e.target.value);
           setPage(1);
+          onFocus(null);
         }}
         aria-label="Search teams"
         className="w-full sm:w-72"
@@ -86,10 +96,24 @@ export default function TournamentTeams({ onTotals }: TournamentTeamsProps) {
         <p className="py-12 text-center text-sm text-white/60">{search ? "No teams match your search." : "No events synced yet."}</p>
       ) : (
         <ul className="flex flex-col gap-3">
-          {loaded.events.map((e) => (
-            // Keyed by the search too, so a search opens the matching events afresh.
-            <TournamentEventRow key={`${e.id}|${search}`} event={e} defaultOpen={!!search} />
-          ))}
+          {loaded.events.map((e) => {
+            // Search results all open and toggle on their own; the cards keep the totals meanwhile.
+            if (search) return <TournamentEventRow key={`${e.id}|${search}`} event={e} defaultOpen />;
+            const open = focus?.event.id === e.id;
+            return (
+              <TournamentEventRow
+                key={e.id}
+                event={e}
+                accordion={{
+                  open,
+                  openDivisionId: open ? (focus?.division?.id ?? null) : null,
+                  onToggle: () => onFocus(open ? null : { event: e, division: null }),
+                  onToggleDivision: (d) =>
+                    onFocus({ event: e, division: focus?.division?.id === d.id ? null : { id: d.id, teamCount: d.teamCount } }),
+                }}
+              />
+            );
+          })}
         </ul>
       )}
 
@@ -98,7 +122,14 @@ export default function TournamentTeams({ onTotals }: TournamentTeamsProps) {
           <span className="text-sm text-white/60">
             {`Showing ${(page - 1) * PAGE_SIZE + 1} to ${Math.min(page * PAGE_SIZE, loaded.total)} of ${loaded.total} events`}
           </span>
-          <Pagination page={page} pageCount={pageCount} onChange={setPage} />
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            onChange={(p) => {
+              setPage(p);
+              onFocus(null);
+            }}
+          />
         </div>
       )}
     </div>

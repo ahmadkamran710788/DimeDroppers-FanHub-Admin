@@ -44,15 +44,24 @@ function TeamRow({ team }: { team: TreeTeam }) {
   );
 }
 
+interface DivisionRowProps {
+  division: DivisionGroup;
+  defaultOpen: boolean;
+  // Set by the page's accordion: whether this is the event's open division, and the toggle.
+  open?: boolean;
+  onToggle?: () => void;
+}
+
 // Second layer: one division, opening to its teams.
-function DivisionRow({ division, defaultOpen }: { division: DivisionGroup; defaultOpen: boolean }) {
-  const [open, setOpen] = useState(defaultOpen);
+function DivisionRow({ division, defaultOpen, open: openProp, onToggle }: DivisionRowProps) {
+  const [localOpen, setLocalOpen] = useState(defaultOpen);
+  const open = openProp ?? localOpen;
   return (
     <div className="rounded-[8px] border border-white/10 overflow-hidden">
       {/* Clickable row (not an action button): opens the division's teams. */}
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={onToggle ?? (() => setLocalOpen((v) => !v))}
         aria-expanded={open}
         className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-white/5 hover:bg-white/10 transition-colors text-left"
       >
@@ -76,16 +85,27 @@ function DivisionRow({ division, defaultOpen }: { division: DivisionGroup; defau
   );
 }
 
+// The page's accordion while browsing: one event open at a time, and one of its divisions.
+interface EventAccordion {
+  open: boolean;
+  openDivisionId: string | null;
+  onToggle: () => void;
+  onToggleDivision: (division: DivisionGroup) => void;
+}
+
 interface TournamentEventRowProps {
   event: TreeEvent;
   // Open the event (and its divisions with teams) straight away, e.g. while a team search is on.
   defaultOpen?: boolean;
+  // Hands which event and division are open to the page; without it each one toggles on its own.
+  accordion?: EventAccordion;
 }
 
 // First layer: one tournament event with its divisions and their teams, all from the division-teams
 // API (no extra calls). Teams without a division show last, as "No Division".
-export default function TournamentEventRow({ event, defaultOpen = false }: TournamentEventRowProps) {
-  const [open, setOpen] = useState(defaultOpen);
+export default function TournamentEventRow({ event, defaultOpen = false, accordion }: TournamentEventRowProps) {
+  const [localOpen, setLocalOpen] = useState(defaultOpen);
+  const open = accordion ? accordion.open : localOpen;
 
   const divisions: DivisionGroup[] = [...event.divisions]
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name))
@@ -101,7 +121,7 @@ export default function TournamentEventRow({ event, defaultOpen = false }: Tourn
       {/* Clickable row (not an action button): opens the event's divisions. */}
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={accordion ? accordion.onToggle : () => setLocalOpen((v) => !v)}
         aria-expanded={open}
         className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 hover:bg-white/5 transition-colors text-left"
       >
@@ -122,7 +142,15 @@ export default function TournamentEventRow({ event, defaultOpen = false }: Tourn
           {shown.length === 0 ? (
             <p className="py-4 text-center text-sm text-white/50">No divisions or teams synced for this event.</p>
           ) : (
-            shown.map((d) => <DivisionRow key={d.id} division={d} defaultOpen={defaultOpen} />)
+            shown.map((d) => (
+              <DivisionRow
+                key={d.id}
+                division={d}
+                defaultOpen={defaultOpen}
+                open={accordion ? accordion.openDivisionId === d.id : undefined}
+                onToggle={accordion ? () => accordion.onToggleDivision(d) : undefined}
+              />
+            ))
           )}
         </div>
       )}

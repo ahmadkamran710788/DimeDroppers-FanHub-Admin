@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { startTransition, useState, ViewTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import BadgeStatCard, {
@@ -11,7 +11,7 @@ import Button from "@/components/common/button";
 import EditTeamModal from "@/components/organization/teams/edit-team-modal";
 import SportModal from "@/components/organization/teams/sport-modal";
 import SportsList from "@/components/organization/teams/sports-list";
-import TournamentTeams from "@/components/organization/teams/tournament-teams";
+import TournamentTeams, { type TournamentFocus } from "@/components/organization/teams/tournament-teams";
 import type { TournamentTotals } from "@/utils/types/exposure-event";
 import {
   useOrgTeams,
@@ -33,8 +33,12 @@ export default function TeamsPage() {
   const { savedSchool } = useSetup();
   const { org } = useAuth();
   const isTournament = orgKindOf(org) === "tournament";
-  // Tournament stat cards: organisation-wide totals from the division-teams API (TournamentTeams).
+  // Tournament stat cards: organisation-wide totals from the division-teams API (TournamentTeams),
+  // narrowed to the open event and then to its open division.
   const [totals, setTotals] = useState<TournamentTotals | null>(null);
+  const [focus, setFocus] = useState<TournamentFocus | null>(null);
+  // In a transition, so the cards that leave or move animate (the ViewTransitions below).
+  const changeFocus = (next: TournamentFocus | null) => startTransition(() => setFocus(next));
   const { departments, teams, loading, reload } = useOrgTeams();
   const [sportEditing, setSportEditing] = useState<SportEditing>(null);
   const [teamEditing, setTeamEditing] = useState<{
@@ -44,34 +48,46 @@ export default function TeamsPage() {
   const count = loading ? "—" : teams.length;
 
   // Roster and staff totals need counts the teams endpoint doesn't return yet.
-  const total = (key: keyof TournamentTotals) => (totals ? totals[key].toLocaleString("en-US") : "—");
+  const fmt = (n: number) => n.toLocaleString("en-US");
+  const total = (key: keyof TournamentTotals) => (totals ? fmt(totals[key]) : "—");
+  const divisionsCard = (value: string, caption: string): BadgeStat => ({
+    label: "Divisions",
+    value,
+    caption,
+    tint: STAT_TINTS.green,
+  });
+  const teamsCard = (value: string, caption: string): BadgeStat => ({
+    label: "Teams",
+    value,
+    caption,
+    tint: STAT_TINTS.purple,
+  });
+  // An open event leaves its Divisions and Teams; an open division leaves just its Teams.
+  const tournamentStats: BadgeStat[] = focus?.division
+    ? [teamsCard(fmt(focus.division.teamCount), "In this division")]
+    : focus
+      ? [
+          divisionsCard(fmt(focus.event.divisionCount), "In this event"),
+          teamsCard(fmt(focus.event.teamCount), "In this event"),
+        ]
+      : [
+          {
+            label: "Events",
+            value: total("events"),
+            caption: "Synced events",
+            tint: STAT_TINTS.blue,
+          },
+          divisionsCard(total("divisions"), "Across all events"),
+          teamsCard(total("teams"), "Across all events"),
+          {
+            label: "Games",
+            value: total("games"),
+            caption: "Across all events",
+            tint: STAT_TINTS.brown,
+          },
+        ];
   const stats: BadgeStat[] = isTournament
-    ? [
-        {
-          label: "Events",
-          value: total("events"),
-          caption: "Synced events",
-          tint: STAT_TINTS.blue,
-        },
-        {
-          label: "Divisions",
-          value: total("divisions"),
-          caption: "Across all events",
-          tint: STAT_TINTS.green,
-        },
-        {
-          label: "Teams",
-          value: total("teams"),
-          caption: "Across all events",
-          tint: STAT_TINTS.purple,
-        },
-        {
-          label: "Games",
-          value: total("games"),
-          caption: "Across all events",
-          tint: STAT_TINTS.brown,
-        },
-      ]
+    ? tournamentStats
     : [
         {
           label: "Total Teams",
@@ -131,17 +147,20 @@ export default function TeamsPage() {
         )}
       </div>
 
-      {/* Stat cards */}
+      {/* Stat cards. When the tournament focus changes, cards that leave fade out and the rest slide
+          into place (the stat-card view-transition classes in globals.css). */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-10">
         {stats.map((stat) => (
-          <BadgeStatCard key={stat.label} {...stat} />
+          <ViewTransition key={stat.label} enter="stat-card-enter" exit="stat-card-exit" update="stat-card-move">
+            <BadgeStatCard {...stat} />
+          </ViewTransition>
         ))}
       </div>
 
       {/* Sports and their teams */}
       <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px] bg-surface-07">
         {isTournament ? (
-          <TournamentTeams onTotals={setTotals} />
+          <TournamentTeams onTotals={setTotals} focus={focus} onFocus={changeFocus} />
         ) : (
           <SportsList
             departments={departments}
