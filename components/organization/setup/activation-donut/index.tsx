@@ -12,16 +12,28 @@ interface ActivationDonutProps {
   total: number;
   // Fill the hole with a soft, faded blend of the segment colours (Activations page design).
   filled?: boolean;
+  // Outer diameter and ring width in px (default 203 / 24).
+  size?: number;
+  stroke?: number;
+  // Line under the total (default "Total").
+  caption?: string;
+  // Solid dark centre instead of the empty / blended one (Inventory design).
+  darkCenter?: boolean;
 }
 
-const SIZE = 203;
-const STROKE = 24;
-const RADIUS = (SIZE - STROKE) / 2;
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-const CENTER = SIZE / 2;
-const INNER_DIAMETER = SIZE - STROKE * 2;
-
-export default function ActivationDonut({ segments: input, total, filled = false }: ActivationDonutProps) {
+export default function ActivationDonut({
+  segments: input,
+  total,
+  filled = false,
+  size: SIZE = 203,
+  stroke: STROKE = 24,
+  caption = "Total",
+  darkCenter = false,
+}: ActivationDonutProps) {
+  const RADIUS = (SIZE - STROKE) / 2;
+  const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+  const CENTER = SIZE / 2;
+  const INNER_DIAMETER = SIZE - STROKE * 2;
   // Conic gradient matching the arc layout (both start at 12 o'clock, clockwise).
   const stops = input.reduce<{ angle: number; list: string[] }>(
     (acc, { color, count }) => {
@@ -53,6 +65,13 @@ export default function ActivationDonut({ segments: input, total, filled = false
 
   return (
     <div className="relative" style={{ width: SIZE, height: SIZE }}>
+      {darkCenter && (
+        <div
+          aria-hidden
+          className="absolute rounded-full bg-[#0B1424] shadow-[inset_0_0_24px_rgba(0,0,0,0.7)]"
+          style={{ top: STROKE, left: STROKE, width: INNER_DIAMETER, height: INNER_DIAMETER }}
+        />
+      )}
       {filled && stops.length > 0 && (
         <div
           aria-hidden
@@ -107,7 +126,7 @@ export default function ActivationDonut({ segments: input, total, filled = false
         <span className="font-display font-black text-[56px] uppercase text-white leading-none">
           {total}
         </span>
-        <span className="text-base text-white leading-none mt-1">Total</span>
+        <span className="text-base text-white leading-none mt-1">{caption}</span>
       </div>
     </div>
   );

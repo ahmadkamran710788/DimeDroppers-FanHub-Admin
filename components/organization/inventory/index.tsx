@@ -2,7 +2,8 @@
 
 import InventorySummary from "@/components/organization/inventory/inventory-summary";
 import CategoryColumn from "@/components/organization/inventory/category-column";
-import { CATEGORY_ORDER, CATEGORY_STYLE } from "@/components/organization/inventory/data";
+import { CalendarDays, CircleCheck, FileText, Layers, type LucideIcon } from "lucide-react";
+import { CATEGORY_ORDER } from "@/components/organization/inventory/data";
 import { useInventory } from "@/components/organization/inventory/use-inventory";
 import Button from "@/components/common/button";
 import Loader from "@/components/common/loader";
@@ -12,19 +13,21 @@ interface Stat {
   label: string;
   value: string;
   caption: string;
+  // A lucide icon in the badge, or "dot" for the green status dot (Active).
+  icon: LucideIcon | "dot";
 }
 
-function StatCard({ label, value, caption }: Stat) {
+// Compact stat: icon badge on the left, then the label, the figure and a caption.
+function StatCard({ label, value, caption, icon: Icon }: Stat) {
   return (
-    <div className="rounded-[8px] p-6 flex flex-col gap-3 backdrop-blur-[48px] bg-surface-07">
-      <h3 className="font-display font-black text-[28px] uppercase text-white leading-tight min-h-[70px]">
-        {label}
-      </h3>
-      <div className="flex flex-col gap-2">
-        <div className="h-[60px] rounded-[8px] bg-[rgba(235,235,235,0.25)] backdrop-blur-[48px] flex items-center justify-center">
-          <span className="font-display font-black text-[28px] text-white leading-none">{value}</span>
-        </div>
-        <span className="text-xs text-white/80">{caption}</span>
+    <div className="rounded-[10px] px-4 py-4 flex items-start gap-3 border border-white/10 bg-[rgba(11,20,36,0.7)] backdrop-blur-[48px]">
+      <span className="size-11 shrink-0 rounded-[8px] bg-[rgba(255,255,255,0.08)] flex items-center justify-center">
+        {Icon === "dot" ? <span className="size-5 rounded-full bg-success" /> : <Icon className="size-6 text-white" strokeWidth={1.5} />}
+      </span>
+      <div className="flex flex-col gap-1.5 min-w-0">
+        <h3 className="font-display font-black text-base uppercase text-white leading-none">{label}</h3>
+        <span className="font-display font-black text-[26px] text-white leading-none">{value}</span>
+        <span className="text-xs text-white/70">{caption}</span>
       </div>
     </div>
   );
@@ -34,13 +37,13 @@ export default function InventoryPage() {
   const inv = useInventory();
 
   const header = (
-    <div className="flex flex-col gap-2">
-      <h2 className="font-display font-black text-[32px] sm:text-[40px] lg:text-[56px] uppercase text-white leading-none">
+    <div className="flex flex-col gap-3">
+      <h2 className="font-display font-black text-[32px] sm:text-[40px] lg:text-[44px] uppercase text-white leading-none">
         Inventory
       </h2>
-      <p className="text-base text-white/80">
-        Choose what sponsors can see in your Fan Hub. Switch each item on or off, and add a Custom Exclusivity
-        placement with its own size and value.
+      <p className="text-sm text-white/85">
+        Choose what sponsors can see in your Fan Hub. Switch each item on or off, and set your own size and value on the
+        Custom Banner exclusivity placement.
       </p>
     </div>
   );
@@ -73,19 +76,21 @@ export default function InventoryPage() {
   // "ticked with a link", and links aren't on this page any more) — shown as "—" until the
   // stat cards get their data.
   const stats: Stat[] = [
-    { label: "Total Inventory", value: String(ticked.length), caption: "All Time" },
-    { label: "Active", value: "—", caption: "of Total" },
-    { label: "Draft", value: "—", caption: "of Total" },
-    { label: "Scheduled", value: "—", caption: "All Time" },
-    { label: "Completed", value: "—", caption: "This Month" },
+    { label: "Total Inventory", value: String(ticked.length), caption: "All Time", icon: Layers },
+    { label: "Active", value: "—", caption: "of Total", icon: "dot" },
+    { label: "Draft", value: "—", caption: "of Total", icon: FileText },
+    { label: "Scheduled", value: "—", caption: "All Time", icon: CalendarDays },
+    { label: "Completed", value: "—", caption: "This Month", icon: CircleCheck },
   ];
 
-  const column = (category: ActivationCategory) => (
+  // Pre Game / Live / Post Game share the top row; Add-ons and Exclusivity the wider bottom one.
+  const column = (category: ActivationCategory, layout: "stacked" | "wide") => (
     <CategoryColumn
       key={category}
+      category={category}
+      layout={layout}
       label={categoryLabels[category]}
       description={categoryInfo(category)?.description ?? ""}
-      color={CATEGORY_STYLE[category].color}
       slots={form.columns[category]}
       rowErrors={inv.rowErrors}
       onToggle={(rowKey) => inv.toggle(category, rowKey)}
@@ -98,35 +103,39 @@ export default function InventoryPage() {
   );
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-6">
       {header}
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 lg:gap-10">
-        {stats.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
-      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_310px] 2xl:grid-cols-[minmax(0,1fr)_330px] gap-4 items-start">
+        {/* Stat cards + the five category cards */}
+        <div className="flex flex-col gap-4 min-w-0">
+          <div className="grid grid-cols-2 md:grid-cols-3 2xl:grid-cols-5 gap-4">
+            {stats.map((stat) => (
+              <StatCard key={stat.label} {...stat} />
+            ))}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4 items-stretch">
+            {(["PRE_GAME", "LIVE", "POST_GAME"] as ActivationCategory[]).map((c) => column(c, "stacked"))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+            {(["ADD_ON", "EXCLUSIVITY"] as ActivationCategory[]).map((c) => column(c, "wide"))}
+          </div>
+        </div>
 
-      {/* All five categories in one row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 xl:gap-4 2xl:gap-6 items-start">
-        {CATEGORY_ORDER.map(column)}
-      </div>
-
-      {/* Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-start">
-        <InventorySummary columns={form.columns} categoryLabels={categoryLabels} />
-      </div>
-
-      {/* Footer action */}
-      <div className="flex flex-wrap items-center justify-end gap-4 border-t border-border-divider pt-6">
-        {inv.dirty && <span className="text-sm text-white/70">You have unsaved changes</span>}
-        <Button
-          variant="cta"
-          label={inv.saving ? "Saving…" : "Save Inventory"}
-          disabled={inv.saving}
-          onClick={inv.save}
-        />
+        {/* Summary and the save action */}
+        <div className="flex flex-col gap-5 xl:sticky xl:top-0">
+          <InventorySummary columns={form.columns} categoryLabels={categoryLabels} />
+          <div className="flex flex-col items-end gap-2">
+            {inv.dirty && <span className="text-sm text-white/70">You have unsaved changes</span>}
+            <Button
+              variant="cta"
+              label={inv.saving ? "Saving…" : "Save Inventory"}
+              disabled={inv.saving}
+              onClick={inv.save}
+              className="w-full sm:w-[170px]"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

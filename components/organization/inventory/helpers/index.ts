@@ -1,7 +1,6 @@
 import {
   CATEGORY_ORDER,
-  CUSTOM_SLOT_DESCRIPTION,
-  CUSTOM_SLOT_NAME,
+  ORG_PRICED_SLOT_KEY,
   MAX_SIZE_LENGTH,
   MAX_SLOT_VALUE,
 } from "@/components/organization/inventory/data";
@@ -68,7 +67,8 @@ const byOrder = <T extends { sortOrder: number }>(a: T, b: T) => a.sortOrder - b
 
 const fromView = (a: InventoryActivation, offered: Set<string>): FormSlot => {
   const catalogKey = a.catalogKey ? a.catalogKey.toUpperCase() : null;
-  const editable = a.isEditable && !catalogKey;
+  // Only the Custom Banner slot takes the org's own value and size.
+  const editable = a.isEditable && catalogKey === ORG_PRICED_SLOT_KEY;
   const initial: SlotInitial = {
     enabled: a.isAvailableForSponsors,
     value: editable && a.valueSource === "ORGANIZATION" ? String(a.value) : "",
@@ -95,26 +95,6 @@ const fromView = (a: InventoryActivation, offered: Set<string>): FormSlot => {
       slotCount: p.slotCount,
       capabilities: p.capabilities.map((c) => c.capability),
     })),
-  };
-};
-
-// The Custom row before it's saved: off and empty. It becomes a custom slot once switched on and saved.
-const newCustomSlot = (): FormSlot => {
-  const initial: SlotInitial = { enabled: false, value: "", size: "" };
-  return {
-    rowKey: "custom:new",
-    id: null,
-    catalogKey: null,
-    name: CUSTOM_SLOT_NAME,
-    description: CUSTOM_SLOT_DESCRIPTION,
-    isRecommended: false,
-    retired: false,
-    exclusive: true,
-    editable: true,
-    savedValue: 0,
-    ...initial,
-    initial,
-    placements: [],
   };
 };
 
@@ -146,8 +126,6 @@ export function buildForm(
       slots = [...ordered, ...byKey.values(), ...custom];
     }
 
-    if (category === "EXCLUSIVITY" && !slots.some((s) => !s.catalogKey)) slots = [...slots, newCustomSlot()];
-
     columns[category] = slots;
   }
 
@@ -157,7 +135,7 @@ export function buildForm(
   };
 }
 
-// The changed value and size of the Custom slot: "" goes back to the default. Fields that don't
+// The changed value and size of the Custom Banner slot: "" goes back to the default. Fields that don't
 // pass validation are left out, so the saved ones stay.
 function customChanges(slot: FormSlot): Pick<ActivationInput, "value" | "size"> {
   const changes: Pick<ActivationInput, "value" | "size"> = {};

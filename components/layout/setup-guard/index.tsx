@@ -23,9 +23,11 @@ export default function SetupGuard({ require, children }: SetupGuardProps) {
   const allowed = require === "complete" ? complete : !complete;
 
   useEffect(() => {
-    if (isLoading || allowed) return;
+    // No saved school means the load failed (a new org gets one at sign-up), not that setup is
+    // unfinished: stay put rather than send a set-up org to an empty form.
+    if (isLoading || allowed || !savedSchool) return;
     router.replace(require === "complete" ? getResumeStep() : routes.ui.profile);
-  }, [isLoading, allowed, require, router]);
+  }, [isLoading, allowed, require, router, savedSchool]);
 
   return children;
 }
