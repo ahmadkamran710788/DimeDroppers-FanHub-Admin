@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import AddExclusivity from "@/components/organization/inventory/add-exclusivity";
 import InventoryRow from "@/components/organization/inventory/inventory-row";
 import { CATEGORY_STYLE } from "@/components/organization/inventory/data";
 import type { FormSlot } from "@/components/organization/inventory/helpers";
@@ -24,6 +25,9 @@ interface CategoryColumnProps {
   onSelectAll: () => void;
   onClearAll: () => void;
   onReorder: (fromKey: string, toKey: string) => void;
+  // Exclusivity: the org adds its own slots and can remove them.
+  onAdd?: (fields: { name: string; value: string; size: string }) => string | null;
+  onRemove?: (rowKey: string) => void;
 }
 
 // One category card (Pre Game, Live, Post Game, Add-ons, Exclusivity): a coloured header with its icon
@@ -42,6 +46,8 @@ export default function CategoryColumn({
   onSelectAll,
   onClearAll,
   onReorder,
+  onAdd,
+  onRemove,
 }: CategoryColumnProps) {
   const style = CATEGORY_STYLE[category];
   const Icon = style.icon;
@@ -75,7 +81,9 @@ export default function CategoryColumn({
 
       {/* Slot list, scrolling inside the card */}
       <div className="flex-1 min-h-0 max-h-[262px] overflow-y-auto pl-4 pr-3 py-4 flex flex-col gap-4 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.3)_transparent]">
-        {slots.length === 0 && <p className="text-sm text-white/60">Nothing available yet.</p>}
+        {slots.length === 0 && (
+          <p className="text-sm text-white/60">{onAdd ? "No exclusivities yet. Add your own below." : "Nothing available yet."}</p>
+        )}
         {slots.map((slot) => (
           <InventoryRow
             key={slot.rowKey}
@@ -85,6 +93,7 @@ export default function CategoryColumn({
             onToggle={() => onToggle(slot.rowKey)}
             onValueChange={(value) => onValueChange(slot.rowKey, value)}
             onSizeChange={(size) => onSizeChange(slot.rowKey, size)}
+            onRemove={onRemove && slot.editable ? () => onRemove(slot.rowKey) : undefined}
             errors={rowErrors[slot.rowKey]}
             dragging={draggingKey === slot.rowKey}
             drag={{
@@ -104,6 +113,12 @@ export default function CategoryColumn({
           />
         ))}
       </div>
+
+      {onAdd && (
+        <div className="mx-4 py-3 border-t border-white/15 flex">
+          <AddExclusivity onAdd={onAdd} />
+        </div>
+      )}
 
       {/* Select All / Clear All */}
       <div className="mx-4 py-3 border-t border-white/15 flex items-center justify-between gap-2">

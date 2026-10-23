@@ -4,7 +4,7 @@ export type ActivationCategory = "PRE_GAME" | "LIVE" | "POST_GAME" | "ADD_ON" | 
 export type GamePhase = "PRE_GAME" | "LIVE" | "POST_GAME" | "FULL_GAME";
 export type ActivationOrganizationType = "SCHOOL" | "TOURNAMENT" | "CLUB_TEAM" | "LEAGUE";
 // CATEGORY_BASE: the value is Dime's base value for the category. ORGANIZATION: the org set it
-// (Exclusivity only).
+// (Exclusivity only). Exclusivity has no catalog slots: every one is added by the organisation.
 export type ValueSource = "CATEGORY_BASE" | "ORGANIZATION";
 export type Capability =
   | "IMPRESSION"
@@ -139,6 +139,31 @@ export interface ValueBreakdown<K extends string = string> {
   totalValue: number;
 }
 
+// ---- Tournament: the events the inventory covers and the tournament format ----
+
+export type TournamentFormat = "ROUND_ROBIN" | "SINGLE_ELIMINATION" | "DOUBLE_ELIMINATION" | "POOL_PLAY_BRACKET";
+
+export interface ActivationTournamentEvent {
+  id: string;
+  exposureEventId: number;
+  name: string | null;
+  sport: string | null;
+  city: string | null;
+  state: string | null;
+  startDate: string | null;
+  endDate: string | null;
+}
+
+export interface ActivationTournament {
+  format: TournamentFormat | null;
+  formatLabel: string | null;
+  formatOptions: { value: TournamentFormat; label: string }[];
+  events: ActivationTournamentEvent[];
+  eventCount: number;
+  // What still has to be picked before a save.
+  missing: ("EVENTS" | "FORMAT")[];
+}
+
 export interface ActivationInventory {
   id: string;
   schoolId: string;
@@ -152,6 +177,10 @@ export interface ActivationInventory {
   createdAt: string;
   updatedAt: string;
   levels: ActivationLevel[];
+  // false for a tournament until it has saved events and a format.
+  canSave: boolean;
+  // null for every other organisation type.
+  tournament: ActivationTournament | null;
   categories: InventoryCategory[];
   summary: {
     activationCount: number;
@@ -211,6 +240,9 @@ export interface ActivationInventoryRequest {
   name?: string;
   levels?: LevelInput[];
   activations?: ActivationInput[];
+  // Tournament only (400 for anyone else). Sent, it replaces the whole selection; left out, it's kept.
+  eventIds?: string[];
+  tournamentFormat?: TournamentFormat | null;
 }
 
 // The error envelope: `data` is an object here, not a list.
