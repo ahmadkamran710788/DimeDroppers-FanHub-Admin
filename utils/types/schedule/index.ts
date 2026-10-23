@@ -15,6 +15,8 @@ export interface ScheduleItem {
   homeAway: "home" | "away" | "neutral" | null;
   status: "confirmed" | "tentative" | "cancelled" | null;
   result: string | null;
+  // The game's live state from scorekeeping.
+  matchStatus?: "pending" | "live" | "final" | null;
   gender: string | null;
   season: string | null;
   sports: string | null;

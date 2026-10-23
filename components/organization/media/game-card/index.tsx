@@ -1,6 +1,7 @@
 import { ChevronRight, Play } from "lucide-react";
 import type { MediaGame, MediaTeam } from "@/components/organization/media/data";
 import TeamAvatar from "@/components/common/team-avatar";
+import { useLiveSides } from "@/components/organization/media/use-live-sides";
 import { dayOfMonth, monthShort, timeOfDay, weekdayShort } from "@/components/organization/media/format";
 import { cn } from "@/utils/cn";
 
@@ -39,7 +40,9 @@ function StatusPill({ game }: { game: MediaGame }) {
 }
 
 // One game in the Media list: date, both teams, status and score.
-export default function GameCard({ game, selected, onSelect }: GameCardProps) {
+export default function GameCard({ game: listed, selected, onSelect }: GameCardProps) {
+  // A school game's score comes from its scorekeeping when the list has none.
+  const game = useLiveSides(listed);
   const hasScore = game.homeScore !== undefined && game.awayScore !== undefined;
   return (
     <button
