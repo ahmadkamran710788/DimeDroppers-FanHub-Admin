@@ -1,6 +1,7 @@
 "use client";
 
-import { DollarSign, Menu } from "lucide-react";
+import { DollarSign, Menu, Trash2 } from "lucide-react";
+import Button from "@/components/common/button";
 import Input from "@/components/common/input";
 import Toggle from "@/components/common/toggle";
 import { MAX_SIZE_LENGTH } from "@/components/organization/inventory/data";
@@ -26,6 +27,8 @@ interface InventoryRowProps {
   onToggle: () => void;
   onValueChange: (value: string) => void;
   onSizeChange: (size: string) => void;
+  // An exclusivity the org added: removed with the next save.
+  onRemove?: () => void;
   // Problems with this slot's value or size.
   errors?: Partial<Record<SlotField, string>>;
   dragging: boolean;
@@ -45,8 +48,8 @@ function Detail({ label, value }: { label: string; value: string }) {
 }
 
 // One slot in a category card: switch (shown to sponsors or not), name and description, its pills or
-// Dime's value and size, and a drag handle. The Custom Banner slot takes its own value and size,
-// typed while it's switched on.
+// Dime's value and size, and a drag handle. An exclusivity the org added takes its own value and size
+// (typed while it's switched on) and can be removed.
 export default function InventoryRow({
   slot,
   layout,
@@ -54,6 +57,7 @@ export default function InventoryRow({
   onToggle,
   onValueChange,
   onSizeChange,
+  onRemove,
   errors,
   dragging,
   drag,
@@ -84,6 +88,16 @@ export default function InventoryRow({
             <Detail label="Value" value={formatMoney(slot.savedValue)} />
             {slot.size && <Detail label="Size" value={slot.size} />}
           </span>
+        )}
+        {onRemove && (
+          <Button
+            size="icon"
+            icon={<Trash2 className="size-4" strokeWidth={1.75} />}
+            aria-label={`Remove ${slot.name}`}
+            title="Remove"
+            onClick={onRemove}
+            className="size-7 shrink-0 bg-transparent hover:bg-white/10 text-white/80"
+          />
         )}
         <span className="cursor-grab active:cursor-grabbing shrink-0 mt-0.5" aria-hidden>
           <Menu className="w-5 h-5 text-white/70" strokeWidth={1.5} />

@@ -2,6 +2,7 @@
 
 import InventorySummary from "@/components/organization/inventory/inventory-summary";
 import CategoryColumn from "@/components/organization/inventory/category-column";
+import TournamentSetup from "@/components/organization/inventory/tournament-setup";
 import { CalendarDays, CircleCheck, FileText, Layers, type LucideIcon } from "lucide-react";
 import { CATEGORY_ORDER } from "@/components/organization/inventory/data";
 import { useInventory } from "@/components/organization/inventory/use-inventory";
@@ -42,8 +43,8 @@ export default function InventoryPage() {
         Inventory
       </h2>
       <p className="text-sm text-white/85">
-        Choose what sponsors can see in your Fan Hub. Switch each item on or off, and set your own size and value on the
-        Custom Banner exclusivity placement.
+        Choose what sponsors can see in your Fan Hub. Switch each item on or off, and add your own exclusivity placements
+        with their name, size and value.
       </p>
     </div>
   );
@@ -99,6 +100,8 @@ export default function InventoryPage() {
       onSelectAll={() => inv.selectAll(category)}
       onClearAll={() => inv.clearAll(category)}
       onReorder={(from, to) => inv.reorder(category, from, to)}
+      onAdd={category === "EXCLUSIVITY" ? inv.addExclusivity : undefined}
+      onRemove={category === "EXCLUSIVITY" ? inv.removeExclusivity : undefined}
     />
   );
 
@@ -109,11 +112,25 @@ export default function InventoryPage() {
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_310px] 2xl:grid-cols-[minmax(0,1fr)_330px] gap-4 items-start">
         {/* Stat cards + the five category cards */}
         <div className="flex flex-col gap-4 min-w-0">
-          <div className="grid grid-cols-2 md:grid-cols-3 2xl:grid-cols-5 gap-4">
-            {stats.map((stat) => (
-              <StatCard key={stat.label} {...stat} />
-            ))}
-          </div>
+          {/* A tournament has the setup card here instead of the stat cards. */}
+          {!inv.tournament && (
+            <div className="grid grid-cols-2 md:grid-cols-3 2xl:grid-cols-5 gap-4">
+              {stats.map((stat) => (
+                <StatCard key={stat.label} {...stat} />
+              ))}
+            </div>
+          )}
+          {inv.tournament && (
+            <TournamentSetup
+              events={inv.tournament.events}
+              format={inv.tournament.format}
+              formatOptions={inv.tournament.formatOptions}
+              onAddEvent={inv.addEvent}
+              onRemoveEvent={inv.removeEvent}
+              onFormatChange={inv.setFormat}
+              missing={inv.missing}
+            />
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4 items-stretch">
             {(["PRE_GAME", "LIVE", "POST_GAME"] as ActivationCategory[]).map((c) => column(c, "stacked"))}
           </div>
@@ -127,10 +144,14 @@ export default function InventoryPage() {
           <InventorySummary columns={form.columns} categoryLabels={categoryLabels} />
           <div className="flex flex-col items-end gap-2">
             {inv.dirty && <span className="text-sm text-white/70">You have unsaved changes</span>}
+            {inv.missing.length > 0 && (
+              <span className="text-sm text-yellow-300 text-right">Pick the events and format in Tournament Setup to save.</span>
+            )}
             <Button
               variant="cta"
               label={inv.saving ? "Saving…" : "Save Inventory"}
-              disabled={inv.saving}
+              // A tournament can't save until it has picked its events and format.
+              disabled={inv.saving || inv.missing.length > 0}
               onClick={inv.save}
               className="w-full sm:w-[170px]"
             />

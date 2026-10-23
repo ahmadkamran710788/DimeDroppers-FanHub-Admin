@@ -58,7 +58,6 @@ export const MAX_SLOT_VALUE = 1_000_000;
 // An Exclusivity slot's size, e.g. "12 x 12 ft".
 export const MAX_SIZE_LENGTH = 40;
 
-// The Exclusivity slot whose value and size the org types itself (catalog key of "Custom Banner").
-// Every other Exclusivity slot, a saved custom one included, shows Dime's.
-export const ORG_PRICED_SLOT_KEY = "CUSTOM_BANNER";
+// An Exclusivity slot's name.
+export const MAX_NAME_LENGTH = 120;
 

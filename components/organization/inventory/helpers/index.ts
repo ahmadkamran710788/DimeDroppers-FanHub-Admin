@@ -1,9 +1,4 @@
-import {
-  CATEGORY_ORDER,
-  ORG_PRICED_SLOT_KEY,
-  MAX_SIZE_LENGTH,
-  MAX_SLOT_VALUE,
-} from "@/components/organization/inventory/data";
+import { CATEGORY_ORDER } from "@/components/organization/inventory/data";
 import type {
   ActivationCatalog,
   ActivationCategory,
@@ -13,13 +8,14 @@ import type {
   InventoryActivation,
   LevelInput,
   PlacementInput,
+  TournamentFormat,
 } from "@/utils/types/activations";
 
 // ---- Form model ----
-// One row per slot (every slot for the org's type is listed, plus the Custom Exclusivity slot). The
-// page edits the toggle (`enabled`) and the order of every slot, plus the value and size of the
-// Custom slot; levels and placements aren't edited here but are sent back unchanged, because a save
-// deletes levels — and placements of a sent slot — left out of the body.
+// One row per slot: every catalog slot for the org's type, plus the exclusivities the org added. The
+// page edits the toggle (`enabled`) and the order of every slot, and adds, edits (value and size) and
+// removes exclusivities; levels and placements aren't edited here but are sent back unchanged, because
+// a save deletes levels — and placements of a sent slot — left out of the body.
 
 // The editable fields as they were loaded, so a save sends only what changed.
 export interface SlotInitial {
@@ -44,13 +40,14 @@ export interface FormSlot {
   enabled: boolean;
   // In the Exclusivity column: the row shows its value and size.
   exclusive: boolean;
-  // The Custom Exclusivity slot: the org types its value and size. Every other slot shows Dime's.
+  // An exclusivity the org added: it types its value and size, and can remove it. Every other slot
+  // shows Dime's.
   editable: boolean;
   // The slot's value in whole dollars, as saved (shown read-only).
   savedValue: number;
-  // The Custom slot: whole dollars, as typed.
+  // An editable slot: whole dollars, as typed.
   value: string;
-  // As typed on the Custom slot; the saved size elsewhere.
+  // As typed on an editable slot; the saved size elsewhere.
   size: string;
   initial: SlotInitial;
   placements: PlacementInput[];
@@ -67,11 +64,11 @@ const byOrder = <T extends { sortOrder: number }>(a: T, b: T) => a.sortOrder - b
 
 const fromView = (a: InventoryActivation, offered: Set<string>): FormSlot => {
   const catalogKey = a.catalogKey ? a.catalogKey.toUpperCase() : null;
-  // Only the Custom Banner slot takes the org's own value and size.
-  const editable = a.isEditable && catalogKey === ORG_PRICED_SLOT_KEY;
+  // The exclusivities the org added take its own value and size.
+  const editable = a.isEditable && a.isCustom;
   const initial: SlotInitial = {
     enabled: a.isAvailableForSponsors,
-    value: editable && a.valueSource === "ORGANIZATION" ? String(a.value) : "",
+    value: editable ? String(a.value) : "",
     size: a.size ?? "",
   };
   return {
@@ -135,35 +132,32 @@ export function buildForm(
   };
 }
 
-// The changed value and size of the Custom Banner slot: "" goes back to the default. Fields that don't
-// pass validation are left out, so the saved ones stay.
-function customChanges(slot: FormSlot): Pick<ActivationInput, "value" | "size"> {
-  const changes: Pick<ActivationInput, "value" | "size"> = {};
-  if (!slot.editable) return changes;
-  const value = slot.value.trim();
-  if (value !== slot.initial.value && (value === "" || isWholeNumber(value))) {
-    changes.value = value === "" ? null : Number(value);
-  }
-  const size = slot.size.trim();
-  if (size !== slot.initial.size.trim() && size.length <= MAX_SIZE_LENGTH) {
-    changes.size = size || null;
-  }
-  return changes;
+// An added exclusivity always sends its value and size (both are required); the form checks them
+// before a save.
+const customFields = (slot: FormSlot): Pick<ActivationInput, "value" | "size"> =>
+  slot.editable ? { value: Number(slot.value.trim()), size: slot.size.trim() } : {};
+
+// The tournament's picks for the save: both are sent whenever set (`eventIds` replaces the saved
+// selection, so it's always the full list).
+export interface TournamentPicks {
+  eventIds: string[];
+  format: TournamentFormat | null;
 }
 
 // The PUT body: every slot in display order (the backend numbers the sent slots first, so leaving
-// one out would move it), sending only the toggle, value and size that changed, and the levels and
-// placements as they were. The Custom row is left out until it's switched on, so saving doesn't
-// create an empty one; once saved it's always sent, since a custom slot left out is deleted.
-// `indexMap[i]` is the row behind `activations.{i}`, so validation paths from a 400 can be traced
-// back to the screen.
-export function toRequest(form: InventoryForm): { body: ActivationInventoryRequest; indexMap: string[] } {
+// one out would move it), sending only the toggle that changed, an added exclusivity's name, value and
+// size, and the levels and placements as they were. A removed exclusivity is simply not sent, which
+// deletes it. `indexMap[i]` is the row behind `activations.{i}`, so validation paths from a 400 can be
+// traced back to the screen.
+export function toRequest(
+  form: InventoryForm,
+  tournament?: TournamentPicks | null
+): { body: ActivationInventoryRequest; indexMap: string[] } {
   const activations: ActivationInput[] = [];
   const indexMap: string[] = [];
 
   for (const category of CATEGORY_ORDER) {
     for (const slot of form.columns[category]) {
-      if (!slot.id && !slot.catalogKey && !slot.enabled) continue;
       indexMap.push(slot.rowKey);
       activations.push({
         ...(slot.id && { id: slot.id }),
@@ -173,15 +167,42 @@ export function toRequest(form: InventoryForm): { body: ActivationInventoryReque
           ? { catalogKey: slot.catalogKey }
           : { category, name: slot.name, description: slot.description }),
         ...(slot.enabled !== slot.initial.enabled && { isAvailableForSponsors: slot.enabled }),
-        ...customChanges(slot),
+        ...customFields(slot),
         placements: slot.placements,
       });
     }
   }
 
-  return { body: { levels: form.levels, activations }, indexMap };
+  return {
+    body: {
+      levels: form.levels,
+      activations,
+      ...(tournament && tournament.eventIds.length > 0 && { eventIds: tournament.eventIds }),
+      ...(tournament?.format && { tournamentFormat: tournament.format }),
+    },
+    indexMap,
+  };
 }
 
-function isWholeNumber(v: string) {
-  return /^\d+$/.test(v.trim()) && Number(v) <= MAX_SLOT_VALUE;
+// A new exclusivity, switched on, waiting for the next save to get its id.
+export function newExclusivity(fields: { name: string; value: string; size: string }, n: number): FormSlot {
+  const value = fields.value.trim();
+  return {
+    rowKey: `new:${n}`,
+    id: null,
+    catalogKey: null,
+    name: fields.name.trim(),
+    description: null,
+    isRecommended: false,
+    retired: false,
+    enabled: true,
+    exclusive: true,
+    editable: true,
+    savedValue: Number(value),
+    value,
+    size: fields.size.trim(),
+    // Unsaved, so everything counts as changed.
+    initial: { enabled: false, value: "", size: "" },
+    placements: [],
+  };
 }
