@@ -10,7 +10,8 @@ import GameThread from "@/components/organization/media/game-thread";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type { TournamentScheduleGame, TournamentScheduleResponse, TournamentScheduleSide } from "@/utils/types/exposure-event";
-import type { ScheduleGame, ScheduleGameSide, ScheduleGamesResponse } from "@/utils/types/schedule";
+import { useSetup } from "@/context/setup";
+import type { ScheduleItem, ScheduleListResponse } from "@/utils/types/schedule";
 
 const CONTENT_TABS = ["Game Thread", "Game Details"] as const;
 const FALLBACK_LOGO = "/images/preview-crest.png";
@@ -19,21 +20,47 @@ const GAME_LENGTH_MS = 3 * 60 * 60 * 1000;
 // The schedules API caps a page at 100.
 const GAMES_LIMIT = 100;
 
-const toTeam = (side: ScheduleGameSide | null): MediaTeam => {
-  const name = side?.name || "TBD";
-  return { name, shortName: name, logo: FALLBACK_LOGO };
+const team = (name: string, logo: string | null | undefined): MediaTeam => ({ name, shortName: name, logo: logo || FALLBACK_LOGO });
+
+// The score in a result: "56-30" is home-away; "W 56-30" / "L 7-37" put the school's score first.
+const parseResult = (result: string | null, schoolIsAway: boolean) => {
+  const m = result?.match(/^\s*([WLT])?\s*(\d+)\s*[-–]\s*(\d+)/i);
+  if (!m) return null;
+  const [a, b] = [Number(m[2]), Number(m[3])];
+  if (!m[1]) return { home: a, away: b };
+  return schoolIsAway ? { home: b, away: a } : { home: a, away: b };
 };
 
-const toMediaGame = (g: ScheduleGame, now: number): MediaGame => {
+// A school game from GET /schedules: the school on its home/away side, the opponent on the other, and
+// the score from its result.
+const toMediaGame = (g: ScheduleItem, school: MediaTeam, now: number): MediaGame => {
   const start = g.utcTime || g.start;
   const at = new Date(start).getTime();
+  const opponent = team(g.opponent || "TBD", g.opponentLogoUrl);
+  const away = g.homeAway === "away";
+  const score = parseResult(g.result, away);
+  // matchStatus when scorekeeping set it; otherwise guessed from the start time.
+  const status =
+    g.matchStatus === "final" || score
+      ? "final"
+      : g.matchStatus === "live"
+        ? "live"
+        : g.matchStatus === "pending"
+          ? "upcoming"
+          : at + GAME_LENGTH_MS < now
+            ? "final"
+            : at <= now
+              ? "live"
+              : "upcoming";
   return {
     fromApi: true,
     id: g.id,
     start,
-    home: toTeam(g.home),
-    away: toTeam(g.away),
-    status: at + GAME_LENGTH_MS < now ? "final" : at <= now ? "live" : "upcoming",
+    home: away ? opponent : school,
+    away: away ? school : opponent,
+    status,
+    homeScore: score?.home,
+    awayScore: score?.away,
     thread: {},
   };
 };
@@ -61,7 +88,7 @@ const toTournamentGame = (g: TournamentScheduleGame): MediaGame => {
 };
 
 // Media: pick a game on the left, see its score, play-by-play thread and recap on the right.
-// - School: its own games (GET /schedules/games); each game's content from the game-detail endpoints.
+// - School: its own games (GET /schedules, with results and opponent logos); each game's content from the game-detail endpoints.
 // - Tournament: an event is picked at the top (the newest first), then its games (GET
 //   /exposure/schedules?eventId=). Their thread and details have no API yet.
 export default function MediaPage() {
@@ -74,22 +101,31 @@ export default function MediaPage() {
   const [eventGames, setEventGames] = useState<{ eventId: string; games: MediaGame[] } | null>(null);
   const eventId = event?.id ?? "";
 
+  const { savedSchool } = useSetup();
+  const schoolName = savedSchool?.name || "My Team";
+  const schoolLogo = savedSchool?.logoUrl;
   useEffect(() => {
     if (!isSchool) return;
     let cancelled = false;
-    apiCall<ScheduleGamesResponse>({
-      endpoint: routes.api.listScheduleGames,
+    apiCall<ScheduleListResponse>({
+      endpoint: routes.api.listSchedules,
       method: "GET",
       data: { page: 1, limit: GAMES_LIMIT, sortOrder: "desc" },
     }).then((result) => {
       if (cancelled) return;
       const now = Date.now();
-      setSchoolGames((result.success ? (result.data?.data?.[0]?.schedules ?? []) : []).map((g) => toMediaGame(g, now)));
+      const school = team(schoolName, schoolLogo);
+      setSchoolGames(
+        (result.success ? (result.data?.data?.[0]?.items ?? []) : [])
+          // Games only (no practices).
+          .filter((g) => g.activityType !== "PRACTICE")
+          .map((g) => toMediaGame(g, school, now))
+      );
     });
     return () => {
       cancelled = true;
     };
-  }, [isSchool]);
+  }, [isSchool, schoolName, schoolLogo]);
 
   useEffect(() => {
     if (!eventId) return;

@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import apiCall from "@/utils/api-call";
 
+type ApiResult<T> = Awaited<ReturnType<typeof apiCall<{ data: T | T[] }>>>;
+const inFlight = new Map<string, Promise<unknown>>();
+
 interface Loaded<T> {
   key: string;
   data: T | null;
@@ -18,7 +21,15 @@ export function useGameDetail<T>(endpoint: string, params?: Record<string, strin
   useEffect(() => {
     if (!key) return;
     let cancelled = false;
-    apiCall<{ data: T | T[] }>({ endpoint, method: "GET", data: params }).then((result) => {
+    // The card and the hero (and Strict Mode's second run) ask for the same thing at once: share the
+    // request while it is in flight.
+    let request = inFlight.get(key) as Promise<ApiResult<T>> | undefined;
+    if (!request) {
+      request = apiCall<{ data: T | T[] }>({ endpoint, method: "GET", data: params });
+      inFlight.set(key, request);
+      request.finally(() => inFlight.delete(key));
+    }
+    request.then((result) => {
       if (cancelled) return;
       const body = result.success ? result.data?.data : undefined;
       setLoaded({

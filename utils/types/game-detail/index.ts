@@ -4,8 +4,9 @@ export interface GameDetailTeamSide {
   Team: string | null;
   School: string | null;
   Logo: string | null;
-  Points: number;
-  Record: string | null;
+  // The doc names it `Points`; the API sends `Score`.
+  Score: number | null;
+  Record?: string | null;
 }
 
 export interface GameDetailHeader {
