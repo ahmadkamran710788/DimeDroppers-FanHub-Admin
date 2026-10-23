@@ -7,11 +7,13 @@ import type { CommandCenterOverview } from "@/utils/types/command-center";
 
 // The stat cards and Event Readiness from GET /command-center/overview (`data` holds one element).
 // `eventId` (a tournament's FanHubSchoolEvent id, "" for all) scopes it to that event.
-export function useCommandCenterOverview(eventId = "") {
+// `enabled` false holds the call (a tournament waits for its event), showing the loader meanwhile.
+export function useCommandCenterOverview(eventId = "", enabled = true) {
   // The answer and the event it is for, so a switch shows the loader instead of the old event's data.
   const [loaded, setLoaded] = useState<{ eventId: string; overview: CommandCenterOverview | null } | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     apiCall<{ data: CommandCenterOverview[] }>({
       endpoint: routes.api.commandCenterOverview,
@@ -24,8 +26,8 @@ export function useCommandCenterOverview(eventId = "") {
     return () => {
       cancelled = true;
     };
-  }, [eventId]);
+  }, [eventId, enabled]);
 
-  const loading = loaded?.eventId !== eventId;
+  const loading = !enabled || loaded?.eventId !== eventId;
   return { overview: loading ? null : (loaded?.overview ?? null), loading };
 }

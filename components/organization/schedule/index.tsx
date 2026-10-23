@@ -28,6 +28,7 @@ import type { ScheduleItem, ScheduleListResponse, SchedulePagination, ScheduleSu
 import DateField from "@/components/common/date-field";
 import Pagination from "@/components/common/pagination";
 import EventSelect from "@/components/organization/event-select";
+import { useSelectedEvent } from "@/context/selected-event";
 import EventGames from "@/components/organization/schedule/event-games";
 import { US_STATE_OPTIONS } from "@/components/organization/org-form/form";
 import type { ExposureEvent, ExposureEventsResponse, ExposureEventView } from "@/utils/types/exposure-event";
@@ -519,7 +520,8 @@ export default function SchedulePage() {
   const [events, setEvents] = useState<ExposureEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   // The event picked at the top (tournament): its games replace the events list.
-  const [pickedEvent, setPickedEvent] = useState<{ id: string; name: string } | null>(null);
+  // Shared with every page's event picker.
+  const { event: pickedEvent, setEvent: setPickedEvent } = useSelectedEvent();
   const [eventPage, setEventPage] = useState(1);
   const [eventFilters, setEventFilters] = useState<EventFilters>(DEFAULT_EVENT_FILTERS);
   const setEventFilter = (key: keyof EventFilters) => (value: string) => {

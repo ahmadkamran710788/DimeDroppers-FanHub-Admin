@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CalendarDays } from "lucide-react";
 import FilterDropdown from "@/components/common/filter-dropdown";
 import apiCall from "@/utils/api-call";
@@ -46,11 +46,6 @@ export default function EventSelect({
   align = "right",
 }: EventSelectProps) {
   const autoPick = !addLabel && (!allowAll || selectFirst);
-  // Read in the fetch callback, which only reruns per page.
-  const latest = useRef({ value, onChange, autoPick });
-  useEffect(() => {
-    latest.current = { value, onChange, autoPick };
-  });
 
   const [events, setEvents] = useState<ExposureEvent[]>([]);
   // The next page to ask for; null once the last page has arrived.
@@ -70,10 +65,6 @@ export default function EventSelect({
       if (body) {
         setEvents((prev) => (requested === 1 ? body.items : [...prev, ...body.items]));
         setNextPage(body.pagination.isLast ? null : requested + 1);
-        // Start on the newest event when asked to (always without "All Events").
-        const { value: current, onChange: pick, autoPick } = latest.current;
-        const first = body.items[0];
-        if (requested === 1 && autoPick && !current && first) pick(first.id, first.name);
       }
       setLoading(false);
     });
@@ -81,6 +72,13 @@ export default function EventSelect({
       cancelled = true;
     };
   }, [requested]);
+
+  // Start on the newest event when asked to (always without "All Events"). An effect rather than the
+  // fetch callback, so it asks again if the first ask was ignored (the shared pick isn't ready yet).
+  const first = events[0];
+  useEffect(() => {
+    if (autoPick && !value && first) onChange(first.id, first.name);
+  }, [autoPick, value, first, onChange]);
 
   const loadMore = useCallback(() => {
     if (loading || nextPage === null) return;

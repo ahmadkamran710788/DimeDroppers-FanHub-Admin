@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useSelectedEvent } from "@/context/selected-event";
 import StatCard from "@/components/common/stat-card";
 import { commandStats } from "@/components/organization/command-center/command-stats";
 import EventSelect from "@/components/organization/event-select";
@@ -39,10 +39,14 @@ export default function CommandCenterPage() {
   const { org } = useAuth();
   const kind = orgKindOf(org);
   const heading = HEADING[kind ?? "unknown"];
-  // The tournament event picked on the right of the title ("" = all events).
-  const [eventId, setEventId] = useState("");
-  // The stat cards, readiness, hero and live games follow the picked event (all events when none).
-  const { overview, loading } = useCommandCenterOverview(eventId);
+  // The tournament event picked on the right of the title (the newest at first), shared with every
+  // other page's event picker.
+  const { event, setEvent } = useSelectedEvent();
+  const eventId = kind === "tournament" ? (event?.id ?? "") : "";
+  // The stat cards, readiness, hero and live games follow the picked event; a tournament (or an org
+  // not known yet) waits for it rather than loading the whole organisation first.
+  const waiting = kind !== "school" && !eventId;
+  const { overview, loading } = useCommandCenterOverview(eventId, !waiting);
 
   return (
     <div className="flex flex-col gap-10">
@@ -54,7 +58,12 @@ export default function CommandCenterPage() {
           <p className="text-base leading-[26px]">{heading.description}</p>
         </div>
         {kind === "tournament" && (
-          <EventSelect value={eventId} onChange={setEventId} />
+          <EventSelect
+            value={eventId}
+            onChange={(id, name) => setEvent(id ? { id, name } : null)}
+            allowAll={false}
+            selectedName={event?.name}
+          />
         )}
       </div>
 
@@ -72,7 +81,7 @@ export default function CommandCenterPage() {
         ))}
       </div>
 
-      <GameCards eventId={eventId} />
+      {!waiting && <GameCards eventId={eventId} />}
     </div>
   );
 }
