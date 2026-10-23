@@ -9,6 +9,7 @@ import Sidebar from "@/components/layout/sidebar";
 import { routes } from "@/utils/routes";
 import { SetupProvider } from "@/context/setup";
 import { OrgChatProvider } from "@/context/org-chat";
+import { SelectedEventProvider } from "@/context/selected-event";
 import { TeamShopProvider } from "@/context/team-shop";
 
 const PAGE_TITLES: Record<string, string> = {
@@ -70,6 +71,7 @@ export default function DashboardLayout({
       <SetupGuard require="complete">
         <TeamShopProvider>
           <OrgChatProvider>
+            <SelectedEventProvider>
             <div className="flex h-screen bg-black overflow-hidden">
               <Sidebar
                 open={sidebarOpen}
@@ -104,6 +106,7 @@ export default function DashboardLayout({
                 </main>
               </div>
             </div>
+            </SelectedEventProvider>
           </OrgChatProvider>
         </TeamShopProvider>
       </SetupGuard>

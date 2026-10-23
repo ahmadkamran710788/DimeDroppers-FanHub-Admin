@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import EventSelect from "@/components/organization/event-select";
+import { useSelectedEvent } from "@/context/selected-event";
 import { orgKindOf, useAuth } from "@/context/auth";
 import { BracketsTable, DivisionsTable, StandingsTable, VenuesTable } from "@/components/organization/exposure-tables";
 import apiCall from "@/utils/api-call";
@@ -34,10 +35,11 @@ interface Loaded {
 }
 
 // Tournament pages for one event's Divisions, Venues, Standings or Brackets. The event is picked at
-// the top (the newest one at first; "All Events" stays in the list but these are per event).
+// the top (the one picked on any page, else the newest), shared with every other page's event picker.
 export default function EventDataPage({ kind }: { kind: EventDataKind }) {
   const page = PAGES[kind];
-  const [event, setEvent] = useState<{ id: string; name: string } | null>(null);
+  // Shared with every page's event picker.
+  const { event, setEvent } = useSelectedEvent();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const eventId = event?.id ?? "";
   // Tournament only: a school opening the URL goes back to its Command Center.
@@ -83,7 +85,8 @@ export default function EventDataPage({ kind }: { kind: EventDataKind }) {
         <EventSelect
           value={eventId}
           onChange={(id, name) => setEvent(id ? { id, name } : null)}
-          selectFirst
+          allowAll={false}
+          selectedName={event?.name}
         />
       </div>
 

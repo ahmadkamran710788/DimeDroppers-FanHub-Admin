@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { orgKindOf, useAuth } from "@/context/auth";
 import type { MediaGame, MediaTeam } from "@/components/organization/media/data";
 import EventSelect from "@/components/organization/event-select";
+import { useSelectedEvent } from "@/context/selected-event";
 import GameDetails from "@/components/organization/media/game-details";
 import GamesBrowser from "@/components/organization/media/games-browser";
 import GameThread from "@/components/organization/media/game-thread";
@@ -97,7 +98,8 @@ export default function MediaPage() {
   const isSchool = orgKind === "school";
   const isTournament = orgKind === "tournament";
   const [schoolGames, setSchoolGames] = useState<MediaGame[] | null>(null);
-  const [event, setEvent] = useState<{ id: string; name: string } | null>(null);
+  // Shared with every page's event picker.
+  const { event, setEvent } = useSelectedEvent();
   const [eventGames, setEventGames] = useState<{ eventId: string; games: MediaGame[] } | null>(null);
   const eventId = event?.id ?? "";
 

@@ -12,6 +12,7 @@ import EditTeamModal from "@/components/organization/teams/edit-team-modal";
 import SportModal from "@/components/organization/teams/sport-modal";
 import SportsList from "@/components/organization/teams/sports-list";
 import EventSelect from "@/components/organization/event-select";
+import { useSelectedEvent } from "@/context/selected-event";
 import TournamentTeams, { type TournamentFocus } from "@/components/organization/teams/tournament-teams";
 import type { TournamentTotals } from "@/utils/types/exposure-event";
 import {
@@ -39,7 +40,8 @@ export default function TeamsPage() {
   const [totals, setTotals] = useState<TournamentTotals | null>(null);
   const [focus, setFocus] = useState<TournamentFocus | null>(null);
   // The tournament event picked in the header (the newest at first).
-  const [pickedEvent, setPickedEvent] = useState<{ id: string; name: string } | null>(null);
+  // Shared with every page's event picker.
+  const { event: pickedEvent, setEvent: setPickedEvent } = useSelectedEvent();
   // In a transition, so the cards that leave or move animate (the ViewTransitions below).
   // Stable, since TournamentTeams refetches when it changes.
   const changeFocus = useCallback((next: TournamentFocus | null) => startTransition(() => setFocus(next)), []);
