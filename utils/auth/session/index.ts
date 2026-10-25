@@ -1,3 +1,5 @@
+import type { SponsorAccount } from "@/utils/types/auth";
+
 // Client-side FanHub session keys. The org and the Step-1 school are the same
 // entity: organization.id (also the JWT `schoolId` claim) is stored as
 // SCHOOL_ID_KEY so the setup wizard updates the auto-created school instead of
@@ -16,4 +18,30 @@ export function setFanhubSchoolId(id: string) {
 export function clearFanhubSession() {
   sessionStorage.removeItem(SCHOOL_ID_KEY);
   sessionStorage.removeItem(TEAM_NAME_KEY);
+  try {
+    localStorage.removeItem(SPONSOR_ACCOUNT_KEY);
+  } catch {
+    // Storage blocked: nothing was kept.
+  }
+}
+
+// The signed-in sponsor's account from sign-in (there is no sponsor /me), for the sponsor header.
+// localStorage, so it survives a refresh and new tabs like the session cookies do.
+export const SPONSOR_ACCOUNT_KEY = "fanhub:sponsorAccount";
+
+export function setSponsorAccount(account: SponsorAccount) {
+  try {
+    localStorage.setItem(SPONSOR_ACCOUNT_KEY, JSON.stringify(account));
+  } catch {
+    // Storage blocked: the header falls back to a generic name.
+  }
+}
+
+export function getSponsorAccount(): SponsorAccount | null {
+  try {
+    const raw = localStorage.getItem(SPONSOR_ACCOUNT_KEY);
+    return raw ? (JSON.parse(raw) as SponsorAccount) : null;
+  } catch {
+    return null;
+  }
 }

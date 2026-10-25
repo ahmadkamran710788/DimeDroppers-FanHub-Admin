@@ -1,10 +1,41 @@
 // Shapes returned by the FanHub Org Auth API (data[0] of the response envelope).
 
+// The login account's role. The one sign-in serves both: ORGANISER → the organisation panel (school or
+// tournament by organizationType), SPONSOR → the sponsor panel.
+export type AccountRole = "ORGANISER" | "SPONSOR";
+
 export interface AuthOrganization {
   id: string;
   name: string;
   email: string;
   phone: string;
+  role?: AccountRole | null;
+}
+
+// A sponsor's account, from sign-in.
+export interface SponsorAccount {
+  id: string;
+  name: string | null;
+  email: string;
+  role: "SPONSOR";
+  phone: string | null;
+}
+
+// The brand of the sponsor's DAN membership.
+export interface SponsorBrand {
+  id: string;
+  name: string;
+  category: string | null;
+  city: string | null;
+  state: string | null;
+}
+
+// GET /fanhub/org-auth/me for a sponsor token: data[0].sponsor.
+export interface SponsorProfile extends SponsorAccount {
+  lastLoginAt: string | null;
+  createdAt: string;
+  // null when the sponsor has no brand yet.
+  brand: SponsorBrand | null;
 }
 
 // GET /fanhub/org-auth/me — the full profile behind the access token (data[0].organization).
@@ -38,11 +69,14 @@ export interface OrganizationProfile extends AuthOrganization {
   createdAt: string;
 }
 
-// signin / signup payload — includes the organization.
+// signin / signup payload: an organiser gets `organization`, a sponsor `sponsor`. Sign-up and an older
+// backend send no `role` (an organiser).
 export interface AuthSession {
   accessToken: string;
   refreshToken: string;
-  organization: AuthOrganization;
+  role?: AccountRole;
+  organization?: AuthOrganization;
+  sponsor?: SponsorAccount;
 }
 
 // refresh payload — tokens only.

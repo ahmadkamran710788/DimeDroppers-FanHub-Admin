@@ -3,7 +3,10 @@
 import Image from "next/image";
 import { Menu } from "lucide-react";
 import Button from "@/components/common/button";
-import { SPONSOR_PROFILE } from "@/components/sponsor/data";
+import RowActionsMenu from "@/components/common/row-actions-menu";
+import { useSponsorAccount } from "@/components/sponsor/use-sponsor-account";
+import { clearFanhubSession } from "@/utils/auth/session";
+import { routes } from "@/utils/routes";
 
 interface SponsorHeaderProps {
   title: string;
@@ -13,6 +16,15 @@ interface SponsorHeaderProps {
 // Header for the sponsor pages: section title, messages and notifications, and the sponsor's
 // name, email and initials. Messages and notifications are not wired up yet.
 export default function SponsorHeader({ title, onMenuClick }: SponsorHeaderProps) {
+  const account = useSponsorAccount();
+
+  async function signOut() {
+    clearFanhubSession();
+    await fetch(routes.api.proxyAuthSignout, { method: "POST" });
+    // Full-page navigation so nothing of the sponsor session stays in memory.
+    window.location.replace(routes.ui.signIn);
+  }
+
   return (
     // Sized like the admin header: 80px tall, 40px side padding, 28px title, 24px icons, 48px avatar.
     <header className="h-20 flex gap-4 items-center justify-between px-4 lg:px-10 border-b border-[#1c1c1c] shrink-0">
@@ -43,12 +55,19 @@ export default function SponsorHeader({ title, onMenuClick }: SponsorHeaderProps
         </Button>
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex flex-col items-end leading-tight">
-            <span className="text-sm font-semibold uppercase truncate max-w-[160px]">{SPONSOR_PROFILE.name}</span>
-            <span className="text-xs text-[#a8a8a8] truncate max-w-[160px]">{SPONSOR_PROFILE.email}</span>
+            <span className="text-sm font-semibold uppercase truncate max-w-[160px]">{account?.displayName ?? "Sponsor"}</span>
+            {/* The brand once /me has answered ("No brand yet" without one), the email before. */}
+            <span className="text-xs text-[#a8a8a8] truncate max-w-[160px]">
+              {account?.brandName ?? (account && "brand" in account ? "No brand yet" : (account?.email ?? ""))}
+            </span>
           </div>
-          <div className="size-12 shrink-0 rounded-full border-2 border-[#444] flex items-center justify-center font-display font-bold text-lg">
-            {SPONSOR_PROFILE.initials}
-          </div>
+          {/* The avatar opens the account menu (Sign out). */}
+          <RowActionsMenu
+            ariaLabel="Account menu"
+            className="size-12 p-0 shrink-0 rounded-full outline-0 border-2 border-[#444] bg-transparent font-display font-bold text-lg"
+            trigger={account?.initials ?? "S"}
+            items={[{ label: "Sign out", onSelect: signOut, variant: "destructive" }]}
+          />
         </div>
       </div>
     </header>

@@ -236,6 +236,19 @@ export const routes = {
     // events for the picker with each one's set-up status (FANHUB_ACTIVATIONS_EVENT_INVENTORIES_FRONTEND).
     activationEventInventory: (eventId: string) => `fanhub/org/activations?eventId=${encodeURIComponent(eventId)}`,
     activationEvents: "fanhub/org/activations/events",
+    // Sponsor app (sponsor token): find organisations, their packages, and activate one
+    // (FANHUB_SPONSOR_PACKAGES_FRONTEND.md, FANHUB_SPONSOR_APP_INTEGRATION.md).
+    sponsorFilters: "fanhub/sponsor-packages/filters",
+    sponsorOrganizations: "fanhub/sponsor-packages/organizations",
+    sponsorOrgEvents: (schoolId: string) => `fanhub/sponsor-packages/organizations/${schoolId}/events`,
+    sponsorOrgPackages: (schoolId: string) => `fanhub/sponsor-packages/organizations/${schoolId}/packages`,
+    sponsorActivations: "fanhub/sponsor-packages/activations",
+    sponsorActivationCancel: (id: string) => `fanhub/sponsor-packages/activations/${id}/cancel`,
+    // The organisation's own view (organiser token): its packages as sponsors see them (?eventId= for a
+    // tournament), its events, and who activated what.
+    orgSponsorPackages: "fanhub/org/sponsor-packages/packages",
+    orgSponsorEvents: "fanhub/org/sponsor-packages/events",
+    orgSponsorActivations: "fanhub/org/sponsor-packages/activations",
     // Messages — the org chats with the people of its teams (FANHUB_ORG_CHAT_ADMIN.md).
     // Who can be messaged, per tab (players / parents / staff / followers): GET ?tab=&search=.
     orgChatTeamMembers: (schoolTeamId: string) => `fanhub/org/chat/teams/${schoolTeamId}/members`,
