@@ -1,52 +1,75 @@
 import { cn } from "@/utils/cn";
-import { formatMoney } from "@/utils/helper";
-import Checkbox from "@/components/common/checkbox";
+import Button from "@/components/common/button";
+import { OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
 import InsetSection from "@/components/sponsor/find-organizations/inset-section";
-import type { PhysicalAddOn } from "@/components/sponsor/find-organizations/data";
+import { formatCents } from "@/components/sponsor/sponsor-api";
+import type { SponsorExclusivity } from "@/utils/types/sponsor-packages";
 
 interface PhysicalAddOnsProps {
   orgName: string;
-  addOns: PhysicalAddOn[];
-  // Indexes of the ticked add-ons.
-  picked: ReadonlySet<number>;
-  onToggle: (index: number) => void;
+  exclusivities: SponsorExclusivity[];
+  // Without it the list is a read-only preview (the organisation panel).
+  onActivate?: (exclusivity: SponsorExclusivity) => void;
 }
 
-// The organization's venue space and on-site extras, ticked on top of the package.
-export default function PhysicalAddOns({ orgName, addOns, picked, onToggle }: PhysicalAddOnsProps) {
+// The organization's exclusivities (banners, scoreboard wraps…), sold on their own under the packages:
+// each with its size, price (its value × the same teams or games) and Activate.
+export default function PhysicalAddOns({
+  orgName,
+  exclusivities,
+  onActivate,
+}: PhysicalAddOnsProps) {
   return (
     <InsetSection
       title={`PHYSICAL ADD-ONS · ${orgName}`}
-      description="Venue space and on-site extras offered by this organization"
+      description="Exclusive placements, activated on their own"
     >
-      {addOns.map((addOn, i) => {
-        const on = picked.has(i);
-        return (
-          // A whole clickable row, not an action button, so it stays a native button.
-          <button
-            key={addOn.name}
-            type="button"
-            aria-pressed={on}
-            onClick={() => onToggle(i)}
-            className={cn(
-              "w-full min-h-16 px-2.5 sm:px-3 py-[10px] rounded-[10px] border flex items-center gap-2.5 sm:gap-[14px] text-left text-white cursor-pointer",
-              on ? "bg-[#17151f] border-[#4a3f7a]" : "bg-transparent border-[#222]"
-            )}
+      {exclusivities.length === 0 ? (
+        <p className="text-sm text-[#a8a8a8]">No exclusivities offered.</p>
+      ) : (
+        exclusivities.map((x) => (
+          <div
+            key={x.activationId}
+            className="w-full min-h-16 px-2.5 sm:px-3 py-[10px] rounded-[10px] border border-[#222] flex flex-wrap items-center gap-2.5 sm:gap-[14px] text-white"
           >
-            <Checkbox variant="violet" checked={on} />
-            <span className="w-12 sm:w-16 h-10 flex-none rounded-[6px] border-[1.5px] border-dashed border-[#555] flex items-center justify-center text-[11px] text-[#a8a8a8]">
-              {addOn.size}
-            </span>
-            <span className="flex-auto min-w-0">
-              <span className="block text-[15px] font-semibold">{addOn.name}</span>
-              <span className="block text-[13px] text-[#a8a8a8] mt-[2px]">
-                {`${addOn.where} · ${addOn.available} available`}
+            {x.size && (
+              <span className="w-16 h-10 flex-none rounded-[6px] border-[1.5px] border-dashed border-[#555] flex items-center justify-center text-[11px] text-center text-[#a8a8a8]">
+                {x.size}
               </span>
+            )}
+            <span className="flex-auto min-w-0">
+              <span className="block text-[15px] font-semibold">{x.name}</span>
+              <span className="block text-[13px] text-[#a8a8a8] mt-[2px]">
+                {[
+                  x.description,
+                  `${formatCents(x.unitValueCents, x.currency)} × ${x.factors.map((f) => f.detail).join(" × ")}`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+              {!x.isAvailable && x.unavailableMessage && (
+                <span className="block text-[13px] text-[#f0c36a] mt-[2px]">
+                  {x.unavailableMessage}
+                </span>
+              )}
             </span>
-            <span className="text-[15px] font-bold whitespace-nowrap">{`+${formatMoney(addOn.price)}`}</span>
-          </button>
-        );
-      })}
+            <span className="text-[15px] font-bold whitespace-nowrap">
+              {formatCents(x.totalCents, x.currency)}
+            </span>
+            {onActivate && (
+              <Button
+                label="Activate"
+                onClick={() => onActivate(x)}
+                disabled={!x.isAvailable}
+                className={cn(
+                  x.isAvailable ? PRIMARY_BUTTON : OUTLINE_BUTTON,
+                  "h-10 px-4 rounded-[10px] text-sm",
+                )}
+              />
+            )}
+          </div>
+        ))
+      )}
     </InsetSection>
   );
 }

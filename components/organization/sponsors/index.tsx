@@ -1,135 +1,163 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Filter } from "lucide-react";
 import toast from "react-hot-toast";
 import Button from "@/components/common/button";
-import DonutBreakdown from "@/components/common/donut-breakdown";
+import DonutBreakdown, { type DonutSlice } from "@/components/common/donut-breakdown";
 import GenericTable, { type Column } from "@/components/common/generic-table";
 import Pagination from "@/components/common/pagination";
 import RankedList from "@/components/common/ranked-list";
-import RowActionsMenu from "@/components/common/row-actions-menu";
 import SearchInput from "@/components/common/search-input";
-import StatCard from "@/components/common/stat-card";
+import StatCard, { type Stat } from "@/components/common/stat-card";
 import StatusPill from "@/components/common/status-pill";
 import Tabs from "@/components/common/tabs";
-import {
-  SAMPLE_BREAKDOWN,
-  SAMPLE_BREAKDOWN_TOTAL,
-  SAMPLE_SPONSORS,
-  SAMPLE_STATS,
-  SAMPLE_TOP_SPONSORS,
-  STATUS_COLOR,
-  TIER_COLOR,
-  type Sponsor,
-  type SponsorStatus,
-} from "@/components/organization/sponsors/data";
-import { formatMoney } from "@/utils/helper";
+import PackagesPreview from "@/components/organization/sponsors/packages-preview";
+import { formatCents, sponsorRequest } from "@/components/sponsor/sponsor-api";
 import { routes } from "@/utils/routes";
+import type { PackageActivation, PackageActivationsPage, PackageActivationStatus } from "@/utils/types/sponsor-packages";
 
 const PAGE_SIZE = 16;
-const TABS = ["All Sponsors", "Active", "Pending", "Expired", "Inactive"] as const;
+// The side panels and stat cards read the active activations, up to the API's page cap.
+const ACTIVE_LIMIT = 100;
+const TABS = ["All", "Active", "Expired", "Cancelled"] as const;
 type Tab = (typeof TABS)[number];
+const TAB_STATUS: Record<Tab, PackageActivationStatus | undefined> = {
+  All: undefined,
+  Active: "ACTIVE",
+  Expired: "EXPIRED",
+  Cancelled: "CANCELLED",
+};
 
-// Sponsor actions need the sponsors API, which doesn't exist yet.
-const comingSoon = () => toast("Coming soon.");
+const STATUS_COLOR: Record<PackageActivationStatus, string> = {
+  ACTIVE: "bg-success",
+  EXPIRED: "bg-white/30",
+  CANCELLED: "bg-error/70",
+};
 
-const columns: Column<Sponsor>[] = [
+const SLICE_COLORS = ["#3030FF", "#638BFE", "#FF8D2A", "#65C162", "#FF34BF", "rgba(255,255,255,0.1)"];
+
+const sponsorName = (a: PackageActivation) => a.sponsor.brandName || a.sponsor.name || "Sponsor";
+const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+const columns: Column<PackageActivation>[] = [
   {
     header: "Sponsor",
-    cls: "flex-1 min-w-[200px]",
-    cell: (s) => (
-      <div className="flex items-start gap-2 min-w-0">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={s.logo}
-          alt=""
-          className="size-10 shrink-0 rounded-full object-cover border border-white/50 bg-white/15 backdrop-blur-[10px]"
-        />
-        <div className="flex flex-col gap-1 min-w-0 text-xs text-white">
-          <span className="font-semibold leading-[18px] truncate">{s.name}</span>
-          <span className="leading-[19px] opacity-40">{s.role}</span>
-          {s.featured && (
-            <StatusPill
-              label="Featured"
-              color="bg-[#FF34BF]"
-              className="self-start px-2 backdrop-blur-[52px]"
-              textClassName="text-white"
-            />
-          )}
-        </div>
+    cls: "flex-1 min-w-[180px]",
+    cell: (a) => (
+      <div className="flex flex-col gap-1 min-w-0 text-xs text-white">
+        <span className="font-semibold leading-[18px] truncate">{sponsorName(a)}</span>
+        {a.sponsor.brandName && a.sponsor.name && <span className="leading-[19px] opacity-40 truncate">{a.sponsor.name}</span>}
       </div>
     ),
   },
-  { header: "Cat.", cls: "w-[62px] shrink-0", cell: (s) => <span className="leading-4 capitalize">{s.category}</span> },
   {
-    header: "Tier",
-    cls: "w-[82px] shrink-0",
-    cell: (s) => (
-      <StatusPill label={s.tier} color={TIER_COLOR[s.tier]} className="px-2 backdrop-blur-[52px]" textClassName="text-white" />
+    header: "Package",
+    cls: "w-[200px] shrink-0",
+    cell: (a) => (
+      <div className="flex flex-col gap-1 min-w-0 text-xs">
+        <span className="leading-4 break-words">{a.packageName}</span>
+        <span className="opacity-50">{a.kind === "EXCLUSIVITY" ? `Exclusivity${a.exclusivity?.size ? ` · ${a.exclusivity.size}` : ""}` : "Package"}</span>
+      </div>
     ),
   },
+  { header: "Event", cls: "w-[150px] shrink-0", cell: (a) => <span className="leading-4 break-words">{a.event?.name ?? "—"}</span> },
+  { header: "Value", cls: "w-[96px] shrink-0", cell: (a) => <span className="leading-4">{formatCents(a.totalCents, a.currency)}</span> },
   {
     header: "Status",
-    cls: "w-[68px] shrink-0",
-    cell: (s) => (
-      <StatusPill
-        label={s.status}
-        color={STATUS_COLOR[s.status]}
-        className="px-2 backdrop-blur-[52px]"
-        textClassName="text-midnight-navy"
-      />
+    cls: "w-[96px] shrink-0",
+    cell: (a) => (
+      <StatusPill label={a.status.charAt(0) + a.status.slice(1).toLowerCase()} color={STATUS_COLOR[a.status]} className="px-2" textClassName="text-white" />
     ),
   },
-  { header: "Value", cls: "w-[77px] shrink-0", cell: (s) => <span className="leading-4">{formatMoney(s.value)}</span> },
-  {
-    header: "Engagement",
-    cls: "w-[126px] shrink-0",
-    cell: (s) => (
-      <div className="flex flex-col leading-5">
-        <span>{s.interactions}</span>
-        <span>Interactions</span>
-      </div>
-    ),
-  },
-  {
-    header: "Actions",
-    cls: "w-[73px] shrink-0 justify-center",
-    cell: (s) => (
-      <RowActionsMenu
-        ariaLabel={`Actions for ${s.name}`}
-        className="h-12 w-[50px] px-3 rounded-[8px] outline-0 bg-[rgba(235,235,235,0.25)] hover:bg-white/35 backdrop-blur-[24px]"
-        items={[
-          { label: "View Sponsor", onSelect: comingSoon },
-          { label: "Edit Sponsor", onSelect: comingSoon },
-          { label: "Remove Sponsor", onSelect: comingSoon, variant: "destructive" },
-        ]}
-      />
-    ),
-  },
+  { header: "Activated", cls: "w-[110px] shrink-0", cell: (a) => <span className="leading-4">{fmtDate(a.activatedAt)}</span> },
 ];
 
+interface Loaded {
+  key: string;
+  page?: PackageActivationsPage;
+  error?: string;
+}
+
+// Sponsors: who activated which of the organization's packages and exclusivities
+// (GET /org/sponsor-packages/activations), and what sponsors can buy.
 export default function SponsorsPage() {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("All Sponsors");
+  const [tab, setTab] = useState<Tab>("All");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [list, setList] = useState<Loaded | null>(null);
+  const [active, setActive] = useState<PackageActivationsPage | null>(null);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return SAMPLE_SPONSORS.filter(
-      (s) =>
-        (tab === "All Sponsors" || s.status === (tab as SponsorStatus)) &&
-        (!q || [s.name, s.role, s.category, s.tier].some((v) => v.toLowerCase().includes(q)))
-    );
-  }, [tab, query]);
+  // The active ones, for the stat cards and side panels.
+  useEffect(() => {
+    sponsorRequest<PackageActivationsPage>("GET", routes.api.orgSponsorActivations, {
+      params: { status: "ACTIVE", page: 1, limit: ACTIVE_LIMIT },
+    }).then((r) => {
+      if (r.view) setActive(r.view);
+      else toast.error(r.message ?? "Couldn't load your sponsors.");
+    });
+  }, []);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const currentPage = Math.min(page, pageCount);
-  const rows = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  const from = filtered.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
-  const to = Math.min(currentPage * PAGE_SIZE, filtered.length);
+  const key = `${tab}|${page}`;
+  useEffect(() => {
+    let cancelled = false;
+    sponsorRequest<PackageActivationsPage>("GET", routes.api.orgSponsorActivations, {
+      params: { status: TAB_STATUS[tab], page, limit: PAGE_SIZE },
+    }).then((r) => {
+      if (!cancelled) setList({ key, page: r.view, error: r.view ? undefined : r.message });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [key, tab, page]);
+
+  const loading = list?.key !== key;
+  const current = loading ? undefined : list?.page;
+  const q = query.trim().toLowerCase();
+  // The search narrows the page shown.
+  const rows = (current?.items ?? []).filter(
+    (a) => !q || [sponsorName(a), a.sponsor.name ?? "", a.packageName, a.event?.name ?? ""].some((v) => v.toLowerCase().includes(q))
+  );
+  const total = current?.pagination.total ?? 0;
+  const pageCount = Math.max(1, current?.pagination.totalPages ?? 1);
+  const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const to = Math.min(page * PAGE_SIZE, total);
+
+  const activeItems = useMemo(() => active?.items ?? [], [active]);
+  const activeValue = activeItems.reduce((sum, a) => sum + a.totalCents, 0);
+  const sponsors = new Set(activeItems.map((a) => a.sponsorFanHubUserId ?? sponsorName(a))).size;
+
+  const stats: Stat[] = [
+    { label: "Active Sponsorships", value: String(active?.pagination.total ?? 0), tint: "#3d6f3e", caption: "packages and exclusivities" },
+    { label: "Active Value", value: formatCents(activeValue), tint: "#3d5194", caption: "of the active ones" },
+    { label: "Sponsors", value: String(sponsors), tint: "#5e4277", caption: "with an active sponsorship" },
+    { label: "Exclusivities", value: String(activeItems.filter((a) => a.kind === "EXCLUSIVITY").length), tint: "#7a4a2e", caption: "active" },
+  ];
+
+  // Active ones by package (or exclusivity) name.
+  const slices: DonutSlice[] = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const a of activeItems) counts.set(a.packageName, (counts.get(a.packageName) ?? 0) + 1);
+    return [...counts.entries()]
+      .sort((x, y) => y[1] - x[1])
+      .map(([label, count], i) => ({
+        label,
+        detail: String(count),
+        percent: Math.round((count / activeItems.length) * 1000) / 10,
+        color: SLICE_COLORS[i % SLICE_COLORS.length],
+      }));
+  }, [activeItems]);
+
+  // Sponsors by active value, in dollars.
+  const topSponsors = useMemo(() => {
+    const byName = new Map<string, number>();
+    for (const a of activeItems) byName.set(sponsorName(a), (byName.get(sponsorName(a)) ?? 0) + a.totalCents);
+    return [...byName.entries()]
+      .sort((x, y) => y[1] - x[1])
+      .slice(0, 5)
+      .map(([name, cents]) => ({ name, amount: cents / 100 }));
+  }, [activeItems]);
 
   return (
     <div className="flex flex-col gap-10">
@@ -139,7 +167,7 @@ export default function SponsorsPage() {
           <h2 className="font-display font-extrabold text-[32px] sm:text-[40px] lg:text-[56px] lg:leading-[68px] uppercase leading-none">
             Sponsors
           </h2>
-          <p className="text-base leading-[26px]">Manage your sponsors, partnerships, and sponsorship assets.</p>
+          <p className="text-base leading-[26px]">Who sponsors you, and the packages they can buy.</p>
         </div>
         <div className="flex flex-wrap gap-6">
           <Button
@@ -158,13 +186,13 @@ export default function SponsorsPage() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-10">
-        {SAMPLE_STATS.map((stat) => (
+        {stats.map((stat) => (
           <StatCard key={stat.label} {...stat} />
         ))}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_348px] gap-10 items-start">
-        {/* Sponsors list */}
+        {/* Sponsorships list */}
         <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[24px] bg-surface-06 min-w-0">
           <Tabs
             tabs={TABS}
@@ -175,38 +203,21 @@ export default function SponsorsPage() {
             }}
           />
 
-          <div className="flex items-center gap-6">
-            <SearchInput
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setPage(1);
-              }}
-              aria-label="Search sponsors"
-            />
-            <Button
-              variant="ghost"
-              label="Filters"
-              icon={<Filter className="w-5 h-5" />}
-              className="shrink-0 min-w-0 w-[112px] px-3"
-              onClick={comingSoon}
-            />
-          </div>
+          <SearchInput value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search sponsors" />
 
           <div className="flex flex-col">
             <GenericTable
               columns={columns}
               rows={rows}
-              getKey={(s) => s.id}
-              empty={query ? "No sponsors match your search." : "No sponsors yet."}
+              getKey={(a) => a.id}
+              loading={loading}
+              empty={list?.error ?? (q ? "No sponsors match your search." : "No sponsorships yet.")}
               headerCellClassName="bg-white/[0.08]"
               cellClassName="bg-white/[0.04] py-4"
             />
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4">
-              <span className="text-xs text-white/80">
-                Showing {from} to {to} of {filtered.length} sponsors
-              </span>
-              <Pagination page={currentPage} pageCount={pageCount} onChange={setPage} />
+              <span className="text-xs text-white/80">{`Showing ${from} to ${to} of ${total} sponsorships`}</span>
+              <Pagination page={page} pageCount={pageCount} onChange={setPage} />
             </div>
           </div>
         </div>
@@ -214,16 +225,17 @@ export default function SponsorsPage() {
         {/* Side panels */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-10 items-start">
           <DonutBreakdown
-            title="Sponsor Breakdown"
-            centerValue={String(SAMPLE_BREAKDOWN_TOTAL)}
-            centerLabel="Total"
-            slices={SAMPLE_BREAKDOWN}
-            actionLabel="View Sponsorship Reports"
-            onAction={comingSoon}
+            title="Sponsorship Breakdown"
+            centerValue={String(activeItems.length)}
+            centerLabel="Active"
+            slices={slices}
+            emptyText="No active sponsorships yet."
           />
-          <RankedList title="Top Sponsors by Value" items={SAMPLE_TOP_SPONSORS} onViewAll={comingSoon} />
+          <RankedList title="Top Sponsors by Value" items={topSponsors} onViewAll={() => setTab("Active")} />
         </div>
       </div>
+
+      <PackagesPreview />
     </div>
   );
 }

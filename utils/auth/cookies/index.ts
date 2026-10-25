@@ -14,6 +14,8 @@ const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
 
 export const ACCESS_TOKEN_COOKIE = "accessToken";
 export const REFRESH_TOKEN_COOKIE = "refreshToken";
+// The signed-in account's role (ORGANISER / SPONSOR), so `proxy` can send each to its own panel.
+export const ACCOUNT_ROLE_COOKIE = "accountRole";
 
 const baseCookieOptions = {
   httpOnly: true,
@@ -36,10 +38,15 @@ export async function setAuthCookies(accessToken: string, refreshToken: string) 
   });
 }
 
+export async function setAccountRoleCookie(role: string) {
+  (await cookies()).set(ACCOUNT_ROLE_COOKIE, role, { ...baseCookieOptions, maxAge: SESSION_MAX_AGE });
+}
+
 export async function clearAuthCookies() {
   const cookieStore = await cookies();
   cookieStore.delete(ACCESS_TOKEN_COOKIE);
   cookieStore.delete(REFRESH_TOKEN_COOKIE);
+  cookieStore.delete(ACCOUNT_ROLE_COOKIE);
 }
 
 export async function getAccessToken() {

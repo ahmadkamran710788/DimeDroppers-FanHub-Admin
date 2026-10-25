@@ -20,18 +20,29 @@ import type { NextRequest } from "next/server";
 
 const SETUP_WIZARD_DEFAULT = "/setup-wizard/organization-details";
 const SIGN_IN = "/auth/sign-in";
+const SPONSOR_PANEL = "/sponsor";
+const SPONSOR_HOME = "/sponsor/find-organizations";
 
+// The same sign-in serves organisers and sponsors; the `accountRole` cookie (set by it) keeps each in
+// its own panel. No cookie (a session from before it existed) is an organiser.
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession = request.cookies.has("refreshToken");
   const isAuthPage = pathname.startsWith("/auth");
+  const isSponsor = request.cookies.get("accountRole")?.value === "SPONSOR";
+  const isSponsorPage = pathname === SPONSOR_PANEL || pathname.startsWith(`${SPONSOR_PANEL}/`);
 
   if (!hasSession && !isAuthPage) {
     return NextResponse.redirect(new URL(SIGN_IN, request.url));
   }
 
   if (hasSession && isAuthPage) {
-    return NextResponse.redirect(new URL(SETUP_WIZARD_DEFAULT, request.url));
+    return NextResponse.redirect(new URL(isSponsor ? SPONSOR_HOME : SETUP_WIZARD_DEFAULT, request.url));
+  }
+
+  // A sponsor only has the sponsor panel; an organiser doesn't have it.
+  if (hasSession && isSponsor !== isSponsorPage) {
+    return NextResponse.redirect(new URL(isSponsor ? SPONSOR_HOME : SETUP_WIZARD_DEFAULT, request.url));
   }
 
   return NextResponse.next();

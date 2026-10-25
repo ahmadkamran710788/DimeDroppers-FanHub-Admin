@@ -4,6 +4,7 @@ import Image from "next/image";
 import { routes } from "@/utils/routes";
 import SidebarFrame, { type NavSection } from "@/components/layout/sidebar-frame";
 import { SPONSOR_PROFILE } from "@/components/sponsor/data";
+import { useSponsorAccount } from "@/components/sponsor/use-sponsor-account";
 import { Heart, Image as ImageIcon, Search, Sparkles } from "lucide-react";
 
 // Pages without a route yet link to "#".
@@ -37,6 +38,7 @@ interface SponsorSidebarProps {
 }
 
 export default function SponsorSidebar({ open, onClose }: SponsorSidebarProps) {
+  const account = useSponsorAccount();
   return (
     <SidebarFrame
       logo={
@@ -47,7 +49,7 @@ export default function SponsorSidebar({ open, onClose }: SponsorSidebarProps) {
         </div>
       }
       sections={SPONSOR_PROFILE.nationalAccount ? [...NAV_SECTIONS, DIME_AI_SECTION] : NAV_SECTIONS}
-      profileName={SPONSOR_PROFILE.name}
+      profileName={account?.displayName ?? "Sponsor"}
       profileRole="Sponsor"
       open={open}
       onClose={onClose}

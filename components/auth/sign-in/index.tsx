@@ -10,7 +10,7 @@ import Input from "@/components/common/input";
 import Button from "@/components/common/button";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
-import { setFanhubSchoolId } from "@/utils/auth/session";
+import { setFanhubSchoolId, setSponsorAccount } from "@/utils/auth/session";
 import { getSavedSchool } from "@/utils/fanhub/get-saved-school";
 import { getPostAuthRoute } from "@/utils/fanhub/get-resume-step";
 import { useAuth } from "@/context/auth";
@@ -61,6 +61,13 @@ export default function SignIn() {
       // updates the auto-created school instead of creating a duplicate, and populate
       // the global AuthContext so the org is available app-wide without re-fetching.
       const session = json?.data?.[0] as AuthSession | undefined;
+      // The same sign-in serves sponsors: they go to the sponsor panel. Full-page navigation, so the
+      // sponsor panel starts without the organisation's client state.
+      if (session?.role === "SPONSOR") {
+        if (session.sponsor) setSponsorAccount(session.sponsor);
+        window.location.replace(routes.ui.sponsor.findOrganizations);
+        return;
+      }
       if (session?.organization?.id) {
         setFanhubSchoolId(String(session.organization.id));
         setAuth(session.organization);

@@ -10,24 +10,24 @@ import Select from "@/components/common/select";
 import { CARD, FIELD, OUTLINE_BUTTON, PRIMARY_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
 import InsetSection from "@/components/sponsor/find-organizations/inset-section";
 import { orgSearchSchema } from "@/components/sponsor/find-organizations/schema";
-import {
-  DEFAULT_SEARCH,
-  IN_APP_OPTIONS,
-  RADIUS_OPTIONS,
-  SPORT_OPTIONS,
-  VENUE_OPTIONS,
-  type OrgSearch,
-} from "@/components/sponsor/find-organizations/data";
+import { DEFAULT_SEARCH, type OrgSearch } from "@/components/sponsor/find-organizations/data";
+import type { FilterOption, SponsorSearchFilters } from "@/utils/types/sponsor-packages";
 
 const CONTROL = cn(FIELD, "h-12 text-[16px] min-w-0");
 
 interface SearchFiltersProps {
+  // The chips and radius options from GET /filters; null while they load.
+  filters: SponsorSearchFilters | null;
   // Called with the validated filters when the sponsor presses Show organizations.
   onSearch: (search: OrgSearch) => void;
+  // A search is running: the button waits.
+  searching?: boolean;
 }
 
+const chipOptions = (options: FilterOption[] | undefined) => (options ?? []).map((o) => ({ label: o.label, value: o.code }));
+
 // Where the sponsor sets the area, sports and inventory to search. Changes apply on submit.
-export default function SearchFilters({ onSearch }: SearchFiltersProps) {
+export default function SearchFilters({ filters, onSearch, searching = false }: SearchFiltersProps) {
   const [form, setForm] = useState(DEFAULT_SEARCH);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -36,15 +36,19 @@ export default function SearchFilters({ onSearch }: SearchFiltersProps) {
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   }
 
-  // Clears the sports and inventory picks; the area stays.
+  // Clears the name, type, sports and inventory picks; the area stays.
   function clear() {
-    setForm((prev) => ({ ...prev, sports: [], inApp: [], venue: [] }));
+    const next = { ...form, name: "", type: "", sports: [], inApp: [], venue: [] };
+    setForm(next);
+    setErrors({});
+    // The results follow straight away, so they never show filters that are no longer set.
+    onSearch({ ...next, location: next.location.trim() });
   }
 
   async function search(e: React.FormEvent) {
     e.preventDefault();
     if (!(await validateAndSetErrors(orgSearchSchema, form, setErrors))) return;
-    onSearch({ ...form, location: form.location.trim() });
+    onSearch({ ...form, name: form.name.trim(), location: form.location.trim() });
   }
 
   return (
@@ -54,6 +58,31 @@ export default function SearchFilters({ onSearch }: SearchFiltersProps) {
       onSubmit={search}
       className={cn(CARD, "rounded-[8px] p-4 lg:p-6 flex flex-col gap-6")}
     >
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))] gap-4 items-start">
+        <Input
+          label="ORGANIZATION NAME"
+          name="org-name"
+          value={form.name}
+          onChange={(e) => update("name", e.target.value)}
+          placeholder="Search by name"
+          error={errors.name}
+          maxLength={120}
+          className="min-w-0"
+          labelClassName={SECTION_LABEL}
+          inputClassName={cn(CONTROL, "py-0 px-[14px] placeholder:text-[#757575]")}
+        />
+        <div className="flex flex-col gap-[10px] min-w-0">
+          <div className={SECTION_LABEL}>ORGANIZATION TYPE</div>
+          <FilterChips
+            variant="pill"
+            ariaLabel="Organization type"
+            options={[{ label: "All", value: "" }, ...chipOptions(filters?.organizationTypes)]}
+            value={form.type}
+            onChange={(type) => update("type", type)}
+          />
+        </div>
+      </div>
+
       {/* Location takes two of the 200px columns once there's room for two. */}
       <div className="@container grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 items-start">
         <Input
@@ -61,7 +90,7 @@ export default function SearchFilters({ onSearch }: SearchFiltersProps) {
           name="org-location"
           value={form.location}
           onChange={(e) => update("location", e.target.value)}
-          placeholder="City or ZIP code"
+          placeholder="City and state, or ZIP code"
           error={errors.location}
           className="min-w-0 @min-[416px]:col-span-2"
           labelClassName={SECTION_LABEL}
@@ -72,7 +101,7 @@ export default function SearchFilters({ onSearch }: SearchFiltersProps) {
           name="org-radius"
           value={form.radius}
           onChange={(e) => update("radius", e.target.value)}
-          options={RADIUS_OPTIONS}
+          options={(filters?.radiusOptions ?? [10, 25, 50, 100]).map((miles) => ({ label: `${miles} miles`, value: String(miles) }))}
           error={errors.radius}
           variant="dark"
           className="min-w-0"
@@ -90,7 +119,7 @@ export default function SearchFilters({ onSearch }: SearchFiltersProps) {
           variant="pill"
           multiple
           ariaLabel="Sports"
-          options={SPORT_OPTIONS}
+          options={chipOptions(filters?.sports)}
           value={form.sports}
           onChange={(sports) => update("sports", sports)}
         />
@@ -102,7 +131,7 @@ export default function SearchFilters({ onSearch }: SearchFiltersProps) {
             variant="pill"
             multiple
             ariaLabel="In-app inventory"
-            options={IN_APP_OPTIONS}
+            options={chipOptions(filters?.inApp)}
             value={form.inApp}
             onChange={(inApp) => update("inApp", inApp)}
           />
@@ -112,7 +141,7 @@ export default function SearchFilters({ onSearch }: SearchFiltersProps) {
             variant="pill"
             multiple
             ariaLabel="Venue inventory"
-            options={VENUE_OPTIONS}
+            options={chipOptions(filters?.venue)}
             value={form.venue}
             onChange={(venue) => update("venue", venue)}
           />
@@ -127,7 +156,8 @@ export default function SearchFilters({ onSearch }: SearchFiltersProps) {
         />
         <Button
           type="submit"
-          label="Show organizations"
+          label={searching ? "Searching…" : "Show organizations"}
+          disabled={searching}
           className={cn(PRIMARY_BUTTON, "h-12 px-[22px] rounded-[10px] text-[15px]")}
         />
       </div>

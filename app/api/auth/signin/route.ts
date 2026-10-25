@@ -1,6 +1,6 @@
 import { config } from "@/config";
 import { routes } from "@/utils/routes";
-import { setAuthCookies } from "@/utils/auth/cookies";
+import { setAccountRoleCookie, setAuthCookies } from "@/utils/auth/cookies";
 import type { AuthSession } from "@/utils/types/auth";
 
 export const runtime = "nodejs";
@@ -47,10 +47,19 @@ export async function POST(request: Request) {
     if (upstream.ok) {
       const session = body?.data?.[0] as AuthSession | undefined;
       if (session?.accessToken && session?.refreshToken) {
+        // One sign-in for organisers and sponsors; no role (an older backend) is an organiser.
+        const role = session.role ?? "ORGANISER";
+        if (role !== "ORGANISER" && role !== "SPONSOR") {
+          return Response.json({ message: "This account can't sign in here." }, { status: 403 });
+        }
         await setAuthCookies(session.accessToken, session.refreshToken);
+        await setAccountRoleCookie(role);
         // Keep the refresh token out of the browser: it lives only in its httpOnly cookie.
         return Response.json(
-          { ...body, data: [{ accessToken: session.accessToken, organization: session.organization }] },
+          {
+            ...body,
+            data: [{ accessToken: session.accessToken, role, organization: session.organization, sponsor: session.sponsor }],
+          },
           { status: upstream.status }
         );
       }

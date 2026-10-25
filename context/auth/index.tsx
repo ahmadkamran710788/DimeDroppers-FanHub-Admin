@@ -11,7 +11,10 @@ import {
 import { backendFetch, forceSignOut } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import { setFanhubSchoolId, SCHOOL_ID_KEY } from "@/utils/auth/session";
-import type { AuthOrganization, OrganizationProfile } from "@/utils/types/auth";
+import type { AccountRole, AuthOrganization, OrganizationProfile, SponsorProfile } from "@/utils/types/auth";
+
+// The sponsor panel's routes (app/(sponsor)).
+const SPONSOR_PANEL = "/sponsor";
 
 // Which kind of organisation is signed in, from /me's organizationType: "tournament" for a
 // tournament, "school" for every other type; null until the full profile has loaded.
@@ -26,6 +29,8 @@ export const orgKindOf = (org: AuthOrganization | OrganizationProfile | null): O
 interface AuthContextValue {
   // The full profile once /me has answered; just id/name/email/phone right after sign-in.
   org: AuthOrganization | OrganizationProfile | null;
+  // A sponsor's profile from /me (sponsor panel); null for an organiser.
+  sponsor: SponsorProfile | null;
   isLoading: boolean;
   setAuth: (org: AuthOrganization) => void;
   clearAuth: () => void;
@@ -35,20 +40,34 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [org, setOrg] = useState<AuthOrganization | OrganizationProfile | null>(null);
+  const [sponsor, setSponsor] = useState<SponsorProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // The full profile from GET /fanhub/org-auth/me (organizationType, logo, …).
+  // The signed-in account from GET /fanhub/org-auth/me, which answers organisers and sponsors and says
+  // which with data[0].role. Each belongs on its own panel: one on the other's is signed out.
   // backendFetch attaches the access token and, on a 401, refreshes it once and retries.
   const loadProfile = useCallback(
     (signedOutPage = false) =>
       (signedOutPage ? Promise.resolve(null) : backendFetch(routes.api.authMe, { cache: "no-store" })).then(async (res) => {
         if (!res) return;
         // Still 401 after the refresh: the session is over, back to sign-in.
-        if (res.status === 401) return forceSignOut();
+        // 403: a fan or main-app token; 404: the organisation or sponsor account is gone.
+        if (res.status === 401 || res.status === 403 || res.status === 404) return forceSignOut();
         if (!res.ok) return;
         const json = await res.json().catch(() => null);
-        const organization = json?.data?.[0]?.organization as OrganizationProfile | undefined;
+        const me = json?.data?.[0] as
+          | { role?: AccountRole; organization?: OrganizationProfile; sponsor?: SponsorProfile }
+          | undefined;
+        const onSponsorPanel = window.location.pathname.startsWith(SPONSOR_PANEL);
+        if (me?.role === "SPONSOR") {
+          if (!onSponsorPanel || !me.sponsor) return forceSignOut();
+          setSponsor(me.sponsor);
+          return;
+        }
+        const organization = me?.organization;
         if (!organization?.id) return;
+        // An organiser (no role: a backend older than the field) only uses the organisation panel.
+        if (onSponsorPanel) return forceSignOut();
         setOrg(organization);
         // organization.id is the school id every org endpoint is scoped to.
         if (!sessionStorage.getItem(SCHOOL_ID_KEY)) {
@@ -81,10 +100,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearAuth = useCallback(() => {
     setOrg(null);
+    setSponsor(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ org, isLoading, setAuth, clearAuth }}>
+    <AuthContext.Provider value={{ org, sponsor, isLoading, setAuth, clearAuth }}>
       {children}
     </AuthContext.Provider>
   );
