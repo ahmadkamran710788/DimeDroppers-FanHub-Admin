@@ -7,8 +7,6 @@ import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type { ExposureEvent, ExposureEventsResponse } from "@/utils/types/exposure-event";
 
-const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
-
 // Events per page; the API allows up to 100.
 const PAGE_SIZE = 50;
 
@@ -25,12 +23,6 @@ interface EventSelectProps {
   selectFirst?: boolean;
   // The picked event's name, shown on the trigger even when its row isn't in the loaded pages.
   selectedName?: string;
-  // Picks events one at a time into a list kept elsewhere (Inventory): the trigger always reads
-  // `addLabel`, nothing is auto-picked, and the ids in `exclude` aren't offered.
-  addLabel?: string;
-  exclude?: string[];
-  // Which edge the list lines up with; "right" (default) suits a page header's right corner.
-  align?: "left" | "right";
 }
 
 // Picks one of a tournament's synced events (Command Center, Schedule), or "All Events". GET /fanhub/org/exposure/events
@@ -41,11 +33,8 @@ export default function EventSelect({
   allowAll = true,
   selectFirst = false,
   selectedName,
-  addLabel,
-  exclude,
-  align = "right",
 }: EventSelectProps) {
-  const autoPick = !addLabel && (!allowAll || selectFirst);
+  const autoPick = !allowAll || selectFirst;
 
   const [events, setEvents] = useState<ExposureEvent[]>([]);
   // The next page to ask for; null once the last page has arrived.
@@ -88,21 +77,15 @@ export default function EventSelect({
 
   return (
     <FilterDropdown
-      label={addLabel ?? (allowAll ? "All Events" : selectedName || "Select event")}
+      label={allowAll ? "All Events" : selectedName || "Select event"}
       icon={<CalendarDays className="w-5 h-5" strokeWidth={1.5} />}
       // "All Events" first (when allowed), to go back to the whole tournament.
-      options={[
-        ...(allowAll && !addLabel ? [{ label: "All Events", value: "" }] : []),
-        ...events
-          .filter((e) => !exclude?.includes(e.id))
-          // Adding to a list, events with the same name are told apart by their start date.
-          .map((e) => ({ label: addLabel ? `${e.name} · ${fmtDate(e.startDate)}` : e.name, value: e.id })),
-      ]}
+      options={[...(allowAll ? [{ label: "All Events", value: "" }] : []), ...events.map((e) => ({ label: e.name, value: e.id }))]}
       // Without "All Events", clicking the picked event again mustn't clear it.
       clearable={allowAll}
       value={value}
       onChange={(id) => onChange(id, events.find((e) => e.id === id)?.name ?? "")}
-      align={align}
+      align="right"
       // Stays set after the last page so the list keeps scrolling; loadMore then does nothing.
       onLoadMore={loadMore}
       loadingMore={loading}

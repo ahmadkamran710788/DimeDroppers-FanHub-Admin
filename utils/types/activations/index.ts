@@ -154,14 +154,33 @@ export interface ActivationTournamentEvent {
   endDate: string | null;
 }
 
+// One inventory per event: the event it belongs to and that event's format.
 export interface ActivationTournament {
+  event: ActivationTournamentEvent | null;
   format: TournamentFormat | null;
   formatLabel: string | null;
   formatOptions: { value: TournamentFormat; label: string }[];
-  events: ActivationTournamentEvent[];
-  eventCount: number;
-  // What still has to be picked before a save.
-  missing: ("EVENTS" | "FORMAT")[];
+  // ["FORMAT"] until the event has a format.
+  missing: "FORMAT"[];
+}
+
+// GET /activations/events: the organisation's events with each one's inventory status.
+export interface ActivationEventOption extends ActivationTournamentEvent {
+  // null: never opened.
+  inventory: {
+    id: string;
+    version: number;
+    format: TournamentFormat | null;
+    formatLabel: string | null;
+    // Has a format, so it can be saved and sold.
+    isSetUp: boolean;
+    lastSavedAt: string;
+  } | null;
+}
+
+export interface ActivationEventsPage {
+  items: ActivationEventOption[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
 }
 
 export interface ActivationInventory {
@@ -240,8 +259,8 @@ export interface ActivationInventoryRequest {
   name?: string;
   levels?: LevelInput[];
   activations?: ActivationInput[];
-  // Tournament only (400 for anyone else). Sent, it replaces the whole selection; left out, it's kept.
-  eventIds?: string[];
+  // Tournament only (400 for anyone else): the event's format, needed on its first save; left out,
+  // the saved one is kept.
   tournamentFormat?: TournamentFormat | null;
 }
 

@@ -7,7 +7,11 @@ import { CalendarDays, CircleCheck, FileText, Layers, type LucideIcon } from "lu
 import { CATEGORY_ORDER } from "@/components/organization/inventory/data";
 import { useInventory } from "@/components/organization/inventory/use-inventory";
 import Button from "@/components/common/button";
+import { useState } from "react";
+import ConfirmModal from "@/components/common/confirm-modal";
 import Loader from "@/components/common/loader";
+import { orgKindOf, useAuth } from "@/context/auth";
+import { useSelectedEvent, type SelectedEvent } from "@/context/selected-event";
 import type { ActivationCategory } from "@/utils/types/activations";
 
 interface Stat {
@@ -35,7 +39,50 @@ function StatCard({ label, value, caption, icon: Icon }: Stat) {
 }
 
 export default function InventoryPage() {
-  const inv = useInventory();
+  const { org } = useAuth();
+  const kind = orgKindOf(org);
+  // A tournament has one inventory per event: the event shared with the other pages' pickers. A
+  // school has one inventory (null); until the org type is known nothing loads ("").
+  const { event, setEvent } = useSelectedEvent();
+  const inventoryEventId = kind === "school" ? null : kind === "tournament" ? (event?.id ?? "") : "";
+  const inv = useInventory(inventoryEventId);
+  // An event picked while the open one has unsaved changes, waiting for the user to confirm.
+  const [pendingEvent, setPendingEvent] = useState<SelectedEvent | null>(null);
+
+  const pickEvent = (id: string, name: string) => {
+    if (id === event?.id) return;
+    if (inv.dirty) setPendingEvent({ id, name });
+    else setEvent({ id, name });
+  };
+
+  const setup = kind === "tournament" && (
+    <TournamentSetup
+      eventId={event?.id ?? ""}
+      eventName={event?.name}
+      onEventChange={pickEvent}
+      refreshKey={inv.saves}
+      format={inv.tournament?.format}
+      formatOptions={inv.loading ? undefined : inv.tournament?.formatOptions}
+      onFormatChange={inv.setFormat}
+      missing={inv.missing}
+    />
+  );
+
+  const switchConfirm = (
+    <ConfirmModal
+      isOpen={!!pendingEvent}
+      onClose={() => setPendingEvent(null)}
+      title="Discard unsaved changes?"
+      message={`Your changes to this event's inventory aren't saved. Open ${pendingEvent?.name ?? "the other event"} anyway?`}
+      confirmLabel="Discard and switch"
+      busyLabel="Switching…"
+      destructive
+      onConfirm={async () => {
+        if (pendingEvent) setEvent(pendingEvent);
+        return true;
+      }}
+    />
+  );
 
   const header = (
     <div className="flex flex-col gap-3">
@@ -50,11 +97,12 @@ export default function InventoryPage() {
   );
 
   const { form, catalog } = inv;
-  if (inv.loading || !form || !catalog) {
+  if (inv.loading || inv.waiting || !form || !catalog) {
     return (
       <div className="flex flex-col gap-10">
         {header}
-        {inv.loading ? (
+        {setup}
+        {inv.loading || inv.waiting ? (
           <Loader />
         ) : (
           <div className="flex flex-col items-start gap-4">
@@ -107,29 +155,20 @@ export default function InventoryPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {switchConfirm}
       {header}
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_310px] 2xl:grid-cols-[minmax(0,1fr)_330px] gap-4 items-start">
         {/* Stat cards + the five category cards */}
         <div className="flex flex-col gap-4 min-w-0">
           {/* A tournament has the setup card here instead of the stat cards. */}
-          {!inv.tournament && (
+          {/* A tournament has the setup card here instead of the stat cards. */}
+          {setup || (
             <div className="grid grid-cols-2 md:grid-cols-3 2xl:grid-cols-5 gap-4">
               {stats.map((stat) => (
                 <StatCard key={stat.label} {...stat} />
               ))}
             </div>
-          )}
-          {inv.tournament && (
-            <TournamentSetup
-              events={inv.tournament.events}
-              format={inv.tournament.format}
-              formatOptions={inv.tournament.formatOptions}
-              onAddEvent={inv.addEvent}
-              onRemoveEvent={inv.removeEvent}
-              onFormatChange={inv.setFormat}
-              missing={inv.missing}
-            />
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4 items-stretch">
             {(["PRE_GAME", "LIVE", "POST_GAME"] as ActivationCategory[]).map((c) => column(c, "stacked"))}
@@ -145,7 +184,7 @@ export default function InventoryPage() {
           <div className="flex flex-col items-end gap-2">
             {inv.dirty && <span className="text-sm text-white/70">You have unsaved changes</span>}
             {inv.missing.length > 0 && (
-              <span className="text-sm text-yellow-300 text-right">Pick the events and format in Tournament Setup to save.</span>
+              <span className="text-sm text-yellow-300 text-right">Pick this event&apos;s format in Tournament Setup to save.</span>
             )}
             <Button
               variant="cta"
