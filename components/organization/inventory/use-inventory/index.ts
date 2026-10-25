@@ -64,51 +64,51 @@ const errorMessage = ({ status, error }: ApiResult<unknown>) =>
 interface Loaded {
   catalog: ActivationCatalog;
   form: InventoryForm;
-  // A tournament: the saved events and format and the format options. null for everyone else.
+  // A tournament event's format and the format options. null for everyone else.
   tournament: ActivationTournament | null;
 }
 
-// A tournament event picked for the inventory.
-export interface PickedEvent {
-  id: string;
-  name: string;
-}
-
 interface TournamentState {
-  events: PickedEvent[];
   format: TournamentFormat | null;
 }
 
-const tournamentState = (t: ActivationTournament | null): TournamentState | null =>
-  t ? { events: t.events.map((e) => ({ id: e.id, name: e.name ?? "Untitled event" })), format: t.format } : null;
+const tournamentState = (t: ActivationTournament | null): TournamentState | null => (t ? { format: t.format } : null);
 
 // State and saving for the Inventory page: every slot of the org's type with its toggle ("show to
-// sponsors"), the exclusivities the org adds (name, value, size), and for a tournament the events and
-// format the inventory covers (needed before a save). The first GET creates the
-// inventory, so saving is always a PUT.
-export function useInventory() {
+// sponsors"), the exclusivities the org adds (name, value, size), and for a tournament the event's
+// format (needed before a save). The first GET creates the inventory, so saving is always a PUT.
+// `eventId`: null for a school (one inventory); a tournament has one inventory per event and loads
+// nothing until one is picked ("").
+export function useInventory(eventId: string | null) {
+  const waiting = eventId === "";
+  const endpoint = eventId ? routes.api.activationEventInventory(eventId) : routes.api.activationInventory;
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loads, setLoads] = useState(0);
-  // The load (by `loads` count) that finished, failed or not.
-  const [settledLoad, setSettledLoad] = useState(-1);
+  // The load (by count and event) that finished, failed or not.
+  const loadKey = `${loads}|${eventId ?? ""}`;
+  const [settledLoad, setSettledLoad] = useState("");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   // Value / size problems (before or from the last save).
   const [rowErrors, setRowErrors] = useState<RowErrors>({});
   // The tournament's picked events and format (null when not a tournament).
   const [picks, setPicks] = useState<TournamentState | null>(null);
+  // Successful saves, so a tournament's event list can refresh its "Set up" badges.
+  const [saves, setSaves] = useState(0);
   // Numbers new exclusivities' on-screen keys.
   const [added, setAdded] = useState(0);
 
   useEffect(() => {
+    if (waiting) return;
     let cancelled = false;
     Promise.all([
       request<ActivationCatalog>("GET", routes.api.activationCatalog),
-      request<ActivationInventory>("GET", routes.api.activationInventory),
+      request<ActivationInventory>("GET", endpoint),
     ]).then(([catalog, inventory]) => {
       if (cancelled) return;
-      setSettledLoad(loads);
+      setSettledLoad(loadKey);
       if (!catalog.view || !inventory.view) {
+        setLoaded(null);
         toast.error(errorMessage(catalog.view ? inventory : catalog));
         return;
       }
@@ -124,7 +124,7 @@ export function useInventory() {
     return () => {
       cancelled = true;
     };
-  }, [loads]);
+  }, [loadKey, endpoint, waiting]);
 
   const reload = useCallback(() => setLoads((n) => n + 1), []);
 
@@ -196,19 +196,7 @@ export function useInventory() {
     updateColumn("EXCLUSIVITY", (slots) => slots.filter((s) => s.rowKey !== rowKey));
   };
 
-  // ---- Tournament: events and format ----
-
-  const addEvent = (event: PickedEvent) => {
-    if (!picks || picks.events.some((e) => e.id === event.id)) return;
-    setPicks({ ...picks, events: [...picks.events, event] });
-    setDirty(true);
-  };
-
-  const removeEvent = (id: string) => {
-    if (!picks) return;
-    setPicks({ ...picks, events: picks.events.filter((e) => e.id !== id) });
-    setDirty(true);
-  };
+  // ---- Tournament: the event's format ----
 
   const setFormat = (format: TournamentFormat) => {
     if (!picks) return;
@@ -216,10 +204,8 @@ export function useInventory() {
     setDirty(true);
   };
 
-  // What a tournament still has to pick before it can save.
-  const missing = picks
-    ? [...(picks.events.length === 0 ? ["Select at least one event"] : []), ...(picks.format ? [] : ["select a format"])]
-    : [];
+  // What a tournament event still needs before it can save.
+  const missing = picks && !picks.format ? ["Select a format"] : [];
 
   // ---- Save ----
 
@@ -267,9 +253,9 @@ export function useInventory() {
     setSaving(true);
     setRowErrors({});
     try {
-      const tournamentPicks: TournamentPicks | null = picks ? { eventIds: picks.events.map((e) => e.id), format: picks.format } : null;
+      const tournamentPicks: TournamentPicks | null = picks ? { format: picks.format } : null;
       const { body, indexMap } = toRequest(current, tournamentPicks);
-      const result = await request<ActivationInventory>("PUT", routes.api.activationInventory, body);
+      const result = await request<ActivationInventory>("PUT", endpoint, body);
 
       if (!result.view) {
         toast.error(errorMessage(result));
@@ -288,6 +274,7 @@ export function useInventory() {
       setLoaded({ catalog, form: buildForm(catalog, result.view, current.columns), tournament: result.view.tournament ?? null });
       setPicks(tournamentState(result.view.tournament ?? null));
       setDirty(false);
+      setSaves((n) => n + 1);
       toast.success("Inventory saved.");
     } finally {
       setSaving(false);
@@ -303,7 +290,9 @@ export function useInventory() {
   }, [dirty]);
 
   return {
-    loading: settledLoad !== loads,
+    // A tournament with no event picked yet isn't loading: it waits.
+    loading: !waiting && settledLoad !== loadKey,
+    waiting,
     catalog: loaded?.catalog ?? null,
     form,
     reload,
@@ -318,10 +307,9 @@ export function useInventory() {
     reorder,
     addExclusivity,
     removeExclusivity,
-    // Tournament only (null otherwise): the picked events and format, and the format options.
+    saves,
+    // Tournament only (null otherwise): the event's format and the format options.
     tournament: picks && loaded?.tournament ? { ...picks, formatOptions: loaded.tournament.formatOptions } : null,
-    addEvent,
-    removeEvent,
     setFormat,
     missing,
     save,

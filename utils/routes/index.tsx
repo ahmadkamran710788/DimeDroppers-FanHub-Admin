@@ -232,6 +232,10 @@ export const routes = {
     activationCatalog: "fanhub/org/activations/catalog",
     // GET the inventory (404 = none yet), POST creates it, PUT saves the whole of it.
     activationInventory: "fanhub/org/activations",
+    // A tournament has one inventory per event: GET/PUT the inventory with ?eventId=, and this lists the
+    // events for the picker with each one's set-up status (FANHUB_ACTIVATIONS_EVENT_INVENTORIES_FRONTEND).
+    activationEventInventory: (eventId: string) => `fanhub/org/activations?eventId=${encodeURIComponent(eventId)}`,
+    activationEvents: "fanhub/org/activations/events",
     // Messages — the org chats with the people of its teams (FANHUB_ORG_CHAT_ADMIN.md).
     // Who can be messaged, per tab (players / parents / staff / followers): GET ?tab=&search=.
     orgChatTeamMembers: (schoolTeamId: string) => `fanhub/org/chat/teams/${schoolTeamId}/members`,

@@ -137,10 +137,8 @@ export function buildForm(
 const customFields = (slot: FormSlot): Pick<ActivationInput, "value" | "size"> =>
   slot.editable ? { value: Number(slot.value.trim()), size: slot.size.trim() } : {};
 
-// The tournament's picks for the save: both are sent whenever set (`eventIds` replaces the saved
-// selection, so it's always the full list).
+// A tournament event's format for the save (sent whenever set).
 export interface TournamentPicks {
-  eventIds: string[];
   format: TournamentFormat | null;
 }
 
@@ -177,7 +175,6 @@ export function toRequest(
     body: {
       levels: form.levels,
       activations,
-      ...(tournament && tournament.eventIds.length > 0 && { eventIds: tournament.eventIds }),
       ...(tournament?.format && { tournamentFormat: tournament.format }),
     },
     indexMap,
