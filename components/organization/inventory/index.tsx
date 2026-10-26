@@ -115,6 +115,8 @@ export default function InventoryPage() {
   }
 
   const categoryInfo = (category: ActivationCategory) => catalog.categories.find((c) => c.category === category);
+  // The API still labels EXCLUSIVITY "Exclusivity"; on screen it's "Physical Assets" (label and
+  // description, from CATEGORY_TEXT_OVERRIDES).
   const categoryLabels = Object.fromEntries(
     CATEGORY_ORDER.map((c) => [c, CATEGORY_TEXT_OVERRIDES[c]?.label ?? categoryInfo(c)?.label ?? c])
   ) as Record<ActivationCategory, string>;

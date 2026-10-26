@@ -24,7 +24,7 @@ export default function OrgCard({ org, selected, onSelect }: OrgCardProps) {
         selected ? "bg-[#17151f] border-[#8b6dff]" : "bg-[#141414] border-[#222]"
       )}
     >
-      <OrgMonogram initials={org.initials} logoUrl={org.logoUrl} />
+      <OrgMonogram logoUrl={org.logoUrl} />
       <div className="flex-auto min-w-0 flex flex-col gap-1.5">
         <div className="flex justify-between gap-[10px] items-baseline">
           <div className="text-lg font-bold break-words">{org.name ?? "Unnamed organization"}</div>

@@ -131,7 +131,7 @@ export default function PackagesPanel({ org, onActivated }: PackagesPanelProps) 
       className={cn(CARD, "flex-[1.3_1_460px] min-w-0 rounded-[8px] p-4 lg:p-[26px] flex flex-col gap-[18px]")}
     >
       <div className="flex items-center gap-[14px]">
-        <OrgMonogram initials={org.initials} logoUrl={org.logoUrl} size="md" />
+        <OrgMonogram logoUrl={org.logoUrl} size="md" />
         <div className="min-w-0">
           <div className="text-[13px] tracking-[1px] text-[#a8a8a8] font-semibold">SPONSORSHIP PACKAGES</div>
           <h3 className="font-display font-extrabold text-2xl lg:text-[30px] uppercase leading-[1.05] break-words">
