@@ -57,7 +57,7 @@ const columns: Column<PackageActivation>[] = [
     cell: (a) => (
       <div className="flex flex-col gap-1 min-w-0 text-xs">
         <span className="leading-4 break-words">{a.packageName}</span>
-        <span className="opacity-50">{a.kind === "EXCLUSIVITY" ? `Exclusivity${a.exclusivity?.size ? ` · ${a.exclusivity.size}` : ""}` : "Package"}</span>
+        <span className="opacity-50">{a.kind === "EXCLUSIVITY" ? `Physical asset${a.exclusivity?.size ? ` · ${a.exclusivity.size}` : ""}` : "Package"}</span>
       </div>
     ),
   },
@@ -129,10 +129,10 @@ export default function SponsorsPage() {
   const sponsors = new Set(activeItems.map((a) => a.sponsorFanHubUserId ?? sponsorName(a))).size;
 
   const stats: Stat[] = [
-    { label: "Active Sponsorships", value: String(active?.pagination.total ?? 0), tint: "#3d6f3e", caption: "packages and exclusivities" },
+    { label: "Active Sponsorships", value: String(active?.pagination.total ?? 0), tint: "#3d6f3e", caption: "packages and physical assets" },
     { label: "Active Value", value: formatCents(activeValue), tint: "#3d5194", caption: "of the active ones" },
     { label: "Sponsors", value: String(sponsors), tint: "#5e4277", caption: "with an active sponsorship" },
-    { label: "Exclusivities", value: String(activeItems.filter((a) => a.kind === "EXCLUSIVITY").length), tint: "#7a4a2e", caption: "active" },
+    { label: "Physical Assets", value: String(activeItems.filter((a) => a.kind === "EXCLUSIVITY").length), tint: "#7a4a2e", caption: "active" },
   ];
 
   // Active ones by package (or exclusivity) name.

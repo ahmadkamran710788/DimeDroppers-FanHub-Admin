@@ -183,7 +183,7 @@ export function useInventory(eventId: string | null) {
     if (!form) return null;
     const name = fields.name.trim().toLowerCase();
     if (form.columns.EXCLUSIVITY.some((s) => s.name.trim().toLowerCase() === name)) {
-      return "An exclusivity with this name already exists";
+      return "A physical asset with this name already exists";
     }
     updateColumn("EXCLUSIVITY", (slots) => [...slots, newExclusivity(fields, added)]);
     setAdded((n) => n + 1);

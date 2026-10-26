@@ -78,7 +78,7 @@ export default function PackagesPreview() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h3 className="font-display font-extrabold text-2xl uppercase text-white leading-none">What sponsors can buy</h3>
-          <p className="text-sm text-white/70">Your packages and exclusivities, priced as sponsors see them.</p>
+          <p className="text-sm text-white/70">Your packages and physical assets, priced as sponsors see them.</p>
         </div>
         {isTournament && events && events.length > 0 && (
           <FilterDropdown
@@ -121,7 +121,7 @@ export default function PackagesPreview() {
           ) : (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(min(260px,100%),1fr))] gap-3 text-white">
               {view.packages.map((p) => (
-                <PackageCard key={p.tier} pkg={p} />
+                <PackageCard key={p.tier} pkg={p} showPlacementValues />
               ))}
             </div>
           )}

@@ -21,11 +21,11 @@ export default function PhysicalAddOns({
 }: PhysicalAddOnsProps) {
   return (
     <InsetSection
-      title={`PHYSICAL ADD-ONS · ${orgName}`}
-      description="Exclusive placements, activated on their own"
+      title={`PHYSICAL ASSETS · ${orgName}`}
+      description="Venue placements, activated on their own"
     >
       {exclusivities.length === 0 ? (
-        <p className="text-sm text-[#a8a8a8]">No exclusivities offered.</p>
+        <p className="text-sm text-[#a8a8a8]">No physical assets offered.</p>
       ) : (
         exclusivities.map((x) => (
           <div

@@ -128,10 +128,10 @@ export default function FindOrganizations() {
       caption: "in the organizations shown",
     },
     {
-      label: "Physical add-ons",
+      label: "Physical assets",
       value: String(items.reduce((sum, o) => sum + o.physicalAddOnCount, 0)),
       tint: STAT_TINTS.addOns,
-      caption: "exclusive placements",
+      caption: "banners, signage and more",
     },
   ];
 

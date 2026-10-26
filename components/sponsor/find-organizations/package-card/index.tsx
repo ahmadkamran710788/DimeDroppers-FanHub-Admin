@@ -9,12 +9,14 @@ interface PackageCardProps {
   pkg: SponsorPackage;
   // Without it the card is a read-only preview (the organisation panel).
   onActivate?: () => void;
+  // Each placement's own value: shown to the organisation, hidden from sponsors (they see the total).
+  showPlacementValues?: boolean;
 }
 
 // One of an organization's three packages: what it's for, the slots it includes with their value, how
 // the price is built (slot values × teams or games) and Activate. An unavailable package keeps its
 // card with the reason and no Activate.
-export default function PackageCard({ pkg, onActivate }: PackageCardProps) {
+export default function PackageCard({ pkg, onActivate, showPlacementValues = false }: PackageCardProps) {
   return (
     <article
       aria-label={`${pkg.name} package`}
@@ -43,7 +45,7 @@ export default function PackageCard({ pkg, onActivate }: PackageCardProps) {
         </div>
       </div>
 
-      <div className="text-xs font-bold tracking-[1.2px] text-[#c4c4c4]">{`SLOTS INCLUDED · ${pkg.slotCount}`}</div>
+      <div className="text-xs font-bold tracking-[1.2px] text-[#c4c4c4]">{`PLACEMENTS INCLUDED · ${pkg.slotCount}`}</div>
       <ul className="flex flex-col gap-1.5">
         {pkg.slots.map((s) => (
           <li
@@ -61,9 +63,11 @@ export default function PackageCard({ pkg, onActivate }: PackageCardProps) {
                 {s.name}
               </span>
             </span>
-            <span className="text-[13px] text-[#a8a8a8] whitespace-nowrap">
-              {formatCents(s.unitValueCents, pkg.currency)}
-            </span>
+            {showPlacementValues && (
+              <span className="text-[13px] text-[#a8a8a8] whitespace-nowrap">
+                {formatCents(s.unitValueCents, pkg.currency)}
+              </span>
+            )}
           </li>
         ))}
       </ul>

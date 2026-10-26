@@ -90,7 +90,7 @@ export default function InventoryPage() {
         Inventory
       </h2>
       <p className="text-sm text-white/85">
-        Choose what sponsors can see in your Fan Hub. Switch each item on or off, and add your own exclusivity placements
+        Choose what sponsors can see in your Fan Hub. Switch each item on or off, and add your own physical assets
         with their name, size and value.
       </p>
     </div>

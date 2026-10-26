@@ -82,7 +82,7 @@ export default function CategoryColumn({
       {/* Slot list, scrolling inside the card */}
       <div className="flex-1 min-h-0 max-h-[262px] overflow-y-auto pl-4 pr-3 py-4 flex flex-col gap-4 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.3)_transparent]">
         {slots.length === 0 && (
-          <p className="text-sm text-white/60">{onAdd ? "No exclusivities yet. Add your own below." : "Nothing available yet."}</p>
+          <p className="text-sm text-white/60">{onAdd ? "No physical assets yet. Add your own below." : "Nothing available yet."}</p>
         )}
         {slots.map((slot) => (
           <InventoryRow

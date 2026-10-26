@@ -49,7 +49,7 @@ export default function AddExclusivity({ onAdd }: AddExclusivityProps) {
       <Button
         variant="text"
         size="sm"
-        label="Add Exclusivity"
+        label="Add Physical Asset"
         icon={<Plus className="size-4" />}
         onClick={() => setOpen(true)}
         className="text-sm font-medium text-white hover:text-white/80"
