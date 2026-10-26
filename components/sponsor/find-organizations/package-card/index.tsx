@@ -13,9 +13,8 @@ interface PackageCardProps {
   showPlacementValues?: boolean;
 }
 
-// One of an organization's three packages: what it's for, the slots it includes with their value, how
-// the price is built (slot values × teams or games) and Activate. An unavailable package keeps its
-// card with the reason and no Activate.
+// One of an organization's three packages: what it's for, its total price, the placements it includes
+// and Activate. An unavailable package keeps its card with the reason and no Activate.
 export default function PackageCard({ pkg, onActivate, showPlacementValues = false }: PackageCardProps) {
   return (
     <article
@@ -35,14 +34,9 @@ export default function PackageCard({ pkg, onActivate, showPlacementValues = fal
         {pkg.description}
       </p>
 
-      <div>
-        <div className="font-display font-extrabold text-[34px] leading-none">
-          {formatCents(pkg.totalCents, pkg.currency)}
-        </div>
-        {/* "$25.00 × 5 teams": every factor is shown, more are coming. */}
-        <div className="text-[13px] text-[#a8a8a8] mt-1">
-          {`${formatCents(pkg.slotValueTotalCents, pkg.currency)} × ${pkg.factors.map((f) => f.detail).join(" × ")}`}
-        </div>
+      {/* Only the total: how it's built (placement values × teams or games) isn't shown. */}
+      <div className="font-display font-extrabold text-[34px] leading-none">
+        {formatCents(pkg.totalCents, pkg.currency)}
       </div>
 
       <div className="text-xs font-bold tracking-[1.2px] text-[#c4c4c4]">{`PLACEMENTS INCLUDED · ${pkg.slotCount}`}</div>
