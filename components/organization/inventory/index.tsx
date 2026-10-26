@@ -4,7 +4,7 @@ import InventorySummary from "@/components/organization/inventory/inventory-summ
 import CategoryColumn from "@/components/organization/inventory/category-column";
 import TournamentSetup from "@/components/organization/inventory/tournament-setup";
 import { CalendarDays, CircleCheck, FileText, Layers, type LucideIcon } from "lucide-react";
-import { CATEGORY_ORDER } from "@/components/organization/inventory/data";
+import { CATEGORY_ORDER, CATEGORY_TEXT_OVERRIDES } from "@/components/organization/inventory/data";
 import { useInventory } from "@/components/organization/inventory/use-inventory";
 import Button from "@/components/common/button";
 import { useState } from "react";
@@ -116,8 +116,10 @@ export default function InventoryPage() {
 
   const categoryInfo = (category: ActivationCategory) => catalog.categories.find((c) => c.category === category);
   const categoryLabels = Object.fromEntries(
-    CATEGORY_ORDER.map((c) => [c, categoryInfo(c)?.label ?? c])
+    CATEGORY_ORDER.map((c) => [c, CATEGORY_TEXT_OVERRIDES[c]?.label ?? categoryInfo(c)?.label ?? c])
   ) as Record<ActivationCategory, string>;
+  const categoryDescription = (c: ActivationCategory) =>
+    CATEGORY_TEXT_OVERRIDES[c]?.description ?? categoryInfo(c)?.description ?? "";
 
   const ticked = CATEGORY_ORDER.flatMap((c) => form.columns[c]).filter((s) => s.enabled);
 
@@ -139,7 +141,7 @@ export default function InventoryPage() {
       category={category}
       layout={layout}
       label={categoryLabels[category]}
-      description={categoryInfo(category)?.description ?? ""}
+      description={categoryDescription(category)}
       slots={form.columns[category]}
       rowErrors={inv.rowErrors}
       onToggle={(rowKey) => inv.toggle(category, rowKey)}

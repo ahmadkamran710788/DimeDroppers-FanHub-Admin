@@ -52,6 +52,15 @@ export const CATEGORY_STYLE: Record<
   },
 };
 
+// The panel calls the Exclusivity category "Physical Assets". Until the catalog's own label and
+// description say so (asked of backend), they are replaced here; remove this once they do.
+export const CATEGORY_TEXT_OVERRIDES: Partial<Record<ActivationCategory, { label: string; description: string }>> = {
+  EXCLUSIVITY: {
+    label: "Physical Assets",
+    description: "Physical placements the organisation adds, such as banners and shirt logos.",
+  },
+};
+
 // An Exclusivity slot's value is whole dollars, 0 – 1,000,000.
 export const MAX_SLOT_VALUE = 1_000_000;
 
