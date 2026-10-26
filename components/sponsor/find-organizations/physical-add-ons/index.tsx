@@ -21,7 +21,7 @@ export default function PhysicalAddOns({
 }: PhysicalAddOnsProps) {
   return (
     <InsetSection
-      title={`PHYSICAL ASSETS · ${orgName}`}
+      title={`PHYSICAL ADD-ONS · ${orgName}`}
       description="Venue placements, activated on their own"
     >
       {exclusivities.length === 0 ? (

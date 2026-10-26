@@ -115,8 +115,9 @@ export default function InventoryPage() {
   }
 
   const categoryInfo = (category: ActivationCategory) => catalog.categories.find((c) => c.category === category);
+  // The API still labels EXCLUSIVITY "Exclusivity"; on screen it's "Physical Assets".
   const categoryLabels = Object.fromEntries(
-    CATEGORY_ORDER.map((c) => [c, categoryInfo(c)?.label ?? c])
+    CATEGORY_ORDER.map((c) => [c, c === "EXCLUSIVITY" ? "Physical Assets" : categoryInfo(c)?.label ?? c])
   ) as Record<ActivationCategory, string>;
 
   const ticked = CATEGORY_ORDER.flatMap((c) => form.columns[c]).filter((s) => s.enabled);

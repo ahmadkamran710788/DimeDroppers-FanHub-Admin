@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { cn } from "@/utils/cn";
-import Button from "@/components/common/button";
 import FilterChipMenu from "@/components/common/filter-chip-menu";
 import Loader from "@/components/common/loader";
+import Pagination from "@/components/common/pagination";
 import StatCard, { type Stat } from "@/components/common/stat-card";
-import { CARD, OUTLINE_BUTTON } from "@/components/sponsor/styles";
+import { CARD } from "@/components/sponsor/styles";
 import OrgCard from "@/components/sponsor/find-organizations/org-card";
 import PackagesPanel from "@/components/sponsor/find-organizations/packages-panel";
 import SearchFilters from "@/components/sponsor/find-organizations/search-filters";
@@ -52,7 +52,7 @@ interface Results {
 // inventory (GET /fanhub/sponsor-packages/organizations), and a panel with the selected one's packages.
 export default function FindOrganizations() {
   const [filters, setFilters] = useState<SponsorSearchFilters | null>(null);
-  // The last search run, its sort and how many pages are shown.
+  // The last search run, its sort and the page shown.
   const [search, setSearch] = useState(DEFAULT_SEARCH);
   const [sort, setSort] = useState<SponsorSearchSort>("NAME");
   const [page, setPage] = useState(1);
@@ -60,6 +60,7 @@ export default function FindOrganizations() {
   const [selectedId, setSelectedId] = useState("");
   // Bumped after an activation, so the counts on the cards refresh.
   const [refreshes, setRefreshes] = useState(0);
+  const listRef = useRef<HTMLElement>(null);
 
   // The chips, radius options and sorts, once.
   useEffect(() => {
@@ -86,15 +87,14 @@ export default function FindOrganizations() {
         return;
       }
       const v = r.view;
-      setResults((prev) => ({
+      setResults({
         key,
-        // Later pages add to the list.
-        items: page === 1 || !prev ? v.items : [...prev.items, ...v.items],
+        items: v.items,
         total: v.pagination.total,
         totalPages: v.pagination.totalPages,
         page,
         centreLabel: v.centre?.label ?? null,
-      }));
+      });
     });
     return () => {
       cancelled = true;
@@ -113,6 +113,15 @@ export default function FindOrganizations() {
     if (next.location.trim()) setSort("NEAREST");
     else if (sort === "NEAREST") setSort("NAME");
   }
+
+  // Another page replaces the list; back to its top so the new page isn't below the fold.
+  function goToPage(next: number) {
+    setPage(next);
+    listRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+
+  const from = (page - 1) * PAGE_SIZE + 1;
+  const to = from + items.length - 1;
 
   const stats: Stat[] = [
     {
@@ -161,7 +170,11 @@ export default function FindOrganizations() {
       </div>
 
       <div className="flex flex-wrap gap-6 items-start">
-        <section aria-label="Organizations" className="flex-[1_1_400px] min-w-0 flex flex-col gap-[14px]">
+        <section
+          ref={listRef}
+          aria-label="Organizations"
+          className="flex-[1_1_400px] min-w-0 flex flex-col gap-[14px] scroll-mt-6"
+        >
           <div className="flex justify-between items-center gap-3 flex-wrap">
             <h3 className="font-display font-black text-xl lg:text-[28px] uppercase leading-tight">Organizations</h3>
             {sorts.length > 0 && (
@@ -178,21 +191,17 @@ export default function FindOrganizations() {
               />
             )}
           </div>
-          {loading && page === 1 ? (
+          {loading ? (
             <Loader />
           ) : items.length ? (
             <>
               {items.map((org) => (
                 <OrgCard key={org.id} org={org} selected={org.id === selected?.id} onSelect={() => setSelectedId(org.id)} />
               ))}
-              {results && results.page < results.totalPages && (
-                <Button
-                  label={loading ? "Loading…" : "Load more organizations"}
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={loading}
-                  className={cn(OUTLINE_BUTTON, "self-center h-11 px-5 rounded-[10px] text-sm font-semibold")}
-                />
-              )}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4">
+                <span className="text-xs text-white/80">{`Showing ${from} to ${to} of ${results?.total ?? 0} organizations`}</span>
+                <Pagination page={page} pageCount={results?.totalPages ?? 0} onChange={goToPage} />
+              </div>
             </>
           ) : (
             <p className={cn(CARD, "rounded-[8px] p-6 text-[15px] text-[#a8a8a8]")}>
