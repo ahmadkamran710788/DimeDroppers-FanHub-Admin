@@ -1,10 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { Menu } from "lucide-react";
+import Link from "next/link";
+import { Menu, ShoppingCart } from "lucide-react";
 import Button from "@/components/common/button";
 import RowActionsMenu from "@/components/common/row-actions-menu";
 import { useSponsorAccount } from "@/components/sponsor/use-sponsor-account";
+import { useSponsorCart } from "@/context/sponsor-cart";
 import { clearFanhubSession } from "@/utils/auth/session";
 import { routes } from "@/utils/routes";
 
@@ -13,10 +15,11 @@ interface SponsorHeaderProps {
   onMenuClick: () => void;
 }
 
-// Header for the sponsor pages: section title, messages and notifications, and the sponsor's
+// Header for the sponsor pages: section title, the cart, messages and notifications, and the sponsor's
 // name, email and initials. Messages and notifications are not wired up yet.
 export default function SponsorHeader({ title, onMenuClick }: SponsorHeaderProps) {
   const account = useSponsorAccount();
+  const cartCount = useSponsorCart().lines.length;
 
   async function signOut() {
     clearFanhubSession();
@@ -39,6 +42,18 @@ export default function SponsorHeader({ title, onMenuClick }: SponsorHeaderProps
         <h1 className="font-display font-black text-xl lg:text-[28px] uppercase tracking-wide">{title}</h1>
       </div>
       <div className="flex items-center gap-6">
+        <Link
+          href={routes.ui.sponsor.cart}
+          aria-label={`Cart, ${cartCount} ${cartCount === 1 ? "item" : "items"}`}
+          className="relative size-6 flex items-center justify-center text-white"
+        >
+          <ShoppingCart className="size-6" strokeWidth={1.5} />
+          {cartCount > 0 && (
+            <span className="absolute -top-2 -right-2.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#6a4be6] text-[11px] font-bold leading-[18px] text-center">
+              {cartCount}
+            </span>
+          )}
+        </Link>
         <Button
           size="icon"
           icon={<Image src="/icons/icon-sponsor-messages.svg" alt="" width={24} height={24} />}

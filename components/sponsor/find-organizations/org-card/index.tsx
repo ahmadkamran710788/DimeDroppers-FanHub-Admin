@@ -49,8 +49,8 @@ export default function OrgCard({ org, selected, onSelect }: OrgCardProps) {
             <strong className="text-white">{org.packageCount}</strong> {org.packageCount === 1 ? "package" : "packages"}
           </span>
           <span className="text-[#a8a8a8]">
-            <strong className="text-white">{org.physicalAddOnCount}</strong>{" "}
-            {org.physicalAddOnCount === 1 ? "physical asset" : "physical assets"}
+            <strong className="text-white">{org.physicalAssetCount}</strong>{" "}
+            {org.physicalAssetCount === 1 ? "physical asset" : "physical assets"}
           </span>
           {org.organizationType === "TOURNAMENT" && <span className="text-[#a8a8a8]">{plural(org.eventCount, "event")}</span>}
           {org.fromCents !== null && <span className="text-[#a3e3a5]">{`from ${formatCents(org.fromCents, org.currency)}`}</span>}

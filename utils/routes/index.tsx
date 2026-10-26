@@ -60,6 +60,7 @@ export const routes = {
       findOrganizations: "/sponsor/find-organizations",
       brandAssets: "/sponsor/brand-assets",
       campaignPlanner: "/sponsor/campaign-planner",
+      cart: "/sponsor/cart",
     },
   },
 
@@ -244,6 +245,10 @@ export const routes = {
     sponsorOrgPackages: (schoolId: string) => `fanhub/sponsor-packages/organizations/${schoolId}/packages`,
     sponsorActivations: "fanhub/sponsor-packages/activations",
     sponsorActivationCancel: (id: string) => `fanhub/sponsor-packages/activations/${id}/cancel`,
+    // The cart: price it now, then activate every item at once, all or nothing
+    // (FANHUB_SPONSOR_CART_GENDER_PHYSICAL_ASSETS_FRONTEND.md).
+    sponsorCartQuote: "fanhub/sponsor-packages/activations/quote",
+    sponsorCartActivate: "fanhub/sponsor-packages/activations/batch",
     // The organisation's own view (organiser token): its packages as sponsors see them (?eventId= for a
     // tournament), its events, and who activated what.
     orgSponsorPackages: "fanhub/org/sponsor-packages/packages",

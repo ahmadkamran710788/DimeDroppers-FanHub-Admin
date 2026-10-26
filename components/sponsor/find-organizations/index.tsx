@@ -11,7 +11,13 @@ import { CARD } from "@/components/sponsor/styles";
 import OrgCard from "@/components/sponsor/find-organizations/org-card";
 import PackagesPanel from "@/components/sponsor/find-organizations/packages-panel";
 import SearchFilters from "@/components/sponsor/find-organizations/search-filters";
-import { DEFAULT_SEARCH, PAGE_SIZE, STAT_TINTS, type OrgSearch } from "@/components/sponsor/find-organizations/data";
+import {
+  DEFAULT_SEARCH,
+  PAGE_SIZE,
+  STAT_TINTS,
+  eventFiltersOf,
+  type OrgSearch,
+} from "@/components/sponsor/find-organizations/data";
 import { sponsorRequest } from "@/components/sponsor/sponsor-api";
 import { routes } from "@/utils/routes";
 import type {
@@ -29,7 +35,7 @@ function searchParams(search: OrgSearch, sort: SponsorSearchSort, page: number) 
   return {
     ...(name && { search: name }),
     ...(search.type && { organizationType: search.type }),
-    ...(location && { location, radiusMiles: Number(search.radius) }),
+    ...eventFiltersOf(search),
     ...(search.sports.length && { sports: search.sports.join(",") }),
     ...(search.inApp.length && { inApp: search.inApp.join(",") }),
     ...(search.venue.length && { venue: search.venue.join(",") }),
@@ -138,7 +144,7 @@ export default function FindOrganizations() {
     },
     {
       label: "Physical assets",
-      value: String(items.reduce((sum, o) => sum + o.physicalAddOnCount, 0)),
+      value: String(items.reduce((sum, o) => sum + o.physicalAssetCount, 0)),
       tint: STAT_TINTS.addOns,
       caption: "banners, signage and more",
     },
@@ -211,7 +217,12 @@ export default function FindOrganizations() {
         </section>
 
         {selected && (
-          <PackagesPanel key={selected.id} org={selected} onActivated={() => setRefreshes((n) => n + 1)} />
+          <PackagesPanel
+            key={selected.id}
+            org={selected}
+            eventFilters={eventFiltersOf(search)}
+            onActivated={() => setRefreshes((n) => n + 1)}
+          />
         )}
       </div>
     </div>

@@ -19,6 +19,8 @@ export interface SponsorSearchFilters {
   sports: FilterOption[];
   inApp: FilterOption[];
   venue: FilterOption[];
+  // BOYS / GIRLS / COED.
+  genders: FilterOption[];
   organizationTypes: FilterOption[];
   sorts: FilterOption[];
 }
@@ -42,7 +44,7 @@ export interface SponsorOrganizationListItem extends SponsorOrganization {
   distanceMiles: number | null;
   fanReach: number;
   packageCount: number;
-  physicalAddOnCount: number;
+  physicalAssetCount: number;
   fromCents: number | null;
   currency: string;
 }
@@ -110,7 +112,7 @@ export interface SponsorPackage {
   currency: string;
 }
 
-export interface SponsorExclusivity {
+export interface SponsorPhysicalAsset {
   activationId: string;
   name: string;
   description: string | null;
@@ -141,14 +143,14 @@ export interface SponsorPackages {
   };
   currency: string;
   packages: SponsorPackage[];
-  exclusivities: SponsorExclusivity[];
+  physicalAssets: SponsorPhysicalAsset[];
 }
 
-// POST /activations: a package (`tier`) or an exclusivity (`exclusivityId`), never both.
+// POST /activations: a package (`tier`) or a physical asset (`physicalAssetId`), never both.
 export interface ActivatePackageRequest {
   schoolId: string;
   tier?: PackageTier;
-  exclusivityId?: string;
+  physicalAssetId?: string;
   eventId?: string;
   expectedTotalCents?: number;
 }
@@ -156,10 +158,10 @@ export interface ActivatePackageRequest {
 export interface PackageActivation {
   id: string;
   status: PackageActivationStatus;
-  kind: "PACKAGE" | "EXCLUSIVITY";
+  kind: "PACKAGE" | "PHYSICAL_ASSET";
   tier: PackageTier | null;
   packageName: string;
-  exclusivity: { activationId: string | null; size: string | null } | null;
+  physicalAsset: { activationId: string | null; size: string | null } | null;
   organization: SponsorOrganization;
   event: { id: string; name: string | null } | null;
   sponsorFanHubUserId: string | null;
@@ -182,4 +184,53 @@ export interface PackageActivation {
 export interface PackageActivationsPage {
   items: PackageActivation[];
   pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+// A cart item is the body of a single activation.
+export type SponsorCartItem = ActivatePackageRequest;
+
+export type SponsorCartKind = "PACKAGE" | "PHYSICAL_ASSET";
+
+// One item as the browser keeps it: the request, plus what was shown when it was added.
+export interface SponsorCartLine {
+  key: string;
+  item: SponsorCartItem;
+  kind: SponsorCartKind;
+  name: string;
+  organization: { id: string; name: string | null; logoUrl: string | null };
+  event: { id: string; name: string | null } | null;
+  totalCents: number;
+  currency: string;
+}
+
+// POST /activations/quote
+export interface SponsorCartQuoteItem {
+  index: number;
+  item: SponsorCartItem;
+  kind: SponsorCartKind | null;
+  name: string | null;
+  // null when the organisation no longer sells (`problem` says why).
+  organization: SponsorOrganization | null;
+  event: { id: string; name: string | null } | null;
+  isAvailable: boolean;
+  problem: string | null;
+  priceChanged: boolean;
+  totalCents: number | null;
+  currency: string;
+}
+
+export interface SponsorCartQuote {
+  items: SponsorCartQuoteItem[];
+  // Every item is available at the price sent.
+  canActivate: boolean;
+  // The available items at their current prices.
+  totalCents: number;
+  currency: string;
+}
+
+// POST /activations/batch (201, or 200 for a repeated Idempotency-Key).
+export interface SponsorCartActivation {
+  activations: PackageActivation[];
+  totalCents: number;
+  currency: string;
 }

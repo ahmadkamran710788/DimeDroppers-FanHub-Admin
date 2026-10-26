@@ -182,10 +182,10 @@ export function useInventory(eventId: string | null) {
   const addExclusivity = (fields: { name: string; value: string; size: string }): string | null => {
     if (!form) return null;
     const name = fields.name.trim().toLowerCase();
-    if (form.columns.EXCLUSIVITY.some((s) => s.name.trim().toLowerCase() === name)) {
+    if (form.columns.PHYSICAL_ASSET.some((s) => s.name.trim().toLowerCase() === name)) {
       return "A physical asset with this name already exists";
     }
-    updateColumn("EXCLUSIVITY", (slots) => [...slots, newExclusivity(fields, added)]);
+    updateColumn("PHYSICAL_ASSET", (slots) => [...slots, newExclusivity(fields, added)]);
     setAdded((n) => n + 1);
     return null;
   };
@@ -193,7 +193,7 @@ export function useInventory(eventId: string | null) {
   // Removed from the form; the next save deletes it.
   const removeExclusivity = (rowKey: string) => {
     if (rowErrors[rowKey]) setRowErrors((prev) => without(prev, rowKey));
-    updateColumn("EXCLUSIVITY", (slots) => slots.filter((s) => s.rowKey !== rowKey));
+    updateColumn("PHYSICAL_ASSET", (slots) => slots.filter((s) => s.rowKey !== rowKey));
   };
 
   // ---- Tournament: the event's format ----

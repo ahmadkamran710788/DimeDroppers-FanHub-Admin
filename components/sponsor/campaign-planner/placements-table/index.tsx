@@ -39,7 +39,7 @@ export default function PlacementsTable({ placements, market, onMarketChange, ex
             <span>MARKET</span>
             <span>PACKAGE</span>
             <span>IN-APP INVENTORY</span>
-            <span>PHYSICAL ADD-ONS</span>
+            <span>PHYSICAL ASSETS</span>
             <span className="text-right">COST</span>
           </div>
           <ul className="flex flex-col gap-2">
