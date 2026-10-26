@@ -2,7 +2,7 @@ import { CirclePlay, Crown, FileText, Puzzle, RadioTower, type LucideIcon } from
 import type { ActivationCategory } from "@/utils/types/activations";
 
 // Every category, in the API's order. Saves send all of them back.
-export const CATEGORY_ORDER: ActivationCategory[] = ["PRE_GAME", "LIVE", "POST_GAME", "ADD_ON", "EXCLUSIVITY"];
+export const CATEGORY_ORDER: ActivationCategory[] = ["PRE_GAME", "LIVE", "POST_GAME", "ADD_ON", "PHYSICAL_ASSET"];
 
 // Per category: the header strip and body tints of its card, its icon badge, and the solid colour of
 // its donut segment + legend dot.
@@ -42,7 +42,7 @@ export const CATEGORY_STYLE: Record<
     accent: "#F59E0B",
     icon: Puzzle,
   },
-  EXCLUSIVITY: {
+  PHYSICAL_ASSET: {
     header: "bg-[#8E1B3A]",
     body: "bg-[rgba(120,22,52,0.45)]",
     badge: "bg-[#E2365F]",
@@ -52,21 +52,12 @@ export const CATEGORY_STYLE: Record<
   },
 };
 
-// The panel calls the Exclusivity category "Physical Assets". Until the catalog's own label and
-// description say so (asked of backend), they are replaced here; remove this once they do.
-export const CATEGORY_TEXT_OVERRIDES: Partial<Record<ActivationCategory, { label: string; description: string }>> = {
-  EXCLUSIVITY: {
-    label: "Physical Assets",
-    description: "Physical placements the organisation adds, such as banners and shirt logos.",
-  },
-};
-
-// An Exclusivity slot's value is whole dollars, 0 – 1,000,000.
+// A Physical Assets slot's value is whole dollars, 0 – 1,000,000.
 export const MAX_SLOT_VALUE = 1_000_000;
 
-// An Exclusivity slot's size, e.g. "12 x 12 ft".
+// A Physical Assets slot's size, e.g. "12 x 12 ft".
 export const MAX_SIZE_LENGTH = 40;
 
-// An Exclusivity slot's name.
+// A Physical Assets slot's name.
 export const MAX_NAME_LENGTH = 120;
 

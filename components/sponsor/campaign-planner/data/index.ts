@@ -23,7 +23,7 @@ export interface Placement {
   market: Market;
   tier: Tier;
   inventory: Inventory[];
-  // Physical add-ons at the venue.
+  // Physical assets at the venue.
   addOns: string;
   cost: number;
   // Estimated parents reached.

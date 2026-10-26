@@ -57,7 +57,7 @@ const columns: Column<PackageActivation>[] = [
     cell: (a) => (
       <div className="flex flex-col gap-1 min-w-0 text-xs">
         <span className="leading-4 break-words">{a.packageName}</span>
-        <span className="opacity-50">{a.kind === "EXCLUSIVITY" ? `Physical asset${a.exclusivity?.size ? ` · ${a.exclusivity.size}` : ""}` : "Package"}</span>
+        <span className="opacity-50">{a.kind === "PHYSICAL_ASSET" ? `Physical asset${a.physicalAsset?.size ? ` · ${a.physicalAsset.size}` : ""}` : "Package"}</span>
       </div>
     ),
   },
@@ -79,7 +79,7 @@ interface Loaded {
   error?: string;
 }
 
-// Sponsors: who activated which of the organization's packages and exclusivities
+// Sponsors: who activated which of the organization's packages and physical assets
 // (GET /org/sponsor-packages/activations), and what sponsors can buy.
 export default function SponsorsPage() {
   const router = useRouter();
@@ -132,10 +132,10 @@ export default function SponsorsPage() {
     { label: "Active Sponsorships", value: String(active?.pagination.total ?? 0), tint: "#3d6f3e", caption: "packages and physical assets" },
     { label: "Active Value", value: formatCents(activeValue), tint: "#3d5194", caption: "of the active ones" },
     { label: "Sponsors", value: String(sponsors), tint: "#5e4277", caption: "with an active sponsorship" },
-    { label: "Physical Assets", value: String(activeItems.filter((a) => a.kind === "EXCLUSIVITY").length), tint: "#7a4a2e", caption: "active" },
+    { label: "Physical Assets", value: String(activeItems.filter((a) => a.kind === "PHYSICAL_ASSET").length), tint: "#7a4a2e", caption: "active" },
   ];
 
-  // Active ones by package (or exclusivity) name.
+  // Active ones by package (or physical asset) name.
   const slices: DonutSlice[] = useMemo(() => {
     const counts = new Map<string, number>();
     for (const a of activeItems) counts.set(a.packageName, (counts.get(a.packageName) ?? 0) + 1);

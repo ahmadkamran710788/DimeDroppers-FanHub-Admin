@@ -7,16 +7,45 @@ export interface OrgSearch {
   name: string;
   // An organizationType code ("SCHOOL", "TOURNAMENT"…); "" for every type.
   type: string;
-  // City and state, ZIP or address; optional (without it nothing is filtered by distance).
+  // A state (the whole state), city and state, ZIP or address; optional (without it nothing is filtered
+  // by distance).
   location: string;
   // Miles, as the Radius select's value.
   radius: string;
   sports: string[];
+  // BOYS / GIRLS / COED: any of them (OR), together with every other filter (AND).
+  genders: string[];
   inApp: string[];
   venue: string[];
 }
 
-export const DEFAULT_SEARCH: OrgSearch = { name: "", type: "", location: "", radius: "25", sports: [], inApp: [], venue: [] };
+export const DEFAULT_SEARCH: OrgSearch = {
+  name: "",
+  type: "",
+  location: "",
+  radius: "25",
+  sports: [],
+  genders: [],
+  inApp: [],
+  venue: [],
+};
+
+// What a tournament's events list needs from the search, so its picker shows the events its card
+// counted: the same location, radius and genders.
+export interface EventFilters {
+  location?: string;
+  radiusMiles?: number;
+  genders?: string;
+}
+
+// An area is only sent with a location; chips as comma-separated codes.
+export const eventFiltersOf = (search: OrgSearch): EventFilters => {
+  const location = search.location.trim();
+  return {
+    ...(location && { location, radiusMiles: Number(search.radius) }),
+    ...(search.genders.length && { genders: search.genders.join(",") }),
+  };
+};
 
 // Organisations per page of results.
 export const PAGE_SIZE = 20;
@@ -34,5 +63,5 @@ export const CATEGORY_COLORS: Record<string, string> = {
   LIVE: "#ff9a8a",
   POST_GAME: "#cdb3ec",
   ADD_ON: "#f0c36a",
-  EXCLUSIVITY: "#a3e3a5",
+  PHYSICAL_ASSET: "#a3e3a5",
 };

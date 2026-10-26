@@ -4,7 +4,7 @@ import InventorySummary from "@/components/organization/inventory/inventory-summ
 import CategoryColumn from "@/components/organization/inventory/category-column";
 import TournamentSetup from "@/components/organization/inventory/tournament-setup";
 import { CalendarDays, CircleCheck, FileText, Layers, type LucideIcon } from "lucide-react";
-import { CATEGORY_ORDER, CATEGORY_TEXT_OVERRIDES } from "@/components/organization/inventory/data";
+import { CATEGORY_ORDER } from "@/components/organization/inventory/data";
 import { useInventory } from "@/components/organization/inventory/use-inventory";
 import Button from "@/components/common/button";
 import { useState } from "react";
@@ -115,13 +115,10 @@ export default function InventoryPage() {
   }
 
   const categoryInfo = (category: ActivationCategory) => catalog.categories.find((c) => c.category === category);
-  // The API still labels EXCLUSIVITY "Exclusivity"; on screen it's "Physical Assets" (label and
-  // description, from CATEGORY_TEXT_OVERRIDES).
   const categoryLabels = Object.fromEntries(
-    CATEGORY_ORDER.map((c) => [c, CATEGORY_TEXT_OVERRIDES[c]?.label ?? categoryInfo(c)?.label ?? c])
+    CATEGORY_ORDER.map((c) => [c, categoryInfo(c)?.label ?? c])
   ) as Record<ActivationCategory, string>;
-  const categoryDescription = (c: ActivationCategory) =>
-    CATEGORY_TEXT_OVERRIDES[c]?.description ?? categoryInfo(c)?.description ?? "";
+  const categoryDescription = (c: ActivationCategory) => categoryInfo(c)?.description ?? "";
 
   const ticked = CATEGORY_ORDER.flatMap((c) => form.columns[c]).filter((s) => s.enabled);
 
@@ -136,7 +133,7 @@ export default function InventoryPage() {
     { label: "Completed", value: "—", caption: "This Month", icon: CircleCheck },
   ];
 
-  // Pre Game / Live / Post Game share the top row; Add-ons and Exclusivity the wider bottom one.
+  // Pre Game / Live / Post Game share the top row; Add-ons and Physical Assets the wider bottom one.
   const column = (category: ActivationCategory, layout: "stacked" | "wide") => (
     <CategoryColumn
       key={category}
@@ -152,8 +149,8 @@ export default function InventoryPage() {
       onSelectAll={() => inv.selectAll(category)}
       onClearAll={() => inv.clearAll(category)}
       onReorder={(from, to) => inv.reorder(category, from, to)}
-      onAdd={category === "EXCLUSIVITY" ? inv.addExclusivity : undefined}
-      onRemove={category === "EXCLUSIVITY" ? inv.removeExclusivity : undefined}
+      onAdd={category === "PHYSICAL_ASSET" ? inv.addExclusivity : undefined}
+      onRemove={category === "PHYSICAL_ASSET" ? inv.removeExclusivity : undefined}
     />
   );
 
@@ -178,7 +175,7 @@ export default function InventoryPage() {
             {(["PRE_GAME", "LIVE", "POST_GAME"] as ActivationCategory[]).map((c) => column(c, "stacked"))}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-            {(["ADD_ON", "EXCLUSIVITY"] as ActivationCategory[]).map((c) => column(c, "wide"))}
+            {(["ADD_ON", "PHYSICAL_ASSET"] as ActivationCategory[]).map((c) => column(c, "wide"))}
           </div>
         </div>
 

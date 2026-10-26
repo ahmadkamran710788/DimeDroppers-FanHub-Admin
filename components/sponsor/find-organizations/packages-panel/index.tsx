@@ -10,12 +10,15 @@ import OrgMonogram from "@/components/sponsor/find-organizations/org-monogram";
 import GamesBreakdown from "@/components/sponsor/find-organizations/games-breakdown";
 import PackageCard from "@/components/sponsor/find-organizations/package-card";
 import PhysicalAddOns from "@/components/sponsor/find-organizations/physical-add-ons";
-import { formatCents, sponsorRequest } from "@/components/sponsor/sponsor-api";
+import type { EventFilters } from "@/components/sponsor/find-organizations/data";
+import { formatCents, sponsorRequest, toQuery } from "@/components/sponsor/sponsor-api";
+import { useSponsorCart } from "@/context/sponsor-cart";
 import { backendFetch } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type {
   ActivatePackageRequest,
   PackageActivation,
+  SponsorCartKind,
   SponsorEventOption,
   SponsorOrganizationListItem,
   SponsorPackages,
@@ -33,6 +36,9 @@ const EVENT_REASONS: Record<UnavailableReason, string> = {
 const fmtDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : null;
 
+// A package or a physical asset, never both.
+type Choice = Pick<ActivatePackageRequest, "tier" | "physicalAssetId">;
+
 // What the sponsor is about to activate, with the idempotency key made when the confirm opened.
 interface Pending {
   label: string;
@@ -44,14 +50,19 @@ interface Pending {
 
 interface PackagesPanelProps {
   org: SponsorOrganizationListItem;
+  // The search's location, radius and genders: a tournament lists only the events its card counted.
+  eventFilters?: EventFilters;
   // After an activation, so the results can refresh their counts.
   onActivated?: () => void;
 }
 
-// The selected organization's packages and exclusivities, priced for it (teams) or for one of its
-// events (games). A tournament picks an event first. Activating is final: no payment yet.
-export default function PackagesPanel({ org, onActivated }: PackagesPanelProps) {
+// The selected organization's packages and physical assets, priced for it (teams) or for one of its
+// events (games). A tournament picks an event first. Each one is activated on its own or added to the
+// cart to activate with others. Activating is final: no payment yet.
+export default function PackagesPanel({ org, eventFilters, onActivated }: PackagesPanelProps) {
   const isTournament = org.organizationType === "TOURNAMENT";
+  const cart = useSponsorCart();
+  const eventQuery = toQuery({ ...eventFilters });
   const [events, setEvents] = useState<{ orgId: string; items: SponsorEventOption[]; error?: string } | null>(null);
   const [eventId, setEventId] = useState("");
   const [loaded, setLoaded] = useState<{ key: string; view?: SponsorPackages; error?: string } | null>(null);
@@ -63,7 +74,7 @@ export default function PackagesPanel({ org, onActivated }: PackagesPanelProps) 
   useEffect(() => {
     if (!isTournament) return;
     let cancelled = false;
-    backendEvents(org.id).then((items) => {
+    backendEvents(org.id, eventQuery).then((items) => {
       if (cancelled) return;
       if (!items) {
         setEvents({ orgId: org.id, items: [], error: "Couldn't load this tournament's events." });
@@ -76,7 +87,7 @@ export default function PackagesPanel({ org, onActivated }: PackagesPanelProps) 
     return () => {
       cancelled = true;
     };
-  }, [isTournament, org.id]);
+  }, [isTournament, org.id, eventQuery]);
 
   const eventsForOrg = events?.orgId === org.id ? events : null;
   const packagesKey = isTournament ? (eventId ? `${org.id}|${eventId}|${reloads}` : "") : `${org.id}|${reloads}`;
@@ -97,15 +108,38 @@ export default function PackagesPanel({ org, onActivated }: PackagesPanelProps) 
   const packages = loaded?.key === packagesKey ? loaded : null;
   const view = packages?.view;
 
-  const ask = (label: string, totalCents: number, currency: string, body: Omit<ActivatePackageRequest, "schoolId" | "eventId">) =>
+  // The body of one activation (alone or as a cart item): this organization, the event for a
+  // tournament, the package or physical asset, at the price shown.
+  const target = (choice: Choice, totalCents: number): ActivatePackageRequest => ({
+    schoolId: org.id,
+    ...(isTournament && { eventId }),
+    ...choice,
+    expectedTotalCents: totalCents,
+  });
+
+  const ask = (label: string, totalCents: number, currency: string, choice: Choice) =>
     setPending({
       label,
       totalCents,
       currency,
-      body: { schoolId: org.id, ...(isTournament && { eventId }), ...body, expectedTotalCents: totalCents },
+      body: target(choice, totalCents),
       // One key per confirmation: a retry of the same click never makes a second activation.
       key: crypto.randomUUID(),
     });
+
+  const addToCart = (kind: SponsorCartKind, name: string, totalCents: number, currency: string, choice: Choice) => {
+    const error = cart.add({
+      item: target(choice, totalCents),
+      kind,
+      name,
+      organization: { id: org.id, name: org.name, logoUrl: org.logoUrl },
+      event: view?.event ? { id: view.event.id, name: view.event.name } : null,
+      totalCents,
+      currency,
+    });
+    if (error) toast.error(error);
+    else toast.success(`${name} added to your cart`);
+  };
 
   const activate = async () => {
     if (!pending) return false;
@@ -208,14 +242,20 @@ export default function PackagesPanel({ org, onActivated }: PackagesPanelProps) 
                   key={p.tier}
                   pkg={p}
                   onActivate={() => ask(`the ${p.name} package`, p.totalCents, p.currency, { tier: p.tier })}
+                  onAddToCart={() => addToCart("PACKAGE", p.name, p.totalCents, p.currency, { tier: p.tier })}
+                  inCart={cart.has(target({ tier: p.tier }, p.totalCents))}
                 />
               ))}
             </div>
           )}
           <PhysicalAddOns
             orgName={org.name ?? "Organization"}
-            exclusivities={view.exclusivities}
-            onActivate={(x) => ask(x.name, x.totalCents, x.currency, { exclusivityId: x.activationId })}
+            physicalAssets={view.physicalAssets}
+            onActivate={(x) => ask(x.name, x.totalCents, x.currency, { physicalAssetId: x.activationId })}
+            onAddToCart={(x) =>
+              addToCart("PHYSICAL_ASSET", x.name, x.totalCents, x.currency, { physicalAssetId: x.activationId })
+            }
+            isInCart={(x) => cart.has(target({ physicalAssetId: x.activationId }, x.totalCents))}
           />
         </>
       )}
@@ -238,9 +278,9 @@ export default function PackagesPanel({ org, onActivated }: PackagesPanelProps) 
 }
 
 // GET /organizations/:id/events answers the events as the whole `data` list.
-async function backendEvents(orgId: string): Promise<SponsorEventOption[] | null> {
+async function backendEvents(orgId: string, query: string): Promise<SponsorEventOption[] | null> {
   try {
-    const res = await backendFetch(routes.api.sponsorOrgEvents(orgId), { cache: "no-store" });
+    const res = await backendFetch(`${routes.api.sponsorOrgEvents(orgId)}${query}`, { cache: "no-store" });
     if (!res.ok) return null;
     const json = await res.json().catch(() => null);
     return Array.isArray(json?.data) ? (json.data as SponsorEventOption[]) : null;

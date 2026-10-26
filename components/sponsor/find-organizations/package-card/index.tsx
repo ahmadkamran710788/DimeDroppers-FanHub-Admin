@@ -7,15 +7,24 @@ import type { SponsorPackage } from "@/utils/types/sponsor-packages";
 
 interface PackageCardProps {
   pkg: SponsorPackage;
-  // Without it the card is a read-only preview (the organisation panel).
+  // Without them the card is a read-only preview (the organisation panel).
   onActivate?: () => void;
+  onAddToCart?: () => void;
+  // Already in the sponsor's cart: Add to cart waits.
+  inCart?: boolean;
   // Each placement's own value: shown to the organisation, hidden from sponsors (they see the total).
   showPlacementValues?: boolean;
 }
 
-// One of an organization's three packages: what it's for, its total price, the placements it includes
-// and Activate. An unavailable package keeps its card with the reason and no Activate.
-export default function PackageCard({ pkg, onActivate, showPlacementValues = false }: PackageCardProps) {
+// One of an organization's three packages: what it's for, its total price, the placements it includes,
+// Add to cart and Activate. An unavailable package keeps its card with the reason and neither action.
+export default function PackageCard({
+  pkg,
+  onActivate,
+  onAddToCart,
+  inCart = false,
+  showPlacementValues = false,
+}: PackageCardProps) {
   return (
     <article
       aria-label={`${pkg.name} package`}
@@ -71,17 +80,28 @@ export default function PackageCard({ pkg, onActivate, showPlacementValues = fal
         {!pkg.isAvailable && pkg.unavailableMessage && (
           <p className="text-[13px] text-[#f0c36a]">{pkg.unavailableMessage}</p>
         )}
-        {onActivate && (
-          <Button
-            label="Activate"
-            onClick={onActivate}
-            disabled={!pkg.isAvailable}
-            fullWidth
-            className={cn(
-              pkg.isAvailable ? PRIMARY_BUTTON : OUTLINE_BUTTON,
-              "h-11 px-[6px] rounded-[10px] text-sm font-semibold transition-none",
+        {(onAddToCart || onActivate) && (
+          <div className="flex gap-2">
+            {onAddToCart && (
+              <Button
+                label={inCart ? "In cart" : "Add to cart"}
+                onClick={onAddToCart}
+                disabled={!pkg.isAvailable || inCart}
+                className={cn(OUTLINE_BUTTON, "flex-1 h-11 px-[6px] rounded-[10px] text-sm font-semibold transition-none")}
+              />
             )}
-          />
+            {onActivate && (
+              <Button
+                label="Activate"
+                onClick={onActivate}
+                disabled={!pkg.isAvailable}
+                className={cn(
+                  pkg.isAvailable ? PRIMARY_BUTTON : OUTLINE_BUTTON,
+                  "flex-1 h-11 px-[6px] rounded-[10px] text-sm font-semibold transition-none",
+                )}
+              />
+            )}
+          </div>
         )}
       </div>
     </article>

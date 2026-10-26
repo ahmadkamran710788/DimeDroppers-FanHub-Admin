@@ -33,7 +33,7 @@ async function loadEvents(): Promise<SponsorEventOption[] | null> {
   }
 }
 
-// "What sponsors can buy": the organization's three packages and its exclusivities, priced exactly as
+// "What sponsors can buy": the organization's three packages and its physical assets, priced exactly as
 // sponsors see them (GET /org/sponsor-packages/packages). A tournament picks one of its events first;
 // an event it doesn't offer answers 404, shown as an empty state.
 export default function PackagesPreview() {
@@ -126,7 +126,7 @@ export default function PackagesPreview() {
             </div>
           )}
           <div className="text-white">
-            <PhysicalAddOns orgName={view.organization.name ?? "Your organization"} exclusivities={view.exclusivities} />
+            <PhysicalAddOns orgName={view.organization.name ?? "Your organization"} physicalAssets={view.physicalAssets} />
           </div>
         </>
       )}

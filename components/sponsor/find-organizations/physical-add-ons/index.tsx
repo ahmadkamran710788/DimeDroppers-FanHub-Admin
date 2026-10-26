@@ -3,31 +3,36 @@ import Button from "@/components/common/button";
 import { OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
 import InsetSection from "@/components/sponsor/find-organizations/inset-section";
 import { formatCents } from "@/components/sponsor/sponsor-api";
-import type { SponsorExclusivity } from "@/utils/types/sponsor-packages";
+import type { SponsorPhysicalAsset } from "@/utils/types/sponsor-packages";
 
 interface PhysicalAddOnsProps {
   orgName: string;
-  exclusivities: SponsorExclusivity[];
-  // Without it the list is a read-only preview (the organisation panel).
-  onActivate?: (exclusivity: SponsorExclusivity) => void;
+  physicalAssets: SponsorPhysicalAsset[];
+  // Without them the list is a read-only preview (the organisation panel).
+  onActivate?: (physicalAsset: SponsorPhysicalAsset) => void;
+  onAddToCart?: (physicalAsset: SponsorPhysicalAsset) => void;
+  // Already in the sponsor's cart: its Add to cart waits.
+  isInCart?: (physicalAsset: SponsorPhysicalAsset) => boolean;
 }
 
-// The organization's exclusivities (banners, scoreboard wraps…), sold on their own under the packages:
-// each with its size, price (its value × the same teams or games) and Activate.
+// The organization's physical assets (banners, scoreboard wraps…), sold on their own under the packages:
+// each with its size, price (its value × the same teams or games), Add to cart and Activate.
 export default function PhysicalAddOns({
   orgName,
-  exclusivities,
+  physicalAssets,
   onActivate,
+  onAddToCart,
+  isInCart,
 }: PhysicalAddOnsProps) {
   return (
     <InsetSection
-      title={`PHYSICAL ADD-ONS · ${orgName}`}
+      title={`PHYSICAL ASSETS · ${orgName}`}
       description="Venue placements, activated on their own"
     >
-      {exclusivities.length === 0 ? (
+      {physicalAssets.length === 0 ? (
         <p className="text-sm text-[#a8a8a8]">No physical assets offered.</p>
       ) : (
-        exclusivities.map((x) => (
+        physicalAssets.map((x) => (
           <div
             key={x.activationId}
             className="w-full min-h-16 px-2.5 sm:px-3 py-[10px] rounded-[10px] border border-[#222] flex flex-wrap items-center gap-2.5 sm:gap-[14px] text-white"
@@ -52,6 +57,14 @@ export default function PhysicalAddOns({
             <span className="text-[15px] font-bold whitespace-nowrap">
               {formatCents(x.totalCents, x.currency)}
             </span>
+            {onAddToCart && (
+              <Button
+                label={isInCart?.(x) ? "In cart" : "Add to cart"}
+                onClick={() => onAddToCart(x)}
+                disabled={!x.isAvailable || !!isInCart?.(x)}
+                className={cn(OUTLINE_BUTTON, "h-10 px-4 rounded-[10px] text-sm")}
+              />
+            )}
             {onActivate && (
               <Button
                 label="Activate"

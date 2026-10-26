@@ -36,9 +36,9 @@ export default function SearchFilters({ filters, onSearch, searching = false }: 
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   }
 
-  // Clears the name, type, sports and inventory picks; the area stays.
+  // Clears the name, type, sports, genders and inventory picks; the area stays.
   function clear() {
-    const next = { ...form, name: "", type: "", sports: [], inApp: [], venue: [] };
+    const next = { ...form, name: "", type: "", sports: [], genders: [], inApp: [], venue: [] };
     setForm(next);
     setErrors({});
     // The results follow straight away, so they never show filters that are no longer set.
@@ -90,7 +90,7 @@ export default function SearchFilters({ filters, onSearch, searching = false }: 
           name="org-location"
           value={form.location}
           onChange={(e) => update("location", e.target.value)}
-          placeholder="City and state, or ZIP code"
+          placeholder="State, city and state, or ZIP code"
           error={errors.location}
           className="min-w-0 @min-[416px]:col-span-2"
           labelClassName={SECTION_LABEL}
@@ -122,6 +122,21 @@ export default function SearchFilters({ filters, onSearch, searching = false }: 
           options={chipOptions(filters?.sports)}
           value={form.sports}
           onChange={(sports) => update("sports", sports)}
+        />
+      </div>
+
+      <div className="flex flex-col gap-[10px]">
+        <div className="flex justify-between gap-3 flex-wrap">
+          <div className={SECTION_LABEL}>GENDER · SELECT ANY</div>
+          <div className="text-[13px] text-[#a8a8a8]">{`${form.genders.length} selected`}</div>
+        </div>
+        <FilterChips
+          variant="pill"
+          multiple
+          ariaLabel="Gender"
+          options={chipOptions(filters?.genders)}
+          value={form.genders}
+          onChange={(genders) => update("genders", genders)}
         />
       </div>
 

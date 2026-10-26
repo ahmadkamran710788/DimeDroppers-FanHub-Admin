@@ -1,10 +1,10 @@
 // FanHub Activations (fanhub/org/activations) — see docs/endpoints/FANHUB_ACTIVATIONS_FRONTEND.md.
 
-export type ActivationCategory = "PRE_GAME" | "LIVE" | "POST_GAME" | "ADD_ON" | "EXCLUSIVITY";
+export type ActivationCategory = "PRE_GAME" | "LIVE" | "POST_GAME" | "ADD_ON" | "PHYSICAL_ASSET";
 export type GamePhase = "PRE_GAME" | "LIVE" | "POST_GAME" | "FULL_GAME";
 export type ActivationOrganizationType = "SCHOOL" | "TOURNAMENT" | "CLUB_TEAM" | "LEAGUE";
 // CATEGORY_BASE: the value is Dime's base value for the category. ORGANIZATION: the org set it
-// (Exclusivity only). Exclusivity has no catalog slots: every one is added by the organisation.
+// (Physical Assets only). Physical Assets has no catalog slots: every one is added by the organisation.
 export type ValueSource = "CATEGORY_BASE" | "ORGANIZATION";
 export type Capability =
   | "IMPRESSION"
@@ -55,7 +55,7 @@ export interface CatalogCategory {
   description: string;
   // Dime's value for every slot in the category (whole dollars).
   baseValue: number;
-  // Only Exclusivity: the org can set its slots' value and size.
+  // Only Physical Assets: the org can set its slots' value and size.
   isEditable: boolean;
   itemCount: number;
   recommendedCount: number;
@@ -107,7 +107,7 @@ export interface InventoryActivation {
   // The effective value (whole dollars): the org's own, else the category base value.
   value: number;
   valueSource: ValueSource;
-  // Only Exclusivity slots: value and size can be changed.
+  // Only Physical Assets slots: value and size can be changed.
   isEditable: boolean;
   // The checkbox: sponsors can see this slot.
   isAvailableForSponsors: boolean;
@@ -246,9 +246,9 @@ export interface ActivationInput {
   category?: ActivationCategory;
   name?: string;
   description?: string | null;
-  // Exclusivity only. Whole dollars, 0 – 1,000,000; null = back to the default. Left out: unchanged.
+  // Physical Assets only. Whole dollars, 0 – 1,000,000; null = back to the default. Left out: unchanged.
   value?: number | null;
-  // Exclusivity only. 1 – 40 chars; null = back to the catalog size. Left out: unchanged.
+  // Physical Assets only. 1 – 40 chars; null = back to the catalog size. Left out: unchanged.
   size?: string | null;
   isAvailableForSponsors?: boolean;
   // Defaults to [] — so a slot sent without them loses its placements.

@@ -10,7 +10,10 @@ export interface SponsorApiResult<T> {
 
 const NETWORK_ERROR = "Please check your network and try again.";
 
-const query = (params?: Record<string, string | number | undefined>) => {
+export type QueryParams = Record<string, string | number | undefined>;
+
+// "?a=1&b=2" without the empty values; "" when nothing is left.
+export const toQuery = (params?: QueryParams) => {
   const entries = Object.entries(params ?? {}).filter(([, v]) => v !== undefined && v !== "");
   return entries.length ? `?${new URLSearchParams(entries.map(([k, v]) => [k, String(v)])).toString()}` : "";
 };
@@ -20,10 +23,10 @@ const query = (params?: Record<string, string | number | undefined>) => {
 export async function sponsorRequest<T>(
   method: "GET" | "POST",
   endpoint: string,
-  { params, body, headers }: { params?: Record<string, string | number | undefined>; body?: unknown; headers?: Record<string, string> } = {}
+  { params, body, headers }: { params?: QueryParams; body?: unknown; headers?: Record<string, string> } = {}
 ): Promise<SponsorApiResult<T>> {
   try {
-    const res = await backendFetch(`${endpoint}${query(params)}`, {
+    const res = await backendFetch(`${endpoint}${toQuery(params)}`, {
       method,
       headers: { Accept: "application/json", ...(body !== undefined && { "Content-Type": "application/json" }), ...headers },
       body: body === undefined ? undefined : JSON.stringify(body),
