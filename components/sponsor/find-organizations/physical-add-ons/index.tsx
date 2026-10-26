@@ -39,14 +39,10 @@ export default function PhysicalAddOns({
             )}
             <span className="flex-auto min-w-0">
               <span className="block text-[15px] font-semibold">{x.name}</span>
-              <span className="block text-[13px] text-[#a8a8a8] mt-[2px]">
-                {[
-                  x.description,
-                  `${formatCents(x.unitValueCents, x.currency)} × ${x.factors.map((f) => f.detail).join(" × ")}`,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
+              {/* Only its total is shown, not how it's built (value × teams or games). */}
+              {x.description && (
+                <span className="block text-[13px] text-[#a8a8a8] mt-[2px]">{x.description}</span>
+              )}
               {!x.isAvailable && x.unavailableMessage && (
                 <span className="block text-[13px] text-[#f0c36a] mt-[2px]">
                   {x.unavailableMessage}
