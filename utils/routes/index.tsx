@@ -254,6 +254,13 @@ export const routes = {
     orgSponsorPackages: "fanhub/org/sponsor-packages/packages",
     orgSponsorEvents: "fanhub/org/sponsor-packages/events",
     orgSponsorActivations: "fanhub/org/sponsor-packages/activations",
+    // Recognition & Fan Wall: fans' photobooth images and the wall the org builds from them
+    // (FANHUB_ORG_PHOTOBOOTH_FAN_WALL_FRONTEND.md).
+    photoboothJobs: "fanhub/org/photobooth/jobs",
+    fanWall: "fanhub/org/fan-wall",
+    fanWallItems: "fanhub/org/fan-wall/items",
+    fanWallItem: (itemId: string) => `fanhub/org/fan-wall/items/${itemId}`,
+    fanWallReorder: "fanhub/org/fan-wall/reorder",
     // Messages — the org chats with the people of its teams (FANHUB_ORG_CHAT_ADMIN.md).
     // Who can be messaged, per tab (players / parents / staff / followers): GET ?tab=&search=.
     orgChatTeamMembers: (schoolTeamId: string) => `fanhub/org/chat/teams/${schoolTeamId}/members`,
