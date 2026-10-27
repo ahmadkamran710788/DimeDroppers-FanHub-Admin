@@ -5,7 +5,7 @@ import FilterDropdown from "@/components/common/filter-dropdown";
 import Loader from "@/components/common/loader";
 import { CalendarDays } from "lucide-react";
 import { orgKindOf, useAuth } from "@/context/auth";
-import GamesBreakdown from "@/components/sponsor/find-organizations/games-breakdown";
+import GamesBreakdown, { basisCount, priceBasisText } from "@/components/sponsor/find-organizations/games-breakdown";
 import PackageCard from "@/components/sponsor/find-organizations/package-card";
 import PhysicalAddOns from "@/components/sponsor/find-organizations/physical-add-ons";
 import { sponsorRequest } from "@/components/sponsor/sponsor-api";
@@ -17,6 +17,7 @@ const EVENT_REASONS: Record<UnavailableReason, string> = {
   NO_SLOTS: "no slots switched on",
   NO_TEAMS: "no teams yet",
   NO_GAMES: "no teams yet",
+  NO_UPCOMING_GAMES: "no upcoming games",
   EVENT_ENDED: "ended",
   TOURNAMENT_INCOMPLETE: "format not set",
 };
@@ -110,18 +111,14 @@ export default function PackagesPreview() {
         </p>
       ) : (
         <>
-          <p className="text-sm text-white/70">
-            {`Priced by ${view.priceBasis.basisLabel.toLowerCase()}: ${view.priceBasis.quantity}${
-              view.priceBasis.tournamentFormatLabel ? ` · ${view.priceBasis.tournamentFormatLabel}` : ""
-            }`}
-          </p>
+          <p className="text-sm text-white/70">{priceBasisText(view.priceBasis)}</p>
           <GamesBreakdown priceBasis={view.priceBasis} />
           {view.packages.length === 0 ? (
             <p className="py-8 text-center text-sm text-white/60">Packages are not available yet.</p>
           ) : (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(min(260px,100%),1fr))] gap-3 text-white">
               {view.packages.map((p) => (
-                <PackageCard key={p.tier} pkg={p} showPlacementValues />
+                <PackageCard key={p.tier} pkg={p} showPlacementValues basisCount={basisCount(view.priceBasis)} />
               ))}
             </div>
           )}

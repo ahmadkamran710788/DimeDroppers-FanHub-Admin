@@ -16,6 +16,8 @@ interface PackageCardProps {
   active?: boolean;
   // Each placement's own value: shown to the organisation, hidden from sponsors (they see the total).
   showPlacementValues?: boolean;
+  // What the price is counted for, under it: "2 games", "5 teams".
+  basisCount?: string;
 }
 
 // One of an organization's three packages: what it's for, its total price, the placements it includes,
@@ -27,6 +29,7 @@ export default function PackageCard({
   inCart = false,
   active = false,
   showPlacementValues = false,
+  basisCount,
 }: PackageCardProps) {
   return (
     <article
@@ -46,9 +49,13 @@ export default function PackageCard({
         {pkg.description}
       </p>
 
-      {/* Only the total: how it's built (placement values × teams or games) isn't shown. */}
-      <div className="font-display font-extrabold text-[34px] leading-none">
-        {formatCents(pkg.totalCents, pkg.currency)}
+      {/* The total and what it's counted for ("2 games"); how it's built (placement values × games)
+          isn't shown. */}
+      <div className="flex flex-col gap-1">
+        <div className="font-display font-extrabold text-[34px] leading-none">
+          {formatCents(pkg.totalCents, pkg.currency)}
+        </div>
+        {basisCount && <span className="text-[13px] text-[#a8a8a8]">{basisCount}</span>}
       </div>
 
       <div className="text-xs font-bold tracking-[1.2px] text-[#c4c4c4]">{`PLACEMENTS INCLUDED · ${pkg.slotCount}`}</div>
