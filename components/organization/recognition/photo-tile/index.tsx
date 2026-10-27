@@ -1,4 +1,7 @@
-import { GripVertical, X } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { GripVertical, UserRound, X } from "lucide-react";
 import Image from "next/image";
 import Checkbox from "@/components/common/checkbox";
 import { cn } from "@/utils/cn";
@@ -37,6 +40,10 @@ export default function PhotoTile({
   className,
   dragProps,
 }: PhotoTileProps) {
+  // The src whose image failed (e.g. its S3 file is missing). Keyed by src, so a new URL tries again.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const failed = failedSrc === src;
+
   return (
     <div
       {...(added ? {} : dragProps)}
@@ -49,19 +56,29 @@ export default function PhotoTile({
     >
       {/* Pulses behind the image while it loads; the image covers it once there. */}
       <span aria-hidden className="absolute inset-0 animate-pulse bg-white/[0.06]" />
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
-        draggable={false}
-        // Fan images are presigned S3 URLs, loaded straight from S3: the optimizer would have to fetch
-        // each full image server-side first, which times out (and each URL's signature changes).
-        unoptimized={src.startsWith("http")}
-        // A failed download mustn't stay in the image cache; the next load fetches it again.
-        onError={() => evictPhotoboothImage(src)}
-        className={cn("object-cover", added && "opacity-60")}
-      />
+      {failed ? (
+        // Avatar placeholder until the image is available again.
+        <span role="img" aria-label={alt} className="absolute inset-0 bg-white/8 flex items-center justify-center">
+          <UserRound className="size-1/3 text-white/40" strokeWidth={1.5} />
+        </span>
+      ) : (
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
+          draggable={false}
+          // Fan images are presigned S3 URLs, loaded straight from S3: the optimizer would have to fetch
+          // each full image server-side first, which times out (and each URL's signature changes).
+          unoptimized={src.startsWith("http")}
+          // A failed download mustn't stay in the image cache; the next load fetches it again.
+          onError={() => {
+            evictPhotoboothImage(src);
+            setFailedSrc(src);
+          }}
+          className={cn("object-cover", added && "opacity-60")}
+        />
+      )}
       {!added && (
         <span className="absolute top-1.5 left-1.5 size-8 rounded-[6px] bg-black/60 flex items-center justify-center">
           <GripVertical className="size-4 text-white" strokeWidth={2} />
