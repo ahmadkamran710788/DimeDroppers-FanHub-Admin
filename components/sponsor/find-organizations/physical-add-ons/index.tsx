@@ -13,6 +13,8 @@ interface PhysicalAddOnsProps {
   onAddToCart?: (physicalAsset: SponsorPhysicalAsset) => void;
   // Already in the sponsor's cart: its Add to cart waits.
   isInCart?: (physicalAsset: SponsorPhysicalAsset) => boolean;
+  // The sponsor already has it active: one disabled "Active" in place of both actions.
+  isActive?: (physicalAsset: SponsorPhysicalAsset) => boolean;
 }
 
 // The organization's physical assets (banners, scoreboard wraps…), sold on their own under the packages:
@@ -23,6 +25,7 @@ export default function PhysicalAddOns({
   onActivate,
   onAddToCart,
   isInCart,
+  isActive,
 }: PhysicalAddOnsProps) {
   return (
     <InsetSection
@@ -57,24 +60,30 @@ export default function PhysicalAddOns({
             <span className="text-[15px] font-bold whitespace-nowrap">
               {formatCents(x.totalCents, x.currency)}
             </span>
-            {onAddToCart && (
-              <Button
-                label={isInCart?.(x) ? "In cart" : "Add to cart"}
-                onClick={() => onAddToCart(x)}
-                disabled={!x.isAvailable || !!isInCart?.(x)}
-                className={cn(OUTLINE_BUTTON, "h-10 px-4 rounded-[10px] text-sm")}
-              />
-            )}
-            {onActivate && (
-              <Button
-                label="Activate"
-                onClick={() => onActivate(x)}
-                disabled={!x.isAvailable}
-                className={cn(
-                  x.isAvailable ? PRIMARY_BUTTON : OUTLINE_BUTTON,
-                  "h-10 px-4 rounded-[10px] text-sm",
+            {isActive?.(x) ? (
+              <Button label="Active" disabled className={cn(OUTLINE_BUTTON, "h-10 px-4 rounded-[10px] text-sm")} />
+            ) : (
+              <>
+                {onAddToCart && (
+                  <Button
+                    label={isInCart?.(x) ? "In cart" : "Add to cart"}
+                    onClick={() => onAddToCart(x)}
+                    disabled={!x.isAvailable || !!isInCart?.(x)}
+                    className={cn(OUTLINE_BUTTON, "h-10 px-4 rounded-[10px] text-sm")}
+                  />
                 )}
-              />
+                {onActivate && (
+                  <Button
+                    label="Activate"
+                    onClick={() => onActivate(x)}
+                    disabled={!x.isAvailable}
+                    className={cn(
+                      x.isAvailable ? PRIMARY_BUTTON : OUTLINE_BUTTON,
+                      "h-10 px-4 rounded-[10px] text-sm",
+                    )}
+                  />
+                )}
+              </>
             )}
           </div>
         ))

@@ -11,8 +11,8 @@ import GamesBreakdown from "@/components/sponsor/find-organizations/games-breakd
 import PackageCard from "@/components/sponsor/find-organizations/package-card";
 import PhysicalAddOns from "@/components/sponsor/find-organizations/physical-add-ons";
 import type { EventFilters } from "@/components/sponsor/find-organizations/data";
-import { formatCents, sponsorRequest, toQuery } from "@/components/sponsor/sponsor-api";
-import { useSponsorCart } from "@/context/sponsor-cart";
+import { activeActivationKeys, formatCents, sponsorRequest, toQuery } from "@/components/sponsor/sponsor-api";
+import { cartItemKey, useSponsorCart } from "@/context/sponsor-cart";
 import { backendFetch } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type {
@@ -69,6 +69,8 @@ export default function PackagesPanel({ org, eventFilters, onActivated }: Packag
   // Bumped to refetch the packages (after a 409 or an activation).
   const [reloads, setReloads] = useState(0);
   const [pending, setPending] = useState<Pending | null>(null);
+  // What the sponsor already has active here (cart item keys): those can't be activated again.
+  const [activeLoaded, setActiveLoaded] = useState<{ key: string; keys: Set<string> } | null>(null);
 
   // A tournament's events.
   useEffect(() => {
@@ -108,6 +110,20 @@ export default function PackagesPanel({ org, eventFilters, onActivated }: Packag
   const packages = loaded?.key === packagesKey ? loaded : null;
   const view = packages?.view;
 
+  const activeKey = `${org.id}|${reloads}`;
+  useEffect(() => {
+    let cancelled = false;
+    activeActivationKeys(org.id).then((keys) => {
+      // If it can't be checked, the sponsor isn't blocked.
+      if (!cancelled) setActiveLoaded({ key: activeKey, keys: keys ?? new Set() });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeKey, org.id]);
+
+  const activeKeys = activeLoaded?.key === activeKey ? activeLoaded.keys : null;
+
   // The body of one activation (alone or as a cart item): this organization, the event for a
   // tournament, the package or physical asset, at the price shown.
   const target = (choice: Choice, totalCents: number): ActivatePackageRequest => ({
@@ -116,6 +132,8 @@ export default function PackagesPanel({ org, eventFilters, onActivated }: Packag
     ...choice,
     expectedTotalCents: totalCents,
   });
+
+  const isActive = (choice: Choice) => !!activeKeys?.has(cartItemKey(target(choice, 0)));
 
   const ask = (label: string, totalCents: number, currency: string, choice: Choice) =>
     setPending({
@@ -149,6 +167,8 @@ export default function PackagesPanel({ org, eventFilters, onActivated }: Packag
     });
     if (r.view) {
       toast.success(`${r.view.packageName} activated for ${org.name ?? "the organization"}`);
+      // A copy left in the cart would activate it a second time.
+      cart.remove(cartItemKey(pending.body));
       setReloads((n) => n + 1);
       onActivated?.();
       return true;
@@ -221,7 +241,7 @@ export default function PackagesPanel({ org, eventFilters, onActivated }: Packag
         eventsForOrg && eventsForOrg.items.length > 0 && (
           <p className="text-sm text-[#a8a8a8]">None of this tournament&apos;s events can be sponsored yet.</p>
         )
-      ) : !packages ? (
+      ) : !packages || !activeKeys ? (
         <Loader />
       ) : !view ? (
         <p className="text-sm text-[#a8a8a8]">{packages.error ?? "Packages are not available yet."}</p>
@@ -244,6 +264,7 @@ export default function PackagesPanel({ org, eventFilters, onActivated }: Packag
                   onActivate={() => ask(`the ${p.name} package`, p.totalCents, p.currency, { tier: p.tier })}
                   onAddToCart={() => addToCart("PACKAGE", p.name, p.totalCents, p.currency, { tier: p.tier })}
                   inCart={cart.has(target({ tier: p.tier }, p.totalCents))}
+                  active={isActive({ tier: p.tier })}
                 />
               ))}
             </div>
@@ -256,6 +277,7 @@ export default function PackagesPanel({ org, eventFilters, onActivated }: Packag
               addToCart("PHYSICAL_ASSET", x.name, x.totalCents, x.currency, { physicalAssetId: x.activationId })
             }
             isInCart={(x) => cart.has(target({ physicalAssetId: x.activationId }, x.totalCents))}
+            isActive={(x) => isActive({ physicalAssetId: x.activationId })}
           />
         </>
       )}

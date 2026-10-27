@@ -2,17 +2,16 @@ import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
 import { OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
 import OrgMonogram from "@/components/sponsor/find-organizations/org-monogram";
-import { CATEGORY_COLORS } from "@/components/sponsor/find-organizations/data";
+import { KIND_COLOR, KIND_LABEL } from "@/components/sponsor/find-organizations/data";
 import { formatCents } from "@/components/sponsor/sponsor-api";
 import type { SponsorCartLine, SponsorCartQuoteItem } from "@/utils/types/sponsor-packages";
-
-const KIND_LABEL = { PACKAGE: "Package", PHYSICAL_ASSET: "Physical asset" } as const;
-const KIND_COLOR = { PACKAGE: CATEGORY_COLORS.PRE_GAME, PHYSICAL_ASSET: CATEGORY_COLORS.PHYSICAL_ASSET } as const;
 
 interface CartLineProps {
   line: SponsorCartLine;
   // Its current price and problems; undefined while the cart is being priced.
   quote?: SponsorCartQuoteItem;
+  // The sponsor already has it active: it can't be activated again.
+  alreadyActive?: boolean;
   onRemove: () => void;
   onAcceptPrice: (totalCents: number) => void;
 }
@@ -20,15 +19,16 @@ interface CartLineProps {
 // One cart item: what it is, where, its price now (and the old one when it changed) and why it can't
 // be activated, if it can't. The organisation's name and logo come from the quote, else from when it
 // was added.
-export default function CartLine({ line, quote, onRemove, onAcceptPrice }: CartLineProps) {
+export default function CartLine({ line, quote, alreadyActive = false, onRemove, onAcceptPrice }: CartLineProps) {
   const organization = quote?.organization ?? line.organization;
-  const unavailable = quote ? !quote.isAvailable : false;
+  const unavailable = alreadyActive || (quote ? !quote.isAvailable : false);
   const newPrice = quote?.priceChanged && !unavailable ? quote.totalCents : null;
   // An item that can't be activated has no current price: the one shown when it was added, greyed.
   const price = !unavailable && quote?.totalCents != null ? quote.totalCents : line.totalCents;
   const currency = quote?.currency ?? line.currency;
-  const problem =
-    newPrice !== null
+  const problem = alreadyActive
+    ? "You already have this sponsorship active. Remove it to continue."
+    : newPrice !== null
       ? `The price has changed from ${formatCents(line.totalCents, currency)} to ${formatCents(newPrice, currency)}`
       : quote?.problem;
 

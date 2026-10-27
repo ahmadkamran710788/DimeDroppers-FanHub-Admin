@@ -21,7 +21,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { icon: <Search className="size-6" strokeWidth={1.5} />, label: "Find Organizations", href: routes.ui.sponsor.findOrganizations },
       { icon: <Heart className="size-6" strokeWidth={1.5} />, label: "Fundable Needs", href: routes.ui.sponsor.fundableNeeds },
-      { icon: "/icons/icon-calendar.svg", label: "My Sponsorships", href: "#" },
+      { icon: "/icons/icon-calendar.svg", label: "My Sponsorships", href: routes.ui.sponsor.mySponsorships },
     ],
   },
 ];
