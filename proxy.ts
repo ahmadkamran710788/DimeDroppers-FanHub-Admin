@@ -59,7 +59,10 @@ export const config = {
   //
   // Note that Next still runs proxy for `_next/data` routes even though they
   // are excluded here, so page-level protection is not weakened.
+  //
+  // `photobooth-sw.js` is the image cache's service worker; the browser re-fetches it to check for
+  // updates, and a signed-out redirect to sign-in would fail that check.
   matcher: [
-    "/((?!api|_next|__nextjs|favicon.ico|images|icons|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!api|_next|__nextjs|favicon.ico|images|icons|photobooth-sw.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
