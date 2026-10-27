@@ -1,3 +1,4 @@
+import { clearPhotoboothImageCache } from "@/utils/photobooth-image-cache";
 import type { SponsorAccount } from "@/utils/types/auth";
 
 // Client-side FanHub session keys. The org and the Step-1 school are the same
@@ -23,6 +24,7 @@ export function clearFanhubSession() {
   } catch {
     // Storage blocked: nothing was kept.
   }
+  clearPhotoboothImageCache();
 }
 
 // The signed-in sponsor's account from sign-in (there is no sponsor /me), for the sponsor header.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { CalendarDays, ChevronDown, Eye, Image as ImageIcon, Newspaper, Trash2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import Button from "@/components/common/button";
@@ -16,6 +16,7 @@ import PhotoTile from "@/components/organization/recognition/photo-tile";
 import RecognitionsTable from "@/components/organization/recognition/recognitions-table";
 import { useFanWall, type GalleryStatus } from "@/components/organization/recognition/use-fan-wall";
 import { cn } from "@/utils/cn";
+import { registerPhotoboothImageCache } from "@/utils/photobooth-image-cache";
 import type { PhotoboothJob } from "@/utils/types/fan-wall";
 
 const SECTIONS = [
@@ -64,6 +65,9 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
   const [overIndex, setOverIndex] = useState<number | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const fw = useFanWall();
+
+  // Each fan image is downloaded once per browser instead of on every load (see utils/photobooth-image-cache).
+  useEffect(registerPhotoboothImageCache, []);
 
   const jobs = fw.gallery?.items ?? [];
   // Only finished images (with a picture) can go on the wall.

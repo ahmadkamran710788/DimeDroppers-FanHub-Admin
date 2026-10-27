@@ -5,6 +5,19 @@ const nextConfig: NextConfig = {
     // Required for the `unauthorized()` API used by utils/api-request on 401 responses.
     authInterrupts: true,
   },
+  async headers() {
+    return [
+      {
+        // The photobooth image cache's service worker (utils/photobooth-image-cache): never cached, so an
+        // update reaches browsers on the next visit.
+        source: "/photobooth-sw.js",
+        headers: [
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

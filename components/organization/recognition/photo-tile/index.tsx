@@ -2,6 +2,7 @@ import { GripVertical, X } from "lucide-react";
 import Image from "next/image";
 import Checkbox from "@/components/common/checkbox";
 import { cn } from "@/utils/cn";
+import { evictPhotoboothImage } from "@/utils/photobooth-image-cache";
 
 interface PhotoTileProps {
   src: string;
@@ -57,6 +58,8 @@ export default function PhotoTile({
         // Fan images are presigned S3 URLs, loaded straight from S3: the optimizer would have to fetch
         // each full image server-side first, which times out (and each URL's signature changes).
         unoptimized={src.startsWith("http")}
+        // A failed download mustn't stay in the image cache; the next load fetches it again.
+        onError={() => evictPhotoboothImage(src)}
         className={cn("object-cover", added && "opacity-60")}
       />
       {!added && (
