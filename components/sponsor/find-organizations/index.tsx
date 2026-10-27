@@ -16,6 +16,7 @@ import {
   PAGE_SIZE,
   STAT_TINTS,
   eventFiltersOf,
+  hasCentre,
   type OrgSearch,
 } from "@/components/sponsor/find-organizations/data";
 import { sponsorRequest } from "@/components/sponsor/sponsor-api";
@@ -28,9 +29,8 @@ import type {
 } from "@/utils/types/sponsor-packages";
 
 // The query for GET /organizations: chips as comma-separated codes; the radius and NEAREST only with a
-// location.
+// location or the sponsor's position.
 function searchParams(search: OrgSearch, sort: SponsorSearchSort, page: number) {
-  const location = search.location.trim();
   const name = search.name.trim();
   return {
     ...(name && { search: name }),
@@ -39,7 +39,7 @@ function searchParams(search: OrgSearch, sort: SponsorSearchSort, page: number) 
     ...(search.sports.length && { sports: search.sports.join(",") }),
     ...(search.inApp.length && { inApp: search.inApp.join(",") }),
     ...(search.venue.length && { venue: search.venue.join(",") }),
-    sort: !location && sort === "NEAREST" ? "NAME" : sort,
+    sort: !hasCentre(search) && sort === "NEAREST" ? "NAME" : sort,
     page,
     limit: PAGE_SIZE,
   };
@@ -51,7 +51,8 @@ interface Results {
   total: number;
   totalPages: number;
   page: number;
-  centreLabel: string | null;
+  // Where the search that's shown looked: "within 25 mi of Jacksonville, FL", "in Florida"; null = anywhere.
+  area: string | null;
 }
 
 // Sponsor search: organizations near a location that play the picked sports and sell the picked
@@ -88,7 +89,7 @@ export default function FindOrganizations() {
         toast.error(r.message ?? "Couldn't load organizations.");
         // A failed search (e.g. a location that can't be found) keeps the results already shown.
         setResults((prev) =>
-          prev ? { ...prev, key } : { key, items: [], total: 0, totalPages: 0, page, centreLabel: null }
+          prev ? { ...prev, key } : { key, items: [], total: 0, totalPages: 0, page, area: null }
         );
         return;
       }
@@ -99,7 +100,12 @@ export default function FindOrganizations() {
         total: v.pagination.total,
         totalPages: v.pagination.totalPages,
         page,
-        centreLabel: v.centre?.label ?? null,
+        // As the backend applied it: a whole state ignores the radius; a position has no place name.
+        area: v.centre
+          ? `within ${v.centre.radiusMiles} mi of ${search.location.trim() ? v.centre.label : "your location"}`
+          : v.state
+            ? `in ${v.state.name}`
+            : null,
       });
     });
     return () => {
@@ -115,8 +121,8 @@ export default function FindOrganizations() {
   function runSearch(next: OrgSearch) {
     setSearch(next);
     setPage(1);
-    // With a location, start on the nearest.
-    if (next.location.trim()) setSort("NEAREST");
+    // With a location or the sponsor's position, start on the nearest.
+    if (hasCentre(next)) setSort("NEAREST");
     else if (sort === "NEAREST") setSort("NAME");
   }
 
@@ -134,7 +140,7 @@ export default function FindOrganizations() {
       label: "Matching organizations",
       value: String(results?.total ?? 0),
       tint: STAT_TINTS.organizations,
-      caption: results?.centreLabel ? `within ${search.radius} mi of ${results.centreLabel}` : "anywhere",
+      caption: results?.area ?? "anywhere",
     },
     {
       label: "Open packages",
@@ -150,8 +156,7 @@ export default function FindOrganizations() {
     },
   ];
 
-  const hasLocation = !!search.location.trim();
-  const sorts = (filters?.sorts ?? []).filter((s) => hasLocation || s.code !== "NEAREST");
+  const sorts = (filters?.sorts ?? []).filter((s) => hasCentre(search) || s.code !== "NEAREST");
   const sortLabel = filters?.sorts.find((s) => s.code === sort)?.label ?? sort;
 
   return (

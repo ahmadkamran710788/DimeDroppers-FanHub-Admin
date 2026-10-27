@@ -7,11 +7,13 @@ export interface OrgSearch {
   name: string;
   // An organizationType code ("SCHOOL", "TOURNAMENT"…); "" for every type.
   type: string;
-  // A state (the whole state), city and state, ZIP or address; optional (without it nothing is filtered
-  // by distance).
+  // A state (the whole state), city, ZIP or address; optional. Without it the radius is measured from
+  // `near`, and without that nothing is filtered by distance.
   location: string;
-  // Miles, as the Radius select's value.
+  // Miles, as the Radius select's value; "" until the sponsor picks one.
   radius: string;
+  // The sponsor's own position, taken when they pick a radius with Location empty; null when not shared.
+  near: { lat: number; lng: number } | null;
   sports: string[];
   // BOYS / GIRLS / COED: any of them (OR), together with every other filter (AND).
   genders: string[];
@@ -23,7 +25,8 @@ export const DEFAULT_SEARCH: OrgSearch = {
   name: "",
   type: "",
   location: "",
-  radius: "25",
+  radius: "",
+  near: null,
   sports: [],
   genders: [],
   inApp: [],
@@ -31,18 +34,27 @@ export const DEFAULT_SEARCH: OrgSearch = {
 };
 
 // What a tournament's events list needs from the search, so its picker shows the events its card
-// counted: the same location, radius and genders.
+// counted: the same area and genders.
 export interface EventFilters {
   location?: string;
+  lat?: number;
+  lng?: number;
   radiusMiles?: number;
   genders?: string;
 }
 
-// An area is only sent with a location; chips as comma-separated codes.
+// The search has a point or place to measure from (and so a Nearest sort).
+export const hasCentre = (search: OrgSearch) => !!search.location.trim() || !!search.near;
+
+// The area: the typed location, else the sponsor's position, each with the radius (a location without
+// one gets the API's default radius); chips as comma-separated codes.
 export const eventFiltersOf = (search: OrgSearch): EventFilters => {
   const location = search.location.trim();
+  const radiusMiles = search.radius ? Number(search.radius) : undefined;
   return {
-    ...(location && { location, radiusMiles: Number(search.radius) }),
+    ...(location
+      ? { location, radiusMiles }
+      : search.near && { lat: search.near.lat, lng: search.near.lng, radiusMiles }),
     ...(search.genders.length && { genders: search.genders.join(",") }),
   };
 };

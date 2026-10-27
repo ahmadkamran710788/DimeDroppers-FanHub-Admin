@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import toast from "react-hot-toast";
+import { TriangleAlert } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { validateAndSetErrors } from "@/utils/validation";
 import Button from "@/components/common/button";
@@ -14,6 +16,20 @@ import { DEFAULT_SEARCH, type OrgSearch } from "@/components/sponsor/find-organi
 import type { FilterOption, SponsorSearchFilters } from "@/utils/types/sponsor-packages";
 
 const CONTROL = cn(FIELD, "h-12 text-[16px] min-w-0");
+
+// The browser's position (it asks the sponsor the first time), rounded to about 10 m; null when it's
+// refused, unavailable or too slow.
+function currentPosition(): Promise<OrgSearch["near"]> {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) =>
+        resolve({ lat: Number(coords.latitude.toFixed(4)), lng: Number(coords.longitude.toFixed(4)) }),
+      () => resolve(null),
+      { timeout: 10_000, maximumAge: 5 * 60_000 }
+    );
+  });
+}
 
 interface SearchFiltersProps {
   // The chips and radius options from GET /filters; null while they load.
@@ -30,25 +46,44 @@ const chipOptions = (options: FilterOption[] | undefined) => (options ?? []).map
 export default function SearchFilters({ filters, onSearch, searching = false }: SearchFiltersProps) {
   const [form, setForm] = useState(DEFAULT_SEARCH);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Waiting for the browser's position.
+  const [locating, setLocating] = useState(false);
 
   function update<K extends keyof OrgSearch>(field: K, value: OrgSearch[K]) {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   }
 
+  // The search to run: a typed location is the area; with none, a picked radius is measured from the
+  // sponsor's position. No radius, or a position they don't share, means any distance (and the radius
+  // goes back to unpicked, since it can't apply).
+  async function withArea(next: OrgSearch): Promise<OrgSearch> {
+    const location = next.location.trim();
+    if (location || !next.radius) return { ...next, location, near: null };
+    setLocating(true);
+    const near = await currentPosition();
+    setLocating(false);
+    if (near) return { ...next, location, near };
+    setForm((prev) => ({ ...prev, radius: "" }));
+    toast("Allow location access, or type a city or ZIP code, to search by distance. Showing organizations anywhere.", {
+      icon: <TriangleAlert className="size-5 shrink-0 text-[#f59e0b]" aria-hidden="true" />,
+    });
+    return { ...next, location, radius: "", near: null };
+  }
+
   // Clears the name, type, sports, genders and inventory picks; the area stays.
-  function clear() {
+  async function clear() {
     const next = { ...form, name: "", type: "", sports: [], genders: [], inApp: [], venue: [] };
     setForm(next);
     setErrors({});
     // The results follow straight away, so they never show filters that are no longer set.
-    onSearch({ ...next, location: next.location.trim() });
+    onSearch(await withArea(next));
   }
 
   async function search(e: React.FormEvent) {
     e.preventDefault();
     if (!(await validateAndSetErrors(orgSearchSchema, form, setErrors))) return;
-    onSearch({ ...form, name: form.name.trim(), location: form.location.trim() });
+    onSearch(await withArea({ ...form, name: form.name.trim() }));
   }
 
   return (
@@ -90,7 +125,7 @@ export default function SearchFilters({ filters, onSearch, searching = false }: 
           name="org-location"
           value={form.location}
           onChange={(e) => update("location", e.target.value)}
-          placeholder="State, city and state, or ZIP code"
+          placeholder="City, ZIP code or state"
           error={errors.location}
           className="min-w-0 @min-[416px]:col-span-2"
           labelClassName={SECTION_LABEL}
@@ -102,6 +137,7 @@ export default function SearchFilters({ filters, onSearch, searching = false }: 
           value={form.radius}
           onChange={(e) => update("radius", e.target.value)}
           options={(filters?.radiusOptions ?? [10, 25, 50, 100]).map((miles) => ({ label: `${miles} miles`, value: String(miles) }))}
+          placeholder="Select radius"
           error={errors.radius}
           variant="dark"
           className="min-w-0"
@@ -167,12 +203,13 @@ export default function SearchFilters({ filters, onSearch, searching = false }: 
         <Button
           label="Clear filters"
           onClick={clear}
+          disabled={locating}
           className={cn(OUTLINE_BUTTON, "h-12 px-[18px] rounded-[10px] text-[15px] font-semibold")}
         />
         <Button
           type="submit"
-          label={searching ? "Searching…" : "Show organizations"}
-          disabled={searching}
+          label={locating ? "Finding your location…" : searching ? "Searching…" : "Show organizations"}
+          disabled={locating || searching}
           className={cn(PRIMARY_BUTTON, "h-12 px-[22px] rounded-[10px] text-[15px]")}
         />
       </div>
