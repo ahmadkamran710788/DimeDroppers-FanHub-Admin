@@ -7,7 +7,7 @@ import ConfirmModal from "@/components/common/confirm-modal";
 import Loader from "@/components/common/loader";
 import { CARD } from "@/components/sponsor/styles";
 import OrgMonogram from "@/components/sponsor/find-organizations/org-monogram";
-import GamesBreakdown from "@/components/sponsor/find-organizations/games-breakdown";
+import GamesBreakdown, { basisCount, priceBasisText } from "@/components/sponsor/find-organizations/games-breakdown";
 import PackageCard from "@/components/sponsor/find-organizations/package-card";
 import PhysicalAddOns from "@/components/sponsor/find-organizations/physical-add-ons";
 import type { EventFilters } from "@/components/sponsor/find-organizations/data";
@@ -29,6 +29,7 @@ const EVENT_REASONS: Record<UnavailableReason, string> = {
   NO_SLOTS: "No slots switched on",
   NO_TEAMS: "No teams yet",
   NO_GAMES: "No teams yet, so no games to count",
+  NO_UPCOMING_GAMES: "No upcoming games",
   EVENT_ENDED: "Event ended",
   TOURNAMENT_INCOMPLETE: "Format not set yet",
 };
@@ -247,11 +248,7 @@ export default function PackagesPanel({ org, eventFilters, onActivated }: Packag
         <p className="text-sm text-[#a8a8a8]">{packages.error ?? "Packages are not available yet."}</p>
       ) : (
         <>
-          <p className="text-[13px] text-[#a8a8a8]">
-            {`Priced by ${view.priceBasis.basisLabel.toLowerCase()}: ${view.priceBasis.quantity}${
-              view.priceBasis.tournamentFormatLabel ? ` · ${view.priceBasis.tournamentFormatLabel}` : ""
-            }`}
-          </p>
+          <p className="text-[13px] text-[#a8a8a8]">{priceBasisText(view.priceBasis)}</p>
           <GamesBreakdown priceBasis={view.priceBasis} />
           {view.packages.length === 0 ? (
             <p className="text-sm text-[#a8a8a8]">Packages are not available yet.</p>
@@ -265,6 +262,7 @@ export default function PackagesPanel({ org, eventFilters, onActivated }: Packag
                   onAddToCart={() => addToCart("PACKAGE", p.name, p.totalCents, p.currency, { tier: p.tier })}
                   inCart={cart.has(target({ tier: p.tier }, p.totalCents))}
                   active={isActive({ tier: p.tier })}
+                  basisCount={basisCount(view.priceBasis)}
                 />
               ))}
             </div>

@@ -1,8 +1,20 @@
 import type { SponsorPackages } from "@/utils/types/sponsor-packages";
 
+type Basis = SponsorPackages["priceBasis"];
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+// What the prices are counted for: "2 games" (a school's upcoming games, a tournament event's games)
+// or "5 teams" (club teams and leagues).
+export const basisCount = ({ basis, quantity }: Basis) => plural(quantity, basis === "TEAMS" ? "team" : "game");
+
+// The line above the packages, with a tournament's format.
+export const priceBasisText = (priceBasis: Basis) =>
+  `Priced by ${basisCount(priceBasis)}${priceBasis.tournamentFormatLabel ? ` · ${priceBasis.tournamentFormatLabel}` : ""}`;
+
 // How a tournament event's games are counted for the price: each division's teams and games under the
-// event's format, and the total the packages multiply by. Nothing for a school (priced by teams).
-export default function GamesBreakdown({ priceBasis }: { priceBasis: SponsorPackages["priceBasis"] }) {
+// event's format, and the total the packages multiply by. Nothing for a school, club team or league.
+export default function GamesBreakdown({ priceBasis }: { priceBasis: Basis }) {
   if (priceBasis.basis !== "GAMES" || priceBasis.divisions.length === 0) return null;
   return (
     <details className="rounded-[10px] border border-[#262626] bg-[#0b0b0b] text-white">

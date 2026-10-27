@@ -4,7 +4,13 @@ export type PackageTier = "COMMUNITY_PARTNER" | "FAN_ENGAGEMENT_PARTNER" | "PRES
 export type SponsorOrganizationType = "SCHOOL" | "TOURNAMENT" | "CLUB_TEAM" | "LEAGUE";
 export type PriceBasis = "TEAMS" | "GAMES";
 export type PackageActivationStatus = "ACTIVE" | "CANCELLED" | "EXPIRED";
-export type UnavailableReason = "NO_SLOTS" | "NO_TEAMS" | "NO_GAMES" | "EVENT_ENDED" | "TOURNAMENT_INCOMPLETE";
+export type UnavailableReason =
+  | "NO_SLOTS"
+  | "NO_TEAMS"
+  | "NO_GAMES"
+  | "NO_UPCOMING_GAMES"
+  | "EVENT_ENDED"
+  | "TOURNAMENT_INCOMPLETE";
 export type SponsorSearchSort = "NEAREST" | "NAME" | "FAN_REACH";
 
 export interface FilterOption {
@@ -140,6 +146,9 @@ export interface SponsorPackages {
     tournamentFormat: string | null;
     tournamentFormatLabel: string | null;
     divisions: { divisionId: string | null; name: string | null; teamCount: number; games: number }[];
+    // A school's season: its upcoming games are counted from `countedFrom` (today) to the day before
+    // `endsBefore`. Dates are YYYY-MM-DD; null for tournaments, club teams and leagues.
+    season: { label: string; startsOn: string; endsBefore: string; countedFrom: string } | null;
   };
   currency: string;
   packages: SponsorPackage[];
