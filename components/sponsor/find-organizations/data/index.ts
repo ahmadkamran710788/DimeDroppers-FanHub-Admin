@@ -65,3 +65,16 @@ export const CATEGORY_COLORS: Record<string, string> = {
   ADD_ON: "#f0c36a",
   PHYSICAL_ASSET: "#a3e3a5",
 };
+
+// A category's name, for lists that come without one (an activation's lines).
+export const CATEGORY_LABELS: Record<string, string> = {
+  PRE_GAME: "Pre Game",
+  LIVE: "Live",
+  POST_GAME: "Post Game",
+  ADD_ON: "Add-ons",
+  PHYSICAL_ASSET: "Physical Assets",
+};
+
+// The tag beside a cart item or an activation: a package or a physical asset.
+export const KIND_LABEL = { PACKAGE: "Package", PHYSICAL_ASSET: "Physical asset" } as const;
+export const KIND_COLOR = { PACKAGE: CATEGORY_COLORS.PRE_GAME, PHYSICAL_ASSET: CATEGORY_COLORS.PHYSICAL_ASSET } as const;

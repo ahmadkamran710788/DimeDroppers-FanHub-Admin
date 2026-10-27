@@ -1,4 +1,7 @@
+import { activationItemKey } from "@/context/sponsor-cart";
 import { backendFetch } from "@/utils/api-call";
+import { routes } from "@/utils/routes";
+import type { PackageActivationsPage } from "@/utils/types/sponsor-packages";
 
 export interface SponsorApiResult<T> {
   status: number;
@@ -38,6 +41,15 @@ export async function sponsorRequest<T>(
   } catch {
     return { status: 0, message: NETWORK_ERROR };
   }
+}
+
+// The packages and physical assets the sponsor already has active (at one organization, or anywhere), as
+// cart item keys: the same item can't be activated twice. Up to the API's page cap; null when it fails.
+export async function activeActivationKeys(schoolId?: string): Promise<Set<string> | null> {
+  const r = await sponsorRequest<PackageActivationsPage>("GET", routes.api.sponsorActivations, {
+    params: { status: "ACTIVE", schoolId, page: 1, limit: 100 },
+  });
+  return r.view ? new Set(r.view.items.map(activationItemKey)) : null;
 }
 
 // "$1,234.50" from cents; never rounded.

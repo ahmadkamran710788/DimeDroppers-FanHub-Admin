@@ -12,6 +12,8 @@ interface PackageCardProps {
   onAddToCart?: () => void;
   // Already in the sponsor's cart: Add to cart waits.
   inCart?: boolean;
+  // The sponsor already has it active: one disabled "Active" in place of both actions.
+  active?: boolean;
   // Each placement's own value: shown to the organisation, hidden from sponsors (they see the total).
   showPlacementValues?: boolean;
 }
@@ -23,6 +25,7 @@ export default function PackageCard({
   onActivate,
   onAddToCart,
   inCart = false,
+  active = false,
   showPlacementValues = false,
 }: PackageCardProps) {
   return (
@@ -80,7 +83,13 @@ export default function PackageCard({
         {!pkg.isAvailable && pkg.unavailableMessage && (
           <p className="text-[13px] text-[#f0c36a]">{pkg.unavailableMessage}</p>
         )}
-        {(onAddToCart || onActivate) && (
+        {active ? (
+          <Button
+            label="Active"
+            disabled
+            className={cn(OUTLINE_BUTTON, "w-full h-11 px-[6px] rounded-[10px] text-sm font-semibold transition-none")}
+          />
+        ) : (onAddToCart || onActivate) && (
           <div className="flex gap-2">
             {onAddToCart && (
               <Button

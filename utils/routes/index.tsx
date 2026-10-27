@@ -61,6 +61,7 @@ export const routes = {
       brandAssets: "/sponsor/brand-assets",
       campaignPlanner: "/sponsor/campaign-planner",
       cart: "/sponsor/cart",
+      mySponsorships: "/sponsor/my-sponsorships",
     },
   },
 

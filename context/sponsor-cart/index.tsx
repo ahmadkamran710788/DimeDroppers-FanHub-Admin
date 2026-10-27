@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
 import { useSponsorAccount } from "@/components/sponsor/use-sponsor-account";
-import type { SponsorCartItem, SponsorCartLine } from "@/utils/types/sponsor-packages";
+import type { PackageActivation, SponsorCartItem, SponsorCartLine } from "@/utils/types/sponsor-packages";
 
 // The sponsor's cart: packages and physical assets from any number of organisations, activated together
 // from the cart page. There is no cart table, so it lives in this browser, one cart per signed-in sponsor.
@@ -17,6 +17,16 @@ const EMPTY: SponsorCartLine[] = [];
 // The same item, as the API counts duplicates: school + event + tier or physical asset.
 export const cartItemKey = (item: SponsorCartItem) =>
   [item.schoolId, item.eventId ?? "", item.tier ?? "", item.physicalAssetId ?? ""].join("|");
+
+// The same key for an activation, so a cart item or a package on screen can be matched to one the
+// sponsor already has.
+export const activationItemKey = (a: PackageActivation) =>
+  cartItemKey({
+    schoolId: a.organization.id,
+    eventId: a.event?.id,
+    tier: a.tier ?? undefined,
+    physicalAssetId: a.physicalAsset?.activationId ?? undefined,
+  });
 
 // Each cart read once from localStorage, then kept here; writes go to both.
 const carts = new Map<string, SponsorCartLine[]>();
