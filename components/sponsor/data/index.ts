@@ -23,6 +23,11 @@ export const SPONSOR_CATEGORY_OPTIONS = toOptions([
   "Local services",
 ]);
 
+// A campaign's season and goal, on the Campaign Planner and the Find Organizations filters. Mock data
+// until the API takes them.
+export const SEASON_OPTIONS = toOptions(["Fall 2026 · Winter 2027", "Fall 2026 only", "Full year"]);
+export const GOAL_OPTIONS = toOptions(["Brand awareness", "Store traffic", "Community goodwill"]);
+
 // The sponsor's logo: SVG or PNG only (file picker filter, and the check for dropped files).
 export const LOGO_ACCEPT = ".svg,.png";
 export const isLogoFile = (file: File) => /\.(svg|png)$/i.test(file.name);

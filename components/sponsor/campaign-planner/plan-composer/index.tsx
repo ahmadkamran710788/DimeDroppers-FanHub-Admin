@@ -9,13 +9,12 @@ import Button from "@/components/common/button";
 import Input from "@/components/common/input";
 import Select from "@/components/common/select";
 import Textarea from "@/components/common/textarea";
+import { GOAL_OPTIONS, SEASON_OPTIONS } from "@/components/sponsor/data";
 import { FIELD, PRIMARY_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
 import { campaignRequestSchema } from "@/components/sponsor/campaign-planner/schema";
 import {
   DEFAULT_REQUEST,
-  GOAL_OPTIONS,
   PROMPT_MAX_LENGTH,
-  SEASON_OPTIONS,
   SUGGESTIONS,
   type CampaignRequest,
 } from "@/components/sponsor/campaign-planner/data";

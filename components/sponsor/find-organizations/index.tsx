@@ -29,7 +29,7 @@ import type {
 } from "@/utils/types/sponsor-packages";
 
 // The query for GET /organizations: chips as comma-separated codes; NEAREST only with a location (else
-// the default order).
+// the default order). Budget, season and goal stay in the form until the API takes them.
 function searchParams(search: OrgSearch, sort: SponsorSearchSort, page: number) {
   const location = search.location.trim();
   const name = search.name.trim();

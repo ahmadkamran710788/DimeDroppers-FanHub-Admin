@@ -1,5 +1,4 @@
-import { toOptions } from "@/utils/helper";
-import { SPONSOR_PROFILE, type Tier } from "@/components/sponsor/data";
+import { GOAL_OPTIONS, SEASON_OPTIONS, SPONSOR_PROFILE, type Tier } from "@/components/sponsor/data";
 
 // Mock data for the Campaign Planner until the Dime AI API is integrated: the plan Dime AI
 // returns for the default request.
@@ -57,9 +56,6 @@ export const PLAN_STAT_TINTS = {
   reach: "#5e4277",
   costPerParent: "#7a4a2e",
 };
-
-export const SEASON_OPTIONS = toOptions(["Fall 2026 · Winter 2027", "Fall 2026 only", "Full year"]);
-export const GOAL_OPTIONS = toOptions(["Brand awareness", "Store traffic", "Community goodwill"]);
 
 // Refinements offered under the composer; picking one adds it to the description.
 export const SUGGESTIONS = ["Add soccer in Tampa", "More Watch Live, fewer banners", "Cut the budget to $40,000"];

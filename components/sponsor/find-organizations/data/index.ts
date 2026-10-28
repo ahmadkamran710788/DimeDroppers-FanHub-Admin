@@ -19,6 +19,11 @@ export interface OrgSearch {
   genders: string[];
   inApp: string[];
   venue: string[];
+  // As typed ("$60,000"); "" for any. Budget, season and goal are form-only until the API takes them.
+  budget: string;
+  // A SEASON_OPTIONS / GOAL_OPTIONS value; "" for any.
+  season: string;
+  goal: string;
 }
 
 export const DEFAULT_SEARCH: OrgSearch = {
@@ -30,6 +35,9 @@ export const DEFAULT_SEARCH: OrgSearch = {
   genders: [],
   inApp: [],
   venue: [],
+  budget: "",
+  season: "",
+  goal: "",
 };
 
 // The API's default order, with or without a location: most games left this season first.
