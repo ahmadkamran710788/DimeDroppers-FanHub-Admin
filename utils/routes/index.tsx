@@ -4,6 +4,8 @@ export const routes = {
     profile: "/profile",
     signIn: "/auth/sign-in",
     signUp: "/auth/sign-up",
+    // Sponsor sign-up (UI only until the sponsor sign-up API is wired).
+    sponsorSignUp: "/auth/sponsor-sign-up",
     schedule: "/schedule",
     scorekeepers: "/scorekeepers",
     videographers: "/videographers",
@@ -62,6 +64,7 @@ export const routes = {
       campaignPlanner: "/sponsor/campaign-planner",
       cart: "/sponsor/cart",
       mySponsorships: "/sponsor/my-sponsorships",
+      profile: "/sponsor/profile",
     },
   },
 

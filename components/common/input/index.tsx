@@ -28,6 +28,8 @@ interface InputProps {
   hint?: string;
   // Stops typing at this many characters and shows a live "42/60" counter under the field.
   maxLength?: number;
+  // Browser autofill hint, e.g. "email" or "new-password".
+  autoComplete?: string;
 }
 
 export default function Input({
@@ -48,6 +50,7 @@ export default function Input({
   variant = "light",
   hint,
   maxLength,
+  autoComplete,
 }: InputProps) {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === "password";
@@ -80,6 +83,7 @@ export default function Input({
           placeholder={placeholder}
           disabled={disabled}
           maxLength={maxLength}
+          autoComplete={autoComplete}
           className={cn(
             "w-full h-12 rounded-[8px] text-base font-medium px-4 py-3 border outline-none",
             "focus:border-steel-blue transition-colors disabled:opacity-50",
@@ -99,7 +103,10 @@ export default function Input({
             disabled={disabled}
             aria-label={showPassword ? "Hide password" : "Show password"}
             aria-pressed={showPassword}
-            className="absolute right-3 w-6 h-6 flex items-center justify-center text-midnight-navy/60 hover:text-midnight-navy transition-colors disabled:opacity-50"
+            className={cn(
+              "absolute right-3 w-6 h-6 flex items-center justify-center transition-colors disabled:opacity-50",
+              dark ? "text-white/60 hover:text-white" : "text-midnight-navy/60 hover:text-midnight-navy"
+            )}
           >
             {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
           </button>
