@@ -16,7 +16,6 @@ import {
   PAGE_SIZE,
   STAT_TINTS,
   eventFiltersOf,
-  hasCentre,
   type OrgSearch,
 } from "@/components/sponsor/find-organizations/data";
 import { sponsorRequest } from "@/components/sponsor/sponsor-api";
@@ -29,8 +28,9 @@ import type {
 } from "@/utils/types/sponsor-packages";
 
 // The query for GET /organizations: chips as comma-separated codes; the radius and NEAREST only with a
-// location or the sponsor's position.
+// location.
 function searchParams(search: OrgSearch, sort: SponsorSearchSort, page: number) {
+  const location = search.location.trim();
   const name = search.name.trim();
   return {
     ...(name && { search: name }),
@@ -39,7 +39,7 @@ function searchParams(search: OrgSearch, sort: SponsorSearchSort, page: number) 
     ...(search.sports.length && { sports: search.sports.join(",") }),
     ...(search.inApp.length && { inApp: search.inApp.join(",") }),
     ...(search.venue.length && { venue: search.venue.join(",") }),
-    sort: !hasCentre(search) && sort === "NEAREST" ? "NAME" : sort,
+    sort: !location && sort === "NEAREST" ? "NAME" : sort,
     page,
     limit: PAGE_SIZE,
   };
@@ -100,9 +100,9 @@ export default function FindOrganizations() {
         total: v.pagination.total,
         totalPages: v.pagination.totalPages,
         page,
-        // As the backend applied it: a whole state ignores the radius; a position has no place name.
+        // As the backend applied it: a whole state ignores the radius.
         area: v.centre
-          ? `within ${v.centre.radiusMiles} mi of ${search.location.trim() ? v.centre.label : "your location"}`
+          ? `within ${v.centre.radiusMiles} mi of ${v.centre.label}`
           : v.state
             ? `in ${v.state.name}`
             : null,
@@ -121,8 +121,8 @@ export default function FindOrganizations() {
   function runSearch(next: OrgSearch) {
     setSearch(next);
     setPage(1);
-    // With a location or the sponsor's position, start on the nearest.
-    if (hasCentre(next)) setSort("NEAREST");
+    // With a location, start on the nearest.
+    if (next.location.trim()) setSort("NEAREST");
     else if (sort === "NEAREST") setSort("NAME");
   }
 
@@ -156,7 +156,8 @@ export default function FindOrganizations() {
     },
   ];
 
-  const sorts = (filters?.sorts ?? []).filter((s) => hasCentre(search) || s.code !== "NEAREST");
+  const hasLocation = !!search.location.trim();
+  const sorts = (filters?.sorts ?? []).filter((s) => hasLocation || s.code !== "NEAREST");
   const sortLabel = filters?.sorts.find((s) => s.code === sort)?.label ?? sort;
 
   return (
