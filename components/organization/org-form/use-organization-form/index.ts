@@ -11,6 +11,7 @@ import {
   orgSchema,
   type OrgFormState,
 } from "@/components/organization/org-form/form";
+import { useAuth } from "@/context/auth";
 import { backendFetch } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
@@ -19,6 +20,8 @@ import { validateAndSetErrors } from "@/utils/validation";
 // updates it. Used by the Setup Wizard step and the Profile page edit dialogs.
 export function useOrganizationForm() {
   const { savedSchool, refreshSchool } = useSetup();
+  // /me carries the organisation type the panel is built from (school or tournament).
+  const { refreshProfile } = useAuth();
   const [form, setForm] = useState<OrgFormState>(INITIAL_ORG_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -96,7 +99,8 @@ export function useOrganizationForm() {
       if (form.teamName) sessionStorage.setItem("fanhub:teamName", form.teamName);
 
       setLogoFile(null);
-      await refreshSchool();
+      // Both, so a changed organisation type (or name, logo) shows across the panel straight away.
+      await Promise.all([refreshSchool(), refreshProfile()]);
       toast.success(existingSchoolId ? "Profile updated" : "School created");
       return true;
     } catch {
