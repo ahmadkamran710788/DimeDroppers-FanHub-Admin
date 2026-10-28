@@ -1,6 +1,7 @@
 // Find Organizations: the search form's shape. The chips, radius options and sorts come from
 // GET /fanhub/sponsor-packages/filters; the organisations and packages from the API.
 
+import { parseMoney } from "@/utils/helper";
 import type { SponsorSearchSort } from "@/utils/types/sponsor-packages";
 
 // What the sponsor searches with (chip values are the API codes, e.g. "FOOTBALL").
@@ -19,11 +20,10 @@ export interface OrgSearch {
   genders: string[];
   inApp: string[];
   venue: string[];
-  // As typed ("$60,000"); "" for any. Budget, season and goal are form-only until the API takes them.
+  // As typed ("$60,000"); "" for any. Sent as budgetCents.
   budget: string;
-  // A SEASON_OPTIONS / GOAL_OPTIONS value; "" for any.
+  // A seasons code from GET /filters ("FALL"…); "" for any.
   season: string;
-  goal: string;
 }
 
 export const DEFAULT_SEARCH: OrgSearch = {
@@ -37,7 +37,6 @@ export const DEFAULT_SEARCH: OrgSearch = {
   venue: [],
   budget: "",
   season: "",
-  goal: "",
 };
 
 // The API's default order, with or without a location: most games left this season first.
@@ -59,6 +58,12 @@ export const eventFiltersOf = (search: OrgSearch): EventFilters => {
     ...(location && { location, radiusMiles: search.radius ? Number(search.radius) : undefined }),
     ...(search.genders.length && { genders: search.genders.join(",") }),
   };
+};
+
+// The typed budget in cents, for budgetCents; undefined without one.
+export const budgetCentsOf = (search: OrgSearch) => {
+  const amount = parseMoney(search.budget);
+  return Number.isFinite(amount) ? Math.round(amount * 100) : undefined;
 };
 
 // Organisations per page of results.

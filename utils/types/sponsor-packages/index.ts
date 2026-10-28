@@ -36,6 +36,8 @@ export interface SponsorSearchFilters {
   genders: FilterOption[];
   organizationTypes: FilterOption[];
   sorts: FilterOption[];
+  // FALL_WINTER / FALL / FULL_YEAR, labelled with their years; seasons already over are left out.
+  seasons: FilterOption[];
 }
 
 export interface SponsorOrganization {

@@ -7,7 +7,6 @@ import Button from "@/components/common/button";
 import FilterChips from "@/components/common/filter-chips";
 import Input from "@/components/common/input";
 import Select from "@/components/common/select";
-import { GOAL_OPTIONS, SEASON_OPTIONS } from "@/components/sponsor/data";
 import { CARD, FIELD, OUTLINE_BUTTON, PRIMARY_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
 import InsetSection from "@/components/sponsor/find-organizations/inset-section";
 import { orgSearchSchema } from "@/components/sponsor/find-organizations/schema";
@@ -37,7 +36,7 @@ export default function SearchFilters({ filters, onSearch, searching = false }: 
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   }
 
-  // Clears the name, type, budget, season, goal, sports, genders and inventory picks; the area stays.
+  // Clears the name, type, budget, season, sports, genders and inventory picks; the area stays.
   function clear() {
     const next = {
       ...form,
@@ -45,7 +44,6 @@ export default function SearchFilters({ filters, onSearch, searching = false }: 
       type: "",
       budget: "",
       season: "",
-      goal: "",
       sports: [],
       genders: [],
       inApp: [],
@@ -128,7 +126,7 @@ export default function SearchFilters({ filters, onSearch, searching = false }: 
         />
       </div>
 
-      {/* As on the Campaign Planner. Not sent to the API yet. */}
+      {/* Only organizations with a package within the budget, and with games in the season. */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 items-start">
         <Input
           label="TOTAL BUDGET"
@@ -146,20 +144,8 @@ export default function SearchFilters({ filters, onSearch, searching = false }: 
           name="org-season"
           value={form.season}
           onChange={(e) => update("season", e.target.value)}
-          options={SEASON_OPTIONS}
+          options={[{ label: "Any season", value: "" }, ...chipOptions(filters?.seasons)]}
           placeholder="Any season"
-          variant="dark"
-          className="min-w-0"
-          labelClassName={SECTION_LABEL}
-          selectClassName={cn(CONTROL, "px-3")}
-        />
-        <Select
-          label="GOAL"
-          name="org-goal"
-          value={form.goal}
-          onChange={(e) => update("goal", e.target.value)}
-          options={GOAL_OPTIONS}
-          placeholder="Any goal"
           variant="dark"
           className="min-w-0"
           labelClassName={SECTION_LABEL}

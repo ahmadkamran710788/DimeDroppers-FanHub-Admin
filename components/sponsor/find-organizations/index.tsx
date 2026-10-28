@@ -16,6 +16,7 @@ import {
   DEFAULT_SORT,
   PAGE_SIZE,
   STAT_TINTS,
+  budgetCentsOf,
   eventFiltersOf,
   type OrgSearch,
 } from "@/components/sponsor/find-organizations/data";
@@ -28,11 +29,12 @@ import type {
   SponsorSearchSort,
 } from "@/utils/types/sponsor-packages";
 
-// The query for GET /organizations: chips as comma-separated codes; NEAREST only with a location (else
-// the default order). Budget, season and goal stay in the form until the API takes them.
+// The query for GET /organizations: chips as comma-separated codes, the budget in cents; NEAREST only
+// with a location (else the default order).
 function searchParams(search: OrgSearch, sort: SponsorSearchSort, page: number) {
   const location = search.location.trim();
   const name = search.name.trim();
+  const budgetCents = budgetCentsOf(search);
   return {
     ...(name && { search: name }),
     ...(search.type && { organizationType: search.type }),
@@ -40,6 +42,8 @@ function searchParams(search: OrgSearch, sort: SponsorSearchSort, page: number) 
     ...(search.sports.length && { sports: search.sports.join(",") }),
     ...(search.inApp.length && { inApp: search.inApp.join(",") }),
     ...(search.venue.length && { venue: search.venue.join(",") }),
+    ...(budgetCents && { budgetCents }),
+    ...(search.season && { season: search.season }),
     sort: !location && sort === "NEAREST" ? DEFAULT_SORT : sort,
     page,
     limit: PAGE_SIZE,
@@ -217,7 +221,8 @@ export default function FindOrganizations() {
             </>
           ) : (
             <p className={cn(CARD, "rounded-[8px] p-6 text-[15px] text-[#a8a8a8]")}>
-              No organizations match these filters. Try a wider radius, or clear some of the sports and inventory.
+              No organizations match these filters. Try a wider radius or a bigger budget, or clear some of the
+              other filters.
             </p>
           )}
         </section>
