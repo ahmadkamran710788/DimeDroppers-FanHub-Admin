@@ -191,7 +191,6 @@ async function save(endpoint: string, body: EngagementTypePatch | EngagementCamp
     endpoint,
     method: "PATCH",
     data: { ...body },
-    invalidates: ["fanhub/org/engagement"],
     showSuccessToast: true,
     successMessage: "Saved",
   });

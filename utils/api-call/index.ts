@@ -10,8 +10,6 @@ const BASE_URL = config.apiUrl;
 // Full backend URL for a `routes.api` path, with or without a leading slash.
 const backendUrl = (endpoint: string) => `${BASE_URL}/${endpoint.replace(/^\/+/, "")}`;
 
-const apiCache = new Map<string, ApiResponse<unknown>>();
-
 interface ApiCallParams {
   endpoint: string;
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -19,9 +17,6 @@ interface ApiCallParams {
   headers?: Record<string, string>;
   showSuccessToast?: boolean;
   successMessage?: string;
-  // Scoped cache invalidation: only evict cache entries whose key contains one of
-  // these strings. Avoids wiping unrelated caches on every mutation.
-  invalidates?: string[];
   // Internal. Set on the single post-refresh retry so an endpoint that keeps
   // returning 401 signs the user out instead of recursing forever.
   _isRetry?: boolean;
@@ -95,15 +90,8 @@ export default async function apiCall<T = unknown>({
   headers,
   showSuccessToast = false,
   successMessage,
-  invalidates,
   _isRetry = false,
 }: ApiCallParams): Promise<ApiResponse<T>> {
-  const cacheKey = `${method}:${endpoint}:${JSON.stringify(data || {})}`;
-
-  if (method === "GET" && apiCache.has(cacheKey)) {
-    return apiCache.get(cacheKey) as ApiResponse<T>;
-  }
-
   try {
     // Backend endpoints are called directly with the access token from
     // utils/auth/client-token. No token means no session: the request then 401s and
@@ -144,24 +132,6 @@ export default async function apiCall<T = unknown>({
       message: successMessage || "Request successful",
     };
 
-    // Cache successful GET requests
-    if (method === "GET") {
-      apiCache.set(cacheKey, result);
-    }
-    // Scoped invalidation: evict only cache entries matching the invalidates list.
-    // Falls back to clearing all if no invalidates list is provided (legacy behaviour).
-    else if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
-      if (invalidates && invalidates.length > 0) {
-        for (const key of apiCache.keys()) {
-          if (invalidates.some((pattern) => key.includes(pattern))) {
-            apiCache.delete(key);
-          }
-        }
-      } else {
-        apiCache.clear();
-      }
-    }
-
     return result;
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
@@ -188,8 +158,7 @@ export default async function apiCall<T = unknown>({
           const refreshed =
             !_isRetry && (await getAccessToken({ force: true }).catch(() => null));
           if (refreshed) {
-            // Retry without propagating the 401 further — don't pass invalidates to
-            // avoid a double-invalidation on the retry.
+            // Retry once with the fresh token.
             return apiCall({ endpoint, method, data, headers, showSuccessToast, successMessage, _isRetry: true });
           }
           // Genuine expiry: refresh really failed. Sign the user out gracefully

@@ -52,7 +52,6 @@ export default function ConfirmActionModal({ config, target, action, onClose, on
       method: isRevoke ? "DELETE" : "POST",
       showSuccessToast: true,
       successMessage: copy.toast,
-      invalidates: [config.cacheTag],
     });
     setLoading(false);
 

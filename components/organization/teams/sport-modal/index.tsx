@@ -32,7 +32,6 @@ export default function SportModal({ sport, onClose, onSaved }: SportModalProps)
       endpoint: sport ? routes.api.orgDepartment(sport.id) : routes.api.orgDepartments,
       method: sport ? "PATCH" : "POST",
       data: { name: name.trim() },
-      invalidates: [routes.api.orgDepartments],
       showSuccessToast: true,
       successMessage: sport ? "Activity renamed" : "Activity added",
     });

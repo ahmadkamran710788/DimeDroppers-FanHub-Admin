@@ -129,7 +129,6 @@ export default function BuyTicketsPage() {
     const { success } = await apiCall({
       endpoint: routes.api.ticketCampaignGame(campaign.id, game.id),
       method: "DELETE",
-      invalidates: ["fanhub/org/tickets"],
       showSuccessToast: true,
       successMessage: `${campaign.title} removed from this game`,
     });

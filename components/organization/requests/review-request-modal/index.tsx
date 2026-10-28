@@ -48,7 +48,6 @@ export default function ReviewRequestModal({ config, target, action, onClose, on
       data: note.trim() ? { reviewNote: note.trim() } : {},
       showSuccessToast: true,
       successMessage: isAccept ? "Request accepted" : "Request rejected",
-      invalidates: config.cacheTags,
     });
     setLoading(false);
 

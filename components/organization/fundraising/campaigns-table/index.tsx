@@ -80,7 +80,6 @@ export default function CampaignsTable({
       endpoint: routes.api.campaign(c.id),
       method: "PATCH",
       data: { status },
-      invalidates: [routes.api.campaigns],
       showSuccessToast: true,
       successMessage,
     });
@@ -94,7 +93,6 @@ export default function CampaignsTable({
     const { success } = await apiCall({
       endpoint: routes.api.campaign(c.id),
       method: "DELETE",
-      invalidates: [routes.api.campaigns],
       showSuccessToast: true,
       successMessage: c.status === "DRAFT" ? "Draft deleted" : "Campaign cancelled",
     });
