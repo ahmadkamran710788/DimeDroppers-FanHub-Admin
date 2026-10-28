@@ -51,7 +51,8 @@ interface Results {
   total: number;
   totalPages: number;
   page: number;
-  centreLabel: string | null;
+  // Where the search that's shown looked: "within 25 mi of Jacksonville, FL", "in Florida"; null = anywhere.
+  area: string | null;
 }
 
 // Sponsor search: organizations near a location that play the picked sports and sell the picked
@@ -88,7 +89,7 @@ export default function FindOrganizations() {
         toast.error(r.message ?? "Couldn't load organizations.");
         // A failed search (e.g. a location that can't be found) keeps the results already shown.
         setResults((prev) =>
-          prev ? { ...prev, key } : { key, items: [], total: 0, totalPages: 0, page, centreLabel: null }
+          prev ? { ...prev, key } : { key, items: [], total: 0, totalPages: 0, page, area: null }
         );
         return;
       }
@@ -99,7 +100,12 @@ export default function FindOrganizations() {
         total: v.pagination.total,
         totalPages: v.pagination.totalPages,
         page,
-        centreLabel: v.centre?.label ?? null,
+        // As the backend applied it: a whole state ignores the radius.
+        area: v.centre
+          ? `within ${v.centre.radiusMiles} mi of ${v.centre.label}`
+          : v.state
+            ? `in ${v.state.name}`
+            : null,
       });
     });
     return () => {
@@ -134,7 +140,7 @@ export default function FindOrganizations() {
       label: "Matching organizations",
       value: String(results?.total ?? 0),
       tint: STAT_TINTS.organizations,
-      caption: results?.centreLabel ? `within ${search.radius} mi of ${results.centreLabel}` : "anywhere",
+      caption: results?.area ?? "anywhere",
     },
     {
       label: "Open packages",

@@ -9,5 +9,6 @@ export const orgSearchSchema = yup.object({
     .trim()
     .test("length", "Enter at least 2 characters", (v) => !v || v.length >= 2)
     .max(200, "At most 200 characters"),
-  radius: yup.string().required("Pick a radius"),
+  // Optional: it only applies with a location, and without a pick the API's default is used.
+  radius: yup.string(),
 });

@@ -58,6 +58,8 @@ export interface SponsorOrganizationListItem extends SponsorOrganization {
 export interface SponsorOrganizationSearch {
   items: SponsorOrganizationListItem[];
   centre: { latitude: number; longitude: number; label: string; radiusMiles: number } | null;
+  // A whole-state search ("Florida", "FL"): the radius isn't used. null otherwise.
+  state: { code: string; name: string } | null;
   sort: SponsorSearchSort;
   pagination: { page: number; limit: number; total: number; totalPages: number };
 }

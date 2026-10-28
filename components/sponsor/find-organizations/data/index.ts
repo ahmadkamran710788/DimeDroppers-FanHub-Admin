@@ -7,10 +7,10 @@ export interface OrgSearch {
   name: string;
   // An organizationType code ("SCHOOL", "TOURNAMENT"…); "" for every type.
   type: string;
-  // A state (the whole state), city and state, ZIP or address; optional (without it nothing is filtered
-  // by distance).
+  // A state (the whole state), city, ZIP or address; optional (without it nothing is filtered by
+  // distance).
   location: string;
-  // Miles, as the Radius select's value.
+  // Miles, as the Radius select's value; "" until the sponsor picks one.
   radius: string;
   sports: string[];
   // BOYS / GIRLS / COED: any of them (OR), together with every other filter (AND).
@@ -23,7 +23,7 @@ export const DEFAULT_SEARCH: OrgSearch = {
   name: "",
   type: "",
   location: "",
-  radius: "25",
+  radius: "",
   sports: [],
   genders: [],
   inApp: [],
@@ -38,11 +38,12 @@ export interface EventFilters {
   genders?: string;
 }
 
-// An area is only sent with a location; chips as comma-separated codes.
+// An area is only sent with a location (without a picked radius the API's default applies); chips as
+// comma-separated codes.
 export const eventFiltersOf = (search: OrgSearch): EventFilters => {
   const location = search.location.trim();
   return {
-    ...(location && { location, radiusMiles: Number(search.radius) }),
+    ...(location && { location, radiusMiles: search.radius ? Number(search.radius) : undefined }),
     ...(search.genders.length && { genders: search.genders.join(",") }),
   };
 };

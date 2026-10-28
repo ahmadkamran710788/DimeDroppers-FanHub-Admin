@@ -89,8 +89,12 @@ export default function SearchFilters({ filters, onSearch, searching = false }: 
           label="LOCATION"
           name="org-location"
           value={form.location}
-          onChange={(e) => update("location", e.target.value)}
-          placeholder="State, city and state, or ZIP code"
+          onChange={(e) => {
+            update("location", e.target.value);
+            // The radius only applies with a location, so emptying it puts the radius back to unpicked.
+            if (!e.target.value.trim()) update("radius", "");
+          }}
+          placeholder="City, ZIP code or state"
           error={errors.location}
           className="min-w-0 @min-[416px]:col-span-2"
           labelClassName={SECTION_LABEL}
@@ -102,6 +106,8 @@ export default function SearchFilters({ filters, onSearch, searching = false }: 
           value={form.radius}
           onChange={(e) => update("radius", e.target.value)}
           options={(filters?.radiusOptions ?? [10, 25, 50, 100]).map((miles) => ({ label: `${miles} miles`, value: String(miles) }))}
+          placeholder="Select radius"
+          disabled={!form.location.trim()}
           error={errors.radius}
           variant="dark"
           className="min-w-0"
