@@ -13,6 +13,7 @@ import PackagesPanel from "@/components/sponsor/find-organizations/packages-pane
 import SearchFilters from "@/components/sponsor/find-organizations/search-filters";
 import {
   DEFAULT_SEARCH,
+  DEFAULT_SORT,
   PAGE_SIZE,
   STAT_TINTS,
   eventFiltersOf,
@@ -27,8 +28,8 @@ import type {
   SponsorSearchSort,
 } from "@/utils/types/sponsor-packages";
 
-// The query for GET /organizations: chips as comma-separated codes; the radius and NEAREST only with a
-// location.
+// The query for GET /organizations: chips as comma-separated codes; NEAREST only with a location (else
+// the default order).
 function searchParams(search: OrgSearch, sort: SponsorSearchSort, page: number) {
   const location = search.location.trim();
   const name = search.name.trim();
@@ -39,7 +40,7 @@ function searchParams(search: OrgSearch, sort: SponsorSearchSort, page: number) 
     ...(search.sports.length && { sports: search.sports.join(",") }),
     ...(search.inApp.length && { inApp: search.inApp.join(",") }),
     ...(search.venue.length && { venue: search.venue.join(",") }),
-    sort: !location && sort === "NEAREST" ? "NAME" : sort,
+    sort: !location && sort === "NEAREST" ? DEFAULT_SORT : sort,
     page,
     limit: PAGE_SIZE,
   };
@@ -61,7 +62,7 @@ export default function FindOrganizations() {
   const [filters, setFilters] = useState<SponsorSearchFilters | null>(null);
   // The last search run, its sort and the page shown.
   const [search, setSearch] = useState(DEFAULT_SEARCH);
-  const [sort, setSort] = useState<SponsorSearchSort>("NAME");
+  const [sort, setSort] = useState<SponsorSearchSort>(DEFAULT_SORT);
   const [page, setPage] = useState(1);
   const [results, setResults] = useState<Results | null>(null);
   const [selectedId, setSelectedId] = useState("");
@@ -121,9 +122,8 @@ export default function FindOrganizations() {
   function runSearch(next: OrgSearch) {
     setSearch(next);
     setPage(1);
-    // With a location, start on the nearest.
-    if (next.location.trim()) setSort("NEAREST");
-    else if (sort === "NEAREST") setSort("NAME");
+    // The sort the sponsor picked stays; Nearest only applies with a location.
+    if (!next.location.trim() && sort === "NEAREST") setSort(DEFAULT_SORT);
   }
 
   // Another page replaces the list; back to its top so the new page isn't below the fold.
