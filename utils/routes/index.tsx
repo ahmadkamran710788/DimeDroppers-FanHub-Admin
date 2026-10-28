@@ -25,6 +25,7 @@ export const routes = {
     buyTickets: "/buy-tickets",
     fundraising: "/fundraising",
     communications: "/communications",
+    docsGeneralInfo: "/docs-general-info",
     // The Communications chat under an "Inbox" title; ?chat= opens one conversation (the header
     // messages box links here).
     inbox: "/inbox",
