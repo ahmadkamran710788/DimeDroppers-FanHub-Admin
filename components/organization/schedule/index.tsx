@@ -521,7 +521,7 @@ export default function SchedulePage() {
   const [eventsLoading, setEventsLoading] = useState(false);
   // The event picked at the top (tournament): its games replace the events list.
   // Shared with every page's event picker.
-  const { event: pickedEvent, setEvent: setPickedEvent } = useSelectedEvent();
+  const { event: pickedEvent, setEvent: setPickedEvent, noEvents } = useSelectedEvent();
   const [eventPage, setEventPage] = useState(1);
   const [eventFilters, setEventFilters] = useState<EventFilters>(DEFAULT_EVENT_FILTERS);
   const setEventFilter = (key: keyof EventFilters) => (value: string) => {
@@ -862,6 +862,8 @@ export default function SchedulePage() {
           {showEventGames &&
             (pickedEvent ? (
               <EventGames key={pickedEvent.id} eventId={pickedEvent.id} eventName={pickedEvent.name} />
+            ) : noEvents ? (
+              <p className="py-12 text-center text-sm text-white/60">Pick an event to see its schedule.</p>
             ) : (
               <div className="flex justify-center items-center py-12">
                 <Loader2 className="w-6 h-6 text-white/50 animate-spin" />

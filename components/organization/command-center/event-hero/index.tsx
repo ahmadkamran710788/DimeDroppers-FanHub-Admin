@@ -34,7 +34,7 @@ export default function EventHero({ overview }: { overview: CommandCenterOvervie
         {`${name} is operationally ready`}
       </h3>
       <p className="max-w-2xl text-base leading-[26px] text-white/80">
-        {`${n(teams?.total)} teams${teams?.divisions != null ? ` across ${n(teams.divisions)} divisions` : ""}. Monitor court status, Dime Vision streams, score feeds, sponsor activations and fan engagement without leaving the tournament workspace.`}
+        {`${n(teams?.total)} teams${teams?.divisions != null ? ` across ${n(teams.divisions)} divisions` : ""}. Monitor court status, Dime Vision streams, score feeds, sponsor activations and fan engagement without leaving the ${isTournament ? "tournament" : "school"} workspace.`}
       </p>
       <div className="flex flex-wrap gap-3">
         <Button variant="cta" label="Open Live Operations Board" onClick={comingSoon} />

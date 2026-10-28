@@ -42,7 +42,7 @@ export default function AllCampaigns({ campaigns, loading, onChanged }: AllCampa
       (c) =>
         (!status || campaignStatusLabel(c) === status) &&
         (!q ||
-          [c.title, c.description, c.team?.name, c.sponsorName].some((v) => v?.toLowerCase().includes(q)))
+          [c.title, c.description, c.team?.name ?? c.tournamentTeam?.name, c.sponsorName].some((v) => v?.toLowerCase().includes(q)))
     );
   }, [campaigns, status, query]);
 

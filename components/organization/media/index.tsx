@@ -99,7 +99,7 @@ export default function MediaPage() {
   const isTournament = orgKind === "tournament";
   const [schoolGames, setSchoolGames] = useState<MediaGame[] | null>(null);
   // Shared with every page's event picker.
-  const { event, setEvent } = useSelectedEvent();
+  const { event, setEvent, noEvents } = useSelectedEvent();
   const [eventGames, setEventGames] = useState<{ eventId: string; games: MediaGame[] } | null>(null);
   const eventId = event?.id ?? "";
 
@@ -153,7 +153,7 @@ export default function MediaPage() {
         ? eventGames.games
         : []
       : undefined;
-  const loading = isSchool ? schoolGames === null : isTournament && (!eventId || eventGames?.eventId !== eventId);
+  const loading = isSchool ? schoolGames === null : isTournament && !noEvents && (!eventId || eventGames?.eventId !== eventId);
 
   return (
     <GamesBrowser
@@ -162,6 +162,7 @@ export default function MediaPage() {
       tabs={CONTENT_TABS}
       games={games}
       loading={loading}
+      emptyText={isTournament && noEvents ? "Pick an event to see its games." : undefined}
       headerAction={
         isTournament && (
           <EventSelect

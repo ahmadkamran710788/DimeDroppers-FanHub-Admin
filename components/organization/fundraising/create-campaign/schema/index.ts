@@ -30,3 +30,12 @@ export const createCampaignSchema = yup.object({
   impact: yup.array(yup.string().oneOf(IMPACT_OPTIONS)),
   description: yup.string().trim().max(DESCRIPTION_MAX, `Keep it under ${DESCRIPTION_MAX} characters`),
 });
+
+// A tournament campaign raises for one team of an event (not a game, for now).
+export const tournamentCampaignSchema = createCampaignSchema.shape({
+  teamId: yup.string(),
+  fanHubTeamId: yup.string().required("Select the team this campaign is for"),
+});
+
+// Editing a tournament campaign: its game and team are fixed, so neither is checked.
+export const tournamentCampaignEditSchema = createCampaignSchema.shape({ teamId: yup.string() });

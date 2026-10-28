@@ -22,6 +22,8 @@ interface GamesBrowserProps<T extends string> {
   loading?: boolean;
   // Beside the title, e.g. a tournament's event picker.
   headerAction?: ReactNode;
+  // Shown when there are no games; "No games here yet." without it.
+  emptyText?: string;
 }
 
 // Games list on the left; the selected game's score hero and tabbed content on the right.
@@ -34,6 +36,7 @@ export default function GamesBrowser<T extends string>({
   games: allGames = SAMPLE_GAMES,
   loading = false,
   headerAction,
+  emptyText = "No games here yet.",
 }: GamesBrowserProps<T>) {
   const [listTab, setListTab] = useState<ListTab>("All Games");
   const [selectedId, setSelectedId] = useState("");
@@ -70,7 +73,7 @@ export default function GamesBrowser<T extends string>({
                 <GameCard key={g.id} game={g} selected={g.id === selected?.id} onSelect={() => setSelectedId(g.id)} />
               ))
             )}
-            {!loading && games.length === 0 && <p className="py-10 text-center text-sm text-white/50">No games here yet.</p>}
+            {!loading && games.length === 0 && <p className="py-10 text-center text-sm text-white/50">{emptyText}</p>}
           </div>
         </div>
 

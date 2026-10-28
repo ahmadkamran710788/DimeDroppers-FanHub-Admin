@@ -41,11 +41,11 @@ export default function CommandCenterPage() {
   const heading = HEADING[kind ?? "unknown"];
   // The tournament event picked on the right of the title (the newest at first), shared with every
   // other page's event picker.
-  const { event, setEvent } = useSelectedEvent();
+  const { event, setEvent, noEvents } = useSelectedEvent();
   const eventId = kind === "tournament" ? (event?.id ?? "") : "";
   // The stat cards, readiness, hero and live games follow the picked event; a tournament (or an org
   // not known yet) waits for it rather than loading the whole organisation first.
-  const waiting = kind !== "school" && !eventId;
+  const waiting = kind !== "school" && !eventId && !noEvents;
   const { overview, loading } = useCommandCenterOverview(eventId, !waiting);
 
   return (

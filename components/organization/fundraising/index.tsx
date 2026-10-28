@@ -12,7 +12,9 @@ import { useCampaigns } from "@/components/organization/fundraising/use-campaign
 import { useDonationsByTeam } from "@/components/organization/fundraising/use-donations-by-team";
 import TeamsTable from "@/components/organization/teams/teams-table";
 import { useOrgTeams } from "@/components/organization/teams/use-org-teams";
-import { useAuth } from "@/context/auth";
+import Loader from "@/components/common/loader";
+import TournamentFundraising from "@/components/organization/fundraising/tournament-fundraising";
+import { orgKindOf, useAuth } from "@/context/auth";
 import { useSetup } from "@/context/setup";
 import { formatMoney } from "@/utils/helper";
 import { routes } from "@/utils/routes";
@@ -49,7 +51,27 @@ const statCards = (s: CampaignStats | null): Stat[] => [
   },
 ];
 
+// Tournaments raise per game of an event (their own page); schools per team. Nothing loads until the
+// organisation type is known, so a tournament never calls the school endpoints.
 export default function FundraisingPage() {
+  const { org, isLoading } = useAuth();
+  const kind = orgKindOf(org);
+  if (kind === null) {
+    // The profile didn't load (e.g. a network blip on /me): say so instead of spinning for ever.
+    if (!isLoading && !org) {
+      return (
+        <div className="flex flex-col items-center gap-4 py-16 text-white">
+          <p className="text-sm text-white/70">We couldn&apos;t load your organization.</p>
+          <Button label="Try again" onClick={() => window.location.reload()} />
+        </div>
+      );
+    }
+    return <Loader />;
+  }
+  return kind === "tournament" ? <TournamentFundraising /> : <SchoolFundraising />;
+}
+
+function SchoolFundraising() {
   const router = useRouter();
   const openCreate = () => router.push(routes.ui.createFundraisingCampaign);
   const [tab, setTab] = useState<Tab>("Teams");
@@ -64,7 +86,8 @@ export default function FundraisingPage() {
   const campaignsByTeam = useMemo(
     () =>
       campaigns.reduce<Record<string, Campaign[]>>((acc, c) => {
-        (acc[c.teamId] ??= []).push(c);
+        // A tournament campaign has no school team.
+        if (c.teamId) (acc[c.teamId] ??= []).push(c);
         return acc;
       }, {}),
     [campaigns]
