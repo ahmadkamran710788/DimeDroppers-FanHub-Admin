@@ -1,6 +1,8 @@
 // Find Organizations: the search form's shape. The chips, radius options and sorts come from
 // GET /fanhub/sponsor-packages/filters; the organisations and packages from the API.
 
+import type { SponsorSearchSort } from "@/utils/types/sponsor-packages";
+
 // What the sponsor searches with (chip values are the API codes, e.g. "FOOTBALL").
 export interface OrgSearch {
   // Part of the organization name; optional.
@@ -17,6 +19,11 @@ export interface OrgSearch {
   genders: string[];
   inApp: string[];
   venue: string[];
+  // As typed ("$60,000"); "" for any. Budget, season and goal are form-only until the API takes them.
+  budget: string;
+  // A SEASON_OPTIONS / GOAL_OPTIONS value; "" for any.
+  season: string;
+  goal: string;
 }
 
 export const DEFAULT_SEARCH: OrgSearch = {
@@ -28,7 +35,13 @@ export const DEFAULT_SEARCH: OrgSearch = {
   genders: [],
   inApp: [],
   venue: [],
+  budget: "",
+  season: "",
+  goal: "",
 };
+
+// The API's default order, with or without a location: most games left this season first.
+export const DEFAULT_SORT: SponsorSearchSort = "UPCOMING_GAMES";
 
 // What a tournament's events list needs from the search, so its picker shows the events its card
 // counted: the same location, radius and genders.

@@ -10,18 +10,34 @@ export const SPONSOR_PROFILE = {
   nationalAccount: true,
 };
 
-// A sponsor's category, picked at sign-up and changed on Sponsor Profile.
+// A sponsor's category, picked at sign-up and changed on Sponsor Profile and Brand Assets.
 export const SPONSOR_CATEGORY_OPTIONS = toOptions([
-  "Energy & utilities",
-  "Food & restaurants",
-  "Automotive",
-  "Banking & insurance",
-  "Healthcare",
-  "Retail",
-  "Real estate",
-  "Sports & fitness",
-  "Local services",
+  "Sports & Athletic Apparel",
+  "Food, Beverage & Nutrition",
+  "Technology & Consumer Electronics",
+  "Entertainment & Media",
+  "Banking, Finance & Payments",
+  "Fitness, Health & Recovery",
+  "Automotive & Transportation",
+  "Fashion & Lifestyle",
+  "Education & Career Development",
+  "Local Businesses & Community Partners",
+  "Insurance & Professional Services",
+  "Sports Collectibles & Merchandise",
+  "Youth Sports & Family Brands",
+  "Sports Technology & Analytics",
+  "Community Development & Nonprofits",
+  "Travel, Hotels & Hospitality",
+  "Telecommunications & Internet",
+  "Home, Retail & Consumer Goods",
+  "Gaming & Esports",
+  "Government & Public Initiatives",
 ]);
+
+// A campaign's season and goal, on the Campaign Planner and the Find Organizations filters. Mock data
+// until the API takes them.
+export const SEASON_OPTIONS = toOptions(["Fall 2026 · Winter 2027", "Fall 2026 only", "Full year"]);
+export const GOAL_OPTIONS = toOptions(["Brand awareness", "Store traffic", "Community goodwill"]);
 
 // The sponsor's logo: SVG or PNG only (file picker filter, and the check for dropped files).
 export const LOGO_ACCEPT = ".svg,.png";

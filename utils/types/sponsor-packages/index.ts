@@ -11,7 +11,14 @@ export type UnavailableReason =
   | "NO_UPCOMING_GAMES"
   | "EVENT_ENDED"
   | "TOURNAMENT_INCOMPLETE";
-export type SponsorSearchSort = "NEAREST" | "NAME" | "FAN_REACH";
+export type SponsorSearchSort =
+  | "UPCOMING_GAMES"
+  | "ATTENDANCE"
+  | "PRICE_LOW"
+  | "PRICE_HIGH"
+  | "NEAREST"
+  | "NAME"
+  | "FAN_REACH";
 
 export interface FilterOption {
   code: string;
@@ -49,6 +56,13 @@ export interface SponsorOrganizationListItem extends SponsorOrganization {
   sports: string[];
   distanceMiles: number | null;
   fanReach: number;
+  // The school's size; null when not known.
+  studentCount: number | null;
+  teacherCount: number | null;
+  // Students + teachers (what ATTENDANCE sorts by); null when neither is known.
+  expectedAudience: number | null;
+  // Games still to come this season.
+  upcomingGameCount: number;
   packageCount: number;
   physicalAssetCount: number;
   fromCents: number | null;

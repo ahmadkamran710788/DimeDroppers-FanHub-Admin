@@ -1,4 +1,3 @@
-import { toOptions } from "@/utils/helper";
 import { SPONSOR_PROFILE } from "@/components/sponsor/data";
 
 // Mock data for the Brand Assets page until the sponsor API is integrated.
@@ -47,12 +46,10 @@ export const BRAND_PROFILE = {
   name: SPONSOR_PROFILE.name,
   tagline: "Power the home team.",
   website: "northpeak.co",
-  category: "Energy & utilities",
+  category: "Local Businesses & Community Partners",
   notes: "Use the white wordmark on dark backgrounds. Keep clear space equal to the peak height.",
   colors: ["#F26B1D", "#0F3D3E", "#F4EFE6"],
 };
-
-export const CATEGORY_OPTIONS = toOptions(["Energy & utilities", "Food & beverage", "Automotive", "Local business"]);
 
 export const MAX_BRAND_COLORS = 6;
 

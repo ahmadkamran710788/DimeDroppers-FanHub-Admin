@@ -19,7 +19,7 @@ export interface ProfileDetails {
 
 export const PROFILE_DETAILS: ProfileDetails = {
   name: SPONSOR_PROFILE.name,
-  category: "Energy & utilities",
+  category: "Local Businesses & Community Partners",
   logo: { name: "northpeak-logo.svg", spec: "SVG · 24 KB" },
 };
 

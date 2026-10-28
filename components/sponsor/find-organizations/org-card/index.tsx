@@ -11,7 +11,8 @@ interface OrgCardProps {
 
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
 
-// One organisation in the results: logo, name, type and sports, distance, and what it sells.
+// One organisation in the results: logo, name, type and sports, distance, its reach, expected audience
+// and games left this season, and what it sells.
 export default function OrgCard({ org, selected, onSelect }: OrgCardProps) {
   return (
     // A whole clickable card, not an action button, so it stays a native button.
@@ -44,6 +45,15 @@ export default function OrgCard({ org, selected, onSelect }: OrgCardProps) {
         <div className="flex flex-wrap gap-x-[18px] gap-y-1 text-sm mt-1">
           <span>
             <strong>{org.fanReach.toLocaleString("en-US")}</strong> <span className="text-[#a8a8a8]">fan reach</span>
+          </span>
+          {org.expectedAudience !== null && (
+            <span className="text-[#a8a8a8]" title="Students + teachers">
+              <strong className="text-white">{org.expectedAudience.toLocaleString("en-US")}</strong> expected audience
+            </span>
+          )}
+          <span className="text-[#a8a8a8]">
+            <strong className="text-white">{org.upcomingGameCount.toLocaleString("en-US")}</strong>{" "}
+            {org.upcomingGameCount === 1 ? "game left" : "games left"}
           </span>
           <span className="text-[#a8a8a8]">
             <strong className="text-white">{org.packageCount}</strong> {org.packageCount === 1 ? "package" : "packages"}
