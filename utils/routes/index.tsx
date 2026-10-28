@@ -4,6 +4,8 @@ export const routes = {
     profile: "/profile",
     signIn: "/auth/sign-in",
     signUp: "/auth/sign-up",
+    // Sponsor sign-up (UI only until the sponsor sign-up API is wired).
+    sponsorSignUp: "/auth/sponsor-sign-up",
     schedule: "/schedule",
     scorekeepers: "/scorekeepers",
     videographers: "/videographers",
@@ -54,14 +56,16 @@ export const routes = {
       base: "/setup-wizard",
       organizationDetails: "/setup-wizard/organization-details",
     },
-    // Sponsor role (app/(sponsor)). Fundable Needs is where a sponsor lands after sign-in.
+    // Sponsor role (app/(sponsor)). Sponsorships is where a sponsor lands after sign-in.
     sponsor: {
       fundableNeeds: "/sponsor/fundable-needs",
-      findOrganizations: "/sponsor/find-organizations",
+      // Campaign Planner (national accounts) and Find Organizations, as tabs; ?tab= picks one.
+      sponsorships: "/sponsor/sponsorships",
+      findOrganizations: "/sponsor/sponsorships?tab=find",
       brandAssets: "/sponsor/brand-assets",
-      campaignPlanner: "/sponsor/campaign-planner",
       cart: "/sponsor/cart",
       mySponsorships: "/sponsor/my-sponsorships",
+      profile: "/sponsor/profile",
     },
   },
 

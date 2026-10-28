@@ -3,9 +3,8 @@
 import Image from "next/image";
 import { routes } from "@/utils/routes";
 import SidebarFrame, { type NavSection } from "@/components/layout/sidebar-frame";
-import { SPONSOR_PROFILE } from "@/components/sponsor/data";
 import { useSponsorAccount } from "@/components/sponsor/use-sponsor-account";
-import { Heart, Image as ImageIcon, Search, Sparkles } from "lucide-react";
+import { Heart, Image as ImageIcon, Search } from "lucide-react";
 
 // Pages without a route yet link to "#".
 const NAV_SECTIONS: NavSection[] = [
@@ -13,24 +12,18 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Brand",
     items: [
       { icon: <ImageIcon className="size-6" strokeWidth={1.5} />, label: "Brand Assets", href: routes.ui.sponsor.brandAssets },
-      { icon: "/icons/icon-user.svg", label: "Sponsor Profile", href: "#" },
+      { icon: "/icons/icon-user.svg", label: "Sponsor Profile", href: routes.ui.sponsor.profile },
     ],
   },
   {
     title: "Sponsorship",
     items: [
-      { icon: <Search className="size-6" strokeWidth={1.5} />, label: "Find Organizations", href: routes.ui.sponsor.findOrganizations },
+      { icon: <Search className="size-6" strokeWidth={1.5} />, label: "Sponsorships", href: routes.ui.sponsor.sponsorships },
       { icon: <Heart className="size-6" strokeWidth={1.5} />, label: "Fundable Needs", href: routes.ui.sponsor.fundableNeeds },
       { icon: "/icons/icon-calendar.svg", label: "My Sponsorships", href: routes.ui.sponsor.mySponsorships },
     ],
   },
 ];
-
-// Campaign Planner is for national accounts only.
-const DIME_AI_SECTION: NavSection = {
-  title: "Dime AI",
-  items: [{ icon: <Sparkles className="size-6" strokeWidth={1.5} />, label: "Campaign Planner", href: routes.ui.sponsor.campaignPlanner, badge: "NATIONAL" }],
-};
 
 interface SponsorSidebarProps {
   open: boolean;
@@ -48,7 +41,7 @@ export default function SponsorSidebar({ open, onClose }: SponsorSidebarProps) {
           <span className="font-display font-black italic text-[19px] leading-none text-white">DIME SPONSORS</span>
         </div>
       }
-      sections={SPONSOR_PROFILE.nationalAccount ? [...NAV_SECTIONS, DIME_AI_SECTION] : NAV_SECTIONS}
+      sections={NAV_SECTIONS}
       profileName={account?.displayName ?? "Sponsor"}
       profileRole="Sponsor"
       open={open}

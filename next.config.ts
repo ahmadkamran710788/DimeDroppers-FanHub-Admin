@@ -5,6 +5,13 @@ const nextConfig: NextConfig = {
     // Required for the `unauthorized()` API used by utils/api-request on 401 responses.
     authInterrupts: true,
   },
+  // Find Organizations and Campaign Planner became tabs of the Sponsorships page; old links still land.
+  async redirects() {
+    return [
+      { source: "/sponsor/find-organizations", destination: "/sponsor/sponsorships?tab=find", permanent: false },
+      { source: "/sponsor/campaign-planner", destination: "/sponsor/sponsorships?tab=planner", permanent: false },
+    ];
+  },
   async headers() {
     return [
       {

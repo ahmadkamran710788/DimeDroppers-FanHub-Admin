@@ -81,7 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Signed-out pages have no session to restore.
     const { pathname } = window.location;
-    const signedOutPage = [routes.ui.signIn, routes.ui.signUp].some((p) => pathname.startsWith(p));
+    const signedOutPage = [routes.ui.signIn, routes.ui.signUp, routes.ui.sponsorSignUp].some((p) =>
+      pathname.startsWith(p)
+    );
     loadProfile(signedOutPage)
       // A network failure is not a dead session; keep the user where they are.
       .catch(() => null)
