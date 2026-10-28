@@ -163,7 +163,7 @@ export default function TeamsPage() {
 
       {/* Stat cards. When the tournament focus changes, cards that leave fade out and the rest slide
           into place (the stat-card view-transition classes in globals.css). */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4 lg:gap-10">
         {stats.map((stat) => (
           <ViewTransition key={stat.label} enter="stat-card-enter" exit="stat-card-exit" update="stat-card-move">
             <BadgeStatCard {...stat} />
