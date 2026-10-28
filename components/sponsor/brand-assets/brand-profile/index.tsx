@@ -10,9 +10,10 @@ import SectionCard from "@/components/common/section-card";
 import Select from "@/components/common/select";
 import Textarea from "@/components/common/textarea";
 import BrandLogo from "@/components/sponsor/brand-logo";
+import { SPONSOR_CATEGORY_OPTIONS } from "@/components/sponsor/data";
 import { CARD, FIELD, SECTION_LABEL } from "@/components/sponsor/styles";
 import BrandColors from "@/components/sponsor/brand-assets/brand-colors";
-import { BRAND_LOGO, BRAND_PROFILE, CATEGORY_OPTIONS } from "@/components/sponsor/brand-assets/data";
+import { BRAND_LOGO, BRAND_PROFILE } from "@/components/sponsor/brand-assets/data";
 import { brandProfileSchema } from "@/components/sponsor/brand-assets/schema";
 
 const INPUT = cn(FIELD, "h-12 py-0 px-[14px] text-[16px] min-w-0");
@@ -84,7 +85,7 @@ export default function BrandProfile() {
           name="brand-category"
           value={form.category}
           onChange={setField("category")}
-          options={CATEGORY_OPTIONS}
+          options={SPONSOR_CATEGORY_OPTIONS}
           error={errors.category}
           variant="dark"
           className="min-w-0"
