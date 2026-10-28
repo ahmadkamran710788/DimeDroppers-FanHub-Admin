@@ -50,7 +50,6 @@ export default function EditTeamModal({ team, sport, departments, onClose, onSav
       endpoint: routes.api.orgTeam(team.id),
       method: "PATCH",
       data: changes,
-      invalidates: [routes.api.orgDepartments],
       showSuccessToast: true,
       successMessage: "Team updated",
     });

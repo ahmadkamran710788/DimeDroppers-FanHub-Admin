@@ -54,7 +54,6 @@ export default function StaffTab({ teamId, staff, loading, reload }: StaffTabPro
     const result = await apiCall({
       endpoint: routes.api.rosterStaffInvite(s.id),
       method: "POST",
-      invalidates: [routes.api.rosterStaff],
       showSuccessToast: true,
       successMessage: `Invitation sent to ${s.email}`,
     });
@@ -65,7 +64,6 @@ export default function StaffTab({ teamId, staff, loading, reload }: StaffTabPro
     const result = await apiCall({
       endpoint: kind === "withdraw" ? routes.api.rosterStaffInvite(member.id) : routes.api.rosterStaffMember(member.id),
       method: "DELETE",
-      invalidates: [routes.api.rosterStaff],
       showSuccessToast: true,
       successMessage: kind === "withdraw" ? "Invitation withdrawn" : `${member.name} removed from staff`,
     });

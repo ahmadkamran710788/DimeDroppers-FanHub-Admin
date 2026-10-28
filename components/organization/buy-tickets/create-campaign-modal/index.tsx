@@ -26,9 +26,6 @@ interface CreateCampaignModalProps {
   onSaved: () => void;
 }
 
-// The API answers in a `data` list; mutations clear every cached tickets read.
-const INVALIDATES = ["fanhub/org/tickets"];
-
 const LABEL = "text-sm font-medium text-midnight-navy";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -146,7 +143,6 @@ export default function CreateCampaignModal({ onClose, campaign, onSaved }: Crea
         // Required for a tournament (400 "Pick the event first"); a school sends none.
         ...(isTournament && event && { eventId: event.id }),
       },
-      invalidates: INVALIDATES,
       showSuccessToast: true,
       successMessage: "Campaign created",
     });
@@ -162,7 +158,7 @@ export default function CreateCampaignModal({ onClose, campaign, onSaved }: Crea
       ...detach.map((id) => ({ endpoint: routes.api.ticketCampaignGame(c.id, id), method: "DELETE" as const, data: undefined })),
     ];
     for (const call of calls) {
-      const { success } = await apiCall({ ...call, invalidates: INVALIDATES });
+      const { success } = await apiCall(call);
       if (!success) return false;
     }
     return true;

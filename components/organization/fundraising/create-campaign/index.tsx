@@ -178,7 +178,6 @@ export default function CreateCampaignPage({ campaignId, initialTeamId }: Campai
       endpoint: isTournament ? routes.api.tournamentCampaigns : routes.api.campaigns,
       method: "POST",
       data: { ...payload },
-      invalidates: [routes.api.campaigns],
       showSuccessToast: true,
       successMessage: status === "DRAFT" ? "Draft saved" : "Campaign created",
     });
@@ -197,7 +196,6 @@ export default function CreateCampaignPage({ campaignId, initialTeamId }: Campai
       endpoint: isTournament ? routes.api.tournamentCampaign(campaignId) : routes.api.campaign(campaignId),
       method: "PATCH",
       data: { ...changes },
-      invalidates: [routes.api.campaigns],
       showSuccessToast: true,
       successMessage: "Campaign updated",
     });
