@@ -10,7 +10,7 @@ function Team({ team }: { team: MediaTeam }) {
   return (
     <div className="flex flex-col items-center gap-3 min-w-0 text-center">
       <TeamAvatar name={team.name} logo={team.logo} size={80} className="size-16 sm:size-20" />
-      <span className="max-w-[200px] text-base sm:text-lg leading-6 font-semibold text-white">{team.name}</span>
+      <span className="max-w-[200px] break-words text-base sm:text-lg leading-6 font-semibold text-white">{team.name}</span>
     </div>
   );
 }
@@ -35,11 +35,11 @@ export default function GameHero({ game: listed }: { game: MediaGame }) {
           <span className="h-9 px-3.5 rounded-[8px] flex items-center bg-[#0B1424]/80 text-[15px] text-white whitespace-nowrap">
             {label}
           </span>
-          <span className="font-display font-extrabold text-[44px] sm:text-[64px] leading-none text-white whitespace-nowrap">
+          <span className="font-display font-extrabold text-[44px] 2xl:text-[64px] leading-none text-white whitespace-nowrap">
             {hasScore ? (
               <>
                 {game.homeScore}
-                <span className="mx-4 sm:mx-8">-</span>
+                <span className="mx-4 2xl:mx-8">-</span>
                 {game.awayScore}
               </>
             ) : (
