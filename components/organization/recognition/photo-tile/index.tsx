@@ -24,6 +24,8 @@ interface PhotoTileProps {
   className?: string;
   // Native drag-and-drop handlers, spread onto the tile.
   dragProps?: React.HTMLAttributes<HTMLDivElement> & { draggable?: boolean };
+  // Opens the photo at full size when the image is clicked.
+  onOpen?: () => void;
 }
 
 // Fan photo thumbnail with a drag handle and either a select checkbox or a remove button.
@@ -39,6 +41,7 @@ export default function PhotoTile({
   dropTarget,
   className,
   dragProps,
+  onOpen,
 }: PhotoTileProps) {
   // The src whose image failed (e.g. its S3 file is missing). Keyed by src, so a new URL tries again.
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
@@ -79,8 +82,27 @@ export default function PhotoTile({
           className={cn("object-cover", added && "opacity-60")}
         />
       )}
+      {onOpen && !failed && (
+        // The whole image is the click area; the controls below sit on top of it. A span, not a <button>:
+        // Firefox won't start a drag from a button, and the tile must stay draggable from anywhere.
+        // A drag never fires a click, so dragging doesn't open the preview.
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={onOpen}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onOpen();
+            }
+          }}
+          aria-label={`View ${alt} at full size`}
+          // Tailwind's preflight gives role="button" a pointer; keep the tile's grab cursor instead.
+          className="absolute inset-0 cursor-[inherit]"
+        />
+      )}
       {!added && (
-        <span className="absolute top-1.5 left-1.5 size-8 rounded-[6px] bg-black/60 flex items-center justify-center">
+        <span className="pointer-events-none absolute top-1.5 left-1.5 size-8 rounded-[6px] bg-black/60 flex items-center justify-center">
           <GripVertical className="size-4 text-white" strokeWidth={2} />
         </span>
       )}
@@ -112,7 +134,7 @@ export default function PhotoTile({
         </button>
       )}
       {caption && (
-        <span className="absolute inset-x-0 bottom-0 px-2 py-1.5 bg-gradient-to-t from-black/85 to-transparent flex flex-col text-white">
+        <span className="pointer-events-none absolute inset-x-0 bottom-0 px-2 py-1.5 bg-gradient-to-t from-black/85 to-transparent flex flex-col text-white">
           <span className="text-xs font-semibold truncate">{caption}</span>
           {subcaption && <span className="text-[11px] text-white/75 truncate">{subcaption}</span>}
         </span>

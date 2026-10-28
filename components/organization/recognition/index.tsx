@@ -11,6 +11,7 @@ import Loader from "@/components/common/loader";
 import Pagination from "@/components/common/pagination";
 import SearchInput from "@/components/common/search-input";
 import Tabs from "@/components/common/tabs";
+import PhotoPreview, { type PhotoPreviewItem } from "@/components/organization/recognition/photo-preview";
 import PhotoTemplates from "@/components/organization/recognition/photo-templates";
 import PhotoTile from "@/components/organization/recognition/photo-tile";
 import RecognitionsTable from "@/components/organization/recognition/recognitions-table";
@@ -64,6 +65,8 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
   const [drag, setDrag] = useState<DragSource>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  // The photo shown at full size, from a click on a gallery or wall tile.
+  const [preview, setPreview] = useState<PhotoPreviewItem | null>(null);
   const fw = useFanWall();
 
   // Each fan image is downloaded once per browser instead of on every load (see utils/photobooth-image-cache).
@@ -252,6 +255,14 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
                             added={fw.onWall.has(j.id)}
                             selected={selected.has(j.id)}
                             onToggle={addable(j) ? () => toggle(j.id) : undefined}
+                            onOpen={() =>
+                              setPreview({
+                                src: j.resultUrl!,
+                                alt: imageAlt(j.fan.name),
+                                caption: j.fan.name,
+                                subcaption: [j.template.name, j.game.title, fmtDate(j.game.utcTime)].filter(Boolean).join(" · "),
+                              })
+                            }
                             className="aspect-square"
                             dragProps={
                               addable(j)
@@ -341,6 +352,13 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
                               alt={imageAlt(item.photoboothJob.fan.name)}
                               caption={item.photoboothJob.fan.name}
                               onRemove={fw.busy ? undefined : () => void fw.remove([item.id])}
+                              onOpen={() =>
+                                setPreview({
+                                  src: item.photoboothJob.resultUrl!,
+                                  alt: imageAlt(item.photoboothJob.fan.name),
+                                  caption: item.photoboothJob.fan.name,
+                                })
+                              }
                               dropTarget={drag !== null && overIndex === i}
                               className="w-32 h-28 shrink-0"
                               dragProps={{
@@ -384,6 +402,8 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
           return true;
         }}
       />
+
+      <PhotoPreview photo={preview} onClose={() => setPreview(null)} />
     </div>
   );
 }
