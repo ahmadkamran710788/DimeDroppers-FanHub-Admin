@@ -5,7 +5,7 @@ import { useSetup } from "@/context/setup";
 import Image from "next/image";
 import { orgKindOf, useAuth, type OrgKind } from "@/context/auth";
 import SidebarFrame, { type NavSection } from "@/components/layout/sidebar-frame";
-import { Bot, BotMessageSquare, ClipboardList, Gem, GitFork, LayoutDashboard, Layers, MapPin, MessagesSquare, ShoppingBag, Sparkles, Star, Trophy, Video } from "lucide-react";
+import { Bot, BotMessageSquare, ClipboardList, FileText, Gem, GitFork, LayoutDashboard, Layers, MapPin, MessagesSquare, ShoppingBag, Sparkles, Star, Trophy, Video } from "lucide-react";
 
 // Setup Wizard is not in the sidebar: first-time setup is a full-screen flow after
 // sign-in, and afterwards the organization is edited from Profile.
@@ -79,11 +79,21 @@ const TOURNAMENT_COMMAND_ITEMS: NavSection["items"] = [
   { icon: <GitFork className="size-6" strokeWidth={1.5} />, label: "Brackets", href: routes.ui.brackets },
 ];
 
-// The sections for this org: a tournament gets its event pages after Schedule; a school's sidebar is
-// unchanged.
+// Tournament only: the event documents fans see, after Communications in Operations.
+const TOURNAMENT_OPERATIONS_ITEMS: NavSection["items"] = [
+  { icon: <FileText className="size-6" strokeWidth={1.5} />, label: "Docs & General Info", href: routes.ui.docsGeneralInfo },
+];
+
+// The sections for this org: a tournament gets its event pages after Schedule and Docs & General Info
+// after Communications; a school's sidebar is unchanged.
 const sectionsFor = (isTournament: boolean): NavSection[] =>
   isTournament
-    ? NAV_SECTIONS.map((s) => (s.title === "Command" ? { ...s, items: [...s.items, ...TOURNAMENT_COMMAND_ITEMS] } : s))
+    ? NAV_SECTIONS.map((s) => {
+        if (s.title === "Command") return { ...s, items: [...s.items, ...TOURNAMENT_COMMAND_ITEMS] };
+        if (s.title !== "Operations") return s;
+        const at = s.items.findIndex((i) => i.href === routes.ui.communications) + 1;
+        return { ...s, items: [...s.items.slice(0, at), ...TOURNAMENT_OPERATIONS_ITEMS, ...s.items.slice(at)] };
+      })
     : NAV_SECTIONS;
 
 // The logo says which panel this is (162×46: the wordmark plus "SCHOOL" / "TOURNAMENT" under it);

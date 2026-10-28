@@ -42,6 +42,7 @@ const PAGE_TITLES: Record<string, string> = {
   [routes.ui.sponsors]: "Sponsors",
   [routes.ui.helpCenter]: "Help Center",
   [routes.ui.communications]: "Communications",
+  [routes.ui.docsGeneralInfo]: "Docs & General Info",
   [routes.ui.inbox]: "Inbox",
   [routes.ui.fanhubAi]: "FanHub AI",
   [routes.ui.addSponsor]: "Sponsors",
