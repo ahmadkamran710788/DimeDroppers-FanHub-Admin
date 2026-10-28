@@ -12,6 +12,10 @@ interface SelectedEventContextValue {
   // The tournament event picked anywhere (Command Center, Schedule, Teams, Media, …); null until one is.
   event: SelectedEvent | null;
   setEvent: (event: SelectedEvent | null) => void;
+  // The organisation has no events at all (the picker found none): pages show "Pick an event to see
+  // its …" instead of waiting for an event that will never be picked.
+  noEvents: boolean;
+  setNoEvents: (none: boolean) => void;
 }
 
 const SelectedEventContext = createContext<SelectedEventContextValue | null>(null);
@@ -45,6 +49,7 @@ export function SelectedEventProvider({ children }: { children: ReactNode }) {
   const orgId = org?.id ?? "";
   // The pick made this visit; before one, the stored pick (read once per organisation).
   const [picked, setPicked] = useState<{ orgId: string; event: SelectedEvent | null } | null>(null);
+  const [noEvents, setNoEvents] = useState(false);
   const stored = useMemo(() => (orgId ? readStored(orgId) : null), [orgId]);
   const event = picked?.orgId === orgId ? picked.event : stored;
 
@@ -59,7 +64,7 @@ export function SelectedEventProvider({ children }: { children: ReactNode }) {
     [orgId]
   );
 
-  const value = useMemo(() => ({ event, setEvent }), [event, setEvent]);
+  const value = useMemo(() => ({ event, setEvent, noEvents, setNoEvents }), [event, setEvent, noEvents]);
   return <SelectedEventContext.Provider value={value}>{children}</SelectedEventContext.Provider>;
 }
 

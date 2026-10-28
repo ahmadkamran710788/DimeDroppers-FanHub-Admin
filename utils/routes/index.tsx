@@ -184,6 +184,15 @@ export const routes = {
     campaignStats: "fanhub/org/campaigns/stats",
     // Every team of the org with its paid-donation totals (gross, net, count), teams that raised nothing included.
     donationsByTeam: "fanhub/org/donations/by-team",
+    // A tournament event's donations: summary, games with campaigns, and paid donations (?page=&limit=).
+    // A tournament event's teams for a team campaign (no game): GET ?search=&divisionId=, all at once.
+    // A tournament event's teams, each with its campaigns and what they raised (?search=&divisionId=&status=&hasCampaigns=).
+    tournamentTeamDonations: (eventId: string) => `fanhub/org/campaigns/tournament/events/${eventId}/team-donations`,
+    // Create (POST) and edit (PATCH) a tournament team campaign.
+    tournamentCampaigns: "fanhub/org/campaigns/tournament",
+    tournamentCampaign: (id: string) => `fanhub/org/campaigns/tournament/${id}`,
+    tournamentCampaignTeams: (eventId: string) => `fanhub/org/campaigns/tournament/events/${eventId}/teams`,
+    eventDonations: (eventId: string) => `fanhub/org/donations/events/${eventId}`,
     // Engagement console (FANHUB_ORG_ENGAGEMENT_ADMIN.md): the five cards and the Campaign Types rows.
     engagementOverview: "fanhub/org/engagement/overview",
     // PATCH the switches on one type: PREDICTION, VOTING or CHALLENGE.

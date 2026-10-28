@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Layers } from "lucide-react";
 import FilterDropdown from "@/components/common/filter-dropdown";
 import Loader from "@/components/common/loader";
+import { useSelectedEvent } from "@/context/selected-event";
 import SearchInput from "@/components/common/search-input";
 import { TeamRow, type DivisionGroup } from "@/components/organization/teams/tournament-event-row";
 import apiCall from "@/utils/api-call";
@@ -66,7 +67,9 @@ export default function TournamentTeams({ eventId, onTotals, focus, onFocus }: T
     };
   }, [eventId, onTotals, onFocus]);
 
-  const loading = !eventId || loaded?.eventId !== eventId;
+  // No event to pick at all: an empty state, not a loader that never ends.
+  const { noEvents } = useSelectedEvent();
+  const loading = !noEvents && (!eventId || loaded?.eventId !== eventId);
   const event = loading ? null : (loaded?.event ?? null);
 
   const q = query.trim().toLowerCase();
@@ -100,7 +103,9 @@ export default function TournamentTeams({ eventId, onTotals, focus, onFocus }: T
         )}
       </div>
 
-      {loading ? (
+      {noEvents && !eventId ? (
+        <p className="py-12 text-center text-sm text-white/60">Pick an event to see its teams.</p>
+      ) : loading ? (
         <Loader />
       ) : !event ? (
         <p className="py-12 text-center text-sm text-white/60">This event couldn&apos;t be loaded.</p>

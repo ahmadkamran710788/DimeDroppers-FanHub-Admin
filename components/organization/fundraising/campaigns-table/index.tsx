@@ -130,7 +130,7 @@ export default function CampaignsTable({
       ),
     },
     ...(showTeam
-      ? [{ header: "Team", cls: "w-40 shrink-0 py-4", cell: (c: Campaign) => <span className="leading-5">{c.team?.name ?? "—"}</span> }]
+      ? [{ header: "Team", cls: "w-40 shrink-0 py-4", cell: (c: Campaign) => <span className="leading-5">{c.team?.name ?? c.tournamentTeam?.name ?? "—"}</span> }]
       : []),
     { header: "Goal", cls: "w-[85px] shrink-0 py-4", cell: (c) => formatMoney(c.goalAmount) },
     {

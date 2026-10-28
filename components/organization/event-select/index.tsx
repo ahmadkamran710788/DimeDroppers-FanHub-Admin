@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CalendarDays } from "lucide-react";
 import FilterDropdown from "@/components/common/filter-dropdown";
+import { useSelectedEvent } from "@/context/selected-event";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type { ExposureEvent, ExposureEventsResponse } from "@/utils/types/exposure-event";
@@ -35,6 +36,7 @@ export default function EventSelect({
   selectedName,
 }: EventSelectProps) {
   const autoPick = !allowAll || selectFirst;
+  const { setNoEvents } = useSelectedEvent();
 
   const [events, setEvents] = useState<ExposureEvent[]>([]);
   // The next page to ask for; null once the last page has arrived.
@@ -51,6 +53,8 @@ export default function EventSelect({
     }).then((result) => {
       if (cancelled) return;
       const body = result.success ? result.data?.data?.[0] : undefined;
+      // The first page says whether the organisation has any event at all.
+      if (body && requested === 1) setNoEvents(body.items.length === 0);
       if (body) {
         setEvents((prev) => (requested === 1 ? body.items : [...prev, ...body.items]));
         setNextPage(body.pagination.isLast ? null : requested + 1);
@@ -60,7 +64,7 @@ export default function EventSelect({
     return () => {
       cancelled = true;
     };
-  }, [requested]);
+  }, [requested, setNoEvents]);
 
   // Start on the newest event when asked to (always without "All Events"). An effect rather than the
   // fetch callback, so it asks again if the first ask was ignored (the shared pick isn't ready yet).

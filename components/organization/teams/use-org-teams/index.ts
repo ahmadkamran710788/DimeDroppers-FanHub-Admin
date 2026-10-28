@@ -46,12 +46,14 @@ const toTeam = (department: Department, t: DepartmentTeam): Team => ({
 
 // The organisation's sports and real teams. Each team id is the schoolTeamId the roster and staff
 // calls take. `reload` refetches after a sport or team is added or edited (those calls clear the cache).
-export function useOrgTeams() {
+// `enabled` false skips the call (e.g. a tournament, which has no school teams).
+export function useOrgTeams(enabled = true) {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [version, setVersion] = useState(0);
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     apiCall<DepartmentsResponse>({ endpoint: routes.api.orgDepartments, method: "GET" }).then((result) => {
       if (cancelled) return;
@@ -61,7 +63,7 @@ export function useOrgTeams() {
     return () => {
       cancelled = true;
     };
-  }, [version]);
+  }, [version, enabled]);
 
   const reload = useCallback(() => setVersion((v) => v + 1), []);
   const teams = departments.flatMap((d) => d.teams.map((t) => toTeam(d, t)));

@@ -14,19 +14,29 @@ import WizardFooter from "@/components/common/wizard-footer";
 import {
   IMPACT_OPTIONS,
   createCampaignSchema,
+  tournamentCampaignEditSchema,
+  tournamentCampaignSchema,
   DESCRIPTION_MAX,
   NAME_MAX,
   type CampaignImpact,
 } from "@/components/organization/fundraising/create-campaign/schema";
+import EventSelect from "@/components/organization/event-select";
+import { useEventTeams } from "@/components/organization/fundraising/use-event-teams";
 import { useOrgTeams } from "@/components/organization/teams/use-org-teams";
+import { orgKindOf, useAuth } from "@/context/auth";
+import { useSelectedEvent } from "@/context/selected-event";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
-import type { Campaign, CreateCampaignPayload, UpdateCampaignPayload } from "@/utils/types/campaign";
+import type { Campaign, CreateCampaignPayload, TournamentTeamRef, UpdateCampaignPayload } from "@/utils/types/campaign";
 import { validateAndSetErrors } from "@/utils/validation";
 
 const INITIAL_FORM = {
   name: "",
   teamId: "",
+  // Tournament: the team of the event the campaign raises for, picked within a division ("" for
+  // every division). Campaigns are per team for now, not per game.
+  divisionId: "",
+  fanHubTeamId: "",
   goal: "",
   startDate: "",
   endDate: "",
@@ -44,7 +54,9 @@ const endOfDay = (date: string) => `${date}T23:59:59.000Z`;
 
 const formFor = (c: Campaign): Form => ({
   name: c.title,
-  teamId: c.teamId,
+  teamId: c.teamId ?? "",
+  divisionId: "",
+  fanHubTeamId: c.fanHubTeamId ?? "",
   goal: String(c.goalAmount),
   // The API has no start date; a campaign starts when it is created.
   startDate: datePart(c.createdAt),
@@ -60,7 +72,8 @@ const changesFrom = (before: Form, form: Form): UpdateCampaignPayload => {
   const sponsorName = form.sponsorName.trim();
   return {
     ...(form.name.trim() !== before.name && { title: form.name.trim() }),
-    ...(form.teamId !== before.teamId && { teamId: form.teamId }),
+    // A tournament campaign's game and team are fixed once created (its teamId stays "").
+    ...(form.teamId && form.teamId !== before.teamId && { teamId: form.teamId }),
     ...(Number(form.goal) !== Number(before.goal) && { goalAmount: Number(form.goal) }),
     ...(form.endDate !== before.endDate && { endDate: endOfDay(form.endDate) }),
     ...(description !== before.description && { description: description || null }),
@@ -75,13 +88,25 @@ const FIELD = "bg-white border-2 border-[rgba(11,28,45,0.11)]";
 interface CampaignFormProps {
   // Set to edit that campaign instead of creating one.
   campaignId?: string;
+  // Tournament: the team to start the new campaign with (from a team's "Create donation").
+  initialTeamId?: string;
 }
 
 // Create a campaign (live, or as a draft only the organisation sees), or edit one.
-export default function CreateCampaignPage({ campaignId }: CampaignFormProps) {
+export default function CreateCampaignPage({ campaignId, initialTeamId }: CampaignFormProps) {
   const router = useRouter();
-  const { teams } = useOrgTeams();
-  const [form, setForm] = useState<Form>(INITIAL_FORM);
+  // A tournament raises on one game of an event (the event shared with the other pages); only a school
+  // picks one of its own teams.
+  const { org } = useAuth();
+  const kind = orgKindOf(org);
+  const isTournament = kind === "tournament";
+  const { teams } = useOrgTeams(kind === "school");
+  const { event, setEvent } = useSelectedEvent();
+  // An edited tournament campaign's team, division and event (shown, not changed).
+  const [tournamentTeam, setTournamentTeam] = useState<TournamentTeamRef | null>(null);
+  const [form, setForm] = useState<Form>(() => ({ ...INITIAL_FORM, fanHubTeamId: initialTeamId ?? "" }));
+  const pickingFromEvent = isTournament && !campaignId ? (event?.id ?? "") : "";
+  const { teams: eventTeams, loading: teamsLoading } = useEventTeams(pickingFromEvent);
   // The loaded campaign's values, to send only what changed.
   const [original, setOriginal] = useState<Form | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -100,6 +125,7 @@ export default function CreateCampaignPage({ campaignId }: CampaignFormProps) {
         return;
       }
       const values = formFor(campaign);
+      setTournamentTeam(campaign.tournamentTeam ?? null);
       setOriginal(values);
       setForm(values);
     });
@@ -109,6 +135,19 @@ export default function CreateCampaignPage({ campaignId }: CampaignFormProps) {
   }, [campaignId]);
 
   const teamOptions = teams.map((t) => ({ label: `${t.name} · ${t.sport}`, value: t.id }));
+  // The event's divisions (from its teams), and the teams of the picked one.
+  const divisionOptions = [
+    { label: "All divisions", value: "" },
+    ...[...new Map(eventTeams.filter((t) => t.division).map((t) => [t.division!.id, t.division!.name ?? "Division"])).entries()].map(
+      ([value, label]) => ({ label, value })
+    ),
+  ];
+  const teamPickOptions = eventTeams
+    .filter((t) => !form.divisionId || t.division?.id === form.divisionId)
+    .map((t) => ({
+      label: [t.name, t.division?.name, t.activeCampaignCount ? `${t.activeCampaignCount} active` : null].filter(Boolean).join(" · "),
+      value: t.id,
+    }));
 
   const update = <K extends keyof Form>(key: K, value: Form[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -119,14 +158,15 @@ export default function CreateCampaignPage({ campaignId }: CampaignFormProps) {
 
   // An ACTIVE creation goes live and notifies the school's followers; a DRAFT stays private.
   const handleCreate = async (status: "DRAFT" | "ACTIVE") => {
-    if (!(await validateAndSetErrors(createCampaignSchema, form, setErrors))) return;
+    if (!(await validateAndSetErrors(isTournament ? tournamentCampaignSchema : createCampaignSchema, form, setErrors))) return;
 
     // startDate and impact are UI-only until the backend supports them.
     const payload: CreateCampaignPayload = {
       title: form.name.trim(),
       goalAmount: Number(form.goal),
       endDate: endOfDay(form.endDate),
-      teamId: form.teamId,
+      // A school raises for one of its teams; a tournament for one team of an event (no game).
+      ...(isTournament ? { eventId: event?.id, fanHubTeamId: form.fanHubTeamId } : { teamId: form.teamId }),
       status,
       ...(form.description.trim() && { description: form.description.trim() }),
       ...(form.sponsorName.trim() && { sponsorName: form.sponsorName.trim() }),
@@ -134,7 +174,8 @@ export default function CreateCampaignPage({ campaignId }: CampaignFormProps) {
 
     setSubmitting(status);
     const { success } = await apiCall({
-      endpoint: routes.api.campaigns,
+      // A tournament team campaign has its own create endpoint.
+      endpoint: isTournament ? routes.api.tournamentCampaigns : routes.api.campaigns,
       method: "POST",
       data: { ...payload },
       invalidates: [routes.api.campaigns],
@@ -147,13 +188,13 @@ export default function CreateCampaignPage({ campaignId }: CampaignFormProps) {
 
   const handleSave = async () => {
     if (!campaignId || !original) return;
-    if (!(await validateAndSetErrors(createCampaignSchema, form, setErrors))) return;
+    if (!(await validateAndSetErrors(isTournament ? tournamentCampaignEditSchema : createCampaignSchema, form, setErrors))) return;
     const changes = changesFrom(original, form);
     if (Object.keys(changes).length === 0) return back();
 
     setSubmitting("SAVE");
     const { success } = await apiCall({
-      endpoint: routes.api.campaign(campaignId),
+      endpoint: isTournament ? routes.api.tournamentCampaign(campaignId) : routes.api.campaign(campaignId),
       method: "PATCH",
       data: { ...changes },
       invalidates: [routes.api.campaigns],
@@ -197,23 +238,75 @@ export default function CreateCampaignPage({ campaignId }: CampaignFormProps) {
               name="name"
               value={form.name}
               onChange={(e) => update("name", e.target.value)}
-              placeholder="Twin Lakes Boys Basketball: new uniforms"
+              placeholder={isTournament ? "Ballhawks game-day fund" : "Twin Lakes Boys Basketball: new uniforms"}
               maxLength={NAME_MAX}
               error={errors.name}
               labelClassName={LABEL}
               inputClassName={FIELD}
             />
-            <Select
-              label="Team"
-              name="teamId"
-              value={form.teamId}
-              onChange={(e) => update("teamId", e.target.value)}
-              options={teamOptions}
-              placeholder="Select team"
-              error={errors.teamId}
-              labelClassName={LABEL}
-              selectClassName={FIELD}
-            />
+            {!isTournament ? (
+              <Select
+                label="Team"
+                name="teamId"
+                value={form.teamId}
+                onChange={(e) => update("teamId", e.target.value)}
+                options={teamOptions}
+                placeholder="Select team"
+                error={errors.teamId}
+                labelClassName={LABEL}
+                selectClassName={FIELD}
+              />
+            ) : editing ? (
+              // A tournament campaign's team can't change once created.
+              <div className="flex flex-col gap-1 text-white">
+                <span className="text-sm font-medium">Team</span>
+                <span className="text-sm text-white/80">
+                  {tournamentTeam
+                    ? [tournamentTeam.name, tournamentTeam.division?.name, tournamentTeam.event.name].filter(Boolean).join(" · ")
+                    : "—"}
+                </span>
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-col gap-2">
+                  <span className="text-sm font-medium text-white">Event</span>
+                  <EventSelect
+                    value={event?.id ?? ""}
+                    onChange={(id, name) => {
+                      setEvent(id ? { id, name } : null);
+                      // Teams belong to one event.
+                      update("divisionId", "");
+                      update("fanHubTeamId", "");
+                    }}
+                    allowAll={false}
+                    selectedName={event?.name}
+                  />
+                </div>
+                <Select
+                      label="Division"
+                      name="divisionId"
+                      value={form.divisionId}
+                      onChange={(e) => {
+                        update("divisionId", e.target.value);
+                        update("fanHubTeamId", "");
+                      }}
+                      options={divisionOptions}
+                      labelClassName={LABEL}
+                      selectClassName={FIELD}
+                    />
+                    <Select
+                      label="Team"
+                      name="fanHubTeamId"
+                      value={form.fanHubTeamId}
+                      onChange={(e) => update("fanHubTeamId", e.target.value)}
+                      options={teamPickOptions}
+                      placeholder={teamsLoading ? "Loading teams…" : teamPickOptions.length ? "Select team" : "No teams in this event"}
+                      error={errors.fanHubTeamId}
+                      labelClassName={LABEL}
+                      selectClassName={FIELD}
+                    />
+              </>
+            )}
             <Input
               label="Goal Amount"
               name="goal"
