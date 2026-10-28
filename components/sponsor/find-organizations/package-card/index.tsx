@@ -1,4 +1,5 @@
 import { cn } from "@/utils/cn";
+import Badge from "@/components/common/badge";
 import Button from "@/components/common/button";
 import { OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
 import { CATEGORY_COLORS } from "@/components/sponsor/find-organizations/data";
@@ -18,6 +19,10 @@ interface PackageCardProps {
   showPlacementValues?: boolean;
   // What the price is counted for, under it: "2 games", "5 teams".
   basisCount?: string;
+  // The one the Sponsor AI Agent suggests: a purple border and a Recommended badge.
+  recommended?: boolean;
+  // Lists only this many placements, then "+N more" (the compact cards inside an email).
+  slotLimit?: number;
 }
 
 // One of an organization's three packages: what it's for, its total price, the placements it includes,
@@ -30,19 +35,27 @@ export default function PackageCard({
   active = false,
   showPlacementValues = false,
   basisCount,
+  recommended = false,
+  slotLimit,
 }: PackageCardProps) {
+  const slots = slotLimit ? pkg.slots.slice(0, slotLimit) : pkg.slots;
+  const hiddenSlots = pkg.slots.length - slots.length;
   return (
     <article
       aria-label={`${pkg.name} package`}
       className={cn(
         "rounded-[12px] p-4 flex flex-col gap-3 border bg-[#0b0b0b]",
-        pkg.isAvailable ? "border-[#262626]" : "border-[#262626] opacity-80",
+        recommended ? "border-[#8b6dff]" : "border-[#262626]",
+        !pkg.isAvailable && "opacity-80",
       )}
     >
       <div className="flex flex-col gap-1">
-        <h4 className="font-display font-extrabold text-xl uppercase leading-tight">
-          {pkg.name}
-        </h4>
+        <div className="flex items-start justify-between gap-2">
+          <h4 className="font-display font-extrabold text-xl uppercase leading-tight">
+            {pkg.name}
+          </h4>
+          {recommended && <Badge variant="recommended" className="shrink-0 whitespace-nowrap" />}
+        </div>
         <span className="text-[13px] text-[#a8a8a8]">{pkg.purpose}</span>
       </div>
       <p className="text-[13px] leading-[1.4] text-[#c4c4c4]">
@@ -60,7 +73,7 @@ export default function PackageCard({
 
       <div className="text-xs font-bold tracking-[1.2px] text-[#c4c4c4]">{`PLACEMENTS INCLUDED · ${pkg.slotCount}`}</div>
       <ul className="flex flex-col gap-1.5">
-        {pkg.slots.map((s) => (
+        {slots.map((s) => (
           <li
             key={s.catalogKey}
             className="px-[10px] py-2 rounded-[8px] bg-[#1a1a1a] border border-[#2a2a2a] flex items-start justify-between gap-2"
@@ -83,6 +96,7 @@ export default function PackageCard({
             )}
           </li>
         ))}
+        {hiddenSlots > 0 && <li className="px-[10px] text-[13px] text-[#a8a8a8]">{`+${hiddenSlots} more`}</li>}
       </ul>
 
       {/* mt-auto pins the action to the card bottom, so the cards in a row line up. */}

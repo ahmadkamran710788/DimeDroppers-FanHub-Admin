@@ -50,6 +50,10 @@ export const routes = {
     helpCenter: "/help-center",
     addSponsor: "/sponsors/add",
     sponsorAddOns: "/sponsors/add-ons",
+    // Beside /sponsors, not under it, so the Sponsors nav item doesn't light up on these too.
+    sponsorAiAgent: "/sponsor-ai-agent",
+    sponsorMessages: "/sponsor-messages",
+    sponsorMessagesThread: (sponsorId: string) => `/sponsor-messages?thread=${sponsorId}`,
     userDetails: (id: string | number) => `users/${id}`,
     setupWizard: {
       // Every setup step starts with this; the organization layout leaves these pages full-screen.
