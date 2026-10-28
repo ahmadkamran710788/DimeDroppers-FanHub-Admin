@@ -174,7 +174,7 @@ export default function InventoryPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4 items-stretch">
             {(["PRE_GAME", "LIVE", "POST_GAME"] as ActivationCategory[]).map((c) => column(c, "stacked"))}
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+          <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-stretch">
             {(["ADD_ON", "PHYSICAL_ASSET"] as ActivationCategory[]).map((c) => column(c, "wide"))}
           </div>
         </div>

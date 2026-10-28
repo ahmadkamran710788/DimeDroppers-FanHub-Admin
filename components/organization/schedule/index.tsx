@@ -660,12 +660,12 @@ export default function SchedulePage() {
       {/* Left — main content */}
       <div className="flex-1 flex flex-col gap-6 lg:gap-10 min-w-0">
         {/* Page header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-4">
           <div className="flex flex-col">
             <h2 className="text-white text-3xl sm:text-4xl lg:text-6xl font-extrabold font-display uppercase leading-none">Schedule</h2>
             <p className="text-white text-base font-normal mt-1">Manage your games, events, and schedule information.</p>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-4">
+          <div className="flex flex-wrap items-center 2xl:justify-end gap-4">
             {/* Tournament: one event at a time (the newest at first), to drill into its divisions and teams. */}
             {isTournament && (
               <EventSelect
@@ -697,7 +697,7 @@ export default function SchedulePage() {
         </div>
 
         {/* Stats row */}
-        <div className="flex gap-6 lg:gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4 lg:gap-6">
           {stats.map((stat) => <StatCard key={stat.label} {...stat} />)}
         </div>
 

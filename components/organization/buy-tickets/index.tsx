@@ -295,7 +295,7 @@ export default function BuyTicketsPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4 lg:gap-10">
         {stats.map((stat) => (
           <BadgeStatCard key={stat.label} {...stat} />
         ))}

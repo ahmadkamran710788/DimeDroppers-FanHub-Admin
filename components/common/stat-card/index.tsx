@@ -24,12 +24,13 @@ export default function StatCard({ label, value, tint, change, trend, caption, t
   const up = change !== undefined ? change >= 0 : trend === "up";
   const showArrow = change !== undefined || trend !== undefined;
   return (
-    <div className="rounded-[8px] p-6 flex flex-col gap-2 backdrop-blur-[24px] bg-surface-07">
+    // h-full + mt-auto: in a row of cards the value bars line up even when one title wraps.
+    <div className="h-full rounded-[8px] p-6 flex flex-col gap-2 backdrop-blur-[24px] bg-surface-07">
       <h3 className={cn("font-display font-extrabold text-[28px] uppercase text-white leading-normal", twoLineTitle && "min-h-[2lh] max-w-[145px]")}>
         {label}
       </h3>
       <div
-        className="h-16 p-4 rounded-[8px] backdrop-blur-[24px] flex items-center justify-center font-display font-extrabold text-[28px] uppercase text-white leading-normal"
+        className="mt-auto h-16 p-4 rounded-[8px] backdrop-blur-[24px] flex items-center justify-center font-display font-extrabold text-[28px] uppercase text-white leading-normal"
         style={{ background: tint }}
       >
         {value}
