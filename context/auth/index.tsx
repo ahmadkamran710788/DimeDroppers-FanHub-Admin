@@ -34,6 +34,9 @@ interface AuthContextValue {
   isLoading: boolean;
   setAuth: (org: AuthOrganization) => void;
   clearAuth: () => void;
+  // Reloads /me, e.g. after the organisation type changes in Profile, so the whole panel (school or
+  // tournament menus and pages) follows without a page refresh.
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -100,13 +103,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [loadProfile]
   );
 
+  const refreshProfile = useCallback(async () => {
+    await loadProfile().catch(() => null);
+  }, [loadProfile]);
+
   const clearAuth = useCallback(() => {
     setOrg(null);
     setSponsor(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ org, sponsor, isLoading, setAuth, clearAuth }}>
+    <AuthContext.Provider value={{ org, sponsor, isLoading, setAuth, clearAuth, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
