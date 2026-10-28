@@ -21,7 +21,7 @@ import type { NextRequest } from "next/server";
 const SETUP_WIZARD_DEFAULT = "/setup-wizard/organization-details";
 const SIGN_IN = "/auth/sign-in";
 const SPONSOR_PANEL = "/sponsor";
-const SPONSOR_HOME = "/sponsor/find-organizations";
+const SPONSOR_HOME = "/sponsor/sponsorships";
 
 // The same sign-in serves organisers and sponsors; the `accountRole` cookie (set by it) keeps each in
 // its own panel. No cookie (a session from before it existed) is an organiser.

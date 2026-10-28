@@ -9,9 +9,8 @@ import { SponsorCartProvider } from "@/context/sponsor-cart";
 
 const PAGE_TITLES: Record<string, string> = {
   [routes.ui.sponsor.fundableNeeds]: "Sponsorship",
-  [routes.ui.sponsor.findOrganizations]: "Sponsorship",
+  [routes.ui.sponsor.sponsorships]: "Sponsorship",
   [routes.ui.sponsor.brandAssets]: "Brand",
-  [routes.ui.sponsor.campaignPlanner]: "Dime AI",
   [routes.ui.sponsor.cart]: "Sponsorship",
   [routes.ui.sponsor.profile]: "Profile",
 };

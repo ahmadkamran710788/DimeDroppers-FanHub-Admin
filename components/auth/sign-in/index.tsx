@@ -65,7 +65,7 @@ export default function SignIn() {
       // sponsor panel starts without the organisation's client state.
       if (session?.role === "SPONSOR") {
         if (session.sponsor) setSponsorAccount(session.sponsor);
-        window.location.replace(routes.ui.sponsor.findOrganizations);
+        window.location.replace(routes.ui.sponsor.sponsorships);
         return;
       }
       if (session?.organization?.id) {
