@@ -72,7 +72,6 @@ export default function AddTeamPage() {
       endpoint: routes.api.orgTeams,
       method: "POST",
       data: { sport: form.sport, name: form.teamName.trim(), level: form.level, gender: form.gender },
-      invalidates: [routes.api.orgDepartments],
       showSuccessToast: true,
       successMessage: "Team created",
     });

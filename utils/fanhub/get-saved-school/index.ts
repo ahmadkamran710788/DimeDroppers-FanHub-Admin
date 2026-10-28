@@ -6,8 +6,7 @@ import type { SavedSchool } from "@/utils/types/school";
  * Fetch the saved school for the current Setup Wizard session so a step can rehydrate
  * its form when the user navigates Back/Next. Reads the `fanhub:schoolId` set in Step 1,
  * GETs the school from the backend, and unwraps `data[0].school`. Uses backendFetch (not
- * apiCall) so a missing school stays silent (no error toast) and is never served from
- * apiCall's GET cache after Step 1 updates it.
+ * apiCall) so a missing school stays silent (no error toast).
  *
  * Returns null when there is no school yet (Step 1 not completed) or the request fails —
  * callers should treat null as "nothing to prefill" and leave their initial state.

@@ -98,7 +98,6 @@ export default function AddStaffModal({ isOpen, onClose, teamId, member, onSaved
       endpoint: routes.api.rosterStaffMember(m.id),
       method: "PATCH",
       data: changes,
-      invalidates: [routes.api.rosterStaff],
     });
     setSaving(false);
     if (!result.success) return;
@@ -125,7 +124,6 @@ export default function AddStaffModal({ isOpen, onClose, teamId, member, onSaved
         email: form.email.trim(),
         ...(form.phone && { phone: form.phone }),
       },
-      invalidates: [routes.api.rosterStaff],
     });
     setSaving(false);
     if (!result.success) return;

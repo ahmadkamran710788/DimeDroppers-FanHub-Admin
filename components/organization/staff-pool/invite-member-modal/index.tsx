@@ -40,7 +40,6 @@ export default function InviteMemberModal({ config, isOpen, onClose, onInvited }
       data: { email },
       showSuccessToast: true,
       successMessage: "Invite sent",
-      invalidates: [config.cacheTag],
     });
     setLoading(false);
 
