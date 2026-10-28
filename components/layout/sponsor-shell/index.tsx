@@ -13,6 +13,7 @@ const PAGE_TITLES: Record<string, string> = {
   [routes.ui.sponsor.brandAssets]: "Brand",
   [routes.ui.sponsor.campaignPlanner]: "Dime AI",
   [routes.ui.sponsor.cart]: "Sponsorship",
+  [routes.ui.sponsor.profile]: "Profile",
 };
 
 // App shell for the sponsor pages: the shared sidebar, the sponsor header and the page area, on the

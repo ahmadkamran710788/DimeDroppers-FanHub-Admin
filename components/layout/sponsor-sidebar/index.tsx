@@ -13,7 +13,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Brand",
     items: [
       { icon: <ImageIcon className="size-6" strokeWidth={1.5} />, label: "Brand Assets", href: routes.ui.sponsor.brandAssets },
-      { icon: "/icons/icon-user.svg", label: "Sponsor Profile", href: "#" },
+      { icon: "/icons/icon-user.svg", label: "Sponsor Profile", href: routes.ui.sponsor.profile },
     ],
   },
   {
