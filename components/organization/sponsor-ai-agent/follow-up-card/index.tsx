@@ -1,40 +1,74 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Mail, Paperclip, Pencil, X } from "lucide-react";
 import Button from "@/components/common/button";
+import ConfirmModal from "@/components/common/confirm-modal";
+import Input from "@/components/common/input";
 import StatusPill from "@/components/common/status-pill";
 import Textarea from "@/components/common/textarea";
+import Tooltip from "@/components/common/tooltip";
 import PackageCard from "@/components/sponsor/find-organizations/package-card";
-import { SAMPLE_PACKAGES, STATUS_STYLE, type AgentSponsor } from "@/components/organization/sponsor-ai-agent/data";
-import { useSponsorAgent } from "@/context/sponsor-agent";
+import { STATUS_STYLE, toSponsorPackage } from "@/components/organization/sponsor-ai-agent/data";
+import { draftEditSchema } from "@/components/organization/sponsor-ai-agent/schema";
 import { routes } from "@/utils/routes";
 import { cn } from "@/utils/cn";
+import { validateAndSetErrors } from "@/utils/validation";
+import type { EditDraftBody, SponsorDraft } from "@/utils/types/sponsor-ai";
 
 // The square outlined look of the Edit and Reject icon buttons.
 const ICON_BUTTON = "size-12 rounded-[8px] border border-white/20 bg-white/5 hover:bg-white/10";
+const CHIP = "rounded-full border border-white/20 px-2.5 py-0.5 text-xs text-white/70";
 
 interface FollowUpCardProps {
-  sponsor: AgentSponsor;
-  editing: boolean;
-  onEditingChange: (editing: boolean) => void;
+  draft: SponsorDraft;
+  // Each resolves true when it went through.
+  onEdit: (id: string, changes: EditDraftBody) => Promise<boolean>;
+  onReject: (id: string) => Promise<boolean>;
 }
 
-// One drafted follow-up email: who it's to, the message, its actions and the packages it carries.
-export default function FollowUpCard({ sponsor, editing, onEditingChange }: FollowUpCardProps) {
+// One drafted follow-up email: the business and why it fits, who it's to, the message, its actions and
+// the packages it carries. Only a draft still waiting for review can be edited or rejected.
+export default function FollowUpCard({ draft, onEdit, onReject }: FollowUpCardProps) {
   const router = useRouter();
-  const { event, statusOf, setStatus, bodyOf, setBody } = useSponsorAgent();
-  const status = statusOf(sponsor.id);
-  const style = STATUS_STYLE[status];
+  const { business, contact, message } = draft;
+  const style = STATUS_STYLE[draft.reviewStatus];
+  const pending = draft.reviewStatus === "PENDING";
+  const [editing, setEditing] = useState(false);
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [confirmReject, setConfirmReject] = useState(false);
 
-  function approve() {
-    setStatus(sponsor.id, "sent");
-    onEditingChange(false);
+  const to = contact
+    ? `To: ${[contact.name, contact.title].filter(Boolean).join(", ") || "Unknown contact"}${contact.email ? ` · ${contact.email}` : ""}`
+    : "No contact found";
+
+  function startEditing() {
+    setSubject(message?.subject ?? "");
+    setBody(message?.body ?? "");
+    setErrors({});
+    setEditing(true);
+  }
+
+  async function save() {
+    if (!(await validateAndSetErrors(draftEditSchema, { subject, body }, setErrors))) return;
+    // Only what changed is sent.
+    const changes: EditDraftBody = {};
+    if (subject.trim() !== (message?.subject ?? "")) changes.subject = subject.trim();
+    if (body.trim() !== (message?.body ?? "")) changes.body = body.trim();
+    if (!changes.subject && !changes.body) return setEditing(false);
+    setSaving(true);
+    const saved = await onEdit(draft.id, changes);
+    setSaving(false);
+    if (saved) setEditing(false);
   }
 
   return (
     <article
-      aria-label={`Follow-up to ${sponsor.business}`}
+      aria-label={`Follow-up to ${business.name}`}
       className="rounded-[12px] border border-white/10 bg-black/30 p-4 lg:p-5 flex flex-col gap-5"
     >
       <div className="flex flex-col md:flex-row gap-4">
@@ -48,74 +82,129 @@ export default function FollowUpCard({ sponsor, editing, onEditingChange }: Foll
               className="h-auto px-2 py-1"
               textClassName={cn("text-xs font-bold whitespace-nowrap", style.text)}
             />
-            <span className="text-white/70">{`→ ${sponsor.business}`}</span>
-            <span className="rounded-full border border-white/20 px-2.5 py-0.5 text-xs text-white/70">
-              {`${sponsor.category} · ${sponsor.miles} mi`}
+            {message?.humanEdited && (
+              <StatusPill label="Edited" color="bg-white/10" className="h-auto px-2 py-1" textClassName="text-xs font-bold text-white/80" />
+            )}
+            <span className="text-white/70">{`→ ${business.name}`}</span>
+            <span className={CHIP}>
+              {[business.category, business.distanceMiles != null && `${business.distanceMiles} mi`].filter(Boolean).join(" · ")}
             </span>
-          </div>
-          <p className="text-sm text-white/60">{`To: ${sponsor.contact}, ${sponsor.role} · ${sponsor.email}`}</p>
-          <h4 className="text-lg font-semibold">{`Sponsor the ${event.name} (${event.dates})`}</h4>
-          {editing ? (
-            <Textarea
-              label="Edit message"
-              name={`follow-up-${sponsor.id}`}
-              value={bodyOf(sponsor)}
-              onChange={(e) => setBody(sponsor.id, e.target.value)}
-              rows={12}
-              maxLength={4000}
-              fieldVariant="dark"
-              showCounter={false}
-              labelClassName="text-sm font-normal text-white/70"
-              fieldClassName="text-sm font-normal leading-[1.55] resize-y"
+            <StatusPill
+              label={`Fit ${business.fitScore}`}
+              color="bg-[#2a2148]"
+              className="h-auto px-2 py-1"
+              textClassName="text-xs font-bold text-[#d9ccff]"
             />
+            {draft.event?.name && <span className={CHIP}>{draft.event.name}</span>}
+          </div>
+          <p className="text-sm text-white/60">{to}</p>
+          {business.fitReasons.length > 0 && (
+            <ul aria-label="Why it fits" className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/50 list-disc pl-4">
+              {business.fitReasons.slice(0, 3).map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          )}
+          {editing ? (
+            <div className="flex flex-col gap-3 pt-1">
+              <Input
+                label="Subject"
+                name={`follow-up-subject-${draft.id}`}
+                value={subject}
+                onChange={(e) => {
+                  setSubject(e.target.value);
+                  if (errors.subject) setErrors((prev) => ({ ...prev, subject: "" }));
+                }}
+                maxLength={90}
+                variant="dark"
+                error={errors.subject}
+                labelClassName="text-sm font-normal text-white/70"
+              />
+              <Textarea
+                label="Email"
+                name={`follow-up-body-${draft.id}`}
+                value={body}
+                onChange={(e) => {
+                  setBody(e.target.value);
+                  if (errors.body) setErrors((prev) => ({ ...prev, body: "" }));
+                }}
+                rows={12}
+                maxLength={5000}
+                fieldVariant="dark"
+                error={errors.body}
+                labelClassName="text-sm font-normal text-white/70"
+                fieldClassName="text-sm font-normal leading-[1.55] resize-y"
+              />
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button variant="secondary" size="sm" label="Cancel" onClick={() => setEditing(false)} disabled={saving} className="h-10 px-4" />
+                <Button
+                  variant="cta"
+                  size="sm"
+                  label={saving ? "Saving…" : "Save changes"}
+                  icon={<Check className="size-4" strokeWidth={2.4} />}
+                  onClick={save}
+                  disabled={saving}
+                  className="h-10 px-4"
+                />
+              </div>
+            </div>
           ) : (
-            <p className="text-sm leading-[1.55] text-white/85 whitespace-pre-line">{bodyOf(sponsor)}</p>
+            <>
+              <h4 className="text-lg font-semibold">{message?.subject || "No subject"}</h4>
+              <p className="text-sm leading-[1.55] text-white/85 whitespace-pre-line">{message?.body}</p>
+            </>
           )}
         </div>
 
-        <div className="flex gap-2 items-start md:justify-end shrink-0">
-          {status === "draft" && (
-            <>
+        {pending && (
+          <div className="flex gap-2 items-start md:justify-end shrink-0">
+            {/* Approving sends the email; that part of the API isn't built yet. */}
+            <Tooltip label="Coming soon">
               <Button
                 variant="secondary"
                 label="Approve"
                 icon={<Check className="size-5" strokeWidth={2.4} />}
-                onClick={approve}
+                disabled
                 className="min-w-0 px-5 font-semibold"
               />
+            </Tooltip>
+            {!editing && (
               <Button
                 size="icon"
-                icon={editing ? <Check className="size-5" strokeWidth={2.2} /> : <Pencil className="size-5" strokeWidth={1.8} />}
-                aria-label={editing ? "Done editing" : "Edit message"}
-                onClick={() => onEditingChange(!editing)}
+                icon={<Pencil className="size-5" strokeWidth={1.8} />}
+                aria-label="Edit message"
+                onClick={startEditing}
                 className={cn(ICON_BUTTON, "text-white")}
               />
-              <Button
-                size="icon"
-                icon={<X className="size-5" strokeWidth={2} />}
-                aria-label="Reject message"
-                onClick={() => setStatus(sponsor.id, "rejected")}
-                className={cn(ICON_BUTTON, "text-error")}
-              />
-            </>
-          )}
-          {status === "rejected" && <Button label="Restore draft" onClick={() => setStatus(sponsor.id, "draft")} />}
-        </div>
+            )}
+            <Button
+              size="icon"
+              icon={<X className="size-5" strokeWidth={2} />}
+              aria-label="Reject message"
+              onClick={() => setConfirmReject(true)}
+              disabled={saving}
+              className={cn(ICON_BUTTON, "text-error")}
+            />
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-col gap-3">
-        <span className="flex items-center gap-2 text-xs font-bold tracking-[1.2px] text-white/60">
-          <Paperclip className="size-3.5" aria-hidden="true" />
-          SPONSORSHIP PACKAGES IN THIS MESSAGE
-        </span>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {SAMPLE_PACKAGES.map((p) => (
-            <PackageCard key={p.tier} pkg={p} recommended={p.tier === sponsor.tier} slotLimit={4} />
-          ))}
+      {draft.packages.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <span className="flex items-center gap-2 text-xs font-bold tracking-[1.2px] text-white/60">
+            <Paperclip className="size-3.5" aria-hidden="true" />
+            SPONSORSHIP PACKAGES IN THIS MESSAGE
+          </span>
+          {draft.recommendation && <p className="text-xs text-white/60">{draft.recommendation.reason}</p>}
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {draft.packages.map((p) => (
+              <PackageCard key={p.tier} pkg={toSponsorPackage(p)} recommended={p.recommended} slotLimit={4} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {status === "sent" && (
+      {draft.reviewStatus === "APPROVED" && (
         <div className="flex flex-wrap items-center gap-3 rounded-[8px] border border-success/40 bg-[#1d3a1e]/60 px-4 py-3 text-sm text-[#a3e3a5]">
           <span className="flex-1 min-w-[220px]">Sent. The thread moved to Sponsor Messages, where the agent handles the replies.</span>
           <Button
@@ -124,11 +213,22 @@ export default function FollowUpCard({ sponsor, editing, onEditingChange }: Foll
             label="Open in Sponsor Messages"
             icon={<ArrowRight className="size-4" />}
             iconPosition="end"
-            onClick={() => router.push(routes.ui.sponsorMessagesThread(sponsor.id))}
+            onClick={() => router.push(routes.ui.sponsorMessagesThread(draft.id))}
             className="h-10 px-4 text-sm border-success/60 text-[#a3e3a5] hover:bg-success/10"
           />
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmReject}
+        onClose={() => setConfirmReject(false)}
+        title="Reject this draft?"
+        message={`The email to ${business.name} won't be sent, and the agent won't suggest this business again.`}
+        confirmLabel="Reject"
+        busyLabel="Rejecting…"
+        onConfirm={() => onReject(draft.id)}
+        destructive
+      />
     </article>
   );
 }

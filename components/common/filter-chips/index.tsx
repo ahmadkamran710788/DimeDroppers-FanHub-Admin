@@ -1,11 +1,16 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 export interface FilterChipOption<T extends string> {
   value: T;
   label: string;
+  // Greyed out and not clickable (e.g. a limit reached).
+  disabled?: boolean;
+  // Shown before the label (e.g. a marker on a suggested chip).
+  icon?: ReactNode;
 }
 
 // One chip on at a time (the default), or any number with `multiple`. The chip type comes from
@@ -48,8 +53,10 @@ export default function FilterChips<T extends string>(props: FilterChipsProps<T>
             key={o.value || "all"}
             type="button"
             aria-pressed={active}
+            disabled={o.disabled}
             onClick={() => pick(o.value)}
             className={cn(
+              "disabled:opacity-40 disabled:cursor-not-allowed",
               pill
                 ? "h-11 px-4 rounded-full border text-[15px] font-semibold inline-flex items-center gap-1.5"
                 : "h-10 px-4 rounded-lg outline outline-1 text-sm font-medium transition-colors",
@@ -63,6 +70,7 @@ export default function FilterChips<T extends string>(props: FilterChipsProps<T>
             )}
           >
             {props.multiple && active && <Check className="size-4 shrink-0" strokeWidth={2.4} aria-hidden="true" />}
+            {o.icon}
             {o.label}
           </button>
         );

@@ -12,10 +12,11 @@ description: >
 
 # Web API Patterns
 
-Two concerns are covered here:
+Three concerns are covered here:
 
 1. **How to declare endpoints** — the `routes` object in `utils/routes/index.tsx`
 2. **How to call endpoints** — `apiCall` (client) and `apiRequest` (server)
+3. **How to poll** — TanStack Query, and only for polling (§4)
 
 ---
 
@@ -115,8 +116,7 @@ apiCall<T = unknown>({
 - Calls backend endpoints (`routes.api.*` paths like `fanhub/org/...`) **directly** and attaches the access token as a `Bearer` header automatically. The token comes from `utils/auth/client-token`, which gets it from the same-origin `/api/auth/token` route (the httpOnly cookies are sent to it automatically) and keeps it in memory. Don't add a Next route handler just to forward an org call.
 - On a 401 it forces one token refresh (`/api/auth/refresh`) and retries once; if that fails the user is signed out.
 - Need the raw `Response` (e.g. to show the backend's exact error message without a toast)? Use `backendFetch` from `@/utils/api-call` — same URL building, Bearer header and 401 retry.
-- **Caches GET responses** in memory — repeated identical GET calls return the cached result instantly.
-- **Clears the cache** on any mutation (POST, PUT, PATCH, DELETE) so the next GET fetches fresh data.
+- **Doesn't cache** — every call goes to the backend.
 - Shows an error toast automatically on failure — you don't need to handle toasts yourself for errors.
 - Pass `showSuccessToast: true` (and optionally `successMessage`) to show a success toast.
 
@@ -221,9 +221,31 @@ const result = await apiRequest({
 | Button / form submit handler in the browser | `apiCall` |
 | Server Component fetching data at render time | `apiRequest` |
 | Server Action (`'use server'`) | `apiRequest` |
-| Need caching / deduplication | `apiCall` (has in-memory cache) |
 | Need automatic error toasts | `apiCall` |
+| Need the backend's exact error message | `backendFetch` (or a feature helper on it, e.g. `sponsorRequest`) |
 | Need access to cookies server-side | `apiRequest` |
+| Polling a status until it's final | TanStack Query (§4) |
+
+---
+
+## 4. Polling — TanStack Query only
+
+`@tanstack/react-query` is installed **for polling only**: asking for a status every few seconds until it's final (e.g. a Sponsor AI search, `components/organization/sponsor-ai-agent/use-sponsor-ai-run`). The `QueryProvider` (`context/query-client`) wraps the app in `app/layout.tsx`.
+
+- **Only the poll is a query.** Every other request (one-off GETs, lists, POST/PUT/PATCH/DELETE, starting the thing being polled) stays on `apiCall` / `backendFetch` with `useEffect` + state as above. No `useMutation`, no query caching for ordinary data.
+- `queryFn` calls the backend through `backendFetch` (or a helper on it) and **throws** on failure, so a failed check keeps the last good data on screen.
+- `refetchInterval` is a function that returns the interval while the status is active and `false` once it's final; leave `refetchIntervalInBackground` off, so a hidden tab doesn't poll.
+- Use `skipToken` (not `enabled`) while there's nothing to poll yet.
+- Query keys: `["<feature>", "<resource>", id]`, e.g. `["sponsor-ai", "run", runId]`.
+- To show a response you already have (e.g. the 202 that started the job) without waiting for the first poll, seed it with `queryClient.setQueryData(key, data)`.
+
+```typescript
+const { data: run } = useQuery({
+  queryKey: ["sponsor-ai", "run", runId],
+  queryFn: runId ? () => fetchRun(runId) : skipToken,
+  refetchInterval: (q) => (isActiveRun(q.state.data?.status) ? 4000 : false),
+});
+```
 
 ---
 
