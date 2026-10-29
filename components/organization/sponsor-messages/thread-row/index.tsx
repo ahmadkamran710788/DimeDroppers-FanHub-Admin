@@ -2,7 +2,7 @@
 
 import StatusPill from "@/components/common/status-pill";
 import ContactAvatar from "@/components/organization/messages/contact-avatar";
-import { agentReplyText, type AgentSponsor } from "@/components/organization/sponsor-ai-agent/data";
+import { agentReplyText, type AgentSponsor } from "@/components/organization/sponsor-messages/data";
 import { useSponsorAgent } from "@/context/sponsor-agent";
 import { cn } from "@/utils/cn";
 

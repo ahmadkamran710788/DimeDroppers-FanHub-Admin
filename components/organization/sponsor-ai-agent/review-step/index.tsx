@@ -1,40 +1,41 @@
 "use client";
 
-import { useState } from "react";
 import { ArrowLeft, Check } from "lucide-react";
 import Button from "@/components/common/button";
+import Loader from "@/components/common/loader";
+import Pagination from "@/components/common/pagination";
 import SectionCard from "@/components/common/section-card";
 import Select from "@/components/common/select";
+import Tooltip from "@/components/common/tooltip";
+import AgentNotice from "@/components/organization/sponsor-ai-agent/agent-notice";
 import FollowUpCard from "@/components/organization/sponsor-ai-agent/follow-up-card";
-import type { AgentSponsor, FollowUpStatus } from "@/components/organization/sponsor-ai-agent/data";
-import { useSponsorAgent } from "@/context/sponsor-agent";
-
-type Filter = "all" | FollowUpStatus;
-
-const FILTER_OPTIONS: { value: Filter; label: string }[] = [
-  { value: "all", label: "All statuses" },
-  { value: "draft", label: "Drafts" },
-  { value: "sent", label: "Approved & sent" },
-  { value: "rejected", label: "Rejected" },
-];
+import { STATUS_FILTERS } from "@/components/organization/sponsor-ai-agent/data";
+import type { useSponsorDrafts } from "@/components/organization/sponsor-ai-agent/use-sponsor-drafts";
+import type { DraftStatusFilter, SponsorAiRun } from "@/utils/types/sponsor-ai";
 
 interface ReviewStepProps {
-  // The businesses the search found.
-  matched: AgentSponsor[];
-  radius: number;
+  drafts: ReturnType<typeof useSponsorDrafts>;
+  status: DraftStatusFilter;
+  onStatusChange: (status: DraftStatusFilter) => void;
+  page: number;
+  onPageChange: (page: number) => void;
+  // A tournament's event.
+  eventName?: string;
+  // The latest search, for its summary and warnings.
+  run: SponsorAiRun | null;
   onChangeSearch: () => void;
 }
 
-// Step 2: the agent's follow-up for each match, to approve, edit or reject. Approved ones move to
-// Sponsor Messages.
-export default function ReviewStep({ matched, radius, onChangeSearch }: ReviewStepProps) {
-  const { event, statusOf, approveAll } = useSponsorAgent();
-  const [filter, setFilter] = useState<Filter>("all");
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  const drafts = matched.filter((s) => statusOf(s.id) === "draft");
-  const shown = matched.filter((s) => filter === "all" || statusOf(s.id) === filter);
-  const count = matched.length;
+// Step 2: the agent's follow-ups, kept across searches, to edit or reject. Approving (which sends them
+// to Sponsor Messages) waits for its API.
+export default function ReviewStep({ drafts, status, onStatusChange, page, onPageChange, eventName, run, onChangeSearch }: ReviewStepProps) {
+  const { list } = drafts;
+  const counts = list?.counts;
+  const pending = counts?.PENDING ?? 0;
+  const lastSearch =
+    run?.status === "COMPLETED"
+      ? `last search wrote ${run.draftedCount} ${run.draftedCount === 1 ? "email" : "emails"} within ${run.radiusMiles} miles`
+      : null;
 
   return (
     <SectionCard>
@@ -42,7 +43,7 @@ export default function ReviewStep({ matched, radius, onChangeSearch }: ReviewSt
         <div className="flex flex-col gap-1">
           <h3 className="font-display font-black text-xl lg:text-[28px] uppercase text-white leading-tight">Follow-up Messages</h3>
           <p className="text-sm text-white/70">
-            {`${event.name} · ${count} ${count === 1 ? "sponsor" : "sponsors"} matched within ${radius} miles · approved messages move to Sponsor Messages`}
+            {[eventName, lastSearch, "approved messages move to Sponsor Messages"].filter(Boolean).join(" · ")}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -57,41 +58,45 @@ export default function ReviewStep({ matched, radius, onChangeSearch }: ReviewSt
           <Select
             label="Filter by status"
             name="follow-up-status"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as Filter)}
-            options={FILTER_OPTIONS}
+            value={status}
+            onChange={(e) => onStatusChange(e.target.value as DraftStatusFilter)}
+            options={STATUS_FILTERS.map((f) => ({ value: f.value, label: counts ? `${f.label} (${counts[f.value]})` : f.label }))}
             variant="dark"
-            className="w-[200px]"
+            className="w-[220px]"
             labelClassName="sr-only"
           />
-          <Button
-            variant="cta"
-            label={`Approve all drafts (${drafts.length})`}
-            icon={<Check className="size-5" strokeWidth={2.4} />}
-            onClick={() => approveAll(drafts.map((s) => s.id))}
-            disabled={drafts.length === 0}
-            className="px-5"
-          />
+          {/* Approving sends the emails; that part of the API isn't built yet. */}
+          <Tooltip label="Coming soon">
+            <Button
+              variant="cta"
+              label={`Approve all drafts (${pending})`}
+              icon={<Check className="size-5" strokeWidth={2.4} />}
+              disabled
+              className="px-5"
+            />
+          </Tooltip>
         </div>
       </div>
 
-      <div className="flex flex-col gap-4">
-        {shown.map((s) => (
-          <FollowUpCard
-            key={s.id}
-            sponsor={s}
-            editing={editingId === s.id}
-            onEditingChange={(editing) => setEditingId(editing ? s.id : null)}
-          />
-        ))}
-        {shown.length === 0 && (
-          <p className="py-8 text-center text-sm text-white/60">
-            {count === 0
-              ? `No businesses in these categories within ${radius} miles. Change the search to look wider.`
-              : "No messages match this filter."}
-          </p>
-        )}
-      </div>
+      {run?.status === "COMPLETED" && <AgentNotice tone="warning" items={run.warnings} />}
+
+      {!list ? (
+        drafts.loading ? <Loader /> : <p className="py-8 text-center text-sm text-white/60">Couldn’t load the drafts.</p>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {list.items.map((d) => (
+            <FollowUpCard key={d.id} draft={d} onEdit={drafts.edit} onReject={(id) => drafts.reject([id])} />
+          ))}
+          {list.items.length === 0 && (
+            <p className="py-8 text-center text-sm text-white/60">
+              {list.counts.ALL === 0
+                ? "No drafts yet. Run a search in Step 1 and the agent’s emails appear here."
+                : "No messages match this filter."}
+            </p>
+          )}
+          <Pagination page={page} pageCount={list.pagination.totalPages} onChange={onPageChange} className="self-center" />
+        </div>
+      )}
     </SectionCard>
   );
 }

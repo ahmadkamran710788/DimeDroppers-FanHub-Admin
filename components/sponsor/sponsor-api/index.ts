@@ -21,10 +21,10 @@ export const toQuery = (params?: QueryParams) => {
   return entries.length ? `?${new URLSearchParams(entries.map(([k, v]) => [k, String(v)])).toString()}` : "";
 };
 
-// The sponsor-packages calls: backendFetch (not apiCall) so the backend's message reaches the screen
-// untouched and nothing is cached (prices and availability change after an activation).
+// The sponsor-packages and Sponsor AI calls: backendFetch (not apiCall) so the backend's message reaches
+// the screen untouched and nothing is cached (prices and availability change after an activation).
 export async function sponsorRequest<T>(
-  method: "GET" | "POST",
+  method: "GET" | "POST" | "PATCH",
   endpoint: string,
   { params, body, headers }: { params?: QueryParams; body?: unknown; headers?: Record<string, string> } = {}
 ): Promise<SponsorApiResult<T>> {

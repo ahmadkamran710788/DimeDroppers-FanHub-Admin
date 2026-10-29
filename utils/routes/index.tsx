@@ -256,6 +256,21 @@ export const routes = {
     // events for the picker with each one's set-up status (FANHUB_ACTIVATIONS_EVENT_INVENTORIES_FRONTEND).
     activationEventInventory: (eventId: string) => `fanhub/org/activations?eventId=${encodeURIComponent(eventId)}`,
     activationEvents: "fanhub/org/activations/events",
+    // Sponsor AI Agent: finds local businesses and drafts an email to each (FANHUB_SPONSOR_AI_FRONTEND.md).
+    // GET ?eventId= (tournaments): what's missing before a search can start.
+    sponsorAiReadiness: "fanhub/org/sponsor-ai/readiness",
+    // GET ?eventId=: the 12 categories scored for the org, plus the radius options.
+    sponsorAiCategories: "fanhub/org/sponsor-ai/categories",
+    // POST starts a search (202); GET ?eventId=&page=&limit= lists them, newest first.
+    sponsorAiRuns: "fanhub/org/sponsor-ai/runs",
+    // GET one search, polled until it's final.
+    sponsorAiRun: (id: string) => `fanhub/org/sponsor-ai/runs/${id}`,
+    // GET ?status=&eventId=&page=&limit=: the drafts with every status's count.
+    sponsorAiDrafts: "fanhub/org/sponsor-ai/drafts",
+    // GET one draft, PATCH its subject / body.
+    sponsorAiDraft: (id: string) => `fanhub/org/sponsor-ai/drafts/${id}`,
+    // POST { ids }: rejects them for good (the business is never drafted again).
+    sponsorAiRejectDrafts: "fanhub/org/sponsor-ai/drafts/reject",
     // Sponsor app (sponsor token): find organisations, their packages, and activate one
     // (FANHUB_SPONSOR_PACKAGES_FRONTEND.md, FANHUB_SPONSOR_APP_INTEGRATION.md).
     sponsorFilters: "fanhub/sponsor-packages/filters",

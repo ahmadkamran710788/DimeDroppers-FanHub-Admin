@@ -7,7 +7,7 @@ import Input from "@/components/common/input";
 import StatusPill from "@/components/common/status-pill";
 import ContactAvatar from "@/components/organization/messages/contact-avatar";
 import MessageBubble from "@/components/organization/sponsor-messages/message-bubble";
-import { SAMPLE_PACKAGES, agentReplyText, type AgentSponsor } from "@/components/organization/sponsor-ai-agent/data";
+import { SAMPLE_PACKAGES, agentReplyText, type AgentSponsor } from "@/components/organization/sponsor-messages/data";
 import { formatCents } from "@/components/sponsor/sponsor-api";
 import { useSponsorAgent } from "@/context/sponsor-agent";
 import { cn } from "@/utils/cn";
