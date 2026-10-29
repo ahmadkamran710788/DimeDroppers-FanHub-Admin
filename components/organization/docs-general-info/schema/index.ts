@@ -1,8 +1,15 @@
 import * as yup from "yup";
 
-export const NAME_MAX = 80;
+// The API takes a title of up to 255 characters; the description has no limit there, so we keep one
+// that reads well in the app.
+export const TITLE_MAX = 255;
+export const DESCRIPTION_MAX = 2000;
 
-export const documentSchema = yup.object({
-  name: yup.string().trim().required("Document name is required").max(NAME_MAX, `Keep it under ${NAME_MAX} characters`),
-  fileName: yup.string().required("Upload a PDF"),
+export const noteSchema = yup.object({
+  title: yup.string().trim().required("Title is required").max(TITLE_MAX, `Keep it under ${TITLE_MAX} characters`),
+  description: yup
+    .string()
+    .trim()
+    .required("Description is required")
+    .max(DESCRIPTION_MAX, `Keep it under ${DESCRIPTION_MAX} characters`),
 });

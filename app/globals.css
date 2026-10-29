@@ -96,6 +96,47 @@ body {
   }
 }
 
+/* Rich text (RichTextEditor and RichText): Tailwind's preflight strips list bullets and heading sizes. */
+@layer components {
+  .rich-text {
+    overflow-wrap: anywhere;
+  }
+  .rich-text > * + * {
+    margin-top: 0.5em;
+  }
+  .rich-text h2 {
+    font-size: 1.375em;
+    font-weight: 700;
+  }
+  .rich-text h3 {
+    font-size: 1.125em;
+    font-weight: 700;
+  }
+  .rich-text ul {
+    list-style: disc;
+    padding-left: 1.5em;
+  }
+  .rich-text ol {
+    list-style: decimal;
+    padding-left: 1.5em;
+  }
+  .rich-text blockquote {
+    border-left: 3px solid currentColor;
+    padding-left: 1em;
+    opacity: 0.8;
+  }
+  .rich-text a {
+    text-decoration: underline;
+  }
+  .rich-text p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+    opacity: 0.4;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(.stat-card-move),
   ::view-transition-old(.stat-card-exit),
