@@ -1,32 +1,53 @@
 "use client";
 
-import Link from "next/link";
+import { useState } from "react";
 import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
 import Checkbox from "@/components/common/checkbox";
 import { CARD } from "@/components/sponsor/styles";
 import StepHeading from "@/components/auth/sponsor-sign-up/step-heading";
+import LegalModal from "@/components/auth/sponsor-sign-up/legal-modal";
 import type { PickedLogo } from "@/components/auth/sponsor-sign-up/logo-upload";
-import { SPONSOR_TYPES, type SponsorSignUpForm, type SponsorType } from "@/components/auth/sponsor-sign-up/data";
+import type { SponsorSignUpForm } from "@/components/auth/sponsor-sign-up/data";
+import type { LegalDocument, SponsorSignupOptions, SponsorTypeCode } from "@/utils/types/sponsor-profile";
 
 const ROW = "flex flex-wrap gap-x-5 gap-y-2 items-center py-4";
 const ROW_LABEL = "flex-[0_0_160px] text-[13px] font-semibold tracking-[1px] text-[#a8a8a8]";
 const EDIT = "h-11 px-3 text-sm font-semibold text-[#c9b8ff] hover:text-white";
-const LINK = "text-[#c9b8ff] underline hover:text-white";
+// A text button that reads as a link inside the agreement sentence.
+const LINK = "inline text-[15px] font-normal text-[#c9b8ff] underline hover:text-white";
 
 interface ReviewStepProps {
   form: SponsorSignUpForm;
-  type: SponsorType;
+  options: SponsorSignupOptions;
+  type: SponsorTypeCode;
   logo: PickedLogo | null;
+  terms: LegalDocument | null;
+  privacy: LegalDocument | null;
   agree: boolean;
   onToggleAgree: () => void;
+  // The API refused the agreement (it's normally ticked before Finish is enabled).
+  agreeError?: string;
   // Jumps back to a step (1 = Account, 2 = Brand) to change it.
   onEdit: (step: number) => void;
 }
 
 // Step 3: everything entered so far, with Edit links back, and the terms to accept.
-export default function ReviewStep({ form, type, logo, agree, onToggleAgree, onEdit }: ReviewStepProps) {
-  const typeName = SPONSOR_TYPES.find((t) => t.value === type)?.name;
+export default function ReviewStep({
+  form,
+  options,
+  type,
+  logo,
+  terms,
+  privacy,
+  agree,
+  onToggleAgree,
+  agreeError,
+  onEdit,
+}: ReviewStepProps) {
+  const [reading, setReading] = useState<"terms" | "privacy" | null>(null);
+  const typeName = options.sponsorTypes.find((t) => t.code === type)?.label;
+  const categoryName = options.categories.find((c) => c.code === form.category)?.label ?? form.category;
 
   return (
     <section aria-label="Review" className="flex flex-col gap-[18px]">
@@ -61,7 +82,7 @@ export default function ReviewStep({ form, type, logo, agree, onToggleAgree, onE
               {form.name}
               <br />
               <span className="text-[#bdbdbd]">
-                {form.category} · {typeName}
+                {categoryName} · {typeName}
               </span>
             </div>
           </div>
@@ -69,29 +90,42 @@ export default function ReviewStep({ form, type, logo, agree, onToggleAgree, onE
         </div>
       </div>
 
-      <div className="flex items-center gap-px min-h-11 text-[15px] text-[#e0e0e0]">
-        <Button
-          id="sponsor-terms"
-          size="icon"
-          icon={<Checkbox variant="violet" checked={agree} />}
-          role="checkbox"
-          aria-checked={agree}
-          aria-label="I agree to the Sponsor Terms and Privacy Policy"
-          onClick={onToggleAgree}
-          className="size-11 -ml-[11px] bg-transparent backdrop-blur-none"
-        />
-        {/* Clicking the sentence ticks the box too; the links inside still open. */}
-        <label htmlFor="sponsor-terms" className="cursor-pointer">
-          I agree to the{" "}
-          <Link href="#" className={LINK}>
-            Sponsor Terms
-          </Link>{" "}
-          and{" "}
-          <Link href="#" className={LINK}>
-            Privacy Policy
-          </Link>
-        </label>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-px min-h-11 text-[15px] text-[#e0e0e0]">
+          <Button
+            id="sponsor-terms"
+            size="icon"
+            icon={<Checkbox variant="violet" checked={agree} />}
+            role="checkbox"
+            aria-checked={agree}
+            aria-label="I agree to the Sponsor Terms and Privacy Policy"
+            onClick={onToggleAgree}
+            className="size-11 -ml-[11px] bg-transparent backdrop-blur-none"
+          />
+          {/* The words tick the box too; the two documents open in a modal. A label can't hold a button,
+              so the sentence is split around them. */}
+          <p>
+            <label htmlFor="sponsor-terms" className="cursor-pointer">
+              I agree to the{" "}
+            </label>
+            <Button variant="text" size="sm" label="Sponsor Terms" onClick={() => setReading("terms")} className={LINK} />
+            <label htmlFor="sponsor-terms" className="cursor-pointer">
+              {" "}
+              and{" "}
+            </label>
+            <Button variant="text" size="sm" label="Privacy Policy" onClick={() => setReading("privacy")} className={LINK} />
+          </p>
+        </div>
+        {agreeError && <p className="text-sm text-error">{agreeError}</p>}
       </div>
+
+      <LegalModal doc={terms} label="Sponsor Terms" isOpen={reading === "terms"} onClose={() => setReading(null)} />
+      <LegalModal
+        doc={privacy}
+        label="Privacy Policy"
+        isOpen={reading === "privacy"}
+        onClose={() => setReading(null)}
+      />
     </section>
   );
 }

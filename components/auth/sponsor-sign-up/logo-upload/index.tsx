@@ -1,13 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
-import toast from "react-hot-toast";
 import { Upload } from "lucide-react";
 import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
 import HiddenFileInput from "@/components/common/hidden-file-input";
 import { SECTION_LABEL } from "@/components/sponsor/styles";
-import { LOGO_ACCEPT, isLogoFile } from "@/components/sponsor/data";
+import type { LogoRules } from "@/utils/types/sponsor-profile";
 
 export interface PickedLogo {
   file: File;
@@ -17,23 +16,21 @@ export interface PickedLogo {
 
 interface LogoUploadProps {
   logo: PickedLogo | null;
+  // From the sponsor options: the file picker's filter and the hint under the drop zone.
+  rules: LogoRules;
+  // Why the picked file was refused (checked by the owner with checkLogo, or by the API on Finish).
+  error?: string;
   onPick: (file: File) => void;
   onRemove: () => void;
 }
 
 // The sponsor's logo: a dashed drop target (click or drop a file), then the picked file with Remove.
-export default function LogoUpload({ logo, onPick, onRemove }: LogoUploadProps) {
+export default function LogoUpload({ logo, rules, error, onPick, onRemove }: LogoUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
   function pick(files: File[]) {
-    const file = files[0];
-    if (!file) return;
-    if (!isLogoFile(file)) {
-      toast.error("Upload your logo as an SVG or PNG");
-      return;
-    }
-    onPick(file);
+    if (files[0]) onPick(files[0]);
   }
 
   return (
@@ -76,16 +73,20 @@ export default function LogoUpload({ logo, onPick, onRemove }: LogoUploadProps) 
           }}
           className={cn(
             "min-h-[120px] rounded-[14px] border-[1.5px] border-dashed text-white flex flex-col items-center justify-center gap-2 transition-colors",
-            dragging ? "border-[#8b6dff] bg-[#17151f]" : "border-[#4a3f7a] bg-[#0e0c16]"
+            dragging ? "border-[#8b6dff] bg-[#17151f]" : "border-[#4a3f7a] bg-[#0e0c16]",
+            error && "border-error"
           )}
         >
           <Upload className="size-[26px]" strokeWidth={1.8} aria-hidden />
           <span className="text-base font-bold">Upload your logo</span>
-          <span className="text-[13px] text-[#bdbdbd]">SVG or PNG, at least 512×512</span>
+          <span className="text-[13px] text-[#bdbdbd]">
+            SVG or PNG, at least {rules.minWidth}×{rules.minHeight}
+          </span>
         </button>
       )}
+      {error && <p className="text-sm text-error">{error}</p>}
 
-      <HiddenFileInput ref={inputRef} accept={LOGO_ACCEPT} onFiles={pick} />
+      <HiddenFileInput ref={inputRef} accept={rules.types.join(",")} onFiles={pick} />
     </div>
   );
 }

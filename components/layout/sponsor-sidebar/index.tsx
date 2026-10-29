@@ -44,6 +44,7 @@ export default function SponsorSidebar({ open, onClose }: SponsorSidebarProps) {
       sections={NAV_SECTIONS}
       profileName={account?.displayName ?? "Sponsor"}
       profileRole="Sponsor"
+      profileImage={account?.logoUrl}
       open={open}
       onClose={onClose}
     />
