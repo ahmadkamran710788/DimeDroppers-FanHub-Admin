@@ -33,6 +33,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { skipToken, useQuery } from "@tanstack/react-query";
 import { orgKindOf, useAuth } from "@/context/auth";
 import toast from "react-hot-toast";
 
@@ -142,7 +143,11 @@ const MAX_CONSECUTIVE_POLL_FAILURES = 5;
 // Surface a "taking longer than usual" note past this mark. Advisory only — polling continues.
 const SLOW_SYNC_NOTICE_MS = 120_000;
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// What one status check found: a sync status, or "STOPPED" when polling gave up (session over,
+// too many failures).
+type SyncCheck = ExposureSyncStatus | "STOPPED";
+
+const isFinalCheck = (check: SyncCheck | undefined) => check === "SUCCESS" || check === "FAILED" || check === "STOPPED";
 
 function pollDelayFor(elapsedMs: number): number {
   let delay = POLL_BACKOFF[0][1];
@@ -237,21 +242,13 @@ export default function ImportScheduleContent() {
   // without claiming a sync started that the backend may still refuse.
   const [resyncing, setResyncing] = useState(false);
 
-  // Guards background sync polling from setting state after the component unmounts.
-  // Set in the body (runs on every mount) and cleared in cleanup so it survives Strict
-  // Mode's mount→unmount→mount — otherwise the flag stays false and polling never runs.
-  const mountedRef = useRef(true);
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  // Incremented per poll run so a newer run supersedes an older one. Polling is unbounded
-  // now, so two concurrent loops (hydration resume + a Re-sync click) would otherwise both
-  // run forever, double-writing state at different cadences.
-  const pollRunIdRef = useRef(0);
+  // When the sync being polled started; null while nothing is polled. Each start is its own query
+  // (the time is in its key), so a newer run (hydration resume, then a Re-sync click) supersedes an
+  // older one instead of both polling.
+  const [pollStartedAt, setPollStartedAt] = useState<number | null>(null);
+  // The run whose checks may still update the card, and its failed checks in a row.
+  const pollRunRef = useRef<number | null>(null);
+  const pollFailuresRef = useRef(0);
 
   // Section A — MaxPreps file upload (pdf/jpg/png).
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -429,34 +426,19 @@ export default function ImportScheduleContent() {
     toast.error(message);
   }, []);
 
-  // Poll the Exposure sync status until it reaches a terminal state. Intentionally
-  // UNBOUNDED in duration — a sync for a large org can run for many minutes, and the old
-  // 40-iteration (~100s) cap silently stopped polling while leaving syncStatus on
-  // IN_PROGRESS, so the card spun forever with a disabled Re-sync button and no recovery
-  // short of a page reload. POLL_BACKOFF bounds the request rate instead of the runtime.
-  const pollExposureStatus = useCallback(async () => {
-    const runId = ++pollRunIdRef.current;
+  const pollExposureStatus = useCallback(() => {
     const startedAt = Date.now();
-    let consecutiveFailures = 0;
-
+    pollRunRef.current = startedAt;
+    pollFailuresRef.current = 0;
     setSlowSync(false);
+    setPollStartedAt(startedAt);
+  }, []);
 
-    const isStale = () => !mountedRef.current || pollRunIdRef.current !== runId;
-
-    while (!isStale()) {
-      const elapsed = Date.now() - startedAt;
-      const delay = pollDelayFor(elapsed);
-
-      // Don't poll from a background tab — idle until it's foregrounded. Checked per
-      // iteration rather than via a visibilitychange listener so the loop keeps hitting
-      // its isStale() check and can't outlive the component while hidden.
-      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
-        await sleep(delay);
-        continue;
-      }
-
-      if (elapsed >= SLOW_SYNC_NOTICE_MS) setSlowSync(true);
-
+  // One status check of the run started at `startedAt`. It updates the card itself, so a check of
+  // a superseded run changes nothing.
+  const checkSyncStatus = useCallback(
+    async (startedAt: number): Promise<SyncCheck> => {
+      const isStale = () => pollRunRef.current !== startedAt;
       try {
         const res = await backendFetch(routes.api.exposureSyncStatus);
 
@@ -466,7 +448,7 @@ export default function ImportScheduleContent() {
         // just failed.
         if (res.status === 401) {
           if (!isStale()) failSync("Your session expired. Please sign in again.");
-          return;
+          return "STOPPED";
         }
 
         if (!res.ok) throw new Error(`Status check failed (${res.status})`);
@@ -479,8 +461,8 @@ export default function ImportScheduleContent() {
           | undefined;
         if (!d) throw new Error("Unexpected status payload.");
 
-        consecutiveFailures = 0;
-        if (isStale()) return;
+        pollFailuresRef.current = 0;
+        if (isStale()) return "STOPPED";
 
         setExposure((p) => ({
           hasCredentials: d.hasCredentials ?? p.hasCredentials,
@@ -492,25 +474,62 @@ export default function ImportScheduleContent() {
         if (d.syncStatus === "SUCCESS") {
           setSlowSync(false);
           toast.success(d.syncMessage || "Sync complete");
-          return;
-        }
-        if (d.syncStatus === "FAILED") {
+        } else if (d.syncStatus === "FAILED") {
           setSlowSync(false);
           toast.error(d.syncMessage || "Sync failed");
-          return;
         }
-      } catch {
+        return d.syncStatus ?? "IN_PROGRESS";
+      } catch (error) {
         // Ride out transient blips, but don't poll a dead endpoint indefinitely.
-        consecutiveFailures += 1;
-        if (consecutiveFailures >= MAX_CONSECUTIVE_POLL_FAILURES) {
+        pollFailuresRef.current += 1;
+        if (pollFailuresRef.current >= MAX_CONSECUTIVE_POLL_FAILURES) {
           if (!isStale()) failSync("Lost contact with the sync service. Please try again.");
-          return;
+          return "STOPPED";
         }
+        // Thrown so TanStack keeps polling and the last check stays as it was.
+        throw error;
       }
+    },
+    [failSync]
+  );
 
-      await sleep(delay);
-    }
-  }, [failSync]);
+  // A final answer ends the run, and with it the slow-sync timer.
+  const pollOnce = useCallback(
+    async (startedAt: number) => {
+      const check = await checkSyncStatus(startedAt);
+      if (isFinalCheck(check) && pollRunRef.current === startedAt) {
+        pollRunRef.current = null;
+        setPollStartedAt(null);
+      }
+      return check;
+    },
+    [checkSyncStatus]
+  );
+
+  // Poll the Exposure sync status (TanStack Query) until it reaches a terminal state.
+  // Intentionally UNBOUNDED in duration — a sync for a large org can run for many minutes, and
+  // the old 40-iteration (~100s) cap silently stopped polling while leaving syncStatus on
+  // IN_PROGRESS, so the card spun forever with a disabled Re-sync button and no recovery
+  // short of a page reload. POLL_BACKOFF bounds the request rate instead of the runtime.
+  // TanStack pauses the interval while the tab is hidden.
+  useQuery({
+    queryKey: ["exposure", "sync-status", pollStartedAt],
+    queryFn: pollStartedAt === null ? skipToken : () => pollOnce(pollStartedAt),
+    // Failures are counted per check above (MAX_CONSECUTIVE_POLL_FAILURES), not retried.
+    retry: false,
+    refetchInterval: (q) =>
+      pollStartedAt === null || isFinalCheck(q.state.data) ? false : pollDelayFor(Date.now() - pollStartedAt),
+  });
+
+  // Advisory only: past SLOW_SYNC_NOTICE_MS the card says the sync is taking longer than usual.
+  useEffect(() => {
+    if (pollStartedAt === null) return;
+    const timer = setTimeout(
+      () => setSlowSync(true),
+      Math.max(0, pollStartedAt + SLOW_SYNC_NOTICE_MS - Date.now())
+    );
+    return () => clearTimeout(timer);
+  }, [pollStartedAt]);
 
   // Hydrate the Exposure connection state on load so "Connected" + the last sync result
   // persist across reloads. Resume polling if a sync was still in progress.

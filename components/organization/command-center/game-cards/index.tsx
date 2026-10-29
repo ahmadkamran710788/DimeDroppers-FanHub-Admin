@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Loader from "@/components/common/loader";
 import GameCard from "@/components/organization/command-center/game-cards/game-card";
 import { backendFetch } from "@/utils/api-call";
@@ -11,40 +11,29 @@ import type { LiveGame, LiveGamesPage } from "@/utils/types/command-center";
 const POLL_MS = 30_000;
 const LIMIT = 20;
 
-// Command Center Live Games: the org's games in play right now, from GET /command-center/live-games.
-// Polled with backendFetch, since apiCall would answer repeat GETs from its cache.
-// `eventId` (a tournament's FanHubSchoolEvent id, "" for all) keeps the strip to that event.
-export default function GameCards({ eventId = "" }: { eventId?: string }) {
-  // The latest answer and the event it is for, so a switch shows the loader, not the old event's games.
-  const [loaded, setLoaded] = useState<{ eventId: string; games: LiveGame[]; total: number } | null>(null);
-  const loading = loaded?.eventId !== eventId;
-  const games = loading ? [] : (loaded?.games ?? []);
-  const total = loading ? 0 : (loaded?.total ?? 0);
+async function fetchLiveGames(eventId: string): Promise<LiveGamesPage> {
+  const query = new URLSearchParams({ limit: String(LIMIT), ...(eventId && { eventId }) });
+  const res = await backendFetch(`${routes.api.commandCenterLiveGames}?${query}`);
+  const body = res.ok ? ((await res.json().catch(() => null)) as { data?: LiveGamesPage[] } | null) : null;
+  const page = body?.data?.[0];
+  // Thrown so a failed poll keeps the last games on screen.
+  if (!page) throw new Error("Couldn't load the live games.");
+  return page;
+}
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      const query = new URLSearchParams({ limit: String(LIMIT), ...(eventId && { eventId }) });
-      const res = await backendFetch(`${routes.api.commandCenterLiveGames}?${query}`).catch(() => null);
-      const body = res?.ok ? ((await res.json().catch(() => null)) as { data?: LiveGamesPage[] } | null) : null;
-      if (cancelled) return;
-      // A failed poll keeps the last games on screen.
-      const page = body?.data?.[0];
-      setLoaded((prev) =>
-        page
-          ? { eventId, games: page.games, total: page.total }
-          : prev?.eventId === eventId
-            ? prev
-            : { eventId, games: [], total: 0 }
-      );
-    };
-    load();
-    const id = setInterval(load, POLL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [eventId]);
+// Command Center Live Games: the org's games in play right now, from GET /command-center/live-games,
+// polled with TanStack Query (paused while the tab is hidden). backendFetch, not apiCall, so a failed
+// poll doesn't toast. `eventId` (a tournament's FanHubSchoolEvent id, "" for all) keeps the strip to
+// that event; each event has its own query, so a switch shows the loader, not the old event's games.
+export default function GameCards({ eventId = "" }: { eventId?: string }) {
+  const { data, isPending } = useQuery({
+    queryKey: ["command-center", "live-games", eventId],
+    queryFn: () => fetchLiveGames(eventId),
+    refetchInterval: POLL_MS,
+  });
+  const loading = isPending;
+  const games: LiveGame[] = data?.games ?? [];
+  const total = data?.total ?? 0;
 
   return (
     <section className="rounded-[8px] p-6 flex flex-col gap-5 bg-surface-07 backdrop-blur-[24px]">

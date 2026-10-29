@@ -230,11 +230,16 @@ const result = await apiRequest({
 
 ## 4. Polling — TanStack Query only
 
-`@tanstack/react-query` is installed **for polling only**: asking for a status every few seconds until it's final (e.g. a Sponsor AI search, `components/organization/sponsor-ai-agent/use-sponsor-ai-run`). The `QueryProvider` (`context/query-client`) wraps the app in `app/layout.tsx`.
+`@tanstack/react-query` is installed **for polling only**, and every poll uses it (no `setInterval` / sleep loops):
+
+- a status asked for every few seconds until it's final — a Sponsor AI search (`components/organization/sponsor-ai-agent/use-sponsor-ai-run`), the Exposure sync (`components/organization/schedule/import-schedule`, with a backoff interval);
+- a list kept fresh on a timer — the org's chat conversations (`components/organization/messages/use-org-chat`), Command Center live games (`components/organization/command-center/game-cards`).
+
+The `QueryProvider` (`context/query-client`) wraps the app in `app/layout.tsx`.
 
 - **Only the poll is a query.** Every other request (one-off GETs, lists, POST/PUT/PATCH/DELETE, starting the thing being polled) stays on `apiCall` / `backendFetch` with `useEffect` + state as above. No `useMutation`, no query caching for ordinary data.
 - `queryFn` calls the backend through `backendFetch` (or a helper on it) and **throws** on failure, so a failed check keeps the last good data on screen.
-- `refetchInterval` is a function that returns the interval while the status is active and `false` once it's final; leave `refetchIntervalInBackground` off, so a hidden tab doesn't poll.
+- For a status, `refetchInterval` is a function that returns the interval while the status is active and `false` once it's final; for a list on a timer it's a plain number. Leave `refetchIntervalInBackground` off, so a hidden tab doesn't poll.
 - Use `skipToken` (not `enabled`) while there's nothing to poll yet.
 - Query keys: `["<feature>", "<resource>", id]`, e.g. `["sponsor-ai", "run", runId]`.
 - To show a response you already have (e.g. the 202 that started the job) without waiting for the first poll, seed it with `queryClient.setQueryData(key, data)`.

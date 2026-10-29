@@ -14,9 +14,8 @@ interface RequestOptions {
   failure?: string;
 }
 
-// Chat calls go through backendFetch, not apiCall: apiCall caches GETs (polling would never see
-// new messages) and replaces 400s with a generic toast, hiding messages like "Nobody on this team
-// matches that audience". Every response carries its payload in a `data` array; null on failure.
+// Chat calls go through backendFetch, not apiCall: apiCall replaces 400s with a generic toast, hiding
+// messages like "Nobody on this team matches that audience", and toasts every failed poll. Every response carries its payload in a `data` array; null on failure.
 async function request<T>(endpoint: string, { method = "GET", body, failure }: RequestOptions = {}): Promise<T[] | null> {
   try {
     const res = await backendFetch(endpoint, {
