@@ -13,6 +13,8 @@ export interface SponsorStore {
   label: string;
   // The address, when the label is the store's name (many stores share the brand's name).
   hint?: string;
+  // "Vancouver, WA": tells same-named stores apart in short lists.
+  area: string;
 }
 
 // GET /fanhub/sponsor-profile/locations answers the stores as the whole `data` list (the API puts a list
@@ -43,7 +45,12 @@ export function useSponsorStores(): SponsorStore[] | null {
           .filter((l) => l.latitude !== null && l.longitude !== null)
           .map((l) => {
             const address = formatAddress(l);
-            return { id: l.id, label: locationLabel(l), ...(l.name && address && { hint: address }) };
+            return {
+              id: l.id,
+              label: locationLabel(l),
+              area: [l.city, l.state].filter(Boolean).join(", "),
+              ...(l.name && address && { hint: address }),
+            };
           })
       );
     });
