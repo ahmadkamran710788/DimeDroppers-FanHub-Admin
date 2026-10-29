@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { sponsorRequest } from "@/components/sponsor/sponsor-api";
 import { formatAddress, locationLabel } from "@/components/sponsor/profile/data";
+import { backendFetch } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type { SponsorLocation } from "@/utils/types/sponsor-profile";
 
@@ -15,18 +15,31 @@ export interface SponsorStore {
   hint?: string;
 }
 
+// GET /fanhub/sponsor-profile/locations answers the stores as the whole `data` list (the API puts a list
+// there as is), not data[0]; null when it fails.
+async function loadLocations(): Promise<SponsorLocation[] | null> {
+  try {
+    const res = await backendFetch(routes.api.sponsorLocations, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json().catch(() => null);
+    return Array.isArray(json?.data) ? (json.data as SponsorLocation[]) : null;
+  } catch {
+    return null;
+  }
+}
+
 // The brand's stores that can be searched near: only those with a point on the map. null while loading; a
-// failed load leaves the list empty, so the search runs anywhere.
+// failed load leaves the list empty, so the search runs anywhere instead of waiting.
 export function useSponsorStores(): SponsorStore[] | null {
   const [stores, setStores] = useState<SponsorStore[] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    sponsorRequest<SponsorLocation[]>("GET", routes.api.sponsorLocations).then((r) => {
+    loadLocations().then((locations) => {
       if (cancelled) return;
-      if (!r.view) toast.error(r.message ?? "Couldn't load your locations.");
+      if (!locations) toast.error("Couldn't load your locations, so organizations are shown from anywhere.");
       setStores(
-        (r.view ?? [])
+        (locations ?? [])
           .filter((l) => l.latitude !== null && l.longitude !== null)
           .map((l) => {
             const address = formatAddress(l);
