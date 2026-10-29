@@ -215,6 +215,9 @@ export default function PackagesPanel({ org, eventFilters, radiusMiles, onActiva
   // the package meanwhile is shown as taken and left out.
   const pendingTaken = pending ? (takenFor(pending.choice) ?? pending.taken) : new Set<string>();
   const pendingPicked = pending ? pending.picked.filter((id) => !pendingTaken.has(id)) : [];
+  // Near stores to choose from: an activation is then for at least one of them, never for none.
+  const pendingHasStores = !!pending && pending.stores.length > 0 && radiusMiles !== null;
+  const needsStore = pendingHasStores && pendingPicked.length === 0;
 
   const addToCart = (kind: SponsorCartKind, name: string, totalCents: number, currency: string, choice: Choice) => {
     // Every near store that doesn't have it yet; the cart can untick some before checkout.
@@ -234,7 +237,7 @@ export default function PackagesPanel({ org, eventFilters, radiusMiles, onActiva
   };
 
   const activate = async () => {
-    if (!pending) return false;
+    if (!pending || needsStore) return false;
     const body = target(pending.choice, pending.totalCents, pendingPicked);
     const r = await sponsorRequest<PackageActivation>("POST", routes.api.sponsorActivations, {
       body,
@@ -373,8 +376,9 @@ export default function PackagesPanel({ org, eventFilters, radiusMiles, onActiva
         confirmLabel="Activate"
         busyLabel="Activating…"
         onConfirm={activate}
+        confirmDisabled={needsStore}
       >
-        {pending && pending.stores.length > 0 && radiusMiles !== null && (
+        {pending && pendingHasStores && radiusMiles !== null && (
           <StoreChecklist
             tone="light"
             stores={pending.stores}

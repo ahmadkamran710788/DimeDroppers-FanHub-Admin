@@ -17,6 +17,8 @@ interface ConfirmModalProps {
   destructive?: boolean;
   // Extra content under the message, e.g. a checklist (a paragraph can't hold one).
   children?: ReactNode;
+  // The confirm button waits, e.g. until something in `children` is picked.
+  confirmDisabled?: boolean;
 }
 
 // Yes/no popup for an action that needs a second look (remove, withdraw, delete…).
@@ -30,6 +32,7 @@ export default function ConfirmModal({
   onConfirm,
   destructive = false,
   children,
+  confirmDisabled = false,
 }: ConfirmModalProps) {
   const [busy, setBusy] = useState(false);
 
@@ -51,7 +54,7 @@ export default function ConfirmModal({
             label={busy ? busyLabel : confirmLabel}
             variant={destructive ? "danger" : "cta"}
             onClick={confirm}
-            disabled={busy}
+            disabled={busy || confirmDisabled}
             fullWidth
           />
         </div>

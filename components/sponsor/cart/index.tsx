@@ -67,6 +67,9 @@ export default function SponsorCart() {
   const isAlreadyActive = (line: (typeof lines)[number]) =>
     !line.item.sponsorLocationIds?.length && !!activeMap?.has(line.key);
   const alreadyActiveCount = lines.filter(isAlreadyActive).length;
+  // Lines with stores to choose from but none ticked: an activation is always for at least one store.
+  const needsStore = (line: (typeof lines)[number]) => !!line.stores && !line.item.sponsorLocationIds?.length;
+  const needsStoreCount = lines.filter(needsStore).length;
   const currency = quote?.currency ?? lines[0]?.currency ?? "USD";
 
   // Line key → the new price, for every item whose price changed.
@@ -185,6 +188,11 @@ export default function SponsorCart() {
                 {`Remove the ${plural(alreadyActiveCount, "item")} you already have active to continue.`}
               </p>
             )}
+            {needsStoreCount > 0 && (
+              <p className="text-[13px] text-[#f0c36a]">
+                {`Tick at least one store on ${plural(needsStoreCount, "item")} to continue.`}
+              </p>
+            )}
             {changedCount > 0 && (
               <Button
                 label={changedCount === 1 ? "Accept the new price" : `Accept ${changedCount} new prices`}
@@ -195,7 +203,7 @@ export default function SponsorCart() {
             <Button
               label="Activate all"
               onClick={() => setCheckoutKey(crypto.randomUUID())}
-              disabled={quoting || !quote?.canActivate || alreadyActiveCount > 0}
+              disabled={quoting || !quote?.canActivate || alreadyActiveCount > 0 || needsStoreCount > 0}
               fullWidth
               className={cn(PRIMARY_BUTTON, "h-12 px-[22px] rounded-[10px] text-[15px]")}
             />

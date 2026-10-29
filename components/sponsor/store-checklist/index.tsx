@@ -73,7 +73,10 @@ export default function StoreChecklist({
       {moreCount > 0 && (
         <p className={cn("text-xs", muted)}>{`${moreCount} more of your stores are near too; only the nearest ${stores.length} are listed.`}</p>
       )}
-      {picked.length === 0 && <p className={cn("text-xs", muted)}>No store ticked: it is activated without stores.</p>}
+      {/* An activation is always for at least one store (the confirm and the cart wait for one). */}
+      {picked.length === 0 && (
+        <p className={cn("text-xs", light ? "text-[#b45309]" : "text-[#f0c36a]")}>Tick at least one store.</p>
+      )}
     </div>
   );
 }

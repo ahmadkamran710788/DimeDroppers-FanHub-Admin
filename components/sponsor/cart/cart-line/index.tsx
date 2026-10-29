@@ -41,13 +41,16 @@ export default function CartLine({
   // An item that can't be activated has no current price: the one shown when it was added, greyed.
   const price = !unavailable && quote?.totalCents != null ? quote.totalCents : line.totalCents;
   const currency = quote?.currency ?? line.currency;
+  const pickedIds = line.item.sponsorLocationIds ?? [];
+  // It has stores to choose from but none ticked: it can't be activated for no store.
+  const needsStore = !!line.stores && pickedIds.length === 0;
   const problem = alreadyActive
     ? "You already have this sponsorship active. Remove it to continue."
-    : newPrice !== null
-      ? `The price has changed from ${formatCents(line.totalCents, currency)} to ${formatCents(newPrice, currency)}`
-      : quote?.problem;
-
-  const pickedIds = line.item.sponsorLocationIds ?? [];
+    : needsStore
+      ? "Tick at least one store for this item (Edit stores)."
+      : newPrice !== null
+        ? `The price has changed from ${formatCents(line.totalCents, currency)} to ${formatCents(newPrice, currency)}`
+        : quote?.problem;
   // The quote's stores carry their distance; while it prices (or when it has a problem) the ones picked here.
   const forStores = quote?.locations.length
     ? quote.locations
