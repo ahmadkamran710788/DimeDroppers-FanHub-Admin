@@ -31,6 +31,8 @@ interface MultiSelectProps {
   countLabel?: (count: number) => string;
   error?: string;
   placeholder?: string;
+  // The filter box's hint, e.g. "Search your locations"; "Search" by default.
+  searchPlaceholder?: string;
   className?: string;
   labelClassName?: string;
   // Extra utilities for the field (e.g. a white fill).
@@ -57,6 +59,7 @@ export default function MultiSelect({
   countLabel,
   error,
   placeholder,
+  searchPlaceholder = "Search",
   className,
   labelClassName,
   selectClassName,
@@ -269,7 +272,7 @@ export default function MultiSelect({
                   setActive(0);
                 }}
                 onKeyDown={onKeyDown}
-                placeholder="Search"
+                placeholder={searchPlaceholder}
                 aria-label={`Search ${label.toLowerCase()}`}
                 aria-controls={listId}
                 aria-activedescendant={rowCount > 0 ? rowId(active) : undefined}

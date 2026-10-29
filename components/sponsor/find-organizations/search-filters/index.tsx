@@ -132,6 +132,7 @@ export default function SearchFilters({ filters, stores, onSearch, searching = f
             max={MAX_PICKED_STORES}
             countLabel={(count) => `${count} locations`}
             placeholder={!stores ? "Loading your locations…" : stores.length ? "Anywhere" : "No locations yet"}
+            searchPlaceholder="Search your locations"
             disabled={!stores?.length}
             variant="dark"
             className="min-w-0 @min-[416px]:col-span-2"
