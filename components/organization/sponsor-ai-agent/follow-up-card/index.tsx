@@ -8,9 +8,8 @@ import ConfirmModal from "@/components/common/confirm-modal";
 import Input from "@/components/common/input";
 import StatusPill from "@/components/common/status-pill";
 import Textarea from "@/components/common/textarea";
-import Tooltip from "@/components/common/tooltip";
 import PackageCard from "@/components/sponsor/find-organizations/package-card";
-import { STATUS_STYLE, toSponsorPackage } from "@/components/organization/sponsor-ai-agent/data";
+import { STATUS_STYLE, THREAD_STYLE, toSponsorPackage } from "@/components/organization/sponsor-ai-agent/data";
 import { draftEditSchema } from "@/components/organization/sponsor-ai-agent/schema";
 import { routes } from "@/utils/routes";
 import { cn } from "@/utils/cn";
@@ -26,14 +25,17 @@ interface FollowUpCardProps {
   // Each resolves true when it went through.
   onEdit: (id: string, changes: EditDraftBody) => Promise<boolean>;
   onReject: (id: string) => Promise<boolean>;
+  // Sends the email to the business.
+  onApprove: (id: string) => Promise<boolean>;
 }
 
 // One drafted follow-up email: the business and why it fits, who it's to, the message, its actions and
 // the packages it carries. Only a draft still waiting for review can be edited or rejected.
-export default function FollowUpCard({ draft, onEdit, onReject }: FollowUpCardProps) {
+export default function FollowUpCard({ draft, onEdit, onReject, onApprove }: FollowUpCardProps) {
   const router = useRouter();
   const { business, contact, message } = draft;
-  const style = STATUS_STYLE[draft.reviewStatus];
+  // An approved draft shows where its thread is: sent, replied or stopped.
+  const style = (draft.reviewStatus === "APPROVED" && THREAD_STYLE[draft.threadStatus]) || STATUS_STYLE[draft.reviewStatus];
   const pending = draft.reviewStatus === "PENDING";
   const [editing, setEditing] = useState(false);
   const [subject, setSubject] = useState("");
@@ -41,6 +43,7 @@ export default function FollowUpCard({ draft, onEdit, onReject }: FollowUpCardPr
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [confirmReject, setConfirmReject] = useState(false);
+  const [confirmApprove, setConfirmApprove] = useState(false);
 
   const to = contact
     ? `To: ${[contact.name, contact.title].filter(Boolean).join(", ") || "Unknown contact"}${contact.email ? ` · ${contact.email}` : ""}`
@@ -158,16 +161,14 @@ export default function FollowUpCard({ draft, onEdit, onReject }: FollowUpCardPr
 
         {pending && (
           <div className="flex gap-2 items-start md:justify-end shrink-0">
-            {/* Approving sends the email; that part of the API isn't built yet. */}
-            <Tooltip label="Coming soon">
-              <Button
-                variant="secondary"
-                label="Approve"
-                icon={<Check className="size-5" strokeWidth={2.4} />}
-                disabled
-                className="min-w-0 px-5 font-semibold"
-              />
-            </Tooltip>
+            <Button
+              variant="secondary"
+              label="Approve"
+              icon={<Check className="size-5" strokeWidth={2.4} />}
+              onClick={() => setConfirmApprove(true)}
+              disabled={saving || editing}
+              className="min-w-0 px-5 font-semibold"
+            />
             {!editing && (
               <Button
                 size="icon"
@@ -205,19 +206,45 @@ export default function FollowUpCard({ draft, onEdit, onReject }: FollowUpCardPr
       )}
 
       {draft.reviewStatus === "APPROVED" && (
-        <div className="flex flex-wrap items-center gap-3 rounded-[8px] border border-success/40 bg-[#1d3a1e]/60 px-4 py-3 text-sm text-[#a3e3a5]">
-          <span className="flex-1 min-w-[220px]">Sent. The thread moved to Sponsor Messages, where the agent handles the replies.</span>
-          <Button
-            size="sm"
-            variant="outline"
-            label="Open in Sponsor Messages"
-            icon={<ArrowRight className="size-4" />}
-            iconPosition="end"
-            onClick={() => router.push(routes.ui.sponsorMessagesThread(draft.id))}
-            className="h-10 px-4 text-sm border-success/60 text-[#a3e3a5] hover:bg-success/10"
-          />
+        <div
+          className={cn(
+            "flex flex-wrap items-center gap-3 rounded-[8px] border px-4 py-3 text-sm",
+            draft.threadStatus === "STOPPED"
+              ? "border-[#ffc999]/40 bg-[#3d2a12]/60 text-[#ffc999]"
+              : "border-success/40 bg-[#1d3a1e]/60 text-[#a3e3a5]"
+          )}
+        >
+          <span className="flex-1 min-w-[220px]">
+            {draft.threadStatus === "STOPPED"
+              ? "Stopped. No more emails go to this contact: they unsubscribed, the address bounced or it was reported as spam."
+              : draft.threadStatus === "REPLIED"
+                ? "The sponsor replied. The thread is in Sponsor Messages, where the agent handles the replies."
+                : "Sent. The thread moved to Sponsor Messages, where the agent handles the replies."}
+            {` Last activity ${new Date(draft.updatedAt).toLocaleString()}.`}
+          </span>
+          {draft.threadStatus !== "STOPPED" && (
+            <Button
+              size="sm"
+              variant="outline"
+              label="Open in Sponsor Messages"
+              icon={<ArrowRight className="size-4" />}
+              iconPosition="end"
+              onClick={() => router.push(routes.ui.sponsorMessagesThread(draft.id))}
+              className="h-10 px-4 text-sm border-success/60 text-[#a3e3a5] hover:bg-success/10"
+            />
+          )}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmApprove}
+        onClose={() => setConfirmApprove(false)}
+        title="Send this email?"
+        message={`This sends a real email to ${contact?.name ?? "the contact"} at ${business.name}${contact?.email ? ` (${contact.email})` : ""}. It can't be undone.`}
+        confirmLabel="Send email"
+        busyLabel="Sending…"
+        onConfirm={() => onApprove(draft.id)}
+      />
 
       <ConfirmModal
         isOpen={confirmReject}

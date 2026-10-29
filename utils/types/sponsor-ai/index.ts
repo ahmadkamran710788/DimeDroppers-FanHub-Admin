@@ -186,7 +186,10 @@ export interface EditDraftBody {
   body?: string;
 }
 
+// Why a draft was left out of an approve / reject call (reject only returns the first two).
+export type DraftSkipReason = "NOT_FOUND" | "NOT_PENDING" | "NO_EMAIL" | "SUPPRESSED";
+
 export interface DraftBatchResult {
   done: string[];
-  skipped: { id: string; reason: "NOT_FOUND" | "NOT_PENDING" }[];
+  skipped: { id: string; reason: DraftSkipReason }[];
 }

@@ -275,6 +275,8 @@ export const routes = {
     sponsorAiDraft: (id: string) => `fanhub/org/sponsor-ai/drafts/${id}`,
     // POST { ids }: rejects them for good (the business is never drafted again).
     sponsorAiRejectDrafts: "fanhub/org/sponsor-ai/drafts/reject",
+    // POST { ids }: queues the emails to the businesses (real emails, about 20 a minute).
+    sponsorAiApproveDrafts: "fanhub/org/sponsor-ai/drafts/approve",
     // Sponsor app (sponsor token): find organisations, their packages, and activate one
     // (FANHUB_SPONSOR_PACKAGES_FRONTEND.md, FANHUB_SPONSOR_APP_INTEGRATION.md).
     sponsorFilters: "fanhub/sponsor-packages/filters",
