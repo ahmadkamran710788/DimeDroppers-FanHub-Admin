@@ -76,7 +76,7 @@ const toTournamentGame = (g: TournamentScheduleGame): MediaGame => {
   const status = g.matchStatus === "final" || g.finalScore ? "final" : g.matchStatus === "live" || g.liveScore ? "live" : "upcoming";
   const score = status === "final" ? g.finalScore : status === "live" ? g.liveScore : null;
   return {
-    tournament: true,
+    fromApi: true,
     id: g.id,
     start: g.utcTime || g.start,
     home: toTournamentTeam(g.home),
@@ -89,9 +89,10 @@ const toTournamentGame = (g: TournamentScheduleGame): MediaGame => {
 };
 
 // Media: pick a game on the left, see its score, play-by-play thread and recap on the right.
-// - School: its own games (GET /schedules, with results and opponent logos); each game's content from the game-detail endpoints.
+// - School: its own games (GET /schedules, with results and opponent logos).
 // - Tournament: an event is picked at the top (the newest first), then its games (GET
-//   /exposure/schedules?eventId=). Their thread and details have no API yet.
+//   /exposure/schedules?eventId=).
+// Either way, a game's thread, recap and insights come from the game-detail endpoints by its schedule id.
 export default function MediaPage() {
   const { org } = useAuth();
   const orgKind = orgKindOf(org);
@@ -174,11 +175,7 @@ export default function MediaPage() {
         )
       }
       renderContent={(tab, game) =>
-        game.tournament ? (
-          <p className="py-10 text-center text-sm text-white/50">
-            {tab === "Game Thread" ? "The game thread" : "Game details"} for tournament games will be available soon.
-          </p>
-        ) : tab === "Game Thread" ? (
+        tab === "Game Thread" ? (
           <GameThread game={game} />
         ) : (
           <GameDetails game={game} />
