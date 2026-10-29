@@ -198,6 +198,10 @@ export const routes = {
     tournamentCampaign: (id: string) => `fanhub/org/campaigns/tournament/${id}`,
     tournamentCampaignTeams: (eventId: string) => `fanhub/org/campaigns/tournament/events/${eventId}/teams`,
     eventDonations: (eventId: string) => `fanhub/org/donations/events/${eventId}`,
+    // An event's notes (Docs & General Info; the API calls them documents): list (GET, paged) and create (POST).
+    eventDocuments: (eventId: string) => `fanhub/org/events/${eventId}/documents`,
+    // One note: get, update (PATCH name / description) and delete (soft).
+    eventDocument: (eventId: string, documentId: string) => `fanhub/org/events/${eventId}/documents/${documentId}`,
     // Engagement console (FANHUB_ORG_ENGAGEMENT_ADMIN.md): the five cards and the Campaign Types rows.
     engagementOverview: "fanhub/org/engagement/overview",
     // PATCH the switches on one type: PREDICTION, VOTING or CHALLENGE.
