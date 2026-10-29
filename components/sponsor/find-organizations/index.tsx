@@ -169,7 +169,7 @@ export default function FindOrganizations() {
       label: "Matching organizations",
       value: String(results?.total ?? 0),
       tint: STAT_TINTS.organizations,
-      caption: results?.area ?? "anywhere",
+      caption: results ? (results.area ?? "anywhere") : "searching…",
     },
     {
       label: "Open packages",
@@ -202,17 +202,7 @@ export default function FindOrganizations() {
         </p>
       </div>
 
-      {search && stores ? (
-        <SearchFilters
-          filters={filters}
-          stores={stores}
-          initial={search}
-          onSearch={runSearch}
-          searching={loading && page === 1}
-        />
-      ) : (
-        <Loader />
-      )}
+      <SearchFilters filters={filters} stores={stores} onSearch={runSearch} searching={loading && page === 1} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-10">
         {stats.map((stat) => (

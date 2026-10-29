@@ -8,24 +8,33 @@ import { validateAndSetErrors } from "@/utils/validation";
 import Button from "@/components/common/button";
 import FilterChips from "@/components/common/filter-chips";
 import Input from "@/components/common/input";
-import MultiSelect from "@/components/common/multi-select";
+import MultiSelect, { ALL, type MultiSelectValue } from "@/components/common/multi-select";
 import Select from "@/components/common/select";
 import { CARD, FIELD, OUTLINE_BUTTON, PRIMARY_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
 import InsetSection from "@/components/sponsor/find-organizations/inset-section";
 import { orgSearchSchema } from "@/components/sponsor/find-organizations/schema";
 import type { SponsorStore } from "@/components/sponsor/find-organizations/use-sponsor-stores";
-import { MAX_PICKED_STORES, searchesNearStores, type OrgSearch } from "@/components/sponsor/find-organizations/data";
+import {
+  DEFAULT_SEARCH,
+  MAX_PICKED_STORES,
+  searchesNearStores,
+  type OrgSearch,
+} from "@/components/sponsor/find-organizations/data";
 import type { FilterOption, SponsorSearchFilters } from "@/utils/types/sponsor-packages";
 
 const CONTROL = cn(FIELD, "h-12 text-[16px] min-w-0");
 
+// The form as typed: the stores stay null until the sponsor picks some, so they follow the default (All my
+// locations) once the stores have loaded.
+interface FilterForm extends Omit<OrgSearch, "stores"> {
+  stores: MultiSelectValue | null;
+}
+
 interface SearchFiltersProps {
   // The chips and radius options from GET /filters; null while they load.
   filters: SponsorSearchFilters | null;
-  // The brand's stores that can be searched near.
-  stores: SponsorStore[];
-  // The search the form starts from (near all the stores, at the default radius).
-  initial: OrgSearch;
+  // The brand's stores that can be searched near; null while they load.
+  stores: SponsorStore[] | null;
   // Called with the validated filters when the sponsor presses Show organizations.
   onSearch: (search: OrgSearch) => void;
   // A search is running: the button waits.
@@ -35,11 +44,19 @@ interface SearchFiltersProps {
 const chipOptions = (options: FilterOption[] | undefined) => (options ?? []).map((o) => ({ label: o.label, value: o.code }));
 
 // Where the sponsor sets the stores to search near, the sports and the inventory. Changes apply on submit.
-export default function SearchFilters({ filters, stores, initial, onSearch, searching = false }: SearchFiltersProps) {
-  const [form, setForm] = useState(initial);
+// It shows straight away; only the Locations list waits for the stores.
+export default function SearchFilters({ filters, stores, onSearch, searching = false }: SearchFiltersProps) {
+  const [form, setForm] = useState<FilterForm>({ ...DEFAULT_SEARCH, stores: null });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  function update<K extends keyof OrgSearch>(field: K, value: OrgSearch[K]) {
+  // Untouched, the area is all the stores at the default radius (anywhere without stores).
+  const current: OrgSearch = {
+    ...form,
+    stores: form.stores ?? (stores?.length ? ALL : []),
+    radius: form.radius || (filters ? String(filters.radiusDefaultMiles) : ""),
+  };
+
+  function update<K extends keyof FilterForm>(field: K, value: FilterForm[K]) {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   }
@@ -60,13 +77,13 @@ export default function SearchFilters({ filters, stores, initial, onSearch, sear
     setForm(next);
     setErrors({});
     // The results follow straight away, so they never show filters that are no longer set.
-    onSearch(next);
+    onSearch({ ...current, ...next, stores: current.stores, radius: current.radius });
   }
 
   async function search(e: React.FormEvent) {
     e.preventDefault();
-    if (!(await validateAndSetErrors(orgSearchSchema, form, setErrors))) return;
-    onSearch({ ...form, name: form.name.trim(), budget: form.budget.trim() });
+    if (!(await validateAndSetErrors(orgSearchSchema, current, setErrors))) return;
+    onSearch({ ...current, name: current.name.trim(), budget: current.budget.trim() });
   }
 
   return (
@@ -108,14 +125,14 @@ export default function SearchFilters({ filters, stores, initial, onSearch, sear
           <MultiSelect
             label="LOCATIONS"
             name="org-locations"
-            value={form.stores}
+            value={current.stores}
             onChange={(picked) => update("stores", picked)}
-            options={stores.map((s) => ({ label: s.label, value: s.id, hint: s.hint }))}
-            allLabel={`All my locations (${stores.length})`}
+            options={(stores ?? []).map((s) => ({ label: s.label, value: s.id, hint: s.hint }))}
+            allLabel={`All my locations (${stores?.length ?? 0})`}
             max={MAX_PICKED_STORES}
             countLabel={(count) => `${count} locations`}
-            placeholder={stores.length ? "Anywhere" : "No locations yet"}
-            disabled={!stores.length}
+            placeholder={!stores ? "Loading your locations…" : stores.length ? "Anywhere" : "No locations yet"}
+            disabled={!stores?.length}
             variant="dark"
             className="min-w-0 @min-[416px]:col-span-2"
             labelClassName={SECTION_LABEL}
@@ -124,11 +141,11 @@ export default function SearchFilters({ filters, stores, initial, onSearch, sear
           <Select
             label="RADIUS"
             name="org-radius"
-            value={form.radius}
+            value={current.radius}
             onChange={(e) => update("radius", e.target.value)}
             options={(filters?.radiusOptions ?? [10, 25, 50, 100]).map((miles) => ({ label: `${miles} miles`, value: String(miles) }))}
             placeholder="Select radius"
-            disabled={!searchesNearStores(form)}
+            disabled={!searchesNearStores(current)}
             error={errors.radius}
             variant="dark"
             className="min-w-0"
@@ -136,7 +153,7 @@ export default function SearchFilters({ filters, stores, initial, onSearch, sear
             selectClassName={cn(CONTROL, "px-3")}
           />
         </div>
-        {!stores.length && (
+        {stores && !stores.length && (
           <p className="text-[13px] text-[#a8a8a8]">
             Add your locations on your{" "}
             <Link href={routes.ui.sponsor.profile} className="text-[#c9b8ff] underline hover:text-white">
@@ -233,10 +250,11 @@ export default function SearchFilters({ filters, stores, initial, onSearch, sear
           onClick={clear}
           className={cn(OUTLINE_BUTTON, "h-12 px-[18px] rounded-[10px] text-[15px] font-semibold")}
         />
+        {/* Waits for the stores too, so a search can't start before "All my locations" means something. */}
         <Button
           type="submit"
           label={searching ? "Searching…" : "Show organizations"}
-          disabled={searching}
+          disabled={searching || !stores}
           className={cn(PRIMARY_BUTTON, "h-12 px-[22px] rounded-[10px] text-[15px]")}
         />
       </div>
