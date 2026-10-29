@@ -75,5 +75,13 @@ export const LOCATION_FIELDS: Record<string, keyof LocationFields> = {
 export const formatAddress = (l: Pick<SponsorLocation, "address" | "city" | "state" | "zipCode">) =>
   [l.address, l.city, l.state, l.zipCode].filter(Boolean).join(", ");
 
+// What a location is called: its name, else its address, else its pin.
+export const locationLabel = (location: SponsorLocation) =>
+  location.name ||
+  formatAddress(location) ||
+  (location.latitude !== null && location.longitude !== null
+    ? `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`
+    : "Location");
+
 // The State dropdown's options.
 export const STATE_OPTIONS = US_STATE_OPTIONS;

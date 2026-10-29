@@ -2,19 +2,11 @@ import { ExternalLink, MapPin, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
 import StatusPill from "@/components/common/status-pill";
-import { formatAddress } from "@/components/sponsor/profile/data";
+import { formatAddress, locationLabel } from "@/components/sponsor/profile/data";
 import type { SponsorLocation } from "@/utils/types/sponsor-profile";
 
 const ROW_BUTTON =
   "min-w-0 h-11 px-[14px] rounded-[10px] bg-transparent border border-[#3a3a3a] text-sm font-semibold backdrop-blur-none";
-
-// What a location is called: its name, else its address, else its pin.
-export const locationLabel = (location: SponsorLocation) =>
-  location.name ||
-  formatAddress(location) ||
-  (location.latitude !== null && location.longitude !== null
-    ? `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`
-    : "Location");
 
 interface LocationRowProps {
   location: SponsorLocation;

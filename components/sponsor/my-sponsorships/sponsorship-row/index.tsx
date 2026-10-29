@@ -7,6 +7,7 @@ import StatusPill from "@/components/common/status-pill";
 import { OUTLINE_BUTTON } from "@/components/sponsor/styles";
 import OrgMonogram from "@/components/sponsor/find-organizations/org-monogram";
 import { CATEGORY_COLORS, CATEGORY_LABELS, KIND_COLOR, KIND_LABEL } from "@/components/sponsor/find-organizations/data";
+import { storeNames } from "@/components/sponsor/data";
 import { formatCents } from "@/components/sponsor/sponsor-api";
 import type { PackageActivation, PackageActivationStatus } from "@/utils/types/sponsor-packages";
 
@@ -63,6 +64,9 @@ export default function SponsorshipRow({ activation: a, onCancel }: SponsorshipR
           <p className="text-[13px] text-[#a8a8a8] break-words">
             {[a.organization.name ?? "Unnamed organization", a.event?.name].filter(Boolean).join(" · ")}
           </p>
+          {a.locations.length > 0 && (
+            <p className="text-[13px] text-[#c9b8ff] break-words">{`For: ${storeNames(a.locations)}`}</p>
+          )}
           <p className="text-[13px] text-[#a8a8a8]">{dates(a)}</p>
           {a.status === "CANCELLED" && a.cancelReason && (
             <p className="text-[13px] text-[#c4c4c4] break-words">{`Reason: ${a.cancelReason}`}</p>

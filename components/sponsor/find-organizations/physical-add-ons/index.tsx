@@ -15,6 +15,8 @@ interface PhysicalAddOnsProps {
   isInCart?: (physicalAsset: SponsorPhysicalAsset) => boolean;
   // The sponsor already has it active: one disabled "Active" in place of both actions.
   isActive?: (physicalAsset: SponsorPhysicalAsset) => boolean;
+  // Active for some of the stores but not all ("Active for 2 of 3 stores"); undefined otherwise.
+  activeNote?: (physicalAsset: SponsorPhysicalAsset) => string | undefined;
 }
 
 // The organization's physical assets (banners, scoreboard wraps…), sold on their own under the packages:
@@ -26,6 +28,7 @@ export default function PhysicalAddOns({
   onAddToCart,
   isInCart,
   isActive,
+  activeNote,
 }: PhysicalAddOnsProps) {
   return (
     <InsetSection
@@ -55,6 +58,9 @@ export default function PhysicalAddOns({
                 <span className="block text-[13px] text-[#f0c36a] mt-[2px]">
                   {x.unavailableMessage}
                 </span>
+              )}
+              {!isActive?.(x) && activeNote?.(x) && (
+                <span className="block text-[13px] text-[#a3e3a5] mt-[2px]">{activeNote(x)}</span>
               )}
             </span>
             <span className="text-[15px] font-bold whitespace-nowrap">

@@ -15,6 +15,8 @@ interface ConfirmModalProps {
   // Resolves true when the action succeeded; the modal then closes itself.
   onConfirm: () => Promise<boolean>;
   destructive?: boolean;
+  // Extra content under the message, e.g. a checklist (a paragraph can't hold one).
+  children?: ReactNode;
 }
 
 // Yes/no popup for an action that needs a second look (remove, withdraw, delete…).
@@ -27,6 +29,7 @@ export default function ConfirmModal({
   busyLabel,
   onConfirm,
   destructive = false,
+  children,
 }: ConfirmModalProps) {
   const [busy, setBusy] = useState(false);
 
@@ -41,6 +44,7 @@ export default function ConfirmModal({
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
       <div className="w-full flex flex-col gap-6">
         <p className="text-midnight-navy/80 text-base leading-6">{message}</p>
+        {children}
         <div className="flex gap-3">
           <Button label="Cancel" variant="secondary" onClick={onClose} fullWidth />
           <Button

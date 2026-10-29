@@ -61,6 +61,14 @@ export async function checkLogo(file: File, rules: LogoRules): Promise<string | 
   return null;
 }
 
+// "Downtown Austin store, Round Rock store +1 more": the stores an activation or cart item is for, by name
+// (else city), the first `max` of them.
+export const storeNames = (stores: { name: string | null; city: string | null }[], max = 3) => {
+  const names = stores.map((s) => s.name || s.city || "Unnamed store");
+  const more = names.length - max;
+  return more > 0 ? `${names.slice(0, max).join(", ")} +${more} more` : names.join(", ");
+};
+
 // Sponsorship package tiers, from the most to the least expensive.
 export const TIERS = ["PLATINUM", "GOLD", "SILVER", "BRONZE"] as const;
 export type Tier = (typeof TIERS)[number];

@@ -13,6 +13,7 @@ import StatCard, { type Stat } from "@/components/common/stat-card";
 import StatusPill from "@/components/common/status-pill";
 import Tabs from "@/components/common/tabs";
 import PackagesPreview from "@/components/organization/sponsors/packages-preview";
+import { storeNames } from "@/components/sponsor/data";
 import { formatCents, sponsorRequest } from "@/components/sponsor/sponsor-api";
 import { routes } from "@/utils/routes";
 import type { PackageActivation, PackageActivationsPage, PackageActivationStatus } from "@/utils/types/sponsor-packages";
@@ -58,6 +59,8 @@ const columns: Column<PackageActivation>[] = [
       <div className="flex flex-col gap-1 min-w-0 text-xs">
         <span className="leading-4 break-words">{a.packageName}</span>
         <span className="opacity-50">{a.kind === "PHYSICAL_ASSET" ? `Physical asset${a.physicalAsset?.size ? ` · ${a.physicalAsset.size}` : ""}` : "Package"}</span>
+        {/* The sponsor's stores it is for (as they were when activated). */}
+        {a.locations.length > 0 && <span className="opacity-70 break-words">{`For: ${storeNames(a.locations, 2)}`}</span>}
       </div>
     ),
   },

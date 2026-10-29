@@ -10,12 +10,13 @@ import ConfirmModal from "@/components/common/confirm-modal";
 import Pagination from "@/components/common/pagination";
 import { sponsorRequest, type SponsorApiResult } from "@/components/sponsor/sponsor-api";
 import LocationForm from "@/components/sponsor/profile/location-form";
-import LocationRow, { locationLabel } from "@/components/sponsor/profile/location-row";
+import LocationRow from "@/components/sponsor/profile/location-row";
 import LookupStatus from "@/components/sponsor/profile/lookup-status";
 import {
   LOCATION_FIELDS,
   PAGE_SIZE,
   locationFields,
+  locationLabel,
   type LocationFields,
 } from "@/components/sponsor/profile/data";
 import { CARD_TITLE, PROFILE_CARD, SMALL_BUTTON } from "@/components/sponsor/profile/styles";

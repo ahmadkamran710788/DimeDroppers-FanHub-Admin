@@ -61,13 +61,25 @@ export async function sponsorRequest<T>(
   }
 }
 
-// The packages and physical assets the sponsor already has active (at one organization, or anywhere), as
-// cart item keys: the same item can't be activated twice. Up to the API's page cap; null when it fails.
-export async function activeActivationKeys(schoolId?: string): Promise<Set<string> | null> {
+// Cart item key → the stores (ids) it is already active for; an empty set when activated without stores.
+export type ActiveActivations = Map<string, Set<string>>;
+
+// The packages and physical assets the sponsor already has active (at one organization, or anywhere). Without
+// stores the same item isn't activated twice; with stores it can be, for stores that don't have it yet. Up to
+// the API's page cap; null when it fails.
+export async function activeActivations(schoolId?: string): Promise<ActiveActivations | null> {
   const r = await sponsorRequest<PackageActivationsPage>("GET", routes.api.sponsorActivations, {
     params: { status: "ACTIVE", schoolId, page: 1, limit: 100 },
   });
-  return r.view ? new Set(r.view.items.map(activationItemKey)) : null;
+  if (!r.view) return null;
+  const active: ActiveActivations = new Map();
+  for (const activation of r.view.items) {
+    const key = activationItemKey(activation);
+    const stores = active.get(key) ?? new Set<string>();
+    for (const location of activation.locations ?? []) if (location.id) stores.add(location.id);
+    active.set(key, stores);
+  }
+  return active;
 }
 
 // "$1,234.50" from cents; never rounded.
