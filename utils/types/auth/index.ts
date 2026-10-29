@@ -1,5 +1,7 @@
 // Shapes returned by the FanHub Org Auth API (data[0] of the response envelope).
 
+import type { SponsorBrandProfile } from "@/utils/types/sponsor-profile";
+
 // The login account's role. The one sign-in serves both: ORGANISER → the organisation panel (school or
 // tournament by organizationType), SPONSOR → the sponsor panel.
 export type AccountRole = "ORGANISER" | "SPONSOR";
@@ -21,8 +23,8 @@ export interface SponsorAccount {
   phone: string | null;
 }
 
-// The brand of the sponsor's DAN membership.
-export interface SponsorBrand {
+// The brand of the sponsor's DAN membership (the older sponsor record).
+export interface SponsorDanBrand {
   id: string;
   name: string;
   category: string | null;
@@ -34,8 +36,11 @@ export interface SponsorBrand {
 export interface SponsorProfile extends SponsorAccount {
   lastLoginAt: string | null;
   createdAt: string;
-  // null when the sponsor has no brand yet.
-  brand: SponsorBrand | null;
+  // The Fan Hub brand profile, as on GET /fanhub/sponsor-profile (logoUrl signed for an hour); null when the
+  // sponsor has no brand yet.
+  brand: SponsorBrandProfile | null;
+  // null without a DAN membership.
+  danBrand: SponsorDanBrand | null;
 }
 
 // GET /fanhub/org-auth/me — the full profile behind the access token (data[0].organization).

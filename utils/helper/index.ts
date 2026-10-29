@@ -1,4 +1,33 @@
+import { parsePhoneNumber } from "libphonenumber-js";
 import type { ScorekeeperPoolMember } from "@/utils/types/scorekeeper";
+
+// Phones are stored in E.164 ("+14155555013"); the masked PhoneInput shows the 10 national digits
+// ("4155555013"). Both fall back to the raw value when it can't be parsed.
+export const toNationalDigits = (e164: string | null) => {
+  if (!e164) return "";
+  try {
+    return String(parsePhoneNumber(e164, "US").nationalNumber);
+  } catch {
+    return e164;
+  }
+};
+
+export const toE164Phone = (phone: string) => {
+  try {
+    return parsePhoneNumber(phone, "US").number;
+  } catch {
+    return phone;
+  }
+};
+
+// "+15125550100" → "(512) 555-0100" for reading.
+export const formatPhone = (phone: string) => {
+  try {
+    return parsePhoneNumber(phone, "US").formatNational();
+  } catch {
+    return phone;
+  }
+};
 
 // A pool row reaches us two ways with differing shapes: org-invited (top-level `email`,
 // no `fan`) or fan-requested (nested `fan`, no top-level `email`). These normalize the

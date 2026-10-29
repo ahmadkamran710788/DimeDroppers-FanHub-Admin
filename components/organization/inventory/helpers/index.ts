@@ -13,8 +13,8 @@ import type {
 
 // ---- Form model ----
 // One row per slot: every catalog slot for the org's type, plus the exclusivities the org added. The
-// page edits the toggle (`enabled`) and the order of every slot, and adds, edits (value and size) and
-// removes exclusivities; levels and placements aren't edited here but are sent back unchanged, because
+// page edits the toggle (`enabled`) and the order of every slot, and adds, edits (value, size and category)
+// and removes exclusivities; levels and placements aren't edited here but are sent back unchanged, because
 // a save deletes levels — and placements of a sent slot — left out of the body.
 
 // The editable fields as they were loaded, so a save sends only what changed.
@@ -22,6 +22,7 @@ export interface SlotInitial {
   enabled: boolean;
   value: string;
   size: string;
+  assetCategory: string;
 }
 
 export interface FormSlot {
@@ -49,6 +50,8 @@ export interface FormSlot {
   value: string;
   // As typed on an editable slot; the saved size elsewhere.
   size: string;
+  // A physical asset's category code; "" for none (one made before categories, until the org picks one).
+  assetCategory: string;
   initial: SlotInitial;
   placements: PlacementInput[];
 }
@@ -70,6 +73,7 @@ const fromView = (a: InventoryActivation, offered: Set<string>): FormSlot => {
     enabled: a.isAvailableForSponsors,
     value: editable ? String(a.value) : "",
     size: a.size ?? "",
+    assetCategory: a.assetCategory?.code ?? "",
   };
   return {
     rowKey: catalogKey ? catalogRowKey(catalogKey) : `custom:${a.id}`,
@@ -132,10 +136,16 @@ export function buildForm(
   };
 }
 
-// An added exclusivity always sends its value and size (both are required); the form checks them
-// before a save.
-const customFields = (slot: FormSlot): Pick<ActivationInput, "value" | "size"> =>
-  slot.editable ? { value: Number(slot.value.trim()), size: slot.size.trim() } : {};
+// An added exclusivity always sends its value and size (both are required) and its category once it has one
+// (a new one must; an older one without stays without); the form checks them before a save.
+const customFields = (slot: FormSlot): Pick<ActivationInput, "value" | "size" | "assetCategory"> =>
+  slot.editable
+    ? {
+        value: Number(slot.value.trim()),
+        size: slot.size.trim(),
+        ...(slot.assetCategory && { assetCategory: slot.assetCategory }),
+      }
+    : {};
 
 // A tournament event's format for the save (sent whenever set).
 export interface TournamentPicks {
@@ -181,8 +191,16 @@ export function toRequest(
   };
 }
 
+// What the Add Physical Asset form gives.
+export interface NewAssetFields {
+  name: string;
+  value: string;
+  size: string;
+  assetCategory: string;
+}
+
 // A new exclusivity, switched on, waiting for the next save to get its id.
-export function newExclusivity(fields: { name: string; value: string; size: string }, n: number): FormSlot {
+export function newExclusivity(fields: NewAssetFields, n: number): FormSlot {
   const value = fields.value.trim();
   return {
     rowKey: `new:${n}`,
@@ -198,8 +216,9 @@ export function newExclusivity(fields: { name: string; value: string; size: stri
     savedValue: Number(value),
     value,
     size: fields.size.trim(),
+    assetCategory: fields.assetCategory,
     // Unsaved, so everything counts as changed.
-    initial: { enabled: false, value: "", size: "" },
+    initial: { enabled: false, value: "", size: "", assetCategory: "" },
     placements: [],
   };
 }

@@ -1,5 +1,7 @@
+import { MapPin } from "lucide-react";
 import { cn } from "@/utils/cn";
 import OrgMonogram from "@/components/sponsor/find-organizations/org-monogram";
+import { nearText } from "@/components/sponsor/find-organizations/data";
 import { formatCents } from "@/components/sponsor/sponsor-api";
 import type { SponsorOrganizationListItem } from "@/utils/types/sponsor-packages";
 
@@ -11,8 +13,8 @@ interface OrgCardProps {
 
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
 
-// One organisation in the results: logo, name, type and sports, distance, its reach, expected audience
-// and games left this season, and what it sells.
+// One organisation in the results: logo, name, type and sports, distance, the stores it is near, its reach,
+// expected audience and games left this season, and what it sells.
 export default function OrgCard({ org, selected, onSelect }: OrgCardProps) {
   return (
     // A whole clickable card, not an action button, so it stays a native button.
@@ -42,6 +44,12 @@ export default function OrgCard({ org, selected, onSelect }: OrgCardProps) {
             .filter(Boolean)
             .join(" · ")}
         </div>
+        {org.nearLocations.length > 0 && (
+          <div className="flex gap-1.5 items-start text-[13px] text-[#c9b8ff]">
+            <MapPin className="size-3.5 shrink-0 mt-[3px]" strokeWidth={2} aria-hidden />
+            <span className="min-w-0">Near {nearText(org)}</span>
+          </div>
+        )}
         <div className="flex flex-wrap gap-x-[18px] gap-y-1 text-sm mt-1">
           <span>
             <strong>{org.fanReach.toLocaleString("en-US")}</strong> <span className="text-[#a8a8a8]">fan reach</span>

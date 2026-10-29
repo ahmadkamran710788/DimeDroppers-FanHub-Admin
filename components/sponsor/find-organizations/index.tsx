@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { cn } from "@/utils/cn";
 import FilterChipMenu from "@/components/common/filter-chip-menu";
 import Loader from "@/components/common/loader";
+import { ALL } from "@/components/common/multi-select";
 import Pagination from "@/components/common/pagination";
+import Select from "@/components/common/select";
 import StatCard, { type Stat } from "@/components/common/stat-card";
 import { CARD } from "@/components/sponsor/styles";
 import OrgCard from "@/components/sponsor/find-organizations/org-card";
 import PackagesPanel from "@/components/sponsor/find-organizations/packages-panel";
 import SearchFilters from "@/components/sponsor/find-organizations/search-filters";
+import { useSponsorStores } from "@/components/sponsor/find-organizations/use-sponsor-stores";
 import {
   DEFAULT_SEARCH,
   DEFAULT_SORT,
@@ -18,6 +21,7 @@ import {
   STAT_TINTS,
   budgetCentsOf,
   eventFiltersOf,
+  searchesNearStores,
   type OrgSearch,
 } from "@/components/sponsor/find-organizations/data";
 import { sponsorRequest } from "@/components/sponsor/sponsor-api";
@@ -30,9 +34,8 @@ import type {
 } from "@/utils/types/sponsor-packages";
 
 // The query for GET /organizations: chips as comma-separated codes, the budget in cents; NEAREST only
-// with a location (else the default order).
+// near stores (else the default order).
 function searchParams(search: OrgSearch, sort: SponsorSearchSort, page: number) {
-  const location = search.location.trim();
   const name = search.name.trim();
   const budgetCents = budgetCentsOf(search);
   return {
@@ -41,13 +44,22 @@ function searchParams(search: OrgSearch, sort: SponsorSearchSort, page: number) 
     ...eventFiltersOf(search),
     ...(search.sports.length && { sports: search.sports.join(",") }),
     ...(search.inApp.length && { inApp: search.inApp.join(",") }),
-    ...(search.venue.length && { venue: search.venue.join(",") }),
+    // Not read by the API yet (it ignores the parameter until the category filter ships): results don't narrow.
+    ...(search.assetCategories.length && { physicalAssetCategories: search.assetCategories.join(",") }),
     ...(budgetCents && { budgetCents }),
     ...(search.season && { season: search.season }),
-    sort: !location && sort === "NEAREST" ? DEFAULT_SORT : sort,
+    sort: !searchesNearStores(search) && sort === "NEAREST" ? DEFAULT_SORT : sort,
     page,
     limit: PAGE_SIZE,
   };
+}
+
+// "all your locations", one store's name, or "3 of your locations": what the search shown was near.
+function nearWhat(search: OrgSearch, v: SponsorOrganizationSearch) {
+  const used = v.brandLocations ?? [];
+  if (search.stores === ALL) return "all your locations";
+  if (used.length === 1) return used[0].name || used[0].city || "your location";
+  return `${used.length} of your locations`;
 }
 
 interface Results {
@@ -56,16 +68,47 @@ interface Results {
   total: number;
   totalPages: number;
   page: number;
-  // Where the search that's shown looked: "within 25 mi of Jacksonville, FL", "in Florida"; null = anywhere.
+  // Where the search that's shown looked: "within 25 mi of all your locations"; null = anywhere.
   area: string | null;
+  // The radius the search used, sent again when activating for stores; null without stores.
+  radiusMiles: number | null;
 }
 
-// Sponsor search: organizations near a location that play the picked sports and sell the picked
+// Sponsor search: organizations near the brand's stores that play the picked sports and sell the picked
 // inventory (GET /fanhub/sponsor-packages/organizations), and a panel with the selected one's packages.
 export default function FindOrganizations() {
   const [filters, setFilters] = useState<SponsorSearchFilters | null>(null);
-  // The last search run, its sort and the page shown.
-  const [search, setSearch] = useState(DEFAULT_SEARCH);
+  const [filtersLoaded, setFiltersLoaded] = useState(false);
+  const stores = useSponsorStores();
+  // The last search run, its sort and the page shown. Until the sponsor searches, near all their stores at
+  // the default radius (anywhere without stores), once the stores and filters have loaded.
+  const [chosen, setChosen] = useState<OrgSearch | null>(null);
+  const search = useMemo<OrgSearch | null>(
+    () =>
+      chosen ??
+      (stores && filtersLoaded
+        ? {
+            ...DEFAULT_SEARCH,
+            stores: stores.length ? ALL : [],
+            radius: filters ? String(filters.radiusDefaultMiles) : "",
+          }
+        : null),
+    [chosen, stores, filtersLoaded, filters]
+  );
+  // The results' Location filter: one of the searched stores, or "" for all of them. The backend does the
+  // narrowing (the search runs again for that store), so it works across every page.
+  const [narrowTo, setNarrowTo] = useState("");
+  const shown = useMemo<OrgSearch | null>(
+    () => (search && narrowTo ? { ...search, stores: [narrowTo] } : search),
+    [search, narrowTo]
+  );
+  // The stores the search above was near: the Location filter's choices.
+  const searchedStores =
+    !search || !stores
+      ? []
+      : search.stores === ALL
+        ? stores
+        : stores.filter((s) => (search.stores as string[]).includes(s.id));
   const [sort, setSort] = useState<SponsorSearchSort>(DEFAULT_SORT);
   const [page, setPage] = useState(1);
   const [results, setResults] = useState<Results | null>(null);
@@ -79,22 +122,24 @@ export default function FindOrganizations() {
     sponsorRequest<SponsorSearchFilters>("GET", routes.api.sponsorFilters).then((r) => {
       if (r.view) setFilters(r.view);
       else toast.error(r.message ?? "Couldn't load the search filters.");
+      setFiltersLoaded(true);
     });
   }, []);
 
-  const searchKey = `${JSON.stringify(search)}|${sort}|${refreshes}`;
+  const searchKey = `${JSON.stringify(shown)}|${sort}|${refreshes}`;
   const key = `${searchKey}|${page}`;
   useEffect(() => {
+    if (!shown) return;
     let cancelled = false;
     sponsorRequest<SponsorOrganizationSearch>("GET", routes.api.sponsorOrganizations, {
-      params: searchParams(search, sort, page),
+      params: searchParams(shown, sort, page),
     }).then((r) => {
       if (cancelled) return;
       if (!r.view) {
         toast.error(r.message ?? "Couldn't load organizations.");
-        // A failed search (e.g. a location that can't be found) keeps the results already shown.
+        // A failed search (e.g. a store just deleted) keeps the results already shown.
         setResults((prev) =>
-          prev ? { ...prev, key } : { key, items: [], total: 0, totalPages: 0, page, area: null }
+          prev ? { ...prev, key } : { key, items: [], total: 0, totalPages: 0, page, area: null, radiusMiles: null }
         );
         return;
       }
@@ -105,18 +150,14 @@ export default function FindOrganizations() {
         total: v.pagination.total,
         totalPages: v.pagination.totalPages,
         page,
-        // As the backend applied it: a whole state ignores the radius.
-        area: v.centre
-          ? `within ${v.centre.radiusMiles} mi of ${v.centre.label}`
-          : v.state
-            ? `in ${v.state.name}`
-            : null,
+        area: v.radiusMiles !== null && v.brandLocations ? `within ${v.radiusMiles} mi of ${nearWhat(shown, v)}` : null,
+        radiusMiles: v.radiusMiles,
       });
     });
     return () => {
       cancelled = true;
     };
-  }, [key, search, sort, page]);
+  }, [key, shown, sort, page]);
 
   const loading = results?.key !== key;
   const items = results?.items ?? [];
@@ -124,10 +165,12 @@ export default function FindOrganizations() {
   const selected = items.find((o) => o.id === selectedId) ?? items[0];
 
   function runSearch(next: OrgSearch) {
-    setSearch(next);
+    setChosen(next);
+    // A new search shows all of its stores again.
+    setNarrowTo("");
     setPage(1);
-    // The sort the sponsor picked stays; Nearest only applies with a location.
-    if (!next.location.trim() && sort === "NEAREST") setSort(DEFAULT_SORT);
+    // The sort the sponsor picked stays; Nearest only applies near stores.
+    if (!searchesNearStores(next) && sort === "NEAREST") setSort(DEFAULT_SORT);
   }
 
   // Another page replaces the list; back to its top so the new page isn't below the fold.
@@ -144,7 +187,7 @@ export default function FindOrganizations() {
       label: "Matching organizations",
       value: String(results?.total ?? 0),
       tint: STAT_TINTS.organizations,
-      caption: results?.area ?? "anywhere",
+      caption: results ? (results.area ?? "anywhere") : "searching…",
     },
     {
       label: "Open packages",
@@ -160,8 +203,8 @@ export default function FindOrganizations() {
     },
   ];
 
-  const hasLocation = !!search.location.trim();
-  const sorts = (filters?.sorts ?? []).filter((s) => hasLocation || s.code !== "NEAREST");
+  const nearStores = !!search && searchesNearStores(search);
+  const sorts = (filters?.sorts ?? []).filter((s) => nearStores || s.code !== "NEAREST");
   const sortLabel = filters?.sorts.find((s) => s.code === sort)?.label ?? sort;
 
   return (
@@ -172,12 +215,12 @@ export default function FindOrganizations() {
           FIND ORGANIZATIONS
         </h2>
         <p className="text-base leading-[26px] text-[#e5e5e5]">
-          Choose the area your brand should show up in, then browse every organization and the sponsorship packages
-          they have open.
+          Choose which of your locations to search near, then browse the organizations around them and the
+          sponsorship packages they have open.
         </p>
       </div>
 
-      <SearchFilters filters={filters} onSearch={runSearch} searching={loading && page === 1} />
+      <SearchFilters filters={filters} stores={stores} onSearch={runSearch} searching={loading && page === 1} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-10">
         {stats.map((stat) => (
@@ -193,19 +236,41 @@ export default function FindOrganizations() {
         >
           <div className="flex justify-between items-center gap-3 flex-wrap">
             <h3 className="font-display font-black text-xl lg:text-[28px] uppercase leading-tight">Organizations</h3>
-            {sorts.length > 0 && (
-              <FilterChipMenu
-                label={`Sort: ${sortLabel}`}
-                ariaLabel="Sort"
-                items={sorts.map((s) => ({
-                  label: s.label,
-                  onSelect: () => {
-                    setSort(s.code as SponsorSearchSort);
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Results for one of the searched stores, or all of them; the city tells same-named stores apart. */}
+              {searchedStores.length > 1 && (
+                <Select
+                  label="Location"
+                  name="results-location"
+                  value={narrowTo}
+                  onChange={(e) => {
+                    setNarrowTo(e.target.value);
                     setPage(1);
-                  },
-                }))}
-              />
-            )}
+                  }}
+                  options={[
+                    { label: `All searched locations (${searchedStores.length})`, value: "" },
+                    ...searchedStores.map((s) => ({ label: s.area ? `${s.label} · ${s.area}` : s.label, value: s.id })),
+                  ]}
+                  variant="dark"
+                  className="w-[260px] max-w-full"
+                  labelClassName="sr-only"
+                  selectClassName="h-12 rounded-[8px] px-3.5 text-sm"
+                />
+              )}
+              {sorts.length > 0 && (
+                <FilterChipMenu
+                  label={`Sort: ${sortLabel}`}
+                  ariaLabel="Sort"
+                  items={sorts.map((s) => ({
+                    label: s.label,
+                    onSelect: () => {
+                      setSort(s.code as SponsorSearchSort);
+                      setPage(1);
+                    },
+                  }))}
+                />
+              )}
+            </div>
           </div>
           {loading ? (
             <Loader />
@@ -227,11 +292,12 @@ export default function FindOrganizations() {
           )}
         </section>
 
-        {selected && (
+        {selected && shown && (
           <PackagesPanel
             key={selected.id}
             org={selected}
-            eventFilters={eventFiltersOf(search)}
+            eventFilters={eventFiltersOf(shown)}
+            radiusMiles={results?.radiusMiles ?? null}
             onActivated={() => setRefreshes((n) => n + 1)}
           />
         )}

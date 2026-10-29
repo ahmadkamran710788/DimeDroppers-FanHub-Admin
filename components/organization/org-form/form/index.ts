@@ -1,5 +1,6 @@
 import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
 import * as yup from "yup";
+import { toNationalDigits } from "@/utils/helper";
 import type { SavedSchool } from "@/utils/types/school";
 
 // Organization profile form: options, state, validation and the school ⇄ form mapping.
@@ -212,17 +213,6 @@ export const labelOf = (options: Option[], value: string) => options.find((o) =>
 
 // Inverse of labelOf — a saved school's select fields come back as labels.
 const valueOf = (options: Option[], label: string | null) => options.find((o) => o.label === label)?.value ?? "";
-
-// contactPhone is stored in E.164 ("+14155555013"); the masked PhoneInput expects the 10
-// national digits ("4155555013").
-const toNationalDigits = (e164: string | null) => {
-  if (!e164) return "";
-  try {
-    return String(parsePhoneNumber(e164, "US").nationalNumber);
-  } catch {
-    return e164;
-  }
-};
 
 // Form state from a saved school; empty fields fall back to `base`.
 export function orgFormFromSchool(school: SavedSchool, base: OrgFormState = INITIAL_ORG_FORM): OrgFormState {

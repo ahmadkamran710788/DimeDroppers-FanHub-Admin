@@ -3,12 +3,14 @@
 import { DollarSign, Menu, Trash2 } from "lucide-react";
 import Button from "@/components/common/button";
 import Input from "@/components/common/input";
+import Select from "@/components/common/select";
 import Toggle from "@/components/common/toggle";
 import { MAX_SIZE_LENGTH } from "@/components/organization/inventory/data";
 import type { FormSlot } from "@/components/organization/inventory/helpers";
 import type { SlotField } from "@/components/organization/inventory/use-inventory";
 import { cn } from "@/utils/cn";
 import { formatMoney } from "@/utils/helper";
+import type { OptionView } from "@/utils/types/activations";
 
 interface DragProps {
   draggable: boolean;
@@ -27,9 +29,12 @@ interface InventoryRowProps {
   onToggle: () => void;
   onValueChange: (value: string) => void;
   onSizeChange: (size: string) => void;
+  // The physical asset categories (labels for the read-only row, options while editing).
+  assetCategories: OptionView[];
+  onAssetCategoryChange?: (code: string) => void;
   // An exclusivity the org added: removed with the next save.
   onRemove?: () => void;
-  // Problems with this slot's value or size.
+  // Problems with this slot's value, size or category.
   errors?: Partial<Record<SlotField, string>>;
   dragging: boolean;
   drag: DragProps;
@@ -48,8 +53,8 @@ function Detail({ label, value }: { label: string; value: string }) {
 }
 
 // One slot in a category card: switch (shown to sponsors or not), name and description, its pills or
-// Dime's value and size, and a drag handle. An exclusivity the org added takes its own value and size
-// (typed while it's switched on) and can be removed.
+// Dime's value and size, and a drag handle. An exclusivity the org added takes its own category, value and
+// size (set while it's switched on) and can be removed.
 export default function InventoryRow({
   slot,
   layout,
@@ -57,11 +62,14 @@ export default function InventoryRow({
   onToggle,
   onValueChange,
   onSizeChange,
+  assetCategories,
+  onAssetCategoryChange,
   onRemove,
   errors,
   dragging,
   drag,
 }: InventoryRowProps) {
+  const categoryLabel = assetCategories.find((c) => c.code === slot.assetCategory)?.label;
   const pills = (
     <>
       {slot.isRecommended && !slot.retired && <span className={cn(PILL, pillClassName)}>Recommended</span>}
@@ -84,7 +92,8 @@ export default function InventoryRow({
         </span>
         {layout === "wide" && hasPills && <span className="flex gap-1 mt-0.5">{pills}</span>}
         {showValue && (
-          <span className="shrink-0 flex items-baseline gap-4 mt-0.5">
+          <span className="shrink-0 flex flex-wrap justify-end items-baseline gap-x-4 gap-y-1 mt-0.5">
+            {categoryLabel && <Detail label="Category" value={categoryLabel} />}
             <Detail label="Value" value={formatMoney(slot.savedValue)} />
             {slot.size && <Detail label="Size" value={slot.size} />}
           </span>
@@ -107,6 +116,21 @@ export default function InventoryRow({
       {slot.editable && slot.enabled ? (
         // Typing or selecting text in the fields must not start dragging the row.
         <div className="pl-14 grid grid-cols-1 sm:grid-cols-2 gap-3" draggable onDragStart={(e) => e.preventDefault()}>
+          {/* An asset made before categories starts empty: the org is asked to pick one (saving without it is
+              still allowed for those). */}
+          <Select
+            variant="dark"
+            label="Category"
+            labelClassName="text-xs font-normal text-white/70"
+            name={`category-${slot.rowKey}`}
+            value={slot.assetCategory}
+            onChange={(e) => onAssetCategoryChange?.(e.target.value)}
+            options={assetCategories.map((c) => ({ label: c.label, value: c.code }))}
+            placeholder="Choose a category"
+            error={errors?.assetCategory}
+            className="sm:col-span-2"
+            selectClassName="h-10 text-sm px-3"
+          />
           <Input
             variant="dark"
             type="number"
@@ -134,7 +158,9 @@ export default function InventoryRow({
           />
         </div>
       ) : (
-        errors?.value && <p className="pl-14 text-sm text-error">{errors.value}</p>
+        (errors?.value || errors?.assetCategory) && (
+          <p className="pl-14 text-sm text-error">{errors.value ?? errors.assetCategory}</p>
+        )
       )}
     </div>
   );

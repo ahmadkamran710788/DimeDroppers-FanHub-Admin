@@ -59,11 +59,21 @@ interface SidebarFrameProps {
   sections: NavSection[];
   profileName: string;
   profileRole: string;
+  // A picture for the profile footer (e.g. the sponsor's brand logo); a person icon without one.
+  profileImage?: string | null;
   open: boolean;
   onClose: () => void;
 }
 
-export default function SidebarFrame({ logo, sections, profileName, profileRole, open, onClose }: SidebarFrameProps) {
+export default function SidebarFrame({
+  logo,
+  sections,
+  profileName,
+  profileRole,
+  profileImage,
+  open,
+  onClose,
+}: SidebarFrameProps) {
   const pathname = usePathname();
 
   const sidebarContent = (
@@ -98,10 +108,19 @@ export default function SidebarFrame({ logo, sections, profileName, profileRole,
       <div className="px-4 py-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
         <div className="flex items-center gap-3">
           <div
-            className="w-12 h-12 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-white/10"
+            className={cn(
+              "w-12 h-12 rounded-full overflow-hidden shrink-0 flex items-center justify-center",
+              // A logo sits on white: most are made for it, and a dark one would vanish on the dark sidebar.
+              profileImage ? "bg-white" : "bg-white/10"
+            )}
             style={{ border: "2px solid rgba(255,255,255,0.5)", backdropFilter: "blur(24px)" }}
           >
-            <User className="w-6 h-6 text-white/60" aria-hidden />
+            {profileImage ? (
+              // eslint-disable-next-line @next/next/no-img-element -- signed S3 link
+              <img src={profileImage} alt="" className="size-full object-contain p-1.5" />
+            ) : (
+              <User className="w-6 h-6 text-white/60" aria-hidden />
+            )}
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-base font-medium text-white leading-tight">{profileName}</span>

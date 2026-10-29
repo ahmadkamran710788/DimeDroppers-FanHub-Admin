@@ -7,6 +7,7 @@ import StatusPill from "@/components/common/status-pill";
 import { OUTLINE_BUTTON } from "@/components/sponsor/styles";
 import OrgMonogram from "@/components/sponsor/find-organizations/org-monogram";
 import { CATEGORY_COLORS, CATEGORY_LABELS, KIND_COLOR, KIND_LABEL } from "@/components/sponsor/find-organizations/data";
+import { storeNames } from "@/components/sponsor/data";
 import { formatCents } from "@/components/sponsor/sponsor-api";
 import type { PackageActivation, PackageActivationStatus } from "@/utils/types/sponsor-packages";
 
@@ -57,12 +58,15 @@ export default function SponsorshipRow({ activation: a, onCancel }: SponsorshipR
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="text-[15px] font-semibold break-words">{a.packageName}</h4>
             <span className="text-[11px] font-bold tracking-[1px] uppercase" style={{ color: KIND_COLOR[a.kind] }}>
-              {[KIND_LABEL[a.kind], a.physicalAsset?.size].filter(Boolean).join(" · ")}
+              {[KIND_LABEL[a.kind], a.physicalAsset?.assetCategory?.label, a.physicalAsset?.size].filter(Boolean).join(" · ")}
             </span>
           </div>
           <p className="text-[13px] text-[#a8a8a8] break-words">
             {[a.organization.name ?? "Unnamed organization", a.event?.name].filter(Boolean).join(" · ")}
           </p>
+          {a.locations.length > 0 && (
+            <p className="text-[13px] text-[#c9b8ff] break-words">{`For: ${storeNames(a.locations)}`}</p>
+          )}
           <p className="text-[13px] text-[#a8a8a8]">{dates(a)}</p>
           {a.status === "CANCELLED" && a.cancelReason && (
             <p className="text-[13px] text-[#c4c4c4] break-words">{`Reason: ${a.cancelReason}`}</p>

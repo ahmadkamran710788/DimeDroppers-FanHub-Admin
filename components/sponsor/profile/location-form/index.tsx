@@ -7,48 +7,63 @@ import Button from "@/components/common/button";
 import Input from "@/components/common/input";
 import Select from "@/components/common/select";
 import { OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
-import { EMPTY_LOCATION, STATE_OPTIONS, type LocationForm as LocationFields } from "@/components/sponsor/profile/data";
+import { EMPTY_LOCATION, STATE_OPTIONS, type LocationFields } from "@/components/sponsor/profile/data";
 import { locationSchema } from "@/components/sponsor/profile/schema";
 import { INPUT, SELECT, SMALL_BUTTON } from "@/components/sponsor/profile/styles";
 
 const LABEL = "text-[13px] font-normal text-[#c4c4c4]";
 
 interface LocationFormProps {
-  onSave: (location: LocationFields) => void;
+  // The location being edited; a new one starts empty.
+  initial?: LocationFields;
+  // Saves the trimmed fields: resolves the errors to show under the fields, or null when there are none
+  // (saved, or the problem was shown another way).
+  onSave: (location: LocationFields) => Promise<Record<string, string> | null>;
   onCancel: () => void;
 }
 
-// The "New location" panel under the list: name, street, city, state and ZIP.
-export default function LocationForm({ onSave, onCancel }: LocationFormProps) {
-  const [form, setForm] = useState<LocationFields>(EMPTY_LOCATION);
+// The new / edit location panel: name, street, city, state and ZIP. Anything that places it on the map is
+// enough (a street, a city with a state, or a ZIP); the address is looked up when it's saved.
+export default function LocationForm({ initial, onSave, onCancel }: LocationFormProps) {
+  const [form, setForm] = useState<LocationFields>(initial ?? EMPTY_LOCATION);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const title = initial ? "EDIT LOCATION" : "NEW LOCATION";
 
   const setField = (field: keyof LocationFields) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { value } = e.target;
     setForm((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
+    // The street also holds the "where is it" errors (nothing to place it by, not found on the map), which
+    // a change to any address part answers.
+    const cleared = field === "name" ? ["name"] : [field, "street"];
+    setErrors((prev) =>
+      cleared.some((f) => prev[f]) ? { ...prev, ...Object.fromEntries(cleared.map((f) => [f, ""])) } : prev
+    );
   };
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!(await validateAndSetErrors(locationSchema, form, setErrors))) return;
-    onSave({
+    if (saving || !(await validateAndSetErrors(locationSchema, form, setErrors))) return;
+    setSaving(true);
+    const problems = await onSave({
       name: form.name.trim(),
       street: form.street.trim(),
       city: form.city.trim(),
       state: form.state,
       zip: form.zip.trim(),
     });
+    setSaving(false);
+    if (problems) setErrors(problems);
   }
 
   return (
     <form
       onSubmit={save}
       noValidate
-      aria-label="New location"
+      aria-label={initial ? "Edit location" : "New location"}
       className="bg-[#17151f] border border-[#4a3f7a] rounded-[12px] p-[18px] flex flex-col gap-[14px]"
     >
-      <div className="text-[13px] font-bold tracking-[1px]">NEW LOCATION</div>
+      <div className="text-[13px] font-bold tracking-[1px]">{title}</div>
 
       {/* Name and street on their own rows; city, state and ZIP share one. */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -117,8 +132,18 @@ export default function LocationForm({ onSave, onCancel }: LocationFormProps) {
       </div>
 
       <div className="flex justify-end gap-[10px] flex-wrap">
-        <Button label="Cancel" onClick={onCancel} className={cn(OUTLINE_BUTTON, SMALL_BUTTON, "font-semibold")} />
-        <Button type="submit" label="Save location" className={cn(PRIMARY_BUTTON, SMALL_BUTTON, "px-5")} />
+        <Button
+          label="Cancel"
+          onClick={onCancel}
+          disabled={saving}
+          className={cn(OUTLINE_BUTTON, SMALL_BUTTON, "font-semibold")}
+        />
+        <Button
+          type="submit"
+          label={saving ? "Saving…" : "Save location"}
+          disabled={saving}
+          className={cn(PRIMARY_BUTTON, SMALL_BUTTON, "px-5")}
+        />
       </div>
     </form>
   );

@@ -38,6 +38,8 @@ export interface SponsorSearchFilters {
   sorts: FilterOption[];
   // FALL_WINTER / FALL / FULL_YEAR, labelled with their years; seasons already over are left out.
   seasons: FilterOption[];
+  // The 47 physical asset categories, once the API sends them (until then the built-in list is used).
+  physicalAssetCategories?: FilterOption[];
 }
 
 export interface SponsorOrganization {
@@ -50,12 +52,47 @@ export interface SponsorOrganization {
   state: string | null;
 }
 
+// The brand's stores in a search near them (FANHUB_SPONSOR_LOCATION_ACTIVATIONS_FRONTEND.md).
+
+// A selected store within the radius of an organisation or event, nearest first.
+export interface SponsorNearLocation {
+  id: string;
+  name: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zipCode: string | null;
+  distanceMiles: number;
+}
+
+// A store the search used, with its point.
+export interface SponsorSelectedLocation extends Omit<SponsorNearLocation, "distanceMiles"> {
+  latitude: number;
+  longitude: number;
+}
+
+// A store on an activation, as it was then: id null once the sponsor has deleted the store.
+export interface SponsorActivationLocation extends Omit<SponsorNearLocation, "id"> {
+  id: string | null;
+  latitude: number;
+  longitude: number;
+  radiusMiles: number;
+}
+
+// The selected stores near an organisation or event: at most 10 listed, `nearLocationCount` in all.
+export interface NearStores {
+  // Empty when the search was not by stores.
+  nearLocations: SponsorNearLocation[];
+  nearLocationCount: number;
+}
+
 // GET /organizations
-export interface SponsorOrganizationListItem extends SponsorOrganization {
+export interface SponsorOrganizationListItem extends SponsorOrganization, NearStores {
   initials: string;
   priceBasis: PriceBasis;
   eventCount: number;
   sports: string[];
+  // To the nearest selected store; null without a search near stores.
   distanceMiles: number | null;
   fanReach: number;
   // The school's size; null when not known.
@@ -73,9 +110,9 @@ export interface SponsorOrganizationListItem extends SponsorOrganization {
 
 export interface SponsorOrganizationSearch {
   items: SponsorOrganizationListItem[];
-  centre: { latitude: number; longitude: number; label: string; radiusMiles: number } | null;
-  // A whole-state search ("Florida", "FL"): the radius isn't used. null otherwise.
-  state: { code: string; name: string } | null;
+  // The stores the search used and its radius; null without a search near stores.
+  brandLocations: SponsorSelectedLocation[] | null;
+  radiusMiles: number | null;
   sort: SponsorSearchSort;
   pagination: { page: number; limit: number; total: number; totalPages: number };
 }
@@ -91,8 +128,8 @@ export interface SponsorEvent {
   endDate: string | null;
 }
 
-// GET /organizations/:id/events (tournaments)
-export interface SponsorEventOption extends SponsorEvent {
+// GET /organizations/:id/events (tournaments). Near stores are measured from the event's nearest venue.
+export interface SponsorEventOption extends SponsorEvent, NearStores {
   inventoryId: string;
   tournamentFormat: string | null;
   tournamentFormatLabel: string | null;
@@ -141,6 +178,8 @@ export interface SponsorPhysicalAsset {
   name: string;
   description: string | null;
   size: string | null;
+  // null for an asset made before categories.
+  assetCategory: FilterOption | null;
   isAvailable: boolean;
   unavailableReason: UnavailableReason | null;
   unavailableMessage: string | null;
@@ -173,13 +212,16 @@ export interface SponsorPackages {
   physicalAssets: SponsorPhysicalAsset[];
 }
 
-// POST /activations: a package (`tier`) or a physical asset (`physicalAssetId`), never both.
+// POST /activations: a package (`tier`) or a physical asset (`physicalAssetId`), never both. Stores are
+// optional; with them, `radiusMiles` is the radius searched with and every store must be within it.
 export interface ActivatePackageRequest {
   schoolId: string;
   tier?: PackageTier;
   physicalAssetId?: string;
   eventId?: string;
   expectedTotalCents?: number;
+  sponsorLocationIds?: string[];
+  radiusMiles?: number;
 }
 
 export interface PackageActivation {
@@ -188,9 +230,12 @@ export interface PackageActivation {
   kind: "PACKAGE" | "PHYSICAL_ASSET";
   tier: PackageTier | null;
   packageName: string;
-  physicalAsset: { activationId: string | null; size: string | null } | null;
+  // The category is kept as it was when activated.
+  physicalAsset: { activationId: string | null; size: string | null; assetCategory: FilterOption | null } | null;
   organization: SponsorOrganization;
   event: { id: string; name: string | null } | null;
+  // The stores it is for, nearest first; empty when activated without stores.
+  locations: SponsorActivationLocation[];
   sponsorFanHubUserId: string | null;
   sponsor: { name: string | null; brandName: string | null };
   inventoryVersion: number;
@@ -228,6 +273,9 @@ export interface SponsorCartLine {
   event: { id: string; name: string | null } | null;
   totalCents: number;
   currency: string;
+  // The stores the item could be for when it was added (the ones near it in the search) and that search's
+  // radius, so the cart can change which of them are attached; absent for items added without stores.
+  stores?: { near: SponsorNearLocation[]; radiusMiles: number };
 }
 
 // POST /activations/quote
@@ -244,6 +292,8 @@ export interface SponsorCartQuoteItem {
   priceChanged: boolean;
   totalCents: number | null;
   currency: string;
+  // The item's stores with their distance; empty without stores or with a problem.
+  locations: SponsorActivationLocation[];
 }
 
 export interface SponsorCartQuote {

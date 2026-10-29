@@ -1,4 +1,5 @@
 import { toOptions } from "@/utils/helper";
+import type { LogoRules } from "@/utils/types/sponsor-profile";
 
 // The signed-in sponsor, shown in the sponsor header and sidebar. Mock data until sponsor
 // auth is integrated.
@@ -42,6 +43,31 @@ export const GOAL_OPTIONS = toOptions(["Brand awareness", "Store traffic", "Comm
 // The sponsor's logo: SVG or PNG only (file picker filter, and the check for dropped files).
 export const LOGO_ACCEPT = ".svg,.png";
 export const isLogoFile = (file: File) => /\.(svg|png)$/i.test(file.name);
+
+// The sign-up and profile logo, against the rules from the sponsor options (the backend checks the same):
+// the problem to show under the logo, or null when it's fine. Only a PNG's size in pixels is checked.
+export async function checkLogo(file: File, rules: LogoRules): Promise<string | null> {
+  if (!rules.types.includes(file.type)) return "Logo must be an SVG or PNG image";
+  if (file.size > rules.maxBytes) {
+    return `Logo must be ${Number((rules.maxBytes / (1024 * 1024)).toFixed(1))} MB or smaller`;
+  }
+  if (file.type === "image/png") {
+    const image = await createImageBitmap(file).catch(() => null);
+    if (!image) return "Logo must be an SVG or PNG image";
+    const tooSmall = image.width < rules.minWidth || image.height < rules.minHeight;
+    image.close();
+    if (tooSmall) return `Logo must be at least ${rules.minWidth}×${rules.minHeight} px`;
+  }
+  return null;
+}
+
+// "Downtown Austin store, Round Rock store +1 more": the stores an activation or cart item is for, by name
+// (else city), the first `max` of them.
+export const storeNames = (stores: { name: string | null; city: string | null }[], max = 3) => {
+  const names = stores.map((s) => s.name || s.city || "Unnamed store");
+  const more = names.length - max;
+  return more > 0 ? `${names.slice(0, max).join(", ")} +${more} more` : names.join(", ");
+};
 
 // Sponsorship package tiers, from the most to the least expensive.
 export const TIERS = ["PLATINUM", "GOLD", "SILVER", "BRONZE"] as const;

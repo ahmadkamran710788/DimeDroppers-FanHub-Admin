@@ -6,9 +6,9 @@ import { SECTION_LABEL } from "@/components/sponsor/styles";
 import StepHeading from "@/components/auth/sponsor-sign-up/step-heading";
 import SponsorTypePicker from "@/components/auth/sponsor-sign-up/sponsor-type-picker";
 import LogoUpload, { type PickedLogo } from "@/components/auth/sponsor-sign-up/logo-upload";
-import { SPONSOR_CATEGORY_OPTIONS } from "@/components/sponsor/data";
-import type { SponsorSignUpForm, SponsorType } from "@/components/auth/sponsor-sign-up/data";
+import type { SponsorSignUpForm } from "@/components/auth/sponsor-sign-up/data";
 import { INPUT, SELECT } from "@/components/auth/sponsor-sign-up/styles";
+import type { SponsorSignupOptions, SponsorTypeCode } from "@/utils/types/sponsor-profile";
 
 type FieldElement = HTMLInputElement | HTMLSelectElement;
 
@@ -16,8 +16,9 @@ interface BrandStepProps {
   form: SponsorSignUpForm;
   errors: Record<string, string>;
   onField: (field: keyof SponsorSignUpForm) => (e: React.ChangeEvent<FieldElement>) => void;
-  type: SponsorType;
-  onType: (type: SponsorType) => void;
+  options: SponsorSignupOptions;
+  type: SponsorTypeCode;
+  onType: (type: SponsorTypeCode) => void;
   logo: PickedLogo | null;
   onPickLogo: (file: File) => void;
   onRemoveLogo: () => void;
@@ -28,6 +29,7 @@ export default function BrandStep({
   form,
   errors,
   onField,
+  options,
   type,
   onType,
   logo,
@@ -41,7 +43,7 @@ export default function BrandStep({
         description="Organizations see this when you sponsor them. You can edit it later in your profile."
       />
 
-      <SponsorTypePicker value={type} onChange={onType} />
+      <SponsorTypePicker types={options.sponsorTypes} value={type} onChange={onType} />
 
       <Input
         label="SPONSOR NAME"
@@ -60,7 +62,7 @@ export default function BrandStep({
         name="sponsor-category"
         value={form.category}
         onChange={onField("category")}
-        options={SPONSOR_CATEGORY_OPTIONS}
+        options={options.categories.map((c) => ({ label: c.label, value: c.code }))}
         placeholder="Choose a category"
         error={errors.category}
         variant="dark"
@@ -68,7 +70,13 @@ export default function BrandStep({
         selectClassName={SELECT}
       />
 
-      <LogoUpload logo={logo} onPick={onPickLogo} onRemove={onRemoveLogo} />
+      <LogoUpload
+        logo={logo}
+        rules={options.logo}
+        error={errors.logo}
+        onPick={onPickLogo}
+        onRemove={onRemoveLogo}
+      />
     </section>
   );
 }

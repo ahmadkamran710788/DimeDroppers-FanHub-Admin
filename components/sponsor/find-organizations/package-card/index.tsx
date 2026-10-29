@@ -15,6 +15,8 @@ interface PackageCardProps {
   inCart?: boolean;
   // The sponsor already has it active: one disabled "Active" in place of both actions.
   active?: boolean;
+  // Active for some of the stores but not all ("Active for 2 of 3 stores"): shown above the actions.
+  activeNote?: string;
   // Each placement's own value: shown to the organisation, hidden from sponsors (they see the total).
   showPlacementValues?: boolean;
   // What the price is counted for, under it: "2 games", "5 teams".
@@ -33,6 +35,7 @@ export default function PackageCard({
   onAddToCart,
   inCart = false,
   active = false,
+  activeNote,
   showPlacementValues = false,
   basisCount,
   recommended = false,
@@ -104,6 +107,7 @@ export default function PackageCard({
         {!pkg.isAvailable && pkg.unavailableMessage && (
           <p className="text-[13px] text-[#f0c36a]">{pkg.unavailableMessage}</p>
         )}
+        {!active && activeNote && <p className="text-[13px] text-[#a3e3a5]">{activeNote}</p>}
         {active ? (
           <Button
             label="Active"

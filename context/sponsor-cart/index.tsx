@@ -14,7 +14,8 @@ const STORAGE_PREFIX = "sponsorCart:";
 // Server render (and hydration), and before the sponsor is known: an empty cart.
 const EMPTY: SponsorCartLine[] = [];
 
-// The same item, as the API counts duplicates: school + event + tier or physical asset.
+// The same item, as the API counts duplicates: school + event + tier or physical asset. Not the stores: the
+// API refuses the same package twice in one cart, so all its stores go on one item.
 export const cartItemKey = (item: SponsorCartItem) =>
   [item.schoolId, item.eventId ?? "", item.tier ?? "", item.physicalAssetId ?? ""].join("|");
 
@@ -80,6 +81,8 @@ interface SponsorCartContextValue {
   remove: (key: string) => void;
   // Takes the new prices (line key → cents) the sponsor accepted: shown and sent as expectedTotalCents.
   acceptPrices: (prices: Record<string, number>) => void;
+  // Which of the line's stores the item is for (ids from its `stores`); none activates it without stores.
+  setStores: (key: string, storeIds: string[]) => void;
   clear: () => void;
 }
 
@@ -116,6 +119,19 @@ export function SponsorCartProvider({ children }: { children: ReactNode }) {
               ? l
               : { ...l, totalCents: prices[l.key], item: { ...l.item, expectedTotalCents: prices[l.key] } }
           )
+        ),
+      setStores: (key, storeIds) =>
+        update((prev) =>
+          prev.map((l) => {
+            if (l.key !== key || !l.stores) return l;
+            const item: SponsorCartItem = { ...l.item, sponsorLocationIds: storeIds, radiusMiles: l.stores.radiusMiles };
+            // Without stores the radius isn't sent either.
+            if (!storeIds.length) {
+              delete item.sponsorLocationIds;
+              delete item.radiusMiles;
+            }
+            return { ...l, item };
+          })
         ),
       clear: () => update(() => []),
     };

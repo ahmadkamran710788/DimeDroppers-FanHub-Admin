@@ -15,6 +15,8 @@ interface PhysicalAddOnsProps {
   isInCart?: (physicalAsset: SponsorPhysicalAsset) => boolean;
   // The sponsor already has it active: one disabled "Active" in place of both actions.
   isActive?: (physicalAsset: SponsorPhysicalAsset) => boolean;
+  // Active for some of the stores but not all ("Active for 2 of 3 stores"); undefined otherwise.
+  activeNote?: (physicalAsset: SponsorPhysicalAsset) => string | undefined;
 }
 
 // The organization's physical assets (banners, scoreboard wraps…), sold on their own under the packages:
@@ -26,6 +28,7 @@ export default function PhysicalAddOns({
   onAddToCart,
   isInCart,
   isActive,
+  activeNote,
 }: PhysicalAddOnsProps) {
   return (
     <InsetSection
@@ -46,7 +49,15 @@ export default function PhysicalAddOns({
               </span>
             )}
             <span className="flex-auto min-w-0">
-              <span className="block text-[15px] font-semibold">{x.name}</span>
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="text-[15px] font-semibold">{x.name}</span>
+                {/* Its category, set by the organization (none for an asset made before categories). */}
+                {x.assetCategory && (
+                  <span className="text-[11px] font-bold tracking-[0.5px] text-[#a3e3a5] border border-[#2f4a30] rounded-full px-2 py-0.5">
+                    {x.assetCategory.label}
+                  </span>
+                )}
+              </span>
               {/* Only its total is shown, not how it's built (value × teams or games). */}
               {x.description && (
                 <span className="block text-[13px] text-[#a8a8a8] mt-[2px]">{x.description}</span>
@@ -55,6 +66,9 @@ export default function PhysicalAddOns({
                 <span className="block text-[13px] text-[#f0c36a] mt-[2px]">
                   {x.unavailableMessage}
                 </span>
+              )}
+              {!isActive?.(x) && activeNote?.(x) && (
+                <span className="block text-[13px] text-[#a3e3a5] mt-[2px]">{activeNote(x)}</span>
               )}
             </span>
             <span className="text-[15px] font-bold whitespace-nowrap">

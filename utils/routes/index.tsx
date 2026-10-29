@@ -4,7 +4,7 @@ export const routes = {
     profile: "/profile",
     signIn: "/auth/sign-in",
     signUp: "/auth/sign-up",
-    // Sponsor sign-up (UI only until the sponsor sign-up API is wired).
+    // Sponsor sign-up: Account → Brand → Review, sent as one request on Finish.
     sponsorSignUp: "/auth/sponsor-sign-up",
     schedule: "/schedule",
     scorekeepers: "/scorekeepers",
@@ -287,6 +287,17 @@ export const routes = {
     // (FANHUB_SPONSOR_CART_GENDER_PHYSICAL_ASSETS_FRONTEND.md).
     sponsorCartQuote: "fanhub/sponsor-packages/activations/quote",
     sponsorCartActivate: "fanhub/sponsor-packages/activations/batch",
+    // Sponsor sign-up and profile (FANHUB_SPONSOR_SIGNUP_PROFILE_FRONTEND.md). GET, no token: sponsor
+    // types, categories, the password and logo rules, and the paths of the legal documents.
+    sponsorSignupOptions: "fanhub/sponsor-auth/options",
+    // POST multipart, no token; called by the /api/auth/sponsor-signup route handler, which keeps the tokens.
+    sponsorSignup: "fanhub/sponsor-auth/signup",
+    proxyAuthSponsorSignup: "/api/auth/sponsor-signup",
+    // GET the profile (account, brand, locations, store lookup progress); PATCH it (JSON, or multipart with a logo).
+    sponsorProfile: "fanhub/sponsor-profile",
+    // GET the locations, POST one; PATCH / DELETE one by id.
+    sponsorLocations: "fanhub/sponsor-profile/locations",
+    sponsorLocation: (id: string) => `fanhub/sponsor-profile/locations/${id}`,
     // The organisation's own view (organiser token): its packages as sponsors see them (?eventId= for a
     // tournament), its events, and who activated what.
     orgSponsorPackages: "fanhub/org/sponsor-packages/packages",

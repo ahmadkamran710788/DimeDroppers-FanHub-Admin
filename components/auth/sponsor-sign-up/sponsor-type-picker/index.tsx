@@ -2,15 +2,17 @@
 
 import { cn } from "@/utils/cn";
 import { SECTION_LABEL } from "@/components/sponsor/styles";
-import { SPONSOR_TYPES, type SponsorType } from "@/components/auth/sponsor-sign-up/data";
+import type { SponsorTypeCode, SponsorTypeOption } from "@/utils/types/sponsor-profile";
 
 interface SponsorTypePickerProps {
-  value: SponsorType;
-  onChange: (type: SponsorType) => void;
+  // From the sponsor options: local business, regional brand and national brand.
+  types: SponsorTypeOption[];
+  value: SponsorTypeCode;
+  onChange: (type: SponsorTypeCode) => void;
 }
 
-// Local business or national brand, as two cards with a radio ring.
-export default function SponsorTypePicker({ value, onChange }: SponsorTypePickerProps) {
+// The sponsor types as cards with a radio ring: one row of equal cards (as many as the API sends), stacked on phones.
+export default function SponsorTypePicker({ types, value, onChange }: SponsorTypePickerProps) {
   return (
     <div className="flex flex-col gap-[10px]">
       <div id="sponsor-type-label" className={SECTION_LABEL}>
@@ -19,25 +21,26 @@ export default function SponsorTypePicker({ value, onChange }: SponsorTypePicker
       <div
         role="radiogroup"
         aria-labelledby="sponsor-type-label"
-        className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3"
+        className="grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr gap-3"
       >
-        {SPONSOR_TYPES.map((type) => {
-          const on = type.value === value;
+        {types.map((type) => {
+          const on = type.code === value;
           return (
             // A whole clickable card (name, ring and description), not an action button.
             <button
-              key={type.value}
+              key={type.code}
               type="button"
               role="radio"
               aria-checked={on}
-              onClick={() => onChange(type.value)}
+              onClick={() => onChange(type.code)}
               className={cn(
-                "text-left flex flex-col gap-[6px] p-4 rounded-[12px] border text-white transition-colors",
+                "text-left flex flex-col gap-[6px] p-[14px] rounded-[12px] border text-white transition-colors",
                 on ? "bg-[#17151f] border-[#8b6dff]" : "bg-[#0b0b0b] border-[#333] hover:border-[#555]"
               )}
             >
-              <span className="flex justify-between items-center gap-2">
-                <span className="text-[17px] font-bold">{type.name}</span>
+              {/* At three across a title can wrap; the ring stays beside its first line. */}
+              <span className="flex justify-between items-start gap-2">
+                <span className="text-[17px] font-bold leading-tight">{type.label}</span>
                 <span
                   aria-hidden
                   className={cn(

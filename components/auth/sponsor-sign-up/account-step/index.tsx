@@ -13,10 +13,12 @@ interface AccountStepProps {
   errors: Record<string, string>;
   onField: (field: keyof SponsorSignUpForm) => (e: React.ChangeEvent<HTMLInputElement>) => void;
   onPhone: (value: string) => void;
+  // From the sponsor options, e.g. "Use 8 or more characters with a number".
+  passwordRule: string;
 }
 
 // Step 1: the person who manages sponsorships for the brand.
-export default function AccountStep({ form, errors, onField, onPhone }: AccountStepProps) {
+export default function AccountStep({ form, errors, onField, onPhone, passwordRule }: AccountStepProps) {
   return (
     <section aria-label="Create your account" className="flex flex-col gap-5">
       <StepHeading title="Create your account" description="The person who manages sponsorships for your brand." />
@@ -54,7 +56,7 @@ export default function AccountStep({ form, errors, onField, onPhone }: AccountS
         onChange={onField("password")}
         placeholder="At least 8 characters"
         autoComplete="new-password"
-        hint="Use 8 or more characters with a number."
+        hint={`${passwordRule}.`}
         error={errors.password}
         variant="dark"
         labelClassName={SECTION_LABEL}

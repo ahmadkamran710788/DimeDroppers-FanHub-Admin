@@ -9,7 +9,7 @@ import ConfirmModal from "@/components/common/confirm-modal";
 import Loader from "@/components/common/loader";
 import { CARD, OUTLINE_BUTTON, PRIMARY_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
 import CartLine from "@/components/sponsor/cart/cart-line";
-import { activeActivationKeys, formatCents, sponsorRequest } from "@/components/sponsor/sponsor-api";
+import { activeActivations, formatCents, sponsorRequest, type ActiveActivations } from "@/components/sponsor/sponsor-api";
 import { useSponsorCart } from "@/context/sponsor-cart";
 import { routes } from "@/utils/routes";
 import type { SponsorCartActivation, SponsorCartQuote } from "@/utils/types/sponsor-packages";
@@ -45,14 +45,15 @@ export default function SponsorCart() {
     };
   }, [quoteKey, items]);
 
-  // What the sponsor already has active, anywhere: those lines can't be activated again.
-  const [activeLoaded, setActiveLoaded] = useState<{ key: string; keys: Set<string> } | null>(null);
+  // What the sponsor already has active, anywhere: a line without stores for one of those can't be
+  // activated again. A line with stores can (for stores that don't have it); the quote names any that do.
+  const [activeLoaded, setActiveLoaded] = useState<{ key: string; active: ActiveActivations } | null>(null);
   useEffect(() => {
     if (!items.length) return;
     let cancelled = false;
-    activeActivationKeys().then((keys) => {
+    activeActivations().then((active) => {
       // If it can't be checked, the cart isn't blocked.
-      if (!cancelled) setActiveLoaded({ key: quoteKey, keys: keys ?? new Set() });
+      if (!cancelled) setActiveLoaded({ key: quoteKey, active: active ?? new Map() });
     });
     return () => {
       cancelled = true;
@@ -61,9 +62,14 @@ export default function SponsorCart() {
 
   const current = quoted?.key === quoteKey ? quoted : null;
   const quote = current?.quote;
-  const activeKeys = activeLoaded?.key === quoteKey ? activeLoaded.keys : null;
-  const quoting = items.length > 0 && (!current || !activeKeys);
-  const alreadyActiveCount = lines.filter((l) => activeKeys?.has(l.key)).length;
+  const activeMap = activeLoaded?.key === quoteKey ? activeLoaded.active : null;
+  const quoting = items.length > 0 && (!current || !activeMap);
+  const isAlreadyActive = (line: (typeof lines)[number]) =>
+    !line.item.sponsorLocationIds?.length && !!activeMap?.has(line.key);
+  const alreadyActiveCount = lines.filter(isAlreadyActive).length;
+  // Lines with stores to choose from but none ticked: an activation is always for at least one store.
+  const needsStore = (line: (typeof lines)[number]) => !!line.stores && !line.item.sponsorLocationIds?.length;
+  const needsStoreCount = lines.filter(needsStore).length;
   const currency = quote?.currency ?? lines[0]?.currency ?? "USD";
 
   // Line key → the new price, for every item whose price changed.
@@ -139,9 +145,10 @@ export default function SponsorCart() {
                 key={line.key}
                 line={line}
                 quote={quote?.items.find((q) => q.index === index)}
-                alreadyActive={!!activeKeys?.has(line.key)}
+                alreadyActive={isAlreadyActive(line)}
                 onRemove={() => cart.remove(line.key)}
                 onAcceptPrice={(totalCents) => cart.acceptPrices({ [line.key]: totalCents })}
+                onStoresChange={(storeIds) => cart.setStores(line.key, storeIds)}
               />
             ))}
           </section>
@@ -181,6 +188,11 @@ export default function SponsorCart() {
                 {`Remove the ${plural(alreadyActiveCount, "item")} you already have active to continue.`}
               </p>
             )}
+            {needsStoreCount > 0 && (
+              <p className="text-[13px] text-[#f0c36a]">
+                {`Tick at least one store on ${plural(needsStoreCount, "item")} to continue.`}
+              </p>
+            )}
             {changedCount > 0 && (
               <Button
                 label={changedCount === 1 ? "Accept the new price" : `Accept ${changedCount} new prices`}
@@ -191,7 +203,7 @@ export default function SponsorCart() {
             <Button
               label="Activate all"
               onClick={() => setCheckoutKey(crypto.randomUUID())}
-              disabled={quoting || !quote?.canActivate || alreadyActiveCount > 0}
+              disabled={quoting || !quote?.canActivate || alreadyActiveCount > 0 || needsStoreCount > 0}
               fullWidth
               className={cn(PRIMARY_BUTTON, "h-12 px-[22px] rounded-[10px] text-[15px]")}
             />

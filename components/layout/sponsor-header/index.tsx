@@ -8,6 +8,7 @@ import RowActionsMenu from "@/components/common/row-actions-menu";
 import { useSponsorAccount } from "@/components/sponsor/use-sponsor-account";
 import { useSponsorCart } from "@/context/sponsor-cart";
 import { clearFanhubSession } from "@/utils/auth/session";
+import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 
 interface SponsorHeaderProps {
@@ -16,7 +17,7 @@ interface SponsorHeaderProps {
 }
 
 // Header for the sponsor pages: section title, the cart, messages and notifications, and the sponsor's
-// name, email and initials. Messages and notifications are not wired up yet.
+// name, brand and logo (or initials). Messages and notifications are not wired up yet.
 export default function SponsorHeader({ title, onMenuClick }: SponsorHeaderProps) {
   const account = useSponsorAccount();
   const cartCount = useSponsorCart().lines.length;
@@ -76,11 +77,22 @@ export default function SponsorHeader({ title, onMenuClick }: SponsorHeaderProps
               {account?.brandName ?? (account && "brand" in account ? "No brand yet" : (account?.email ?? ""))}
             </span>
           </div>
-          {/* The avatar opens the account menu (Sign out). */}
+          {/* The avatar (the brand logo, else the initials) opens the account menu (Sign out). Logos sit on
+              white: most are made for it, and a dark one would vanish on the dark header. */}
           <RowActionsMenu
             ariaLabel="Account menu"
-            className="size-12 p-0 shrink-0 rounded-full outline-0 border-2 border-[#444] bg-transparent font-display font-bold text-lg"
-            trigger={account?.initials ?? "S"}
+            className={cn(
+              "size-12 p-0 shrink-0 rounded-full overflow-hidden outline-0 border-2 border-[#444] bg-transparent font-display font-bold text-lg",
+              account?.logoUrl && "bg-white"
+            )}
+            trigger={
+              account?.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- signed S3 link to the sponsor's logo
+                <img src={account.logoUrl} alt="" className="size-full object-contain p-1.5" />
+              ) : (
+                (account?.initials ?? "S")
+              )
+            }
             items={[{ label: "Sign out", onSelect: signOut, variant: "destructive" }]}
           />
         </div>
