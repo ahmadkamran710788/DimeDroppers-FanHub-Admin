@@ -91,7 +91,7 @@ export default function InventoryPage() {
       </h2>
       <p className="text-sm text-white/85">
         Choose what sponsors can see in your Fan Hub. Switch each item on or off, and add your own physical assets
-        with their name, size and value.
+        with their name, category, size and value.
       </p>
     </div>
   );
@@ -151,6 +151,8 @@ export default function InventoryPage() {
       onReorder={(from, to) => inv.reorder(category, from, to)}
       onAdd={category === "PHYSICAL_ASSET" ? inv.addExclusivity : undefined}
       onRemove={category === "PHYSICAL_ASSET" ? inv.removeExclusivity : undefined}
+      assetCategories={inv.assetCategories}
+      onAssetCategoryChange={(rowKey, code) => inv.setAssetCategory(category, rowKey, code)}
     />
   );
 

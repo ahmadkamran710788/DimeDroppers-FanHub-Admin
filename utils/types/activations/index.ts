@@ -62,12 +62,20 @@ export interface CatalogCategory {
   items: CatalogItem[];
 }
 
+// A physical asset's category (FANHUB_ACTIVATIONS_PHYSICAL_ASSET_CATEGORY_FRONTEND.md): send `code`, show `label`.
+export interface OptionView {
+  code: string;
+  label: string;
+}
+
 export interface ActivationCatalog {
   organizationType: ActivationOrganizationType;
   organizationTypeLabel: string;
   categories: CatalogCategory[];
   phases: PhaseOption[];
   capabilities: CapabilityOption[];
+  // The 47 physical asset categories, in the API's order (the Category dropdown).
+  physicalAssetCategories?: OptionView[];
 }
 
 // ---- GET / PUT (the inventory view) ----
@@ -104,6 +112,9 @@ export interface InventoryActivation {
   description: string | null;
   // The effective size: the org's own, else the catalog's.
   size: string | null;
+  // Physical assets only; null for one made before categories (until the org picks one) and for every
+  // other slot.
+  assetCategory: OptionView | null;
   // The effective value (whole dollars): the org's own, else the category base value.
   value: number;
   valueSource: ValueSource;
@@ -200,6 +211,8 @@ export interface ActivationInventory {
   canSave: boolean;
   // null for every other organisation type.
   tournament: ActivationTournament | null;
+  // The 47 physical asset categories, in the API's order (the Category dropdown).
+  physicalAssetCategories?: OptionView[];
   categories: InventoryCategory[];
   summary: {
     activationCount: number;
@@ -250,6 +263,9 @@ export interface ActivationInput {
   value?: number | null;
   // Physical Assets only. 1 – 40 chars; null = back to the catalog size. Left out: unchanged.
   size?: string | null;
+  // Physical Assets only: a category code; null clears it. Required for a new physical asset; left out on
+  // an existing one, unchanged.
+  assetCategory?: string | null;
   isAvailableForSponsors?: boolean;
   // Defaults to [] — so a slot sent without them loses its placements.
   placements?: PlacementInput[];

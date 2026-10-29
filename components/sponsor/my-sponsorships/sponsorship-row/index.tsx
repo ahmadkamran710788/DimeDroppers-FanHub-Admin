@@ -58,7 +58,7 @@ export default function SponsorshipRow({ activation: a, onCancel }: SponsorshipR
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="text-[15px] font-semibold break-words">{a.packageName}</h4>
             <span className="text-[11px] font-bold tracking-[1px] uppercase" style={{ color: KIND_COLOR[a.kind] }}>
-              {[KIND_LABEL[a.kind], a.physicalAsset?.size].filter(Boolean).join(" · ")}
+              {[KIND_LABEL[a.kind], a.physicalAsset?.assetCategory?.label, a.physicalAsset?.size].filter(Boolean).join(" · ")}
             </span>
           </div>
           <p className="text-[13px] text-[#a8a8a8] break-words">

@@ -38,6 +38,8 @@ export interface SponsorSearchFilters {
   sorts: FilterOption[];
   // FALL_WINTER / FALL / FULL_YEAR, labelled with their years; seasons already over are left out.
   seasons: FilterOption[];
+  // The 47 physical asset categories, once the API sends them (until then the built-in list is used).
+  physicalAssetCategories?: FilterOption[];
 }
 
 export interface SponsorOrganization {
@@ -176,6 +178,8 @@ export interface SponsorPhysicalAsset {
   name: string;
   description: string | null;
   size: string | null;
+  // null for an asset made before categories.
+  assetCategory: FilterOption | null;
   isAvailable: boolean;
   unavailableReason: UnavailableReason | null;
   unavailableMessage: string | null;
@@ -226,7 +230,8 @@ export interface PackageActivation {
   kind: "PACKAGE" | "PHYSICAL_ASSET";
   tier: PackageTier | null;
   packageName: string;
-  physicalAsset: { activationId: string | null; size: string | null } | null;
+  // The category is kept as it was when activated.
+  physicalAsset: { activationId: string | null; size: string | null; assetCategory: FilterOption | null } | null;
   organization: SponsorOrganization;
   event: { id: string; name: string | null } | null;
   // The stores it is for, nearest first; empty when activated without stores.

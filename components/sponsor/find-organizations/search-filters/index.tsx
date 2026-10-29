@@ -17,6 +17,7 @@ import type { SponsorStore } from "@/components/sponsor/find-organizations/use-s
 import {
   DEFAULT_SEARCH,
   MAX_PICKED_STORES,
+  PHYSICAL_ASSET_CATEGORIES,
   searchesNearStores,
   type OrgSearch,
 } from "@/components/sponsor/find-organizations/data";
@@ -61,7 +62,8 @@ export default function SearchFilters({ filters, stores, onSearch, searching = f
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   }
 
-  // Clears the name, type, budget, season, sports, genders and inventory picks; the area stays.
+  // Clears the name, type, budget, season, sports, genders, in-app and physical asset category picks; the area
+  // stays.
   function clear() {
     const next = {
       ...form,
@@ -72,7 +74,7 @@ export default function SearchFilters({ filters, stores, onSearch, searching = f
       sports: [],
       genders: [],
       inApp: [],
-      venue: [],
+      assetCategories: [],
     };
     setForm(next);
     setErrors({});
@@ -233,14 +235,21 @@ export default function SearchFilters({ filters, stores, onSearch, searching = f
             onChange={(inApp) => update("inApp", inApp)}
           />
         </InsetSection>
-        <InsetSection title="VENUE INVENTORY" description="Physical space to let at fields, courts and gyms">
-          <FilterChips
-            variant="pill"
-            multiple
-            ariaLabel="Venue inventory"
-            options={chipOptions(filters?.venue)}
-            value={form.venue}
-            onChange={(venue) => update("venue", venue)}
+        {/* The organization's physical assets, by the category it gave them. The list comes from GET /filters
+            once the API sends it; until then the built-in one (the backend's 47). */}
+        <InsetSection title="PHYSICAL ASSET CATEGORY" description="Physical assets the organization offers, by type">
+          <MultiSelect
+            label="Physical asset category"
+            name="org-asset-categories"
+            value={form.assetCategories}
+            onChange={(picked) => update("assetCategories", picked === ALL ? [] : picked)}
+            options={chipOptions(filters?.physicalAssetCategories ?? PHYSICAL_ASSET_CATEGORIES)}
+            countLabel={(count) => `${count} categories`}
+            placeholder="Any category"
+            searchPlaceholder="Search categories"
+            variant="dark"
+            labelClassName="sr-only"
+            selectClassName={cn(CONTROL, "px-3")}
           />
         </InsetSection>
       </div>

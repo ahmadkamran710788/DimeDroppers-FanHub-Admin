@@ -4,12 +4,12 @@ import { useRef, useState } from "react";
 import AddExclusivity from "@/components/organization/inventory/add-exclusivity";
 import InventoryRow from "@/components/organization/inventory/inventory-row";
 import { CATEGORY_STYLE } from "@/components/organization/inventory/data";
-import type { FormSlot } from "@/components/organization/inventory/helpers";
+import type { FormSlot, NewAssetFields } from "@/components/organization/inventory/helpers";
 import type { RowErrors } from "@/components/organization/inventory/use-inventory";
 import Button from "@/components/common/button";
 import Toggle from "@/components/common/toggle";
 import { cn } from "@/utils/cn";
-import type { ActivationCategory } from "@/utils/types/activations";
+import type { ActivationCategory, OptionView } from "@/utils/types/activations";
 
 interface CategoryColumnProps {
   category: ActivationCategory;
@@ -25,9 +25,12 @@ interface CategoryColumnProps {
   onSelectAll: () => void;
   onClearAll: () => void;
   onReorder: (fromKey: string, toKey: string) => void;
-  // Exclusivity: the org adds its own slots and can remove them.
-  onAdd?: (fields: { name: string; value: string; size: string }) => string | null;
+  // Exclusivity: the org adds its own slots (each with a category) and can remove them.
+  onAdd?: (fields: NewAssetFields) => string | null;
   onRemove?: (rowKey: string) => void;
+  // The physical asset categories, in the API's order, and a row's category being changed.
+  assetCategories?: OptionView[];
+  onAssetCategoryChange?: (rowKey: string, code: string) => void;
 }
 
 // One category card (Pre Game, Live, Post Game, Add-ons, Exclusivity): a coloured header with its icon
@@ -48,6 +51,8 @@ export default function CategoryColumn({
   onReorder,
   onAdd,
   onRemove,
+  assetCategories = [],
+  onAssetCategoryChange,
 }: CategoryColumnProps) {
   const style = CATEGORY_STYLE[category];
   const Icon = style.icon;
@@ -93,6 +98,8 @@ export default function CategoryColumn({
             onToggle={() => onToggle(slot.rowKey)}
             onValueChange={(value) => onValueChange(slot.rowKey, value)}
             onSizeChange={(size) => onSizeChange(slot.rowKey, size)}
+            assetCategories={assetCategories}
+            onAssetCategoryChange={onAssetCategoryChange && ((code) => onAssetCategoryChange(slot.rowKey, code))}
             onRemove={onRemove && slot.editable ? () => onRemove(slot.rowKey) : undefined}
             errors={rowErrors[slot.rowKey]}
             dragging={draggingKey === slot.rowKey}
@@ -116,7 +123,7 @@ export default function CategoryColumn({
 
       {onAdd && (
         <div className="mx-4 py-3 border-t border-white/15 flex">
-          <AddExclusivity onAdd={onAdd} />
+          <AddExclusivity categories={assetCategories} onAdd={onAdd} />
         </div>
       )}
 

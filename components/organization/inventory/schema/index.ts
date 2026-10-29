@@ -14,7 +14,8 @@ export const customSlotSchema = yup.object({
   size: yup.string().trim().required("Enter a size").max(MAX_SIZE_LENGTH, `At most ${MAX_SIZE_LENGTH} characters`),
 });
 
-// The Add Exclusivity form: a name as well.
+// The Add Physical Asset form: a name and a category as well (the API refuses a new asset without one).
 export const exclusivitySchema = customSlotSchema.shape({
   name: yup.string().trim().required("Enter a name").max(MAX_NAME_LENGTH, `At most ${MAX_NAME_LENGTH} characters`),
+  assetCategory: yup.string().required("Choose a category"),
 });

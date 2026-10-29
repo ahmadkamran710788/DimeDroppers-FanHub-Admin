@@ -9,6 +9,7 @@ import {
   toRequest,
   type FormSlot,
   type InventoryForm,
+  type NewAssetFields,
   type TournamentPicks,
 } from "@/components/organization/inventory/helpers";
 import { customSlotSchema } from "@/components/organization/inventory/schema";
@@ -21,6 +22,7 @@ import type {
   ActivationInventory,
   ActivationInventoryRequest,
   ActivationTournament,
+  OptionView,
   TournamentFormat,
 } from "@/utils/types/activations";
 import { validateForm } from "@/utils/validation";
@@ -31,9 +33,12 @@ interface ApiResult<T> {
   error?: ActivationApiError;
 }
 
-export type SlotField = "value" | "size";
+export type SlotField = "value" | "size" | "assetCategory";
 
-// Problems with a slot's value or size, keyed by row.
+// A new physical asset saved without a category: the API answers 400 with this (and no data.errors).
+const CATEGORY_REQUIRED = /^Choose a category for the physical asset: (.+)$/;
+
+// Problems with a slot's value, size or category, keyed by row.
 export type RowErrors = Record<string, Partial<Record<SlotField, string>>>;
 
 const NETWORK_ERROR = "Please check your network and try again.";
@@ -66,6 +71,8 @@ interface Loaded {
   form: InventoryForm;
   // A tournament event's format and the format options. null for everyone else.
   tournament: ActivationTournament | null;
+  // The physical asset categories, in the API's order.
+  assetCategories: OptionView[];
 }
 
 interface TournamentState {
@@ -75,7 +82,7 @@ interface TournamentState {
 const tournamentState = (t: ActivationTournament | null): TournamentState | null => (t ? { format: t.format } : null);
 
 // State and saving for the Inventory page: every slot of the org's type with its toggle ("show to
-// sponsors"), the exclusivities the org adds (name, value, size), and for a tournament the event's
+// sponsors"), the exclusivities the org adds (name, category, value, size), and for a tournament the event's
 // format (needed before a save). The first GET creates the inventory, so saving is always a PUT.
 // `eventId`: null for a school (one inventory); a tournament has one inventory per event and loads
 // nothing until one is picked ("").
@@ -116,6 +123,7 @@ export function useInventory(eventId: string | null) {
         catalog: catalog.view,
         form: buildForm(catalog.view, inventory.view),
         tournament: inventory.view.tournament ?? null,
+        assetCategories: inventory.view.physicalAssetCategories ?? catalog.view.physicalAssetCategories ?? [],
       });
       setPicks(tournamentState(inventory.view.tournament ?? null));
       setDirty(false);
@@ -156,6 +164,9 @@ export function useInventory(eventId: string | null) {
   const setSize = (category: ActivationCategory, rowKey: string, size: string) =>
     updateSlot(category, rowKey, (s) => (s.editable ? { ...s, size } : s));
 
+  const setAssetCategory = (category: ActivationCategory, rowKey: string, assetCategory: string) =>
+    updateSlot(category, rowKey, (s) => (s.editable ? { ...s, assetCategory } : s));
+
   const selectAll = (category: ActivationCategory) =>
     updateColumn(category, (slots) => slots.map((s) => ({ ...s, enabled: true })));
 
@@ -179,7 +190,7 @@ export function useInventory(eventId: string | null) {
   // ---- Exclusivities the org adds ----
 
   // Adds a new exclusivity (switched on); null, or why it can't be added. Names are unique.
-  const addExclusivity = (fields: { name: string; value: string; size: string }): string | null => {
+  const addExclusivity = (fields: NewAssetFields): string | null => {
     if (!form) return null;
     const name = fields.name.trim().toLowerCase();
     if (form.columns.PHYSICAL_ASSET.some((s) => s.name.trim().toLowerCase() === name)) {
@@ -209,16 +220,18 @@ export function useInventory(eventId: string | null) {
 
   // ---- Save ----
 
-  // Every exclusivity the org added needs a whole-dollar value and a size.
+  // Every exclusivity the org added needs a whole-dollar value and a size, and a new one a category (older
+  // ones without may stay without).
   const findFieldErrors = async (f: InventoryForm) => {
     const found: RowErrors = {};
     const messages: string[] = [];
     for (const slot of CATEGORY_ORDER.flatMap((c) => f.columns[c])) {
       if (!slot.editable) continue;
       const errors = await validateForm(customSlotSchema, { value: slot.value, size: slot.size });
-      if (!errors.value && !errors.size) continue;
-      found[slot.rowKey] = { value: errors.value, size: errors.size };
-      messages.push(`${slot.name}: ${errors.value ?? errors.size}`);
+      const assetCategory = !slot.id && !slot.assetCategory ? "Choose a category" : undefined;
+      if (!errors.value && !errors.size && !assetCategory) continue;
+      found[slot.rowKey] = { value: errors.value, size: errors.size, assetCategory };
+      messages.push(`${slot.name}: ${errors.value ?? errors.size ?? assetCategory}`);
     }
     return { found, messages };
   };
@@ -229,10 +242,17 @@ export function useInventory(eventId: string | null) {
       const [root, index, field] = path.split(".");
       const rowKey = root === "activations" ? indexMap[Number(index)] : undefined;
       if (!rowKey) continue;
-      const key: SlotField = field === "size" ? "size" : "value";
+      const key: SlotField = field === "size" || field === "assetCategory" ? field : "value";
       found[rowKey] = { ...found[rowKey], [key]: found[rowKey]?.[key] ?? message };
     }
     setRowErrors(found);
+  };
+
+  // "Choose a category for the physical asset: <name>" names the asset but has no field path: the row with
+  // that name, if it's on screen.
+  const categoryRequiredRow = (f: InventoryForm, message: string | undefined) => {
+    const name = message?.match(CATEGORY_REQUIRED)?.[1]?.trim().toLowerCase();
+    return name ? f.columns.PHYSICAL_ASSET.find((s) => s.name.trim().toLowerCase() === name)?.rowKey : undefined;
   };
 
   const save = async () => {
@@ -259,6 +279,12 @@ export function useInventory(eventId: string | null) {
 
       if (!result.view) {
         toast.error(errorMessage(result));
+        // A new physical asset without a category: shown on its row, and the edits stay.
+        const missingCategory = categoryRequiredRow(current, result.error?.message);
+        if (missingCategory) {
+          setRowErrors({ [missingCategory]: { assetCategory: "Choose a category" } });
+          return;
+        }
         // A tournament event / format problem is fixed in the setup above, so the edits stay.
         const aboutSetup = /event|format/i.test(result.error?.message ?? "");
         if (result.status === 400 && !result.error?.data?.errors?.length && !aboutSetup) {
@@ -271,7 +297,12 @@ export function useInventory(eventId: string | null) {
       }
 
       // Replace the form with the saved view so new slots carry their ids into the next PUT.
-      setLoaded({ catalog, form: buildForm(catalog, result.view, current.columns), tournament: result.view.tournament ?? null });
+      setLoaded({
+        catalog,
+        form: buildForm(catalog, result.view, current.columns),
+        tournament: result.view.tournament ?? null,
+        assetCategories: result.view.physicalAssetCategories ?? loaded.assetCategories,
+      });
       setPicks(tournamentState(result.view.tournament ?? null));
       setDirty(false);
       setSaves((n) => n + 1);
@@ -302,6 +333,8 @@ export function useInventory(eventId: string | null) {
     toggle,
     setValue,
     setSize,
+    setAssetCategory,
+    assetCategories: loaded?.assetCategories ?? [],
     selectAll,
     clearAll,
     reorder,

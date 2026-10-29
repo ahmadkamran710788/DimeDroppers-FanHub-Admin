@@ -58,7 +58,11 @@ const columns: Column<PackageActivation>[] = [
     cell: (a) => (
       <div className="flex flex-col gap-1 min-w-0 text-xs">
         <span className="leading-4 break-words">{a.packageName}</span>
-        <span className="opacity-50">{a.kind === "PHYSICAL_ASSET" ? `Physical asset${a.physicalAsset?.size ? ` · ${a.physicalAsset.size}` : ""}` : "Package"}</span>
+        <span className="opacity-50">
+          {a.kind === "PHYSICAL_ASSET"
+            ? ["Physical asset", a.physicalAsset?.assetCategory?.label, a.physicalAsset?.size].filter(Boolean).join(" · ")
+            : "Package"}
+        </span>
         {/* The sponsor's stores it is for (as they were when activated). */}
         {a.locations.length > 0 && <span className="opacity-70 break-words">{`For: ${storeNames(a.locations, 2)}`}</span>}
       </div>
