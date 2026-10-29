@@ -13,6 +13,7 @@ interface RichTextProps {
 
 // Shows rich text. The HTML is sanitized first, since it comes back from the API.
 export default function RichText({ value, className }: RichTextProps) {
-  const html = useMemo(() => DOMPurify.sanitize(toHtml(value)), [value]);
+  // `target` is kept so a link opens in a new tab (the editor saves target="_blank" rel="noopener …").
+  const html = useMemo(() => DOMPurify.sanitize(toHtml(value), { ADD_ATTR: ["target"] }), [value]);
   return <div className={cn("rich-text", className)} dangerouslySetInnerHTML={{ __html: html }} />;
 }

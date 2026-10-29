@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { useState } from "react";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extensions";
@@ -8,6 +9,7 @@ import {
   Heading2,
   Heading3,
   Italic,
+  Link2,
   List,
   ListOrdered,
   Quote,
@@ -74,8 +76,26 @@ const TOOLS: Tool[][] = [
   ],
 ];
 
+// "example.com" → "https://example.com"; a link with a scheme (https:, mailto:, tel:) is kept as is.
+const toHref = (url: string) => {
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+  return /^[a-z][a-z0-9+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`;
+};
+
+// Links `href`: the selected text, the whole link the cursor is in, or (nothing selected) the URL
+// itself as new text. An empty `href` removes the link.
+function applyLink(editor: Editor, href: string) {
+  const chain = editor.chain().focus().extendMarkRange("link");
+  if (!href) return chain.unsetLink().run();
+  if (editor.state.selection.empty && !editor.isActive("link")) {
+    return chain.insertContent({ type: "text", text: href, marks: [{ type: "link", attrs: { href } }] }).run();
+  }
+  return chain.setLink({ href }).run();
+}
+
 // A rich text field for a white dialog (Tiptap): bold, italic, underline, strikethrough, headings,
-// lists and quotes. Gives back HTML; show it with RichText.
+// lists, quotes and links. Gives back HTML; show it with RichText.
 export default function RichTextEditor({
   label,
   name,
@@ -90,7 +110,14 @@ export default function RichTextEditor({
   const editor = useEditor({
     // Rendered on the client only, so the server HTML and the first client render match.
     immediatelyRender: false,
-    extensions: [StarterKit.configure({ heading: { levels: [2, 3] } }), Placeholder.configure({ placeholder })],
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [2, 3] },
+        // Clicking a link in the editor edits it instead of leaving the page; typed URLs become links.
+        link: { openOnClick: false, autolink: true, defaultProtocol: "https" },
+      }),
+      Placeholder.configure({ placeholder }),
+    ],
     content: toHtml(value),
     editorProps: {
       attributes: {
@@ -106,8 +133,26 @@ export default function RichTextEditor({
   const state = useEditorState({
     editor,
     selector: ({ editor }) =>
-      editor ? { active: TOOLS.flat().map((t) => t.active?.(editor) ?? false), length: editor.getText().length } : null,
+      editor
+        ? {
+            active: TOOLS.flat().map((t) => t.active?.(editor) ?? false),
+            link: editor.isActive("link") ? ((editor.getAttributes("link").href as string | undefined) ?? "") : null,
+            length: editor.getText().length,
+          }
+        : null,
   });
+
+  // The URL being typed in the link bar; null while it's closed.
+  const [linkDraft, setLinkDraft] = useState<string | null>(null);
+  const openLink = () => setLinkDraft(state?.link ?? "");
+  const closeLink = () => {
+    setLinkDraft(null);
+    editor?.commands.focus();
+  };
+  const saveLink = (href: string) => {
+    if (editor) applyLink(editor, href);
+    setLinkDraft(null);
+  };
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
@@ -151,7 +196,72 @@ export default function RichTextEditor({
               })}
             </div>
           ))}
+          <div className="flex items-center pl-1 ml-1 border-l border-border-input">
+            <button
+              type="button"
+              title="Link"
+              aria-label="Link"
+              aria-pressed={state?.link != null}
+              aria-expanded={linkDraft !== null}
+              disabled={!editor}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => (linkDraft === null ? openLink() : closeLink())}
+              className={cn(
+                "size-8 rounded-[6px] flex items-center justify-center text-midnight-navy/70 transition-colors",
+                "hover:bg-midnight-navy/5 hover:text-midnight-navy disabled:opacity-40",
+                (state?.link != null || linkDraft !== null) && "bg-midnight-navy/10 text-midnight-navy"
+              )}
+            >
+              <Link2 className="size-4" />
+            </button>
+          </div>
         </div>
+        {linkDraft !== null && (
+          <div className="flex flex-wrap items-center gap-2 px-2 py-2 border-b border-border-input bg-midnight-navy/3">
+            <input
+              type="url"
+              autoFocus
+              aria-label="Link URL"
+              value={linkDraft}
+              onChange={(e) => setLinkDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  saveLink(toHref(linkDraft));
+                } else if (e.key === "Escape") {
+                  // Closes the bar, not the dialog around the editor.
+                  e.stopPropagation();
+                  closeLink();
+                }
+              }}
+              placeholder="https://example.com"
+              className="flex-1 min-w-40 h-8 rounded-[6px] px-3 text-sm text-midnight-navy bg-white border border-border-input outline-none focus:border-steel-blue"
+            />
+            <button
+              type="button"
+              onClick={() => saveLink(toHref(linkDraft))}
+              className="h-8 px-3 rounded-[6px] text-sm font-medium text-white bg-steel-blue"
+            >
+              Apply
+            </button>
+            {state?.link != null && (
+              <button
+                type="button"
+                onClick={() => saveLink("")}
+                className="h-8 px-3 rounded-[6px] text-sm font-medium text-error hover:bg-error/10"
+              >
+                Remove
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={closeLink}
+              className="h-8 px-3 rounded-[6px] text-sm font-medium text-midnight-navy/70 hover:bg-midnight-navy/5"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
         <EditorContent editor={editor} />
       </div>
       <div className="flex items-center justify-between">
