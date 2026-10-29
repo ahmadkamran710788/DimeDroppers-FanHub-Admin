@@ -98,7 +98,7 @@ function InsightsView({ byPeriod }: { byPeriod: (period: InsightPeriod) => TeamI
   );
 }
 
-// A school game's insights from GET /game-detail/games/{id}/insights (null until official scoring).
+// A game's insights from GET /game-detail/games/{id}/insights (null until official scoring).
 function ApiInsights({ gameId }: { gameId: string }) {
   const { data, error, loading } = useGameDetail<GameInsightsDetail>(routes.api.gameDetailInsights(gameId));
   if (loading) return <Loader className="m-10" />;

@@ -39,7 +39,7 @@ function RecapArticle({ recap }: { recap: { headline: string; paragraphs: string
   );
 }
 
-// A school game's recap from GET /game-detail/games/{id}/recap. The first call can take a few seconds
+// A game's recap from GET /game-detail/games/{id}/recap. The first call can take a few seconds
 // while the recap is written; `recap` is null until the game has official scoring.
 function ApiRecap({ gameId }: { gameId: string }) {
   const { data, error, loading } = useGameDetail<GameRecapDetail>(routes.api.gameDetailRecap(gameId));
@@ -51,7 +51,7 @@ function ApiRecap({ gameId }: { gameId: string }) {
 // "Game Details" tab: recap, insights, highlight videos and game merch — videos and merch can be added to a team shop.
 export default function GameDetails({ game }: { game: MediaGame }) {
   const [section, setSection] = useState<Section>("Recap");
-  const gameLabel = `TLAM vs ${game.away.shortName} · ${fullDate(game.start)}`;
+  const gameLabel = `${game.home.shortName} vs ${game.away.shortName} · ${fullDate(game.start)}`;
 
   return (
     <div className="flex flex-col gap-8">

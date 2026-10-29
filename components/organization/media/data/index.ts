@@ -46,11 +46,10 @@ export interface TeamInsight {
 }
 
 export interface MediaGame {
-  // A school game from the API (its id is the scheduleEventId): its thread, recap and insights load
-  // from the game-detail endpoints instead of the fields below.
+  // A game from the API — a school's (GET /schedules) or a tournament's (GET /exposure/schedules); its
+  // id is the scheduleEventId. Its thread, recap and insights load from the game-detail endpoints
+  // instead of the fields below.
   fromApi?: boolean;
-  // A tournament game (GET /exposure/schedules): its thread and details have no API yet.
-  tournament?: boolean;
   id: string;
   // ISO date-time.
   start: string;

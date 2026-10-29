@@ -73,7 +73,7 @@ const toEvent = (item: ThreadItem, detail: GameThreadDetail): PlayEvent => {
   };
 };
 
-// A school game's thread from GET /game-detail/games/{id}/thread. The phase opens on the game's current
+// A game's thread from GET /game-detail/games/{id}/thread. The phase opens on the game's current
 // one; during the live phase the plays can be narrowed to one period (or halftime).
 function ApiThread({ gameId }: { gameId: string }) {
   // null: let the API pick the game's current phase.

@@ -13,7 +13,7 @@ const withSide = (team: MediaTeam, side: GameDetailTeamSide): MediaTeam => ({
   logo: team.logo && team.logo !== FALLBACK_LOGO ? team.logo : side.Logo || team.logo,
 });
 
-// A school game's scorekeeper score, logos and phase. The schedule list only has a score when its
+// A game's scorekeeper score, logos and phase. The schedule list only has a score when its
 // `result` was filled in; the game-detail thread carries both sides' points (one item is enough).
 // Upcoming games and games that already have a score make no call.
 export function useLiveSides(game: MediaGame): MediaGame {
