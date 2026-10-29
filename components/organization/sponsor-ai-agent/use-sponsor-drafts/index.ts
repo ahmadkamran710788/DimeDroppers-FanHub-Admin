@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { sponsorRequest } from "@/components/sponsor/sponsor-api";
-import { DRAFTS_PER_PAGE, scopeKey, type AgentScope } from "@/components/organization/sponsor-ai-agent/data";
+import { APPROVE_BATCH_MAX, APPROVE_SKIP_MESSAGE, DRAFTS_PER_PAGE, scopeKey, type AgentScope } from "@/components/organization/sponsor-ai-agent/data";
 import { routes } from "@/utils/routes";
 import type {
   DraftBatchResult,
@@ -85,6 +85,35 @@ export function useSponsorDrafts(scope: AgentScope | null, status: DraftStatusFi
     [reload]
   );
 
+  // Approving sends real emails (about 20 a minute, in the background). Up to 100 ids a call; a draft the
+  // backend leaves out is explained, then the list reloads (every queued draft is now on the Approved tab).
+  const approve = useCallback(
+    async (ids: string[]) => {
+      let queued = 0;
+      const notes = new Set<string>();
+      for (let i = 0; i < ids.length; i += APPROVE_BATCH_MAX) {
+        const r = await sponsorRequest<DraftBatchResult>("POST", routes.api.sponsorAiApproveDrafts, {
+          body: { ids: ids.slice(i, i + APPROVE_BATCH_MAX) },
+        });
+        if (!r.view) {
+          // 503: sending is off or the queue is down; nothing was changed for this batch.
+          toast.error(r.message ?? "Couldn't send the emails. Try again");
+          break;
+        }
+        queued += r.view.done.length;
+        for (const s of r.view.skipped) {
+          const note = APPROVE_SKIP_MESSAGE[s.reason];
+          if (note) notes.add(note);
+        }
+      }
+      if (queued) toast.success(queued === 1 ? "1 email queued" : `${queued} emails queued`);
+      notes.forEach((note) => toast.error(note));
+      reload();
+      return queued > 0 || notes.size > 0;
+    },
+    [reload]
+  );
+
   // The last list for this scope, filter and page stays on screen while a reload is on its way.
   const current = loaded?.view === view ? loaded : null;
   return {
@@ -93,5 +122,6 @@ export function useSponsorDrafts(scope: AgentScope | null, status: DraftStatusFi
     reload,
     edit,
     reject,
+    approve,
   };
 }

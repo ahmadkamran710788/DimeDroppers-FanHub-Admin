@@ -1,6 +1,14 @@
 import { CATEGORY_LABELS } from "@/components/sponsor/find-organizations/data";
 import { routes } from "@/utils/routes";
-import type { DraftPackage, DraftStatusFilter, ReadinessCode, ReviewStatus, RunStatus } from "@/utils/types/sponsor-ai";
+import type {
+  DraftPackage,
+  DraftSkipReason,
+  DraftStatusFilter,
+  ReadinessCode,
+  ReviewStatus,
+  RunStatus,
+  SponsorDraft,
+} from "@/utils/types/sponsor-ai";
 import type { PackageSlot, SponsorPackage } from "@/utils/types/sponsor-packages";
 
 // A search takes 1–4 minutes; its status is checked this often until it's final.
@@ -11,6 +19,9 @@ export const POLL_MS = 4000;
 export const STUCK_AFTER_MS = 15 * 60 * 1000;
 
 export const DRAFTS_PER_PAGE = 20;
+
+// The most ids one approve call takes.
+export const APPROVE_BATCH_MAX = 100;
 
 // Whose sponsors the page is about: the organisation, or one of a tournament's events.
 export interface AgentScope {
@@ -39,6 +50,21 @@ export const STATUS_STYLE: Record<ReviewStatus, { label: string; color: string; 
   PENDING: { label: "Draft", color: "bg-[#3d2a12]", text: "text-[#ffc999]" },
   APPROVED: { label: "Approved · Sent", color: "bg-[#1d3a1e]", text: "text-[#a3e3a5]" },
   REJECTED: { label: "Rejected", color: "bg-[#3f1416]", text: "text-[#ffa3a3]" },
+};
+
+// An approved draft's state, from its thread: ACTIVE is queued or sent with no answer yet.
+export const THREAD_STYLE: Partial<Record<SponsorDraft["threadStatus"], { label: string; color: string; text: string }>> = {
+  ACTIVE: { label: "Sent", color: "bg-[#1d3a1e]", text: "text-[#a3e3a5]" },
+  REPLIED: { label: "Replied", color: "bg-[#1b2f4a]", text: "text-[#a9d1ff]" },
+  STOPPED: { label: "Stopped", color: "bg-[#3d2a12]", text: "text-[#ffc999]" },
+};
+
+// What to tell the organiser about a draft approve left out. NOT_PENDING is silent: it's already on another tab.
+export const APPROVE_SKIP_MESSAGE: Record<DraftSkipReason, string | null> = {
+  NOT_PENDING: null,
+  NOT_FOUND: "This draft no longer exists",
+  NO_EMAIL: "No email address for this business",
+  SUPPRESSED: "This contact asked not to be emailed",
 };
 
 // The status filter's choices, in the design's order; each label gets its count.
