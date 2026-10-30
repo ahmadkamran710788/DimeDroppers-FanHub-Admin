@@ -44,8 +44,7 @@ function searchParams(search: OrgSearch, sort: SponsorSearchSort, page: number) 
     ...eventFiltersOf(search),
     ...(search.sports.length && { sports: search.sports.join(",") }),
     ...(search.inApp.length && { inApp: search.inApp.join(",") }),
-    // Not read by the API yet (it ignores the parameter until the category filter ships): results don't narrow.
-    ...(search.assetCategories.length && { physicalAssetCategories: search.assetCategories.join(",") }),
+    ...(search.assetCategories.length && { assetCategories: search.assetCategories.join(",") }),
     ...(budgetCents && { budgetCents }),
     ...(search.season && { season: search.season }),
     sort: !searchesNearStores(search) && sort === "NEAREST" ? DEFAULT_SORT : sort,

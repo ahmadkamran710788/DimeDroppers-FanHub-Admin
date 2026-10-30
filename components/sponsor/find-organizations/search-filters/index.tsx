@@ -17,7 +17,6 @@ import type { SponsorStore } from "@/components/sponsor/find-organizations/use-s
 import {
   DEFAULT_SEARCH,
   MAX_PICKED_STORES,
-  PHYSICAL_ASSET_CATEGORIES,
   searchesNearStores,
   type OrgSearch,
 } from "@/components/sponsor/find-organizations/data";
@@ -235,18 +234,19 @@ export default function SearchFilters({ filters, stores, onSearch, searching = f
             onChange={(inApp) => update("inApp", inApp)}
           />
         </InsetSection>
-        {/* The organization's physical assets, by the category it gave them. The list comes from GET /filters
-            once the API sends it; until then the built-in one (the backend's 47). */}
+        {/* The organization's physical assets, by the category it gave them (the list from GET /filters). It keeps
+            organizations with a sponsor-enabled asset in any picked category; tournaments are checked per event. */}
         <InsetSection title="PHYSICAL ASSET CATEGORY" description="Physical assets the organization offers, by type">
           <MultiSelect
             label="Physical asset category"
             name="org-asset-categories"
             value={form.assetCategories}
             onChange={(picked) => update("assetCategories", picked === ALL ? [] : picked)}
-            options={chipOptions(filters?.physicalAssetCategories ?? PHYSICAL_ASSET_CATEGORIES)}
+            options={chipOptions(filters?.physicalAssetCategories)}
             countLabel={(count) => `${count} categories`}
-            placeholder="Any category"
+            placeholder={filters ? "Any category" : "Loading categories…"}
             searchPlaceholder="Search categories"
+            disabled={!filters?.physicalAssetCategories?.length}
             variant="dark"
             labelClassName="sr-only"
             selectClassName={cn(CONTROL, "px-3")}
