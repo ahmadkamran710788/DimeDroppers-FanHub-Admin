@@ -12,6 +12,7 @@ import { scopeKey, type AgentScope } from "@/components/organization/sponsor-ai-
 import { useSponsorAiSetup } from "@/components/organization/sponsor-ai-agent/use-sponsor-ai-setup";
 import { useSponsorAiRun } from "@/components/organization/sponsor-ai-agent/use-sponsor-ai-run";
 import { useSponsorDrafts } from "@/components/organization/sponsor-ai-agent/use-sponsor-drafts";
+import { useSponsorThreadCount } from "@/components/organization/sponsor-ai-agent/use-sponsor-thread-count";
 import { orgKindOf, useAuth } from "@/context/auth";
 import { useSelectedEvent } from "@/context/selected-event";
 import { routes } from "@/utils/routes";
@@ -35,6 +36,7 @@ export default function SponsorAiAgentPage() {
   const [status, setStatus] = useState<DraftStatusFilter>("PENDING");
   const [page, setPage] = useState(1);
   const drafts = useSponsorDrafts(scope, status, page);
+  const threads = useSponsorThreadCount(scope);
   // null until the opening step is known (below).
   const [step, setStep] = useState<Step | null>(null);
   // The search that just failed or was blocked here, shown under Find Sponsors.
@@ -62,7 +64,6 @@ export default function SponsorAiAgentPage() {
   if (totalPages > 0 && page > totalPages) setPage(totalPages);
 
   const pending = drafts.list?.counts.PENDING ?? 0;
-  const threads = drafts.list?.counts.APPROVED ?? 0;
   // Where the page opens, decided once: the drafts if any are waiting and no search is running. A
   // tournament without an event has none to wait for (its event picker is in Step 1).
   const opening: Step | null =
@@ -99,7 +100,11 @@ export default function SponsorAiAgentPage() {
         </div>
         <Button
           size="sm"
-          label={`Agent active · ${threads} ${threads === 1 ? "thread" : "threads"} in Sponsor Messages`}
+          label={
+            threads === null
+              ? "Agent active · Sponsor Messages"
+              : `Agent active · ${threads} ${threads === 1 ? "conversation" : "conversations"} in Sponsor Messages`
+          }
           icon={<span className="size-2 rounded-full bg-success" />}
           onClick={() => router.push(routes.ui.sponsorMessages)}
           className="shrink-0 h-10 px-4 text-sm border border-success/40 bg-[#1d3a1e] text-[#a3e3a5] hover:bg-[#244a26]"

@@ -277,6 +277,12 @@ export const routes = {
     sponsorAiRejectDrafts: "fanhub/org/sponsor-ai/drafts/reject",
     // POST { ids }: queues the emails to the businesses (real emails, about 20 a minute).
     sponsorAiApproveDrafts: "fanhub/org/sponsor-ai/drafts/approve",
+    // GET ?status=&search=&eventId=&page=&limit=: Sponsor Messages, the conversations whose first email went out.
+    sponsorAiThreads: "fanhub/org/sponsor-ai/threads",
+    // GET one conversation with every email and reply.
+    sponsorAiThread: (id: string) => `fanhub/org/sponsor-ai/threads/${id}`,
+    // POST: stops a conversation; follow-ups not sent yet are cancelled.
+    sponsorAiStopThread: (id: string) => `fanhub/org/sponsor-ai/threads/${id}/stop`,
     // Sponsor app (sponsor token): find organisations, their packages, and activate one
     // (FANHUB_SPONSOR_PACKAGES_FRONTEND.md, FANHUB_SPONSOR_APP_INTEGRATION.md).
     sponsorFilters: "fanhub/sponsor-packages/filters",

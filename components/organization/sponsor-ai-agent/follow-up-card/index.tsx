@@ -216,10 +216,10 @@ export default function FollowUpCard({ draft, onEdit, onReject, onApprove }: Fol
         >
           <span className="flex-1 min-w-[220px]">
             {draft.threadStatus === "STOPPED"
-              ? "Stopped. No more emails go to this contact: they unsubscribed, the address bounced or it was reported as spam."
+              ? "Stopped. No more emails go to this contact: you stopped it, they unsubscribed, the address bounced or it was reported as spam."
               : draft.threadStatus === "REPLIED"
-                ? "The sponsor replied. The thread is in Sponsor Messages, where the agent handles the replies."
-                : "Sent. The thread moved to Sponsor Messages, where the agent handles the replies."}
+                ? "The sponsor replied. Read it in Sponsor Messages."
+                : "Sent. Its conversation, follow-ups and any reply are in Sponsor Messages."}
             {` Last activity ${new Date(draft.updatedAt).toLocaleString()}.`}
           </span>
           {draft.threadStatus !== "STOPPED" && (
