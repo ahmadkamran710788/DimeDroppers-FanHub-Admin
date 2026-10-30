@@ -2,30 +2,26 @@
 
 import StatusPill from "@/components/common/status-pill";
 import ContactAvatar from "@/components/organization/messages/contact-avatar";
-import { agentReplyText, type AgentSponsor } from "@/components/organization/sponsor-messages/data";
-import { useSponsorAgent } from "@/context/sponsor-agent";
+import { formatListTime } from "@/components/organization/messages/helpers";
+import { conversationStyle, formatDay } from "@/components/organization/sponsor-messages/data";
 import { cn } from "@/utils/cn";
+import type { ThreadSummary } from "@/utils/types/sponsor-ai";
 
 interface ThreadRowProps {
-  sponsor: AgentSponsor;
+  thread: ThreadSummary;
   selected: boolean;
   onSelect: () => void;
 }
 
-// One thread in the list: the business, the latest message and whether the agent has replied.
-export default function ThreadRow({ sponsor, selected, onSelect }: ThreadRowProps) {
-  const { event, orgName, bodyOf, repliesOf } = useSponsorAgent();
-  const replied = !!sponsor.seed;
-  const lastReply = repliesOf(sponsor.id).at(-1);
-  const preview = lastReply
-    ? `You: ${lastReply}`
-    : replied
-      ? `Agent: ${agentReplyText(sponsor, event, orgName)}`
-      : `You: ${bodyOf(sponsor)}`;
-  const time = lastReply || !sponsor.seed ? "Just now" : sponsor.seed.agentReplyAt.replace("Today ", "");
+// One conversation in the list: the business and contact, who wrote last, its status, replies and the
+// next follow-up.
+export default function ThreadRow({ thread, selected, onSelect }: ThreadRowProps) {
+  const { business, contact, lastMessage } = thread;
+  const style = conversationStyle(thread.status);
+  const preview = lastMessage ? `${lastMessage.sender === "SPONSOR" ? "They replied" : "You"}: ${lastMessage.preview}` : null;
 
   return (
-    // A clickable row (avatar, lines of text, a badge), not an action button.
+    // A clickable row (avatar, lines of text, badges), not an action button.
     <button
       type="button"
       onClick={onSelect}
@@ -35,19 +31,32 @@ export default function ThreadRow({ sponsor, selected, onSelect }: ThreadRowProp
         selected ? "bg-white/10 border-[#8b6dff]" : "border-transparent hover:bg-white/5"
       )}
     >
-      <ContactAvatar name={sponsor.business} />
+      <ContactAvatar name={business.name} />
       <span className="flex-1 min-w-0 flex flex-col gap-1">
         <span className="flex items-baseline justify-between gap-2">
-          <span className="text-sm font-semibold text-white truncate">{sponsor.business}</span>
-          <span className="shrink-0 text-[11px] text-white/40">{time}</span>
+          <span className="text-sm font-semibold text-white truncate">{business.name}</span>
+          <span className="shrink-0 text-[11px] text-white/40">{formatListTime(lastMessage?.at ?? thread.lastActivityAt)}</span>
         </span>
-        <span className="text-xs text-white/60 truncate">{preview}</span>
-        <StatusPill
-          label={replied ? "Agent replied" : "Awaiting reply"}
-          color={replied ? "bg-[#2a2148]" : "bg-white/10"}
-          className="self-start h-auto px-2 py-0.5"
-          textClassName={cn("text-[11px] font-semibold", replied ? "text-[#d9ccff]" : "text-white/80")}
-        />
+        {contact?.name && (
+          <span className="text-xs text-white/50 truncate">{[contact.name, contact.title].filter(Boolean).join(", ")}</span>
+        )}
+        {preview && <span className="text-xs text-white/70 truncate">{preview}</span>}
+        <span className="flex flex-wrap items-center gap-1.5">
+          <StatusPill
+            label={style.label}
+            color={style.color}
+            className="h-auto px-2 py-0.5"
+            textClassName={cn("text-[11px] font-semibold", style.text)}
+          />
+          {thread.replyCount > 0 && (
+            <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-white/80">
+              {`${thread.replyCount} ${thread.replyCount === 1 ? "reply" : "replies"}`}
+            </span>
+          )}
+          {thread.nextFollowUpAt && (
+            <span className="text-[11px] text-white/50">{`Next follow-up ${formatDay(thread.nextFollowUpAt)}`}</span>
+          )}
+        </span>
       </span>
     </button>
   );
