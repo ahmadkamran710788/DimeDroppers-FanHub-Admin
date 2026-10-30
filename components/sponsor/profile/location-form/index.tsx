@@ -22,8 +22,9 @@ interface LocationFormProps {
   onCancel: () => void;
 }
 
-// The new / edit location panel: name, street, city, state and ZIP. Anything that places it on the map is
-// enough (a street, a city with a state, or a ZIP); the address is looked up when it's saved.
+// The new / edit location panel: name, street, city, state, ZIP, latitude and longitude. Anything that places
+// it on the map is enough (a street, a city with a state, a ZIP, or a pin); the address is looked up when
+// it's saved, unless the pin is set here.
 export default function LocationForm({ initial, onSave, onCancel }: LocationFormProps) {
   const [form, setForm] = useState<LocationFields>(initial ?? EMPTY_LOCATION);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -34,8 +35,13 @@ export default function LocationForm({ initial, onSave, onCancel }: LocationForm
     const { value } = e.target;
     setForm((prev) => ({ ...prev, [field]: value }));
     // The street also holds the "where is it" errors (nothing to place it by, not found on the map), which
-    // a change to any address part answers.
-    const cleared = field === "name" ? ["name"] : [field, "street"];
+    // a change to any address part or the pin answers; latitude and longitude share "enter both".
+    const cleared =
+      field === "name"
+        ? ["name"]
+        : field === "latitude" || field === "longitude"
+          ? ["latitude", "longitude", "street"]
+          : [field, "street"];
     setErrors((prev) =>
       cleared.some((f) => prev[f]) ? { ...prev, ...Object.fromEntries(cleared.map((f) => [f, ""])) } : prev
     );
@@ -51,6 +57,8 @@ export default function LocationForm({ initial, onSave, onCancel }: LocationForm
       city: form.city.trim(),
       state: form.state,
       zip: form.zip.trim(),
+      latitude: form.latitude.trim(),
+      longitude: form.longitude.trim(),
     });
     setSaving(false);
     if (problems) setErrors(problems);
@@ -65,8 +73,8 @@ export default function LocationForm({ initial, onSave, onCancel }: LocationForm
     >
       <div className="text-[13px] font-bold tracking-[1px]">{title}</div>
 
-      {/* Name and street on their own rows; city, state and ZIP share one. */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* Name and street on their own rows; city, state and ZIP share one, latitude and longitude the next. */}
+      <div className="grid grid-cols-1 sm:grid-cols-6 gap-3">
         <Input
           label="Location name"
           name="location-name"
@@ -100,7 +108,7 @@ export default function LocationForm({ initial, onSave, onCancel }: LocationForm
           autoComplete="address-level2"
           error={errors.city}
           variant="dark"
-          className="min-w-0"
+          className="min-w-0 sm:col-span-2"
           labelClassName={LABEL}
           inputClassName={INPUT}
         />
@@ -113,7 +121,7 @@ export default function LocationForm({ initial, onSave, onCancel }: LocationForm
           placeholder="Choose"
           error={errors.state}
           variant="dark"
-          className="min-w-0"
+          className="min-w-0 sm:col-span-2"
           labelClassName={LABEL}
           selectClassName={SELECT}
         />
@@ -125,10 +133,37 @@ export default function LocationForm({ initial, onSave, onCancel }: LocationForm
           autoComplete="postal-code"
           error={errors.zip}
           variant="dark"
-          className="min-w-0"
+          className="min-w-0 sm:col-span-2"
           labelClassName={LABEL}
           inputClassName={INPUT}
         />
+        <Input
+          label="Latitude"
+          name="location-latitude"
+          value={form.latitude}
+          onChange={setField("latitude")}
+          placeholder="e.g. 45.669817"
+          error={errors.latitude}
+          variant="dark"
+          className="min-w-0 sm:col-span-3"
+          labelClassName={LABEL}
+          inputClassName={INPUT}
+        />
+        <Input
+          label="Longitude"
+          name="location-longitude"
+          value={form.longitude}
+          onChange={setField("longitude")}
+          placeholder="e.g. -122.663238"
+          error={errors.longitude}
+          variant="dark"
+          className="min-w-0 sm:col-span-3"
+          labelClassName={LABEL}
+          inputClassName={INPUT}
+        />
+        <p className="col-span-full text-sm text-white/70">
+          Optional. The pin is placed from the address unless you set these.
+        </p>
       </div>
 
       <div className="flex justify-end gap-[10px] flex-wrap">

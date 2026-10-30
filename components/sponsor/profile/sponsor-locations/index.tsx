@@ -37,13 +37,26 @@ const toInput = (f: LocationFields) => ({
   zipCode: f.zip || null,
 });
 
-// A new location: only the parts that were filled in.
-const newLocationInput = (f: LocationFields): SponsorLocationInput =>
-  Object.fromEntries(Object.entries(toInput(f)).filter(([, value]) => value !== null));
+// The pin typed in the form, or null when it's left empty (the form checks both or neither).
+const formPoint = (f: LocationFields) =>
+  f.latitude && f.longitude ? { latitude: Number(f.latitude), longitude: Number(f.longitude) } : null;
 
-// An edited location: only the parts that changed. A changed address is placed on the map again.
-const changedLocationInput = (location: SponsorLocation, f: LocationFields): SponsorLocationInput =>
-  Object.fromEntries(Object.entries(toInput(f)).filter(([key, value]) => value !== location[key as keyof SponsorLocation]));
+// A new location: only the parts that were filled in.
+const newLocationInput = (f: LocationFields): SponsorLocationInput => ({
+  ...Object.fromEntries(Object.entries(toInput(f)).filter(([, value]) => value !== null)),
+  ...formPoint(f),
+});
+
+// An edited location: only the parts that changed. A changed pin is sent whole (the API takes latitude and
+// longitude together) and wins; otherwise a changed address is placed on the map again.
+const changedLocationInput = (location: SponsorLocation, f: LocationFields): SponsorLocationInput => {
+  const saved = locationFields(location);
+  const moved = f.latitude !== saved.latitude || f.longitude !== saved.longitude;
+  return {
+    ...Object.fromEntries(Object.entries(toInput(f)).filter(([key, value]) => value !== location[key as keyof SponsorLocation])),
+    ...(moved ? formPoint(f) : null),
+  };
+};
 
 interface SponsorLocationsProps {
   locations: SponsorLocation[];
