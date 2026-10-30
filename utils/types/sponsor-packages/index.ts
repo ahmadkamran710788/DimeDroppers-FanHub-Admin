@@ -31,15 +31,14 @@ export interface SponsorSearchFilters {
   radiusDefaultMiles: number;
   sports: FilterOption[];
   inApp: FilterOption[];
-  venue: FilterOption[];
   // BOYS / GIRLS / COED.
   genders: FilterOption[];
   organizationTypes: FilterOption[];
   sorts: FilterOption[];
   // FALL_WINTER / FALL / FULL_YEAR, labelled with their years; seasons already over are left out.
   seasons: FilterOption[];
-  // The 47 physical asset categories, once the API sends them (until then the built-in list is used).
-  physicalAssetCategories?: FilterOption[];
+  // The 47 physical asset categories, the same as the organisation's Activations page.
+  physicalAssetCategories: FilterOption[];
 }
 
 export interface SponsorOrganization {
