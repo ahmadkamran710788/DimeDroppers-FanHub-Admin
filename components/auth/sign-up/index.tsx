@@ -173,12 +173,20 @@ export default function SignUp() {
         label={isSubmitting ? "Creating account…" : "Create account"}
       />
 
-      <p className="text-center text-sm text-white/70">
-        Already have an account?{" "}
-        <Link href={routes.ui.signIn} className="font-medium text-steel-blue hover:underline">
-          Sign in
-        </Link>
-      </p>
+      <div className="flex flex-col gap-2">
+        <p className="text-center text-sm text-white/70">
+          Already have an account?{" "}
+          <Link href={routes.ui.signIn} className="font-medium text-steel-blue hover:underline">
+            Sign in
+          </Link>
+        </p>
+        <p className="text-center text-sm text-white/70">
+          Are you a sponsor?{" "}
+          <Link href={routes.ui.sponsorSignUp} className="font-medium text-steel-blue hover:underline">
+            Sign up as a sponsor
+          </Link>
+        </p>
+      </div>
     </form>
   );
 }
