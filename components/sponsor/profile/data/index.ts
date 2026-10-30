@@ -47,9 +47,23 @@ export interface LocationFields {
   // Two-letter code, e.g. "WI".
   state: string;
   zip: string;
+  // The pin, e.g. "45.669817" and "-122.663238"; both or neither.
+  latitude: string;
+  longitude: string;
 }
 
-export const EMPTY_LOCATION: LocationFields = { name: "", street: "", city: "", state: "", zip: "" };
+export const EMPTY_LOCATION: LocationFields = {
+  name: "",
+  street: "",
+  city: "",
+  state: "",
+  zip: "",
+  latitude: "",
+  longitude: "",
+};
+
+// A saved coordinate as the form shows it: 6 decimals (about 10 cm), so 45.66981699999999 reads 45.669817.
+export const coordinateText = (n: number | null) => (n === null ? "" : String(Number(n.toFixed(6))));
 
 export const locationFields = (l: SponsorLocation): LocationFields => ({
   name: l.name ?? "",
@@ -57,18 +71,19 @@ export const locationFields = (l: SponsorLocation): LocationFields => ({
   city: l.city ?? "",
   state: l.state ?? "",
   zip: l.zipCode ?? "",
+  latitude: coordinateText(l.latitude),
+  longitude: coordinateText(l.longitude),
 });
 
-// The locations API's field names → the form's, to put an error under the right field. A pin can't be
-// placed by hand here, so its errors go under the street.
+// The locations API's field names → the form's, to put an error under the right field.
 export const LOCATION_FIELDS: Record<string, keyof LocationFields> = {
   name: "name",
   address: "street",
   city: "city",
   state: "state",
   zipCode: "zip",
-  latitude: "street",
-  longitude: "street",
+  latitude: "latitude",
+  longitude: "longitude",
 };
 
 // "900 E 11th St, Austin, TX, 78702" from the parts that are set; "" for a location that is only a pin.

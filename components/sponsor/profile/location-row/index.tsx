@@ -18,6 +18,12 @@ interface LocationRowProps {
 export default function LocationRow({ location, onEdit, onRemove }: LocationRowProps) {
   const label = locationLabel(location);
   const address = formatAddress(location);
+  // The saved pin, not the store's Google listing (`sourceUrl`): the listing stays where Google has the store,
+  // while the pin is what the search measures from and moves when the sponsor edits it.
+  const mapUrl =
+    location.latitude !== null && location.longitude !== null
+      ? `https://www.google.com/maps?q=${location.latitude},${location.longitude}`
+      : null;
 
   return (
     <div className="flex gap-[14px] items-center flex-wrap bg-[#0b0b0b] border border-[#262626] rounded-[12px] p-4">
@@ -37,9 +43,9 @@ export default function LocationRow({ location, onEdit, onRemove }: LocationRowP
           )}
         </div>
         {address && address !== label && <div className="text-sm text-[#bdbdbd] mt-[3px] break-words">{address}</div>}
-        {location.sourceUrl && (
+        {mapUrl && (
           <a
-            href={location.sourceUrl}
+            href={mapUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 mt-1 text-sm text-[#c9b8ff] underline hover:text-white"
