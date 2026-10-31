@@ -179,6 +179,13 @@ export const routes = {
     exposureSchedules: "fanhub/org/exposure/schedules",
     // Tournament only: one team's record, points, streak, standings row and game-by-game results.
     exposureTeamStats: (teamId: string) => `fanhub/org/exposure/teams/${teamId}/stats`,
+    // Tournament event-team roles (coach, scorekeeper, videographer, player, parent). GET lists them
+    // (?fanHubTeamId=&status=&role=); POST invites { email, role, fanHubTeamId, staffTitle?, fanHubPlayerId? }.
+    teamRoles: "fanhub/org/team-roles",
+    // DELETE removes an ACTIVE member (turns it REVOKED).
+    teamRole: (memberId: string) => `fanhub/org/team-roles/${memberId}`,
+    acceptTeamRole: (memberId: string) => `fanhub/org/team-roles/${memberId}/accept`,
+    rejectTeamRole: (memberId: string) => `fanhub/org/team-roles/${memberId}/reject`,
     // Fundraising campaigns — a campaign belongs to one of the school's teams (teamId).
     // GET lists them (?status=&teamId=&search=&page=&limit=, plus per-status counts); POST creates one.
     campaigns: "fanhub/org/campaigns",
