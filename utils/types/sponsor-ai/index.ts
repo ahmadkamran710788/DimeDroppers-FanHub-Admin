@@ -194,13 +194,17 @@ export interface DraftBatchResult {
   skipped: { id: string; reason: DraftSkipReason }[];
 }
 
-// Sponsor Messages: /threads, FANHUB_SPONSOR_AI_FRONTEND_SPONSOR_MESSAGES.md. A conversation is listed
-// once its first email has gone out.
+// Sponsor Messages: /threads, FANHUB_SPONSOR_AI_FRONTEND_SPONSOR_MESSAGES.md and
+// FANHUB_SPONSOR_AI_FRONTEND_CHANGES_31_OCT.md. A conversation is listed once its first email has gone out.
 
 export type ConversationStatus = "ACTIVE" | "REPLIED" | "STOPPED";
 export type ConversationStatusFilter = ConversationStatus | "ALL";
-export type StopReason = "ORGANISATION" | "UNSUBSCRIBED" | "BOUNCED" | "COMPLAINT" | "SUPPRESSED";
-export type MessageSender = "ORGANISATION" | "SPONSOR";
+// DECLINED: the sponsor said no; the conversation can still be answered.
+export type StopReason = "ORGANISATION" | "UNSUBSCRIBED" | "BOUNCED" | "COMPLAINT" | "SUPPRESSED" | "DECLINED";
+// AGENT: the agent answers the sponsor's replies on its own. ORGANISATION: the organisation does.
+export type ThreadHandler = "AGENT" | "ORGANISATION";
+// AGENT: follow-ups and the agent's answers. ORGANISATION: the first email and replies written in the panel.
+export type MessageSender = "AGENT" | "ORGANISATION" | "SPONSOR";
 export type MessageStatus = "QUEUED" | "SENT" | "DELIVERED" | "OPENED" | "CLICKED" | "BOUNCED" | "FAILED" | "RECEIVED";
 
 export interface ThreadSummary {
@@ -208,6 +212,9 @@ export interface ThreadSummary {
   status: ConversationStatus;
   // Set when STOPPED.
   stopReason: StopReason | null;
+  handler: ThreadHandler;
+  // When the conversation moved to the organisation (take over, a reply from the panel, or the agent).
+  handedOverAt: string | null;
   subject: string;
   // Tournaments only.
   event: { id: string; name: string | null } | null;
@@ -275,4 +282,9 @@ export interface ThreadList {
   // Every conversation of the organisation (or event), whatever status or search was asked for.
   counts: Record<ConversationStatusFilter, number>;
   pagination: SponsorAiPagination;
+}
+
+// A reply from the panel: 1–5,000 characters, sent exactly as written (the user types their own sign-off).
+export interface ThreadReplyBody {
+  body: string;
 }

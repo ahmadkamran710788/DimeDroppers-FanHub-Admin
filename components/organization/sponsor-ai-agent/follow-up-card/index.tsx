@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, Mail, Paperclip, Pencil, X } from "lucide-react";
+import { ArrowRight, Check, FileText, Mail, Paperclip, Pencil, X } from "lucide-react";
 import Button from "@/components/common/button";
 import ConfirmModal from "@/components/common/confirm-modal";
 import Input from "@/components/common/input";
@@ -11,6 +11,7 @@ import Textarea from "@/components/common/textarea";
 import PackageCard from "@/components/sponsor/find-organizations/package-card";
 import { STATUS_STYLE, THREAD_STYLE, toSponsorPackage } from "@/components/organization/sponsor-ai-agent/data";
 import { draftEditSchema } from "@/components/organization/sponsor-ai-agent/schema";
+import { usePackagePdf } from "@/components/organization/sponsor-ai-agent/use-package-pdf";
 import { routes } from "@/utils/routes";
 import { cn } from "@/utils/cn";
 import { validateAndSetErrors } from "@/utils/validation";
@@ -44,6 +45,7 @@ export default function FollowUpCard({ draft, onEdit, onReject, onApprove }: Fol
   const [saving, setSaving] = useState(false);
   const [confirmReject, setConfirmReject] = useState(false);
   const [confirmApprove, setConfirmApprove] = useState(false);
+  const pdf = usePackagePdf();
 
   const to = contact
     ? `To: ${[contact.name, contact.title].filter(Boolean).join(", ") || "Unknown contact"}${contact.email ? ` · ${contact.email}` : ""}`
@@ -192,10 +194,22 @@ export default function FollowUpCard({ draft, onEdit, onReject, onApprove }: Fol
 
       {draft.packages.length > 0 && (
         <div className="flex flex-col gap-3">
-          <span className="flex items-center gap-2 text-xs font-bold tracking-[1.2px] text-white/60">
-            <Paperclip className="size-3.5" aria-hidden="true" />
-            SPONSORSHIP PACKAGES IN THIS MESSAGE
-          </span>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="flex items-center gap-2 text-xs font-bold tracking-[1.2px] text-white/60">
+              <Paperclip className="size-3.5" aria-hidden="true" />
+              SPONSORSHIP PACKAGES IN THIS MESSAGE
+            </span>
+            {/* The one-page PDF the first email carries: all three packages, the recommended one highlighted. */}
+            <Button
+              size="sm"
+              variant="outline"
+              label={pdf.openingId === draft.id ? "Opening…" : "View package PDF"}
+              icon={<FileText className="size-4" />}
+              onClick={() => pdf.open(draft.id)}
+              disabled={pdf.openingId === draft.id}
+              className="h-9 px-4 text-sm"
+            />
+          </div>
           {draft.recommendation && <p className="text-xs text-white/60">{draft.recommendation.reason}</p>}
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {draft.packages.map((p) => (
@@ -216,7 +230,7 @@ export default function FollowUpCard({ draft, onEdit, onReject, onApprove }: Fol
         >
           <span className="flex-1 min-w-[220px]">
             {draft.threadStatus === "STOPPED"
-              ? "Stopped. No more emails go to this contact: you stopped it, they unsubscribed, the address bounced or it was reported as spam."
+              ? "Stopped: they said they’re not interested, you stopped it, they unsubscribed, the address bounced or it was reported as spam."
               : draft.threadStatus === "REPLIED"
                 ? "The sponsor replied. Read it in Sponsor Messages."
                 : "Sent. Its conversation, follow-ups and any reply are in Sponsor Messages."}

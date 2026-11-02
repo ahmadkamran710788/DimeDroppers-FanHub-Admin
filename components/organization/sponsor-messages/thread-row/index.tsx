@@ -3,9 +3,16 @@
 import StatusPill from "@/components/common/status-pill";
 import ContactAvatar from "@/components/organization/messages/contact-avatar";
 import { formatListTime } from "@/components/organization/messages/helpers";
-import { conversationStyle, formatDay } from "@/components/organization/sponsor-messages/data";
+import { conversationStyle, formatDay, needsReply } from "@/components/organization/sponsor-messages/data";
 import { cn } from "@/utils/cn";
-import type { ThreadSummary } from "@/utils/types/sponsor-ai";
+import type { MessageSender, ThreadSummary } from "@/utils/types/sponsor-ai";
+
+// Who wrote last, before the preview.
+const PREVIEW_PREFIX: Record<MessageSender, string> = {
+  ORGANISATION: "You",
+  AGENT: "Agent",
+  SPONSOR: "They replied",
+};
 
 interface ThreadRowProps {
   thread: ThreadSummary;
@@ -13,12 +20,12 @@ interface ThreadRowProps {
   onSelect: () => void;
 }
 
-// One conversation in the list: the business and contact, who wrote last, its status, replies and the
-// next follow-up.
+// One conversation in the list: the business and contact, who wrote last, its status, replies, whether
+// it's waiting on the organisation's answer, and the next follow-up.
 export default function ThreadRow({ thread, selected, onSelect }: ThreadRowProps) {
   const { business, contact, lastMessage } = thread;
   const style = conversationStyle(thread.status);
-  const preview = lastMessage ? `${lastMessage.sender === "SPONSOR" ? "They replied" : "You"}: ${lastMessage.preview}` : null;
+  const preview = lastMessage ? `${PREVIEW_PREFIX[lastMessage.sender]}: ${lastMessage.preview}` : null;
 
   return (
     // A clickable row (avatar, lines of text, badges), not an action button.
@@ -48,6 +55,14 @@ export default function ThreadRow({ thread, selected, onSelect }: ThreadRowProps
             className="h-auto px-2 py-0.5"
             textClassName={cn("text-[11px] font-semibold", style.text)}
           />
+          {needsReply(thread) && (
+            <StatusPill
+              label="Needs your reply"
+              color="bg-[#3d2a12]"
+              className="h-auto px-2 py-0.5"
+              textClassName="text-[11px] font-semibold text-[#ffc999]"
+            />
+          )}
           {thread.replyCount > 0 && (
             <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-white/80">
               {`${thread.replyCount} ${thread.replyCount === 1 ? "reply" : "replies"}`}
