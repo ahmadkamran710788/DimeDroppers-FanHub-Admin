@@ -130,7 +130,7 @@ export default function SponsorMessagesPage({ threadId }: SponsorMessagesPagePro
               key={activeId}
               id={activeId}
               summary={items.find((t) => t.id === activeId) ?? null}
-              onStopped={refresh}
+              onChanged={refresh}
             />
           )}
         </div>

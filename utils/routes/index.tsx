@@ -280,6 +280,8 @@ export const routes = {
     sponsorAiDrafts: "fanhub/org/sponsor-ai/drafts",
     // GET one draft, PATCH its subject / body.
     sponsorAiDraft: (id: string) => `fanhub/org/sponsor-ai/drafts/${id}`,
+    // GET the package PDF the first email carries (application/pdf, not JSON); a conversation's id works too.
+    sponsorAiPackagePdf: (id: string) => `fanhub/org/sponsor-ai/drafts/${id}/packages-pdf`,
     // POST { ids }: rejects them for good (the business is never drafted again).
     sponsorAiRejectDrafts: "fanhub/org/sponsor-ai/drafts/reject",
     // POST { ids }: queues the emails to the businesses (real emails, about 20 a minute).
@@ -290,6 +292,12 @@ export const routes = {
     sponsorAiThread: (id: string) => `fanhub/org/sponsor-ai/threads/${id}`,
     // POST: stops a conversation; follow-ups not sent yet are cancelled.
     sponsorAiStopThread: (id: string) => `fanhub/org/sponsor-ai/threads/${id}/stop`,
+    // POST: the organisation answers the replies from now on; the agent's unsent answers are cancelled.
+    sponsorAiTakeOverThread: (id: string) => `fanhub/org/sponsor-ai/threads/${id}/take-over`,
+    // POST { body }: emails a reply in the same conversation (and takes over from the agent).
+    sponsorAiReplyThread: (id: string) => `fanhub/org/sponsor-ai/threads/${id}/reply`,
+    // POST: the agent answers the replies again, including one still unanswered.
+    sponsorAiHandBackThread: (id: string) => `fanhub/org/sponsor-ai/threads/${id}/hand-back`,
     // Sponsor app (sponsor token): find organisations, their packages, and activate one
     // (FANHUB_SPONSOR_PACKAGES_FRONTEND.md, FANHUB_SPONSOR_APP_INTEGRATION.md).
     sponsorFilters: "fanhub/sponsor-packages/filters",
