@@ -14,12 +14,11 @@ export interface OrgSearch {
   type: string;
   // The brand's stores to search near: ALL, or the picked store ids; [] for anywhere (no distance filter).
   stores: MultiSelectValue;
-  // Miles from each store, as the Radius select's value; "" for the API's default.
+  // Miles from each store, as typed in the Radius field (whole miles); "" for the API's default.
   radius: string;
   sports: string[];
   // BOYS / GIRLS / COED: any of them (OR), together with every other filter (AND).
   genders: string[];
-  inApp: string[];
   // Physical asset category codes ("SPONSOR_TENT"…): organizations offering any of them.
   assetCategories: string[];
   // As typed ("$60,000"); "" for any. Sent as budgetCents.
@@ -35,7 +34,6 @@ export const DEFAULT_SEARCH: OrgSearch = {
   radius: "",
   sports: [],
   genders: [],
-  inApp: [],
   assetCategories: [],
   budget: "",
   season: "",
@@ -46,6 +44,9 @@ export const DEFAULT_SORT: SponsorSearchSort = "UPCOMING_GAMES";
 
 // The API takes up to this many store ids, or ALL.
 export const MAX_PICKED_STORES = 50;
+
+// The API's largest radiusMiles (GET /filters doesn't send it).
+export const MAX_RADIUS_MILES = 250;
 
 // The search is near some of the brand's stores (else anywhere).
 export const searchesNearStores = (search: OrgSearch) => search.stores === ALL || search.stores.length > 0;

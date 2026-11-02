@@ -6,6 +6,8 @@ interface TabsProps<T extends string> {
   tabs: readonly T[];
   active: T;
   onChange: (tab: T) => void;
+  // Optional text shown for a tab instead of the tab itself, so two tabs can share a label (told apart by a badge).
+  labels?: Partial<Record<T, string>>;
   // Optional count shown beside each tab label.
   counts?: Partial<Record<T, number>>;
   // Optional pill beside a tab label (e.g. "NATIONAL").
@@ -14,7 +16,15 @@ interface TabsProps<T extends string> {
 }
 
 // Underlined tab bar with the gradient active indicator (same look as the Schedule tabs).
-export default function Tabs<T extends string>({ tabs, active, onChange, counts, badges, className }: TabsProps<T>) {
+export default function Tabs<T extends string>({
+  tabs,
+  active,
+  onChange,
+  labels,
+  counts,
+  badges,
+  className,
+}: TabsProps<T>) {
   return (
     <div role="tablist" className={cn("flex items-end gap-2 border-b border-white/20", className)}>
       {tabs.map((tab) => {
@@ -33,7 +43,7 @@ export default function Tabs<T extends string>({ tabs, active, onChange, counts,
               isActive ? "text-white" : "text-white/60 hover:text-white"
             )}
           >
-            {tab}
+            {labels?.[tab] ?? tab}
             {count !== undefined && (
               <span className="min-w-6 h-6 px-1.5 rounded-full bg-white/15 text-xs font-semibold flex items-center justify-center">
                 {count}

@@ -6,6 +6,8 @@ import { useState, type ReactNode } from "react";
 
 interface InputProps {
   label: string;
+  // Muted text beside the label (wrapping under it when there's no room), read out as the field's description.
+  labelHint?: ReactNode;
   name: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -30,10 +32,13 @@ interface InputProps {
   maxLength?: number;
   // Browser autofill hint, e.g. "email" or "new-password".
   autoComplete?: string;
+  // Which on-screen keyboard to show, e.g. "numeric" for a digits-only field.
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
 }
 
 export default function Input({
   label,
+  labelHint,
   name,
   value,
   onChange,
@@ -51,17 +56,29 @@ export default function Input({
   hint,
   maxLength,
   autoComplete,
+  inputMode,
 }: InputProps) {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === "password";
   const dark = variant === "dark";
+  const hintId = `${name}-label-hint`;
+  const labelEl = (
+    <label htmlFor={name} className={cn("text-base font-medium text-midnight-navy", labelClassName)}>
+      {label}
+      {required && <span className="text-error"> *</span>}
+    </label>
+  );
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <label htmlFor={name} className={cn("text-base font-medium text-midnight-navy", labelClassName)}>
-        {label}
-        {required && <span className="text-error"> *</span>}
-      </label>
+      {labelHint ? (
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          {labelEl}
+          <span id={hintId}>{labelHint}</span>
+        </div>
+      ) : (
+        labelEl
+      )}
       <div className="relative flex items-center">
         {icon && (
           <span
@@ -84,6 +101,8 @@ export default function Input({
           disabled={disabled}
           maxLength={maxLength}
           autoComplete={autoComplete}
+          inputMode={inputMode}
+          aria-describedby={labelHint ? hintId : undefined}
           className={cn(
             "w-full h-12 rounded-[8px] text-base font-medium px-4 py-3 border outline-none",
             "focus:border-steel-blue transition-colors disabled:opacity-50",
