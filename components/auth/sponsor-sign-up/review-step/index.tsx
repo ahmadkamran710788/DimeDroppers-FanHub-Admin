@@ -7,7 +7,6 @@ import Checkbox from "@/components/common/checkbox";
 import { CARD } from "@/components/sponsor/styles";
 import StepHeading from "@/components/auth/sponsor-sign-up/step-heading";
 import LegalModal from "@/components/auth/sponsor-sign-up/legal-modal";
-import type { PickedLogo } from "@/components/auth/sponsor-sign-up/logo-upload";
 import type { SponsorSignUpForm } from "@/components/auth/sponsor-sign-up/data";
 import type { LegalDocument, SponsorSignupOptions, SponsorTypeCode } from "@/utils/types/sponsor-profile";
 
@@ -21,7 +20,6 @@ interface ReviewStepProps {
   form: SponsorSignUpForm;
   options: SponsorSignupOptions;
   type: SponsorTypeCode;
-  logo: PickedLogo | null;
   terms: LegalDocument | null;
   privacy: LegalDocument | null;
   agree: boolean;
@@ -37,7 +35,6 @@ export default function ReviewStep({
   form,
   options,
   type,
-  logo,
   terms,
   privacy,
   agree,
@@ -66,25 +63,12 @@ export default function ReviewStep({
 
         <div className={ROW}>
           <div className={ROW_LABEL}>BRAND</div>
-          <div className="flex-[1_1_220px] min-w-0 flex gap-3 items-center">
-            <div
-              className={cn(
-                "size-12 shrink-0 rounded-[10px] flex items-center justify-center overflow-hidden",
-                logo ? "bg-[#1f1a33]" : "border-[1.5px] border-dashed border-[#555]"
-              )}
-            >
-              {logo && (
-                // eslint-disable-next-line @next/next/no-img-element -- local object URL preview
-                <img src={logo.url} alt="Your logo" className="max-w-full max-h-full object-contain p-1" />
-              )}
-            </div>
-            <div className="min-w-0 text-[15px] leading-[1.5] break-words">
-              {form.name}
-              <br />
-              <span className="text-[#bdbdbd]">
-                {categoryName} · {typeName}
-              </span>
-            </div>
+          <div className="flex-[1_1_220px] min-w-0 text-[15px] leading-[1.5] break-words">
+            {form.name}
+            <br />
+            <span className="text-[#bdbdbd]">
+              {categoryName} · {typeName}
+            </span>
           </div>
           <Button variant="text" size="sm" label="Edit" aria-label="Edit brand" onClick={() => onEdit(2)} className={EDIT} />
         </div>

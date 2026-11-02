@@ -43,7 +43,6 @@ function searchParams(search: OrgSearch, sort: SponsorSearchSort, page: number) 
     ...(search.type && { organizationType: search.type }),
     ...eventFiltersOf(search),
     ...(search.sports.length && { sports: search.sports.join(",") }),
-    ...(search.inApp.length && { inApp: search.inApp.join(",") }),
     ...(search.assetCategories.length && { assetCategories: search.assetCategories.join(",") }),
     ...(budgetCents && { budgetCents }),
     ...(search.season && { season: search.season }),
@@ -73,8 +72,8 @@ interface Results {
   radiusMiles: number | null;
 }
 
-// Sponsor search: organizations near the brand's stores that play the picked sports and sell the picked
-// inventory (GET /fanhub/sponsor-packages/organizations), and a panel with the selected one's packages.
+// Sponsor search: organizations by name or type, or near the brand's stores, that play the picked sports
+// (GET /fanhub/sponsor-packages/organizations), and a panel with the selected one's packages.
 export default function FindOrganizations() {
   const [filters, setFilters] = useState<SponsorSearchFilters | null>(null);
   const [filtersLoaded, setFiltersLoaded] = useState(false);
@@ -211,11 +210,11 @@ export default function FindOrganizations() {
     <div className="flex flex-col gap-10">
       <div className="flex flex-col">
         <h2 className="font-display font-extrabold text-[32px] sm:text-[40px] lg:text-[56px] lg:leading-[68px] uppercase leading-none">
-          FIND ORGANIZATIONS
+          FIND SPONSORSHIPS
         </h2>
         <p className="text-base leading-[26px] text-[#e5e5e5]">
-          Choose which of your locations to search near, then browse the organizations around them and the
-          sponsorship packages they have open.
+          Search for an organization by name or type, or find the ones near your brand locations, then narrow by
+          budget, season, sport and gender to see the sponsorship packages they have open.
         </p>
       </div>
 
@@ -296,6 +295,7 @@ export default function FindOrganizations() {
             key={selected.id}
             org={selected}
             eventFilters={eventFiltersOf(shown)}
+            budgetCents={budgetCentsOf(shown)}
             radiusMiles={results?.radiusMiles ?? null}
             onActivated={() => setRefreshes((n) => n + 1)}
           />

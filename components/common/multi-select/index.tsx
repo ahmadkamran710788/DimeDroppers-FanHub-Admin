@@ -2,7 +2,7 @@
 
 import { cn } from "@/utils/cn";
 import { ChevronDown } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import Checkbox from "@/components/common/checkbox";
 import FloatingPanel, { MENU_ITEM } from "@/components/common/floating-panel";
 
@@ -19,6 +19,8 @@ export interface MultiSelectOption {
 
 interface MultiSelectProps {
   label: string;
+  // Muted text beside the label (wrapping under it when there's no room), read out as the field's description.
+  labelHint?: ReactNode;
   name: string;
   value: MultiSelectValue;
   onChange: (value: MultiSelectValue) => void;
@@ -50,6 +52,7 @@ const FILTER_FROM = 8;
 // a new pick from it.
 export default function MultiSelect({
   label,
+  labelHint,
   name,
   value,
   onChange,
@@ -77,6 +80,12 @@ export default function MultiSelect({
   const filterRef = useRef<HTMLInputElement>(null);
   const listId = useId();
   const rowId = (index: number) => `${listId}-${index}`;
+  const hintId = `${name}-label-hint`;
+  const labelEl = (
+    <label htmlFor={name} className={cn("text-base font-medium text-midnight-navy", labelClassName)}>
+      {label}
+    </label>
+  );
 
   const all = value === ALL;
   const picked = new Set(all ? [] : value);
@@ -213,9 +222,14 @@ export default function MultiSelect({
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <label htmlFor={name} className={cn("text-base font-medium text-midnight-navy", labelClassName)}>
-        {label}
-      </label>
+      {labelHint ? (
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          {labelEl}
+          <span id={hintId}>{labelHint}</span>
+        </div>
+      ) : (
+        labelEl
+      )}
       <div className="relative flex items-center">
         <button
           ref={triggerRef}
@@ -227,6 +241,7 @@ export default function MultiSelect({
           aria-controls={open ? listId : undefined}
           aria-activedescendant={open && rowCount > 0 ? rowId(active) : undefined}
           aria-invalid={error ? true : undefined}
+          aria-describedby={labelHint ? hintId : undefined}
           disabled={disabled}
           onClick={() => (open ? close() : openList())}
           onKeyDown={onKeyDown}

@@ -38,7 +38,6 @@ const FIELD_STEPS: Record<string, { field: string; step: number }> = {
   sponsorType: { field: "sponsorType", step: 2 },
   sponsorName: { field: "name", step: 2 },
   category: { field: "category", step: 2 },
-  logo: { field: "logo", step: 2 },
   acceptTerms: { field: "acceptTerms", step: 3 },
 };
 
@@ -49,10 +48,9 @@ export interface SignUpProblem {
 
 // Errors only come back on Finish, so a failed sign-up goes back to the step that holds the failing field,
 // with the message under it; null when it belongs to no field (429, 500…) and is shown as a toast.
-// A taken email (409) and the logo checks come without a `path`.
+// A taken email (409) comes without a `path`.
 export function placeSignUpError(status: number, message: string, errors: FieldError[]): SignUpProblem | null {
   if (status === 409) return { step: 1, errors: { email: message } };
-  if (/^logo\b/i.test(message)) return { step: 2, errors: { logo: message } };
   const placed = errors.flatMap((e) => (FIELD_STEPS[e.path] ? [{ ...FIELD_STEPS[e.path], message: e.message }] : []));
   if (!placed.length) return null;
   const step = Math.min(...placed.map((p) => p.step));

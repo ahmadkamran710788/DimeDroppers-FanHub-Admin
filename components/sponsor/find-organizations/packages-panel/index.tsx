@@ -74,6 +74,9 @@ interface PackagesPanelProps {
   org: SponsorOrganizationListItem;
   // The search's stores, radius and genders: a tournament lists only the events its card counted.
   eventFilters?: EventFilters;
+  // The search's sponsor budget in cents: only the packages within it are listed (physical assets aren't
+  // counted against it); undefined for any price.
+  budgetCents?: number;
   // The radius the search used, sent with the stores an activation is for; null without stores.
   radiusMiles: number | null;
   // After an activation, so the results can refresh their counts.
@@ -84,7 +87,7 @@ interface PackagesPanelProps {
 // events (games). A tournament picks an event first. Each one is activated on its own or added to the
 // cart to activate with others, for the brand's stores near it (ticked in the confirm). Activating is
 // final: no payment yet.
-export default function PackagesPanel({ org, eventFilters, radiusMiles, onActivated }: PackagesPanelProps) {
+export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMiles, onActivated }: PackagesPanelProps) {
   const isTournament = org.organizationType === "TOURNAMENT";
   const cart = useSponsorCart();
   const eventQuery = toQuery({ ...eventFilters });
@@ -117,20 +120,24 @@ export default function PackagesPanel({ org, eventFilters, radiusMiles, onActiva
   }, [isTournament, org.id, eventQuery]);
 
   const eventsForOrg = events?.orgId === org.id ? events : null;
-  const packagesKey = isTournament ? (eventId ? `${org.id}|${eventId}|${reloads}` : "") : `${org.id}|${reloads}`;
+  const packagesKey = isTournament
+    ? eventId
+      ? `${org.id}|${eventId}|${budgetCents}|${reloads}`
+      : ""
+    : `${org.id}|${budgetCents}|${reloads}`;
 
   useEffect(() => {
     if (!packagesKey) return;
     let cancelled = false;
     sponsorRequest<SponsorPackages>("GET", routes.api.sponsorOrgPackages(org.id), {
-      params: isTournament ? { eventId } : undefined,
+      params: { eventId: isTournament ? eventId : undefined, budgetCents },
     }).then((r) => {
       if (!cancelled) setLoaded({ key: packagesKey, view: r.view, error: r.view ? undefined : r.message });
     });
     return () => {
       cancelled = true;
     };
-  }, [packagesKey, org.id, isTournament, eventId]);
+  }, [packagesKey, org.id, isTournament, eventId, budgetCents]);
 
   const packages = loaded?.key === packagesKey ? loaded : null;
   const view = packages?.view;
@@ -333,7 +340,9 @@ export default function PackagesPanel({ org, eventFilters, radiusMiles, onActiva
           <p className="text-[13px] text-[#a8a8a8]">{priceBasisText(view.priceBasis)}</p>
           <GamesBreakdown priceBasis={view.priceBasis} />
           {view.packages.length === 0 ? (
-            <p className="text-sm text-[#a8a8a8]">Packages are not available yet.</p>
+            <p className="text-sm text-[#a8a8a8]">
+              {budgetCents ? "No packages within your sponsor budget." : "Packages are not available yet."}
+            </p>
           ) : (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(min(250px,100%),1fr))] gap-3">
               {view.packages.map((p) => (
