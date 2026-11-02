@@ -5,7 +5,6 @@ import Select from "@/components/common/select";
 import { SECTION_LABEL } from "@/components/sponsor/styles";
 import StepHeading from "@/components/auth/sponsor-sign-up/step-heading";
 import SponsorTypePicker from "@/components/auth/sponsor-sign-up/sponsor-type-picker";
-import LogoUpload, { type PickedLogo } from "@/components/auth/sponsor-sign-up/logo-upload";
 import type { SponsorSignUpForm } from "@/components/auth/sponsor-sign-up/data";
 import { INPUT, SELECT } from "@/components/auth/sponsor-sign-up/styles";
 import type { SponsorSignupOptions, SponsorTypeCode } from "@/utils/types/sponsor-profile";
@@ -19,23 +18,10 @@ interface BrandStepProps {
   options: SponsorSignupOptions;
   type: SponsorTypeCode;
   onType: (type: SponsorTypeCode) => void;
-  logo: PickedLogo | null;
-  onPickLogo: (file: File) => void;
-  onRemoveLogo: () => void;
 }
 
 // Step 2: the brand organizations see when this sponsor sponsors them.
-export default function BrandStep({
-  form,
-  errors,
-  onField,
-  options,
-  type,
-  onType,
-  logo,
-  onPickLogo,
-  onRemoveLogo,
-}: BrandStepProps) {
+export default function BrandStep({ form, errors, onField, options, type, onType }: BrandStepProps) {
   return (
     <section aria-label="About your brand" className="flex flex-col gap-[22px]">
       <StepHeading
@@ -68,14 +54,6 @@ export default function BrandStep({
         variant="dark"
         labelClassName={SECTION_LABEL}
         selectClassName={SELECT}
-      />
-
-      <LogoUpload
-        logo={logo}
-        rules={options.logo}
-        error={errors.logo}
-        onPick={onPickLogo}
-        onRemove={onRemoveLogo}
       />
     </section>
   );

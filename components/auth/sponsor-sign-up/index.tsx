@@ -9,7 +9,6 @@ import { toE164Phone } from "@/utils/helper";
 import { setSponsorAccount } from "@/utils/auth/session";
 import { validateAndSetErrors } from "@/utils/validation";
 import Button from "@/components/common/button";
-import { checkLogo } from "@/components/sponsor/data";
 import { OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
 import { sponsorAccountSchema, sponsorBrandSchema } from "@/components/auth/schema";
 import BrandPanel from "@/components/auth/sponsor-sign-up/brand-panel";
@@ -18,7 +17,6 @@ import AccountStep from "@/components/auth/sponsor-sign-up/account-step";
 import BrandStep from "@/components/auth/sponsor-sign-up/brand-step";
 import ReviewStep from "@/components/auth/sponsor-sign-up/review-step";
 import DoneStep from "@/components/auth/sponsor-sign-up/done-step";
-import type { PickedLogo } from "@/components/auth/sponsor-sign-up/logo-upload";
 import type { SignUpSetup } from "@/components/auth/sponsor-sign-up/load-sign-up-setup";
 import {
   DONE_STEP,
@@ -43,19 +41,11 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
   const [form, setForm] = useState<SponsorSignUpForm>(INITIAL_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [type, setType] = useState<SponsorTypeCode>("LOCAL_BUSINESS");
-  const [logo, setLogo] = useState<PickedLogo | null>(null);
   const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   // The step whose heading last had focus, so the first render doesn't steal it.
   const shownStep = useRef(step);
-
-  // A replaced or removed logo (and the last one on leaving the page) frees its preview URL.
-  useEffect(() => {
-    return () => {
-      if (logo) URL.revokeObjectURL(logo.url);
-    };
-  }, [logo]);
 
   // Each new step starts at its heading.
   useEffect(() => {
@@ -85,18 +75,6 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
     setStep(next);
   };
 
-  // Checked as soon as it's picked, so a wrong file never reaches Finish.
-  async function pickLogo(file: File) {
-    if (!setup) return;
-    const problem = await checkLogo(file, setup.options.logo);
-    if (problem) {
-      setErrors((prev) => ({ ...prev, logo: problem }));
-      return;
-    }
-    clearError("logo");
-    setLogo({ file, url: URL.createObjectURL(file) });
-  }
-
   // Our /api/auth/sponsor-signup route forwards the form and keeps the tokens in httpOnly cookies. A refusal
   // goes back to the step with the failing field, its message under it.
   async function createAccount() {
@@ -109,7 +87,6 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
     body.append("sponsorName", form.name.trim());
     body.append("category", form.category);
     body.append("acceptTerms", String(agree));
-    if (logo) body.append("logo", logo.file);
 
     setSubmitting(true);
     try {
@@ -190,9 +167,6 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
                   options={setup.options}
                   type={type}
                   onType={setType}
-                  logo={logo}
-                  onPickLogo={pickLogo}
-                  onRemoveLogo={() => setLogo(null)}
                 />
               )}
               {step === 3 && (
@@ -200,7 +174,6 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
                   form={form}
                   options={setup.options}
                   type={type}
-                  logo={logo}
                   terms={setup.terms}
                   privacy={setup.privacy}
                   agree={agree}
