@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import RecognitionCard, { type RecognitionCardData } from "@/components/organization/recognition/recognition-card";
 
 interface RecognitionPreviewProps {
@@ -5,6 +6,8 @@ interface RecognitionPreviewProps {
   title?: string;
   description?: string;
   showTimestamp?: boolean;
+  // Another card to preview instead of a shout-out (e.g. a donor recognition).
+  card?: ReactNode;
 }
 
 // Boxed preview of a recognition card (Live Preview / Template Preview).
@@ -13,6 +16,7 @@ export default function RecognitionPreview({
   title = "Live Preview",
   description,
   showTimestamp,
+  card,
 }: RecognitionPreviewProps) {
   return (
     <aside className="rounded-[10px] border border-white/10 bg-white/[0.04] p-4 lg:p-6 flex flex-col gap-4">
@@ -20,11 +24,12 @@ export default function RecognitionPreview({
         <h3 className="text-lg font-semibold">{title}</h3>
         {description && <p className="text-sm text-white/75">{description}</p>}
       </div>
-      {recognition ? (
-        <RecognitionCard data={recognition} showTimestamp={showTimestamp} />
-      ) : (
-        <p className="py-10 text-center text-sm text-white/50">Select a recognition to preview it.</p>
-      )}
+      {card ??
+        (recognition ? (
+          <RecognitionCard data={recognition} showTimestamp={showTimestamp} />
+        ) : (
+          <p className="py-10 text-center text-sm text-white/50">Select a recognition to preview it.</p>
+        ))}
     </aside>
   );
 }

@@ -7,79 +7,85 @@ import { ArrowLeft, ArrowRight, Send } from "lucide-react";
 import toast from "react-hot-toast";
 import StepIndicator from "@/components/common/step-indicator";
 import WizardFooter from "@/components/common/wizard-footer";
-import ChooseStep from "@/components/organization/recognition/add-recognition/choose-step";
+import type { MediaGame } from "@/components/organization/media/data";
 import CustomizeStep, { type CustomizeForm } from "@/components/organization/recognition/add-recognition/customize-step";
-import { DEFAULT_MESSAGE, SAMPLE_GAMES, SAMPLE_RECIPIENTS } from "@/components/organization/recognition/add-recognition/data";
 import { customizeRecognitionSchema } from "@/components/organization/recognition/add-recognition/schema";
-import type { RecognitionCardData } from "@/components/organization/recognition/recognition-card";
+import TemplateStep, { type TemplateKind } from "@/components/organization/recognition/add-recognition/template-step";
+import { useGamePeople } from "@/components/organization/recognition/add-recognition/use-game-people";
+import WhoStep, { type Audience } from "@/components/organization/recognition/add-recognition/who-step";
+import DonorCard, { SAMPLE_DONOR, type DonorTemplate } from "@/components/organization/recognition/donor-card";
+import PlayerCard, { SAMPLE_PLAYER, type PlayerTemplate } from "@/components/organization/recognition/player-card";
 import RecognitionPreview from "@/components/organization/recognition/recognition-preview";
-import type { RecognitionCategory, RecognitionTemplate } from "@/components/organization/recognition/recognitions-data";
-import { CATEGORIES } from "@/components/organization/recognition/templates";
+import type { RecognitionTemplate } from "@/components/organization/recognition/recognitions-data";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
 
-type Step = "choose" | "customize";
+const STEPS = ["who", "template", "details"] as const;
+type Step = (typeof STEPS)[number];
 
-const initialForm = (category: RecognitionCategory): CustomizeForm => ({
-  gameId: SAMPLE_GAMES[0].id,
-  recipientId: SAMPLE_RECIPIENTS[category][0].id,
-  message: DEFAULT_MESSAGE[category],
-  recognizedBy: "Coach Mike",
-  role: "Head Coach",
-  showTimestamp: true,
-  pinToTop: false,
-  allowComments: true,
-});
+const INITIAL_FORM: CustomizeForm = {
+  playerId: "",
+  message: "",
+  giverId: "",
+};
 
-// Add Recognition wizard: choose category + template, then customize, with a live preview.
+// Add Recognition wizard: pick who to recognize, then one of the six templates (donor and player),
+// then write the details with a live preview.
 export default function AddRecognitionPage() {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("choose");
-  const [category, setCategory] = useState<RecognitionCategory>("Player");
-  const [template, setTemplate] = useState<RecognitionTemplate>("Hustle");
-  const [form, setForm] = useState<CustomizeForm>(() => initialForm("Player"));
+  const [step, setStep] = useState<Step>("who");
+  const [audience, setAudience] = useState<Audience | "">("");
+  const [audienceError, setAudienceError] = useState("");
+  // The award badge, picked in Details.
+  const [badge, setBadge] = useState<RecognitionTemplate>("Hustle");
+  const [donorTemplate, setDonorTemplate] = useState<DonorTemplate>("Profile & Campaign");
+  const [playerTemplate, setPlayerTemplate] = useState<PlayerTemplate>("Profile & Game");
+  // Every template is offered whoever is recognized (for now); this is the group the picked one is from.
+  const [kind, setKind] = useState<TemplateKind>("donor");
+  const isDonor = kind === "donor";
+  // The Game step is out of the flow for now, so Details has no game (and no players or givers) yet.
+  const game = null as MediaGame | null;
+  const [form, setForm] = useState<CustomizeForm>(INITIAL_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const { players, givers, loading: peopleLoading } = useGamePeople(game);
+
+  // Recognized By starts on the first staff member / parent until the admin picks someone.
+  const giverIdOf = (id: string) => (givers.some((p) => p.id === id) ? id : (givers[0]?.id ?? ""));
+  const shown = { ...form, giverId: giverIdOf(form.giverId) };
+  const teamOf = (giverId: string) => givers.find((p) => p.id === giverId)?.teamKey;
+
   const update = <K extends keyof CustomizeForm>(key: K, value: CustomizeForm[K]) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((prev) => ({
+      ...prev,
+      [key]: value,
+      // A giver only shouts out their own team's players: another team's giver clears the player.
+      ...(key === "giverId" && teamOf(value as string) !== teamOf(giverIdOf(prev.giverId)) && { playerId: "" }),
+    }));
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: "" }));
   };
 
-  const pickCategory = (c: RecognitionCategory) => {
-    setCategory(c);
-    // Keep the template if the new category offers it, else fall back to its first one.
-    if (!CATEGORIES[c].templates.includes(template)) setTemplate(CATEGORIES[c].templates[0]);
-    // Recipients are per category; swap the starter message unless the admin already edited it.
-    setForm((prev) => ({
-      ...prev,
-      recipientId: SAMPLE_RECIPIENTS[c][0].id,
-      message: prev.message === DEFAULT_MESSAGE[category] ? DEFAULT_MESSAGE[c] : prev.message,
-    }));
-  };
+  const giver = givers.find((p) => p.id === shown.giverId);
+  // The players of the giver's team; none until a giver is chosen.
+  const teamPlayers = giver ? players.filter((p) => p.teamKey === giver.teamKey) : [];
 
-  const recipient = SAMPLE_RECIPIENTS[category].find((r) => r.id === form.recipientId);
-  const game = SAMPLE_GAMES.find((g) => g.id === form.gameId);
-  const preview: RecognitionCardData = {
-    template,
-    message: form.message || "Your recognition message will appear here.",
-    postedBy: form.recognizedBy || "Recognized by",
-    postedByRole: form.role || "Role",
-    recipient: recipient?.name ?? `Select a ${category.toLowerCase()}`,
-    number: recipient?.number,
-    date: game?.date ?? new Date().toISOString(),
-    event: game?.label ?? "Select a game or event",
-    opponent: game?.opponent,
-  };
-
+  const index = STEPS.indexOf(step);
   const steps = [
-    { title: "Category", subtitle: step === "customize" ? category : "Select category" },
-    { title: "Template", subtitle: step === "customize" ? template : "Choose template" },
-    { title: "Customize", subtitle: "Add details" },
+    { title: "Recognize", subtitle: index > 0 && audience ? audience : "Choose who" },
+    { title: "Template", subtitle: index > 1 ? (isDonor ? donorTemplate : playerTemplate) : "Choose template" },
+    { title: "Details", subtitle: "Write shout-out" },
   ];
 
-  const backToPosts = () => router.push(routes.ui.recognitionPosts);
+  const next = () => {
+    if (step === "who") {
+      if (!audience) return setAudienceError("Choose who you want to recognize");
+      return setStep("template");
+    }
+    setStep("details");
+  };
+
   const publish = async () => {
-    if (!(await validateAndSetErrors(customizeRecognitionSchema, form, setErrors))) return;
+    if (!(await validateAndSetErrors(customizeRecognitionSchema, shown, setErrors))) return;
     // No recognitions endpoint yet — wire the create call here once the backend exposes it.
     toast("Publishing recognitions is coming soon.");
   };
@@ -95,54 +101,77 @@ export default function AddRecognitionPage() {
             Back to Recognitions
           </Link>
           <h2 className="text-[28px] lg:text-[32px] font-bold leading-tight">Add Recognition</h2>
-          <p className="text-base text-white/85">Create a recognition post for players, coaches, parents, sponsors, donors or fans.</p>
+          <p className="text-base text-white/85">Give a shout-out to a player, coach or the whole team for one of your games.</p>
         </div>
       </div>
 
-      <StepIndicator steps={steps} current={step === "customize" ? 2 : 0} className="pb-6 border-b border-white/10" />
+      <StepIndicator steps={steps} current={index} className="pb-6 border-b border-white/10" />
 
-      {step === "choose" ? (
-        <ChooseStep category={category} template={template} onCategory={pickCategory} onTemplate={setTemplate} />
+      {step === "who" ? (
+        <WhoStep
+          audience={audience}
+          onAudience={(a) => {
+            setAudience(a);
+            setAudienceError("");
+          }}
+          error={audienceError}
+        />
+      ) : step === "template" ? (
+        <TemplateStep
+          kind={kind}
+          onKind={setKind}
+          donorTemplate={donorTemplate}
+          onDonorTemplate={setDonorTemplate}
+          playerTemplate={playerTemplate}
+          onPlayerTemplate={setPlayerTemplate}
+        />
       ) : (
-        // The live preview only appears once there are details to customize.
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_400px] gap-8 items-start">
           <CustomizeStep
-            category={category}
-            template={template}
-            onCategory={pickCategory}
-            onTemplate={setTemplate}
-            form={form}
+            badge={badge}
+            onBadge={setBadge}
+            players={teamPlayers}
+            giverChosen={!!giver}
+            givers={givers}
+            peopleLoading={peopleLoading}
+            form={shown}
             errors={errors}
             update={update}
           />
           <div className="xl:sticky xl:top-6">
             <RecognitionPreview
-              recognition={preview}
+              recognition={null}
+              card={
+                isDonor ? (
+                  <DonorCard template={donorTemplate} data={SAMPLE_DONOR} />
+                ) : (
+                  <PlayerCard template={playerTemplate} data={SAMPLE_PLAYER} />
+                )
+              }
               description="This is how it will appear on the fan app."
-              showTimestamp={form.showTimestamp}
             />
           </div>
         </div>
       )}
 
-      {step === "choose" ? (
+      {step === "details" ? (
         <WizardFooter
-          onBack={backToPosts}
-          backLabel="Cancel"
-          primaryLabel="Use This Template"
-          primaryIcon={<ArrowRight className="size-5" strokeWidth={2} />}
-          primaryIconPosition="end"
-          onPrimary={() => setStep("customize")}
-        />
-      ) : (
-        <WizardFooter
-          onBack={() => setStep("choose")}
+          onBack={() => setStep("template")}
           backLabel="Back"
           secondaryLabel="Save Draft"
           onSecondary={() => toast("Saving drafts is coming soon.")}
           primaryLabel="Publish Recognition"
           primaryIcon={<Send className="size-5" strokeWidth={2} />}
           onPrimary={publish}
+        />
+      ) : (
+        <WizardFooter
+          onBack={step === "who" ? () => router.push(routes.ui.recognitionPosts) : () => setStep("who")}
+          backLabel={step === "who" ? "Cancel" : "Back"}
+          primaryLabel={step === "template" ? "Use This Template" : "Continue"}
+          primaryIcon={<ArrowRight className="size-5" strokeWidth={2} />}
+          primaryIconPosition="end"
+          onPrimary={next}
         />
       )}
     </div>

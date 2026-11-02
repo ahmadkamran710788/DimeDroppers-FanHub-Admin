@@ -50,6 +50,8 @@ export interface MediaGame {
   // id is the scheduleEventId. Its thread, recap and insights load from the game-detail endpoints
   // instead of the fields below.
   fromApi?: boolean;
+  // A tournament game's two teams (fanHubTeamIds, home first), for their rosters.
+  teamIds?: string[];
   id: string;
   // ISO date-time.
   start: string;

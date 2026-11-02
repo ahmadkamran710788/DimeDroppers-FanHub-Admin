@@ -5,7 +5,7 @@ import { useSetup } from "@/context/setup";
 import Image from "next/image";
 import { orgKindOf, useAuth, type OrgKind } from "@/context/auth";
 import SidebarFrame, { type NavSection } from "@/components/layout/sidebar-frame";
-import { Bot, BotMessageSquare, ClipboardList, FileText, Gem, GitFork, LayoutDashboard, Layers, MapPin, MessagesSquare, ShoppingBag, Sparkles, Star, Trophy, Video } from "lucide-react";
+import { Bot, BotMessageSquare, ClipboardList, FileText, GitFork, LayoutDashboard, Layers, MapPin, MessagesSquare, ShoppingBag, Sparkles, Star, Trophy, Video } from "lucide-react";
 
 // Setup Wizard is not in the sidebar: first-time setup is a full-screen flow after
 // sign-in, and afterwards the organization is edited from Profile.
@@ -39,7 +39,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { icon: "/icons/icon-ticket.svg", label: "Buy Tickets", href: routes.ui.buyTickets },
       { icon: "/icons/icon-media.svg", label: "Media", href: routes.ui.media },
-      { icon: <Gem className="size-6" strokeWidth={1.5} />, label: "Digital Collectibles", href: routes.ui.digitalCollectibles },
+      // Digital Collectibles is hidden for now; its page still opens at routes.ui.digitalCollectibles.
       { icon: <ShoppingBag className="size-6" strokeWidth={1.5} />, label: "Team Shop", href: routes.ui.teamShop },
     ],
   },
