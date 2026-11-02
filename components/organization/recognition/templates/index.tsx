@@ -6,6 +6,7 @@ import {
   Handshake,
   Heart,
   HeartHandshake,
+  Medal,
   Megaphone,
   PartyPopper,
   Rocket,
@@ -96,6 +97,12 @@ export const TEMPLATES: Record<RecognitionTemplate, TemplateInfo> = {
     pill: "bg-[#155E63]",
     gradient: "linear-gradient(160deg,#0F766E,#115E59 60%,#134E4A)",
     description: "Recognize passing, assists and putting the team first.",
+  },
+  Character: {
+    icon: (c = ICON) => <Medal className={`${c} text-amber-300`} strokeWidth={2} />,
+    pill: "bg-[#14532D]",
+    gradient: "linear-gradient(160deg,#15803D,#166534 55%,#14532D)",
+    description: "Recognize kindness, humility and character on and off the court.",
   },
   "Game Changer": {
     icon: (c = ICON) => <Trophy className={`${c} text-amber-400`} strokeWidth={2} />,

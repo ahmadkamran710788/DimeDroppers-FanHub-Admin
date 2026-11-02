@@ -1,36 +1,33 @@
-import { Info, User } from "lucide-react";
-import Image from "next/image";
-import Input from "@/components/common/input";
+"use client";
+
+import { User, UserStar } from "lucide-react";
 import Select from "@/components/common/select";
 import Textarea from "@/components/common/textarea";
-import Toggle from "@/components/common/toggle";
-import Tooltip from "@/components/common/tooltip";
-import {
-  MESSAGE_MAX,
-  SAMPLE_GAMES,
-  SAMPLE_RECIPIENTS,
-  type RecognitionGame,
-} from "@/components/organization/recognition/add-recognition/data";
+import { MESSAGE_MAX, SHOUTOUT_TEMPLATES } from "@/components/organization/recognition/add-recognition/data";
 import SectionHeading from "@/components/organization/recognition/add-recognition/section-heading";
-import type { RecognitionCategory, RecognitionTemplate } from "@/components/organization/recognition/recognitions-data";
-import { CATEGORIES, TEMPLATES } from "@/components/organization/recognition/templates";
+import Selectable from "@/components/organization/recognition/add-recognition/selectable";
+import type { GamePerson } from "@/components/organization/recognition/add-recognition/use-game-people";
+import type { RecognitionTemplate } from "@/components/organization/recognition/recognitions-data";
+import { TEMPLATES } from "@/components/organization/recognition/templates";
+import { cn } from "@/utils/cn";
 
 export interface CustomizeForm {
-  gameId: string;
-  recipientId: string;
+  // The player shouted out; empty for a team-wide shout-out.
+  playerId: string;
   message: string;
-  recognizedBy: string;
-  role: string;
-  showTimestamp: boolean;
-  pinToTop: boolean;
-  allowComments: boolean;
+  // The staff member or parent giving the shout-out.
+  giverId: string;
 }
 
 interface CustomizeStepProps {
-  category: RecognitionCategory;
-  template: RecognitionTemplate;
-  onCategory: (c: RecognitionCategory) => void;
-  onTemplate: (t: RecognitionTemplate) => void;
+  // The award badge (label and icon on the card); the colours stay the template's.
+  badge: RecognitionTemplate;
+  onBadge: (t: RecognitionTemplate) => void;
+  players: GamePerson[];
+  givers: GamePerson[];
+  peopleLoading: boolean;
+  // Players only list once a giver is chosen (their own team's).
+  giverChosen: boolean;
   form: CustomizeForm;
   errors: Record<string, string>;
   update: <K extends keyof CustomizeForm>(key: K, value: CustomizeForm[K]) => void;
@@ -38,177 +35,101 @@ interface CustomizeStepProps {
 
 const LABEL = "text-white text-sm";
 const CARD = "rounded-[10px] border border-white/10 bg-white/[0.04] p-5 lg:p-6 flex flex-col gap-6";
+const HEADING = "font-display font-black text-xl uppercase text-white";
+const playerLabel = (p: GamePerson) => `${p.number !== undefined ? `#${p.number} ` : ""}${p.name} · ${p.team}`;
+const giverLabel = (p: GamePerson) => `${p.name} · ${p.role} · ${p.team}`;
+const loadingOr = (loading: boolean, empty: boolean, placeholder: string, none: string) =>
+  loading ? "Loading…" : empty ? none : placeholder;
 
-const gameLabel = (g: RecognitionGame) =>
-  g.date
-    ? `${g.label} · ${new Date(g.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} · ${new Date(g.date).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`
-    : g.label;
-
-const OPTIONS: { key: "showTimestamp" | "pinToTop" | "allowComments"; title: string; description: string; hint: string }[] = [
-  {
-    key: "showTimestamp",
-    title: "Show Timestamp",
-    description: "Show time since posted (e.g., 2h, 1d)",
-    hint: "Fans see how long ago this recognition was posted.",
-  },
-  {
-    key: "pinToTop",
-    title: "Pin to Top",
-    description: "Keep this post at the top of the category",
-    hint: "Pinned posts stay above newer recognitions in their category.",
-  },
-  {
-    key: "allowComments",
-    title: "Allow Comments",
-    description: "Let fans comment on this recognition",
-    hint: "Fans can reply to this post in the fan app.",
-  },
-];
-
-// Step 3 of Add Recognition: game, recipient, message and display options.
+// Step 3 of Add Recognition, laid out like the fan app's "Post a Shout-Out": a player (optional) and who
+// gives it, the award badge and the message.
 export default function CustomizeStep({
-  category,
-  template,
-  onCategory,
-  onTemplate,
+  badge,
+  onBadge,
+  players,
+  givers,
+  peopleLoading,
+  giverChosen,
   form,
   errors,
   update,
 }: CustomizeStepProps) {
-  const game = SAMPLE_GAMES.find((g) => g.id === form.gameId);
+
   return (
     <div className="flex flex-col gap-6 min-w-0">
       <section className={CARD}>
-        <SectionHeading
-          step={3}
-          title="Customize Recognition"
-          description="Fill in the details for your recognition post. The preview on the right will update in real time."
-        />
+        <SectionHeading step={3} title="Post a Shout-Out" description="The preview on the right updates as you type." />
         <hr className="border-white/10" />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-5">
-          <div className="flex flex-col gap-5">
-            <Select
-              variant="dark"
-              label="Category"
-              name="category"
-              value={category}
-              onChange={(e) => onCategory(e.target.value as RecognitionCategory)}
-              options={(Object.keys(CATEGORIES) as RecognitionCategory[]).map((c) => ({ label: c, value: c }))}
-              icon={CATEGORIES[category].icon("size-5")}
-              labelClassName={LABEL}
-            />
-            <Select
-              variant="dark"
-              label="Template"
-              name="template"
-              value={template}
-              onChange={(e) => onTemplate(e.target.value as RecognitionTemplate)}
-              options={CATEGORIES[category].templates.map((t) => ({ label: t, value: t }))}
-              icon={TEMPLATES[template].icon("size-5")}
-              labelClassName={LABEL}
-            />
-            <Select
-              variant="dark"
-              label="Game / Event"
-              name="gameId"
-              required
-              value={form.gameId}
-              onChange={(e) => update("gameId", e.target.value)}
-              options={SAMPLE_GAMES.map((g) => ({ label: gameLabel(g), value: g.id }))}
-              placeholder="Select game or event"
-              icon={
-                game?.opponent ? (
-                  <Image src={game.opponent.logo} alt="" width={24} height={24} className="size-6 rounded-full object-cover" />
-                ) : undefined
-              }
-              error={errors.gameId}
-              labelClassName={LABEL}
-            />
-            <Select
-              variant="dark"
-              label={`Recognize ${category}`}
-              name="recipientId"
-              required
-              value={form.recipientId}
-              onChange={(e) => update("recipientId", e.target.value)}
-              options={SAMPLE_RECIPIENTS[category].map((r) => ({
-                label: r.number !== undefined ? `#${r.number} ${r.name}` : r.name,
-                value: r.id,
-              }))}
-              placeholder={`Select ${category.toLowerCase()}`}
-              icon={<User className="size-5" strokeWidth={2} />}
-              error={errors.recipientId}
-              labelClassName={LABEL}
-            />
-          </div>
 
-          <div className="flex flex-col gap-5">
-            <Textarea
-              label="Recognition Message"
-              name="message"
-              required
-              fieldVariant="dark"
-              labelClassName={LABEL}
-              value={form.message}
-              onChange={(e) => update("message", e.target.value)}
-              placeholder="Write why this person deserves recognition."
-              maxLength={MESSAGE_MAX}
-              rows={5}
-              error={errors.message}
-            />
-            <Input
-              variant="dark"
-              label="Recognized By"
-              name="recognizedBy"
-              required
-              value={form.recognizedBy}
-              onChange={(e) => update("recognizedBy", e.target.value)}
-              placeholder="Coach Mike"
-              error={errors.recognizedBy}
-              labelClassName={LABEL}
-            />
-            <Input
-              variant="dark"
-              label="Role"
-              name="role"
-              required
-              value={form.role}
-              onChange={(e) => update("role", e.target.value)}
-              placeholder="Head Coach"
-              error={errors.role}
-              labelClassName={LABEL}
-            />
+        {/* Who gives it, and the player */}
+        <div className="flex flex-col gap-4">
+          <h4 className={HEADING}>Select a Player</h4>
+          <Select
+            variant="dark"
+            label="Recognized By"
+            name="giverId"
+            required
+            value={form.giverId}
+            onChange={(e) => update("giverId", e.target.value)}
+            options={givers.map((p) => ({ label: giverLabel(p), value: p.id }))}
+            placeholder={loadingOr(peopleLoading, givers.length === 0, "Choose a staff member or parent", "No staff or parents on these teams yet")}
+            icon={<UserStar className="size-5" strokeWidth={2} />}
+            disabled={peopleLoading || givers.length === 0}
+            error={errors.giverId}
+            labelClassName={LABEL}
+          />
+          <Select
+            variant="dark"
+            label="Player (Optional)"
+            name="playerId"
+            value={form.playerId}
+            onChange={(e) => update("playerId", e.target.value)}
+            options={[{ label: "No player", value: "" }, ...players.map((p) => ({ label: playerLabel(p), value: p.id }))]}
+            placeholder={
+              !giverChosen
+                ? "Choose who's giving it first"
+                : loadingOr(peopleLoading, players.length === 0, "Choose a player", "No players on this team yet")
+            }
+            icon={<User className="size-5" strokeWidth={2} />}
+            disabled={!giverChosen || peopleLoading || players.length === 0}
+            labelClassName={LABEL}
+          />
+        </div>
+
+        {/* Award badge */}
+        <div className="flex flex-col gap-4">
+          <h4 className={HEADING}>Award Badge</h4>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            {SHOUTOUT_TEMPLATES.map((t) => (
+              <Selectable
+                key={t}
+                selected={t === badge}
+                onSelect={() => onBadge(t)}
+                className={cn(
+                  "h-14 rounded-[10px] px-4 flex items-center justify-center gap-2 text-base font-medium text-white",
+                  t === badge ? "bg-[#3B82F6]/15" : "bg-white/[0.06]"
+                )}
+              >
+                {TEMPLATES[t].icon("size-5 shrink-0")}
+                <span className="truncate">{t}</span>
+              </Selectable>
+            ))}
           </div>
         </div>
-      </section>
 
-      <section className={CARD}>
-        <div className="flex flex-col gap-1 text-white">
-          <h3 className="text-lg font-semibold">Additional Options</h3>
-          <p className="text-sm text-white/75">You can add extra details to make the recognition more informative.</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {OPTIONS.map(({ key, title, description, hint }) => (
-            <div key={key} className="flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-2 text-sm font-medium text-white">
-                {title}
-                <Tooltip label={hint} side="top">
-                  <span tabIndex={0} aria-label={hint} className="rounded-full focus:outline-none">
-                    <Info className="size-4 text-white/60" strokeWidth={1.75} />
-                  </span>
-                </Tooltip>
-              </div>
-              <Toggle
-                label={description}
-                checked={form[key]}
-                onChange={(v) => update(key, v)}
-                labelPosition="right"
-                labelClassName="text-xs font-normal leading-relaxed text-white/75"
-                className="items-start"
-              />
-            </div>
-          ))}
-        </div>
+        <Textarea
+          label="Your Shout-Out"
+          name="message"
+          required
+          fieldVariant="dark"
+          labelClassName={LABEL}
+          value={form.message}
+          onChange={(e) => update("message", e.target.value)}
+          placeholder="Share your words of encouragement..."
+          maxLength={MESSAGE_MAX}
+          rows={5}
+          error={errors.message}
+        />
       </section>
     </div>
   );

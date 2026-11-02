@@ -6,6 +6,7 @@ export type RecognitionStatus = "Published" | "Draft";
 export type RecognitionTemplate =
   | "Hustle"
   | "Teamwork"
+  | "Character"
   | "Game Changer"
   | "Fan Favorite"
   | "Player of the Game"
