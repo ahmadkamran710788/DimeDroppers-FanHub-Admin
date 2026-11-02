@@ -10,6 +10,8 @@ import StatusPill from "@/components/common/status-pill";
 import Tabs from "@/components/common/tabs";
 import PeopleList from "@/components/organization/teams/team-details/people-list";
 import PersonCell from "@/components/organization/teams/team-details/person-cell";
+import TeamRolesTab from "@/components/organization/teams/tournament-team-details/team-roles-tab";
+import { useTeamRoles } from "@/components/organization/teams/tournament-team-details/use-team-roles";
 import { useSetup } from "@/context/setup";
 import apiCall from "@/utils/api-call";
 import { cn } from "@/utils/cn";
@@ -51,11 +53,6 @@ const PLAYER_COLUMNS: Column<ExposurePlayer>[] = [
 ];
 const playerSearch = (p: ExposurePlayer) => [fullName(p), p.email ?? "", p.position ?? "", p.playerSchool ?? ""];
 
-// Where a tab has no data source yet.
-function NotAvailable({ what }: { what: string }) {
-  return <p className="py-16 text-center text-sm text-white/60">{`${what} are not available for tournament teams yet.`}</p>;
-}
-
 interface TeamInfo {
   team: TreeTeam;
   eventName: string;
@@ -71,11 +68,13 @@ interface Loaded {
 // A tournament team's page (an Exposure team of one event), laid out like a school team's: header and
 // Players / Parents / Staff / Followers tabs, plus Stats and Schedule. Players come from GET
 // /exposure/teams/{id}/players; the schedule is the event's games in the team's division with the team
-// on one side. Parents, staff, the followers list and stats have no tournament API yet.
+// on one side. Staff and Parents are the team-roles invitations and members. The followers list and
+// stats have no tournament API yet.
 export default function TournamentTeamDetails({ eventId, teamId }: { eventId: string; teamId: string }) {
   const { savedSchool } = useSetup();
   const [tab, setTab] = useState<Tab>("Players");
   const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const roles = useTeamRoles(teamId);
 
   useEffect(() => {
     let cancelled = false;
@@ -190,9 +189,9 @@ export default function TournamentTeamDetails({ eventId, teamId }: { eventId: st
             noun="players"
           />
         ) : tab === "Parents" ? (
-          <NotAvailable what="Parents" />
+          <TeamRolesTab kind="parent" fanHubTeamId={teamId} players={loaded.players} {...roles} />
         ) : tab === "Staff" ? (
-          <NotAvailable what="Staff" />
+          <TeamRolesTab kind="staff" fanHubTeamId={teamId} players={loaded.players} {...roles} />
         ) : tab === "Followers" ? (
           <p className="py-16 text-center text-sm text-white/60">
             {`${team.followerCount} ${team.followerCount === 1 ? "fan follows" : "fans follow"} this team. The list of followers is not available for tournament teams yet.`}
