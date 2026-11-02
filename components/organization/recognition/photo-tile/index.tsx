@@ -5,6 +5,7 @@ import { GripVertical, UserRound, X } from "lucide-react";
 import Image from "next/image";
 import Checkbox from "@/components/common/checkbox";
 import { cn } from "@/utils/cn";
+import { useQueuedImage } from "@/components/organization/recognition/use-queued-image";
 import { evictPhotoboothImage } from "@/utils/photobooth-image-cache";
 
 interface PhotoTileProps {
@@ -46,9 +47,12 @@ export default function PhotoTile({
   // The src whose image failed (e.g. its S3 file is missing). Keyed by src, so a new URL tries again.
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const failed = failedSrc === src;
+  // Fan photos are large: each waits until it's near the screen and its turn in the image queue.
+  const { ref, started, loaded, settle } = useQueuedImage(src);
 
   return (
     <div
+      ref={ref}
       {...(added ? {} : dragProps)}
       className={cn(
         "group relative overflow-hidden rounded-[6px] border-2 bg-black/40",
@@ -57,30 +61,41 @@ export default function PhotoTile({
         className
       )}
     >
-      {/* Pulses behind the image while it loads; the image covers it once there. */}
-      <span aria-hidden className="absolute inset-0 animate-pulse bg-white/[0.06]" />
+      {/* Pulses while the image waits or loads; hidden once the image is there. */}
+      {!loaded && !failed && <span aria-hidden className="absolute inset-0 animate-pulse bg-white/[0.06]" />}
       {failed ? (
         // Avatar placeholder until the image is available again.
         <span role="img" aria-label={alt} className="absolute inset-0 bg-white/8 flex items-center justify-center">
           <UserRound className="size-1/3 text-white/40" strokeWidth={1.5} />
         </span>
       ) : (
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
-          draggable={false}
-          // Fan images are presigned S3 URLs, loaded straight from S3: the optimizer would have to fetch
-          // each full image server-side first, which times out (and each URL's signature changes).
-          unoptimized={src.startsWith("http")}
-          // A failed download mustn't stay in the image cache; the next load fetches it again.
-          onError={() => {
-            evictPhotoboothImage(src);
-            setFailedSrc(src);
-          }}
-          className={cn("object-cover", added && "opacity-60")}
-        />
+        started && (
+          <Image
+            src={src}
+            alt={alt}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
+            draggable={false}
+            // The queue already decided it's this image's turn, so don't let the browser hold it back again.
+            loading="eager"
+            decoding="async"
+            // Fan images are presigned S3 URLs, loaded straight from S3: the optimizer would have to fetch
+            // each full image server-side first, which times out (and each URL's signature changes).
+            unoptimized={src.startsWith("http")}
+            onLoad={() => settle(true)}
+            // A failed download mustn't stay in the image cache; the next load fetches it again.
+            onError={() => {
+              evictPhotoboothImage(src);
+              setFailedSrc(src);
+              settle(false);
+            }}
+            // Fades in once downloaded instead of painting top to bottom.
+            className={cn(
+              "object-cover transition-opacity duration-300",
+              !loaded ? "opacity-0" : added ? "opacity-60" : "opacity-100"
+            )}
+          />
+        )
       )}
       {onOpen && !failed && (
         // The whole image is the click area; the controls below sit on top of it. A span, not a <button>:
