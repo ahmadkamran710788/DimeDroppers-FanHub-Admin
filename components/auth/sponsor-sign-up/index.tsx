@@ -10,7 +10,7 @@ import { setSponsorAccount } from "@/utils/auth/session";
 import { validateAndSetErrors } from "@/utils/validation";
 import Button from "@/components/common/button";
 import { OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
-import { sponsorAccountSchema, sponsorBrandSchema } from "@/components/auth/schema";
+import { sponsorAccountSchema, sponsorBrandSchema, sponsorMainLocationSchema } from "@/components/auth/schema";
 import BrandPanel from "@/components/auth/sponsor-sign-up/brand-panel";
 import SignUpSteps from "@/components/auth/sponsor-sign-up/sign-up-steps";
 import AccountStep from "@/components/auth/sponsor-sign-up/account-step";
@@ -22,11 +22,15 @@ import {
   DONE_STEP,
   INITIAL_FORM,
   placeSignUpError,
+  type MainLocationField,
   type SponsorSignUpForm,
 } from "@/components/auth/sponsor-sign-up/data";
 import type { SponsorSignupResult, SponsorTypeCode } from "@/utils/types/sponsor-profile";
 
 const NAV_BUTTON = "h-[52px] rounded-[12px] text-base";
+
+// Step 2: the brand and its main location.
+const brandStepSchema = sponsorBrandSchema.concat(sponsorMainLocationSchema);
 
 interface SponsorSignUpProps {
   // Loaded by the page on the server; null when the sign-up options couldn't be loaded.
@@ -65,6 +69,16 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
       clearError(field);
     };
 
+  // From the map picker: a picked address fills them all, a moved pin only the point (whose errors share
+  // "latitude", shown under the map).
+  const setLocation = (fields: Partial<Pick<SponsorSignUpForm, MainLocationField>>) => {
+    setForm((prev) => ({ ...prev, ...fields }));
+    const cleared = [...Object.keys(fields), ...("latitude" in fields ? ["longitude"] : [])];
+    setErrors((prev) =>
+      cleared.some((f) => prev[f]) ? { ...prev, ...Object.fromEntries(cleared.map((f) => [f, ""])) } : prev
+    );
+  };
+
   const setPhone = (value: string) => {
     setForm((prev) => ({ ...prev, phone: value }));
     clearError("phone");
@@ -86,6 +100,12 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
     body.append("sponsorType", type);
     body.append("sponsorName", form.name.trim());
     body.append("category", form.category);
+    body.append("address", form.street.trim());
+    body.append("city", form.city.trim());
+    body.append("state", form.state);
+    if (form.zip.trim()) body.append("zipCode", form.zip.trim());
+    body.append("latitude", form.latitude.trim());
+    body.append("longitude", form.longitude.trim());
     body.append("acceptTerms", String(agree));
 
     setSubmitting(true);
@@ -117,7 +137,7 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
   async function handleNext(e: React.FormEvent) {
     e.preventDefault();
     if (step === 1 && !(await validateAndSetErrors(sponsorAccountSchema, form, setErrors))) return;
-    if (step === 2 && !(await validateAndSetErrors(sponsorBrandSchema, form, setErrors))) return;
+    if (step === 2 && !(await validateAndSetErrors(brandStepSchema, form, setErrors))) return;
     if (step === 3) {
       if (agree && !submitting) await createAccount();
       return;
@@ -167,6 +187,7 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
                   options={setup.options}
                   type={type}
                   onType={setType}
+                  onLocation={setLocation}
                 />
               )}
               {step === 3 && (

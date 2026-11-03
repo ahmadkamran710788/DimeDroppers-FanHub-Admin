@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { Plus } from "lucide-react";
 import { cn } from "@/utils/cn";
@@ -11,7 +11,6 @@ import Pagination from "@/components/common/pagination";
 import { sponsorRequest, type SponsorApiResult } from "@/components/sponsor/sponsor-api";
 import LocationForm from "@/components/sponsor/profile/location-form";
 import LocationRow from "@/components/sponsor/profile/location-row";
-import LookupStatus from "@/components/sponsor/profile/lookup-status";
 import {
   LOCATION_FIELDS,
   PAGE_SIZE,
@@ -23,7 +22,6 @@ import { CARD_TITLE, PROFILE_CARD, SMALL_BUTTON } from "@/components/sponsor/pro
 import type {
   RemovedSponsorLocation,
   SponsorLocation,
-  SponsorLocationFetch,
   SponsorLocationInput,
   SponsorProfileView,
 } from "@/utils/types/sponsor-profile";
@@ -60,32 +58,36 @@ const changedLocationInput = (location: SponsorLocation, f: LocationFields): Spo
 
 interface SponsorLocationsProps {
   locations: SponsorLocation[];
-  lookup: SponsorLocationFetch;
-  lookupTimedOut: boolean;
+  // There is a main location (an older account may have none until it adds one).
+  hasMain: boolean;
   // Applies a saved change to the profile shown.
   onChange: (update: (profile: SponsorProfileView) => SponsorProfileView) => void;
-  // Reloads the profile, e.g. when a location was already removed elsewhere.
+  // Reloads the profile, e.g. when a location was already removed elsewhere, or the main one changed.
   reload: () => void;
 }
 
-// The sponsor's locations, the centers of their organization search: the stores found automatically after
-// sign-up and the ones added here. Paged PAGE_SIZE at a time (a national brand can have hundreds); they all
-// come with the profile, so the pages are cut here.
-export default function SponsorLocations({ locations, lookup, lookupTimedOut, onChange, reload }: SponsorLocationsProps) {
+// The sponsor's locations, the centers of their organization search: the main one first, then the stores
+// found by Fetch locations and the ones added here. Paged PAGE_SIZE at a time (a national brand can have
+// hundreds); they all come with the profile, so the pages are cut here.
+export default function SponsorLocations({ locations, hasMain, onChange, reload }: SponsorLocationsProps) {
   const [page, setPage] = useState(1);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [removing, setRemoving] = useState<SponsorLocation | null>(null);
+  // The location being made main.
+  const [makingMainId, setMakingMainId] = useState<string | null>(null);
   // At the cap of locations added by hand; the found ones don't count. Removing one frees a place.
   const [limitReached, setLimitReached] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
+  // The main location first; the rest oldest first, as they come.
+  const ordered = useMemo(() => [...locations].sort((a, b) => Number(b.isMain) - Number(a.isMain)), [locations]);
   const count = locations.length === 1 ? "1 location" : `${locations.length} locations`;
-  const pageCount = Math.max(1, Math.ceil(locations.length / PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(ordered.length / PAGE_SIZE));
   // A removal (or a reload with fewer) can leave the page past the end: show the last one instead.
   const current = Math.min(page, pageCount);
   const from = (current - 1) * PAGE_SIZE;
-  const pageLocations = locations.slice(from, from + PAGE_SIZE);
+  const pageLocations = ordered.slice(from, from + PAGE_SIZE);
 
   // Another page replaces the list; back to the card's top so it isn't below the fold.
   function goToPage(next: number) {
@@ -123,18 +125,42 @@ export default function SponsorLocations({ locations, lookup, lookupTimedOut, on
     return null;
   }
 
-  async function add(fields: LocationFields) {
+  async function add(fields: LocationFields, makeMain: boolean) {
     const r = await sponsorRequest<SponsorLocation>("POST", routes.api.sponsorLocations, {
-      body: newLocationInput(fields),
+      body: { ...newLocationInput(fields), ...(makeMain && { isMain: true as const }) },
     });
     if (!r.view) return refused(r);
     const added = r.view;
+    setAdding(false);
+    toast.success(`${locationLabel(added)} added`);
+    // A new main location (asked for, or the account's first) changes the old main one and the Fetch button
+    // too: the profile is loaded again, and the first page shows it.
+    if (added.isMain) {
+      setPage(1);
+      reload();
+      return null;
+    }
     // It goes at the end of the list: open the last page, where it is.
     setPage(Math.ceil((locations.length + 1) / PAGE_SIZE));
     onChange((profile) => ({ ...profile, locations: [...profile.locations, added] }));
-    setAdding(false);
-    toast.success(`${locationLabel(added)} added`);
     return null;
+  }
+
+  // The previous main becomes a plain location in the same step, so the profile is loaded again.
+  async function makeMain(location: SponsorLocation) {
+    setMakingMainId(location.id);
+    const r = await sponsorRequest<SponsorLocation>("PATCH", routes.api.sponsorLocation(location.id), {
+      body: { isMain: true },
+    });
+    setMakingMainId(null);
+    if (!r.view) {
+      toast.error(r.message ?? "Couldn't change the main location. Try again.");
+      if (r.status === 404) reload();
+      return;
+    }
+    setPage(1);
+    reload();
+    toast.success(`${locationLabel(r.view)} is now your main location`);
   }
 
   async function update(location: SponsorLocation, fields: LocationFields) {
@@ -146,7 +172,12 @@ export default function SponsorLocations({ locations, lookup, lookupTimedOut, on
     const r = await sponsorRequest<SponsorLocation>("PATCH", routes.api.sponsorLocation(location.id), { body });
     if (!r.view) return refused(r);
     const saved = r.view;
-    onChange((profile) => ({ ...profile, locations: profile.locations.map((l) => (l.id === saved.id ? saved : l)) }));
+    onChange((profile) => ({
+      ...profile,
+      // The main location's city also decides where a local business's next fetch searches.
+      mainLocation: saved.isMain ? saved : profile.mainLocation,
+      locations: profile.locations.map((l) => (l.id === saved.id ? saved : l)),
+    }));
     setEditingId(null);
     toast.success(`${locationLabel(saved)} saved`);
     return null;
@@ -182,9 +213,7 @@ export default function SponsorLocations({ locations, lookup, lookupTimedOut, on
         />
       </div>
 
-      <LookupStatus lookup={lookup} timedOut={lookupTimedOut} />
-
-      {adding && <LocationForm onSave={add} onCancel={() => setAdding(false)} />}
+      {adding && <LocationForm offerMain={hasMain} onSave={add} onCancel={() => setAdding(false)} />}
 
       {pageLocations.map((location) =>
         editingId === location.id ? (
@@ -199,6 +228,8 @@ export default function SponsorLocations({ locations, lookup, lookupTimedOut, on
             key={location.id}
             location={location}
             onEdit={() => setEditingId(location.id)}
+            onMakeMain={() => makeMain(location)}
+            busy={makingMainId === location.id}
             onRemove={() => setRemoving(location)}
           />
         )
@@ -215,7 +246,8 @@ export default function SponsorLocations({ locations, lookup, lookupTimedOut, on
 
       {locations.length === 0 && (
         <p className="border-[1.5px] border-dashed border-[#333] rounded-[12px] p-6 text-center text-[15px] text-[#bdbdbd]">
-          No locations yet. Add at least one so we can show organizations near you.
+          No locations yet. Add your main location (your headquarters or main branch) so we can find your other
+          stores and show organizations near you.
         </p>
       )}
 
@@ -225,7 +257,7 @@ export default function SponsorLocations({ locations, lookup, lookupTimedOut, on
         title="Remove location"
         message={
           removing?.source === "AI"
-            ? `Remove “${removing && locationLabel(removing)}”? It was found automatically and won’t be found again.`
+            ? `Remove “${removing && locationLabel(removing)}”? It was found automatically; a later fetch may find it again.`
             : `Remove “${removing && locationLabel(removing)}” from your locations?`
         }
         confirmLabel="Remove"

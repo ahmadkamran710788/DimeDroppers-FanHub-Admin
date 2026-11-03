@@ -17,7 +17,7 @@ async function fetchProfile(): Promise<SponsorProfileView> {
   return r.view;
 }
 
-// While the lookup is being followed, a reload brings the same logo with a new signature; keeping the link
+// While a fetch is being followed, a reload brings the same logo with a new signature; keeping the link
 // already shown stops the image from loading again every 5 seconds.
 function keepLogoLink(old: unknown, next: unknown): unknown {
   const prev = old as SponsorProfileView | undefined;
@@ -28,29 +28,35 @@ function keepLogoLink(old: unknown, next: unknown): unknown {
   return { ...fresh, brand: { ...fresh.brand, logoUrl: kept } };
 }
 
-// The signed-in sponsor's profile (account, brand, locations), reloaded every few seconds while the automatic
-// store lookup runs. TanStack Query is used for that polling only; saves are plain requests whose answer
+// The signed-in sponsor's profile (account, brand, locations), reloaded every few seconds while a location
+// fetch runs. TanStack Query is used for that polling only; saves are plain requests whose answer
 // replaces the profile through `setProfile`. Also loads the sponsor options (types and categories) for editing.
 export function useSponsorProfile() {
   const queryClient = useQueryClient();
-  // Following the lookup stops after POLL_LIMIT_MS, even if it hasn't finished (it can be stuck queued).
-  const [timedOut, setTimedOut] = useState(false);
+  // The fetch no longer followed: following one stops after POLL_LIMIT_MS, even if it hasn't finished (it can
+  // be stuck queued). A new fetch is followed again.
+  const [timedOutRun, setTimedOutRun] = useState<string | null>(null);
   const [options, setOptions] = useState<SponsorSignupOptions | null>(null);
 
   const query = useQuery({
     queryKey: profileQueryKey,
     queryFn: fetchProfile,
     structuralSharing: keepLogoLink,
-    refetchInterval: (q) => (isLookupActive(q.state.data?.locationsFetch.status) && !timedOut ? POLL_MS : false),
+    refetchInterval: (q) => {
+      const fetch = q.state.data?.locationsFetch;
+      return isLookupActive(fetch?.status) && fetch?.runId !== timedOutRun ? POLL_MS : false;
+    },
   });
   const profile = query.data ?? null;
   const active = isLookupActive(profile?.locationsFetch.status);
+  const runId = profile?.locationsFetch.runId ?? null;
+  const timedOut = active && runId === timedOutRun;
 
   useEffect(() => {
     if (!active || timedOut) return;
-    const timer = setTimeout(() => setTimedOut(true), POLL_LIMIT_MS);
+    const timer = setTimeout(() => setTimedOutRun(runId), POLL_LIMIT_MS);
     return () => clearTimeout(timer);
-  }, [active, timedOut]);
+  }, [active, timedOut, runId]);
 
   useEffect(() => {
     sponsorRequest<SponsorSignupOptions>("GET", routes.api.sponsorSignupOptions).then((r) => {
@@ -79,8 +85,8 @@ export function useSponsorProfile() {
     profile,
     options,
     failed: query.isError && !profile,
-    // Still looking after POLL_LIMIT_MS: the list is shown as it is.
-    lookupTimedOut: active && timedOut,
+    // The latest fetch still running after POLL_LIMIT_MS: the list is shown as it is.
+    lookupTimedOut: timedOut,
     reload,
     setProfile,
   };

@@ -66,3 +66,24 @@ export const sponsorBrandSchema = yup.object({
     .max(120, "Keep the sponsor name under 120 characters"),
   category: yup.string().required("Choose a category"),
 });
+
+// A decimal degree no further from 0 than `max`, e.g. "-97.7516".
+const isDegree = (max: number) => (v: string | undefined) =>
+  !!v && /^-?\d+(\.\d+)?$/.test(v.trim()) && Math.abs(Number(v)) <= max;
+
+// Sponsor sign-up, step 2: the main location, which Fetch locations searches from. The pin comes from the map
+// (or is typed); the API saves it as sent, without looking the address up.
+export const sponsorMainLocationSchema = yup.object({
+  street: yup.string().trim().required("Address is required").max(300, "Keep the address under 300 characters"),
+  city: yup.string().trim().required("City is required").max(120, "Keep the city under 120 characters"),
+  state: yup.string().required("Choose a US state"),
+  zip: yup.string().trim().max(20, "Keep the ZIP code under 20 characters"),
+  latitude: yup
+    .string()
+    .required("Pick your location on the map")
+    .test("latitude", "Enter a latitude between -90 and 90", isDegree(90)),
+  longitude: yup
+    .string()
+    .required("Pick your location on the map")
+    .test("longitude", "Enter a longitude between -180 and 180", isDegree(180)),
+});

@@ -1,18 +1,28 @@
 import { US_STATE_OPTIONS } from "@/components/organization/org-form/form";
+import { coordinateText } from "@/utils/helper";
 import type { SponsorLocation, SponsorLocationFetchStatus } from "@/utils/types/sponsor-profile";
 
-// Sponsor Profile: GET /fanhub/sponsor-profile, reloaded while the store lookup runs.
+// Sponsor Profile: GET /fanhub/sponsor-profile, reloaded while a location fetch runs.
 
-// The automatic store lookup runs about 10 s for a local business and up to a minute for a national brand;
-// the profile is reloaded every 5 s meanwhile, for 5 minutes at most (then the list is shown as it is).
+// A location fetch takes about 10–20 s for a few areas (longer for big states); the profile is reloaded every
+// 5 s meanwhile, for 5 minutes at most (then the list is shown as it is).
 export const POLL_MS = 5_000;
 export const POLL_LIMIT_MS = 5 * 60_000;
 
 export const isLookupActive = (status: SponsorLocationFetchStatus | null | undefined) =>
   status === "PENDING" || status === "RUNNING" || status === "SAVING";
 
-// A national brand can have hundreds of locations: they're shown this many a page, as on My Sponsorships.
+// A national brand can have hundreds of locations: they're shown this many a page, as on My Sponsorships (also
+// each area of a fetch's results).
 export const PAGE_SIZE = 10;
+
+// The most states / cities one fetch takes.
+export const MAX_FETCH_STATES = 60;
+export const MAX_FETCH_CITIES = 500;
+
+// "Nov 2, 4:05 PM": when a fetch ran, in the fetch history.
+export const fetchTime = (iso: string) =>
+  new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 // The logo's file, without the signature: the link is signed again on every GET while the file is the same.
 export const logoPath = (url: string | null | undefined) => url?.split("?")[0] ?? null;
@@ -61,9 +71,6 @@ export const EMPTY_LOCATION: LocationFields = {
   latitude: "",
   longitude: "",
 };
-
-// A saved coordinate as the form shows it: 6 decimals (about 10 cm), so 45.66981699999999 reads 45.669817.
-export const coordinateText = (n: number | null) => (n === null ? "" : String(Number(n.toFixed(6))));
 
 export const locationFields = (l: SponsorLocation): LocationFields => ({
   name: l.name ?? "",

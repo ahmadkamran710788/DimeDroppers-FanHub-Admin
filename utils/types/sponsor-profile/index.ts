@@ -1,11 +1,17 @@
 // Sponsor sign-up and profile: /fanhub/sponsor-auth/* (no token) and /fanhub/sponsor-profile/* (sponsor token),
-// FANHUB_SPONSOR_SIGNUP_PROFILE_FRONTEND.md. Shapes of data[0] of the response envelope.
+// FANHUB_SPONSOR_SIGNUP_PROFILE_FRONTEND.md and FANHUB_SPONSOR_LOCATION_FETCH_FRONTEND.md. Shapes of data[0] of
+// the response envelope.
 
 export type SponsorTypeCode = "LOCAL_BUSINESS" | "REGIONAL_BRAND" | "NATIONAL_BRAND";
 export type SponsorLocationSource = "MANUAL" | "AI";
 export type SponsorLocationFetchStatus = "PENDING" | "RUNNING" | "SAVING" | "COMPLETED" | "FAILED";
+// MAIN_CITY: a local business, searched in its main location's city (a button only). SELECTED_AREAS: a regional
+// or national brand, searched in the states and cities it picks.
+export type SponsorLocationFetchMode = "MAIN_CITY" | "SELECTED_AREAS";
 
 export interface LogoRules {
+  // false: the logo is optional on sign-up.
+  required?: boolean;
   types: string[];
   minWidth: number;
   minHeight: number;
@@ -86,16 +92,78 @@ export interface SponsorLocation {
   source: SponsorLocationSource;
   // The store's Google Maps link for an AI location; null for a manual one.
   sourceUrl: string | null;
+  // The main (headquarters) location: exactly one has it. It can't be removed, only replaced by another.
+  isMain: boolean;
+  // The fetch that found this store; null for one the sponsor added.
+  fetchRunId: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-// The one-time automatic store lookup; status null when it never ran (older accounts).
+// A state or city a fetch searched.
+export interface SponsorFetchArea {
+  // Stable id, e.g. "STATE:OK" or "CITY:TX:houston"; sent back as ?areaKey=.
+  key: string;
+  kind: "STATE" | "CITY";
+  // Two-letter code.
+  state: string;
+  stateName: string;
+  // null for a state.
+  city: string | null;
+  // Ready to show: "Oklahoma", "Houston, TX".
+  label: string;
+  // "Not found on the map" when Google couldn't place it; the other areas are still searched.
+  error: string | null;
+}
+
+// The profile's view of the latest location fetch; status null before the first one.
 export interface SponsorLocationFetch {
+  mode: SponsorLocationFetchMode;
+  // A main location and no fetch running: the Fetch button is enabled on this.
+  canFetch: boolean;
+  runId: string | null;
   status: SponsorLocationFetchStatus | null;
+  areas: SponsorFetchArea[];
   startedAt: string | null;
   completedAt: string | null;
+  // A note on the latest fetch (e.g. "No locations of this brand were found in the chosen areas"), or null.
   error: string | null;
+}
+
+// POST /locations/fetch, and each of GET /locations/fetches.
+export interface SponsorLocationFetchRun {
+  id: string;
+  status: SponsorLocationFetchStatus;
+  areas: SponsorFetchArea[];
+  // New stores this fetch found / saved.
+  foundCount: number;
+  savedCount: number;
+  error: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+// One area of a fetch with all of the sponsor's locations in it: the ones it added and any saved before.
+export interface SponsorFetchAreaResult {
+  area: SponsorFetchArea;
+  locationCount: number;
+  // Added by this fetch.
+  newCount: number;
+  locations: SponsorLocation[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+// GET /locations/fetches/:runId.
+export interface SponsorLocationFetchResult extends SponsorLocationFetchRun {
+  results: SponsorFetchAreaResult[];
+}
+
+// POST /locations/fetch for a regional or national brand: at least one state or city (a local business sends
+// nothing). States and cities' states as codes or names.
+export interface StartLocationFetchBody {
+  states?: string[];
+  cities?: { city: string; state: string }[];
 }
 
 // GET / PATCH /fanhub/sponsor-profile.
@@ -104,6 +172,8 @@ export interface SponsorProfileView {
   // null only for an account with no brand profile yet: saving one with a sponsorName creates it.
   brand: SponsorBrandProfile | null;
   consent: { termsVersion: string | null; privacyVersion: string | null; acceptedAt: string | null };
+  // The main location; null for an older account with no locations yet (the first one added becomes main).
+  mainLocation: SponsorLocation | null;
   // Oldest first.
   locations: SponsorLocation[];
   locationsFetchedAt: string | null;
@@ -137,6 +207,8 @@ export interface SponsorLocationInput {
   country?: string | null;
   latitude?: number;
   longitude?: number;
+  // Makes it the main location (the previous main becomes a plain one).
+  isMain?: true;
 }
 
 // DELETE a location.

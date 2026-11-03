@@ -12,7 +12,8 @@ interface DoneStepProps {
   brandName: string;
 }
 
-// After "Create sponsor account": the sponsor is signed in, and their store lookup has started.
+// After "Create sponsor account": the sponsor is signed in. Their other stores are found when they press Fetch
+// locations on the profile.
 export default function DoneStep({ contact, brandName }: DoneStepProps) {
   const firstName = contact.trim().split(/\s+/)[0]?.toUpperCase() || "WELCOME";
 
@@ -25,13 +26,13 @@ export default function DoneStep({ contact, brandName }: DoneStepProps) {
         You’re all set, {firstName}
       </h2>
       <p className="text-[17px] text-[#d4d4d4] leading-[1.55] max-w-[520px] break-words">
-        We’re finding {brandName}’s locations now, so we can show organizations near you. Check them in your
-        sponsor profile, and upload your brand assets.
+        Next, open your sponsor profile and press Fetch locations to find {brandName}’s other stores, so we can
+        show organizations near them. Then upload your brand assets.
       </p>
       {/* Full page loads (not client navigation): the sponsor panel then loads the new session from scratch. */}
       <div className="flex gap-3 flex-wrap">
         <a href={routes.ui.sponsor.profile} className={cn(PRIMARY_BUTTON, LINK_BUTTON)}>
-          Check your locations
+          Fetch your locations
         </a>
         <a href={routes.ui.sponsor.brandAssets} className={cn(OUTLINE_BUTTON, LINK_BUTTON, "font-semibold")}>
           Upload brand assets

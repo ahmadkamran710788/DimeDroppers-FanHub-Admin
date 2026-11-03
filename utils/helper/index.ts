@@ -63,3 +63,6 @@ export const parseMoney = (text: string): number => {
   const digits = text.replace(/[$,\s]/g, "");
   return digits ? Number(digits) : NaN;
 };
+
+// A coordinate as a form shows it: 6 decimals (about 10 cm), so 45.66981699999999 reads 45.669817; "" for none.
+export const coordinateText = (n: number | null) => (n === null ? "" : String(Number(n.toFixed(6))));
