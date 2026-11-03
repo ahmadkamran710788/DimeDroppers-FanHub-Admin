@@ -61,6 +61,25 @@ export async function sponsorRequest<T>(
   }
 }
 
+// For the few endpoints that answer their list directly in `data` (not in data[0]), e.g. GET
+// /sponsor-profile/locations/fetches: the whole list on success.
+export async function sponsorList<T>(
+  endpoint: string,
+  params?: QueryParams
+): Promise<{ status: number; items?: T[]; message?: string }> {
+  try {
+    const res = await backendFetch(`${endpoint}${toQuery(params)}`, {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+    const json = await res.json().catch(() => null);
+    if (res.ok) return { status: res.status, items: Array.isArray(json?.data) ? (json.data as T[]) : [] };
+    return { status: res.status, message: json?.message || "Something went wrong, please try again." };
+  } catch {
+    return { status: 0, message: NETWORK_ERROR };
+  }
+}
+
 // Cart item key → the stores (ids) it is already active for; an empty set when activated without stores.
 export type ActiveActivations = Map<string, Set<string>>;
 

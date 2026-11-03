@@ -18,6 +18,14 @@ export interface SponsorSignUpForm {
   phone: string;
   name: string;
   category: string;
+  // The main location (headquarters or main branch), from the map picker or typed: Fetch locations searches
+  // from it. The state is a two-letter code; the pin is text, e.g. "30.3058" and "-97.7516".
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+  latitude: string;
+  longitude: string;
 }
 
 export const INITIAL_FORM: SponsorSignUpForm = {
@@ -27,7 +35,16 @@ export const INITIAL_FORM: SponsorSignUpForm = {
   phone: "",
   name: "",
   category: "",
+  street: "",
+  city: "",
+  state: "",
+  zip: "",
+  latitude: "",
+  longitude: "",
 };
+
+// The main location's fields, which the map picker fills together.
+export type MainLocationField = "street" | "city" | "state" | "zip" | "latitude" | "longitude";
 
 // The sign-up API's field names → the wizard's field and the step that holds it.
 const FIELD_STEPS: Record<string, { field: string; step: number }> = {
@@ -38,6 +55,13 @@ const FIELD_STEPS: Record<string, { field: string; step: number }> = {
   sponsorType: { field: "sponsorType", step: 2 },
   sponsorName: { field: "name", step: 2 },
   category: { field: "category", step: 2 },
+  address: { field: "street", step: 2 },
+  city: { field: "city", step: 2 },
+  state: { field: "state", step: 2 },
+  zipCode: { field: "zip", step: 2 },
+  // Both shown under the map.
+  latitude: { field: "latitude", step: 2 },
+  longitude: { field: "latitude", step: 2 },
   acceptTerms: { field: "acceptTerms", step: 3 },
 };
 

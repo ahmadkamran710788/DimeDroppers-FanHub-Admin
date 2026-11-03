@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 /**
  * Proxy for FanHub "Sponsor sign-up".
  *
- * The browser posts the whole wizard here as multipart (account, brand, logo, acceptTerms); this
+ * The browser posts the whole wizard here as multipart (account, brand, main location, acceptTerms); this
  * server-only handler forwards it to the FanHub API and, on success (201), stores the returned
  * access/refresh tokens as httpOnly cookies with the SPONSOR role (proxy.ts keeps the sponsor on
  * /sponsor/* by it). Non-2xx upstream responses are passed straight through so the client can show

@@ -1,4 +1,4 @@
-import { ExternalLink, MapPin, Pencil, Trash2 } from "lucide-react";
+import { ExternalLink, MapPin, Pencil, Star, Trash2 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
 import StatusPill from "@/components/common/status-pill";
@@ -7,15 +7,24 @@ import type { SponsorLocation } from "@/utils/types/sponsor-profile";
 
 const ROW_BUTTON =
   "min-w-0 h-11 px-[14px] rounded-[10px] bg-transparent border border-[#3a3a3a] text-sm font-semibold backdrop-blur-none";
+const PILL = "h-auto px-2 py-[3px]";
+const PILL_TEXT = "text-[11px] font-bold tracking-[1px]";
 
 interface LocationRowProps {
   location: SponsorLocation;
-  onEdit: () => void;
-  onRemove: () => void;
+  // Without the actions the row is read-only (a fetch's results).
+  onEdit?: () => void;
+  onRemove?: () => void;
+  onMakeMain?: () => void;
+  // Make main is being saved.
+  busy?: boolean;
+  // Added by the fetch whose results are shown.
+  isNew?: boolean;
 }
 
-// One of the sponsor's locations: pin, name, address, where it came from, then Edit and Remove.
-export default function LocationRow({ location, onEdit, onRemove }: LocationRowProps) {
+// One of the sponsor's locations: pin, name, address, where it came from, then Edit, Make main and Remove. The
+// main location can't be removed, only replaced by making another one main.
+export default function LocationRow({ location, onEdit, onRemove, onMakeMain, busy = false, isNew = false }: LocationRowProps) {
   const label = locationLabel(location);
   const address = formatAddress(location);
   // The saved pin, not the store's Google listing (`sourceUrl`): the listing stays where Google has the store,
@@ -33,12 +42,18 @@ export default function LocationRow({ location, onEdit, onRemove }: LocationRowP
       <div className="flex-[1_1_200px] min-w-0">
         <div className="flex gap-2 items-center flex-wrap">
           <span className="text-base font-bold break-words min-w-0">{label}</span>
+          {location.isMain && (
+            <StatusPill label="MAIN" color="bg-[#1d3a1e]" className={PILL} textClassName={cn(PILL_TEXT, "text-[#a3e3a5]")} />
+          )}
+          {isNew && (
+            <StatusPill label="NEW" color="bg-[#3a2f14]" className={PILL} textClassName={cn(PILL_TEXT, "text-[#f0c36a]")} />
+          )}
           {location.source === "AI" && (
             <StatusPill
               label="FOUND AUTOMATICALLY"
               color="bg-[#2a2148]"
-              className="h-auto px-2 py-[3px]"
-              textClassName="text-[11px] font-bold tracking-[1px] text-[#c9b8ff]"
+              className={PILL}
+              textClassName={cn(PILL_TEXT, "text-[#c9b8ff]")}
             />
           )}
         </div>
@@ -55,22 +70,38 @@ export default function LocationRow({ location, onEdit, onRemove }: LocationRowP
           </a>
         )}
       </div>
-      <div className="flex gap-2">
-        <Button
-          label="Edit"
-          icon={<Pencil className="size-4" strokeWidth={1.8} />}
-          aria-label={`Edit ${label}`}
-          onClick={onEdit}
-          className={cn(ROW_BUTTON, "text-white")}
-        />
-        <Button
-          label="Remove"
-          icon={<Trash2 className="size-4" strokeWidth={1.8} />}
-          aria-label={`Remove ${label}`}
-          onClick={onRemove}
-          className={cn(ROW_BUTTON, "text-[#ff9a9a]")}
-        />
-      </div>
+      {(onEdit || onMakeMain || onRemove) && (
+        <div className="flex gap-2 flex-wrap">
+          {onEdit && (
+            <Button
+              label="Edit"
+              icon={<Pencil className="size-4" strokeWidth={1.8} />}
+              aria-label={`Edit ${label}`}
+              onClick={onEdit}
+              className={cn(ROW_BUTTON, "text-white")}
+            />
+          )}
+          {onMakeMain && !location.isMain && (
+            <Button
+              label={busy ? "Saving…" : "Make main"}
+              icon={<Star className="size-4" strokeWidth={1.8} />}
+              aria-label={`Make ${label} your main location`}
+              onClick={onMakeMain}
+              disabled={busy}
+              className={cn(ROW_BUTTON, "text-[#c9b8ff]")}
+            />
+          )}
+          {onRemove && !location.isMain && (
+            <Button
+              label="Remove"
+              icon={<Trash2 className="size-4" strokeWidth={1.8} />}
+              aria-label={`Remove ${label}`}
+              onClick={onRemove}
+              className={cn(ROW_BUTTON, "text-[#ff9a9a]")}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import * as yup from "yup";
 import { isValidPhoneNumber } from "libphonenumber-js";
+import { MAX_FETCH_CITIES, MAX_FETCH_STATES } from "@/components/sponsor/profile/data";
 
 // Limits and messages follow the sponsor profile API, which checks the same again.
 
@@ -51,5 +52,26 @@ export const locationSchema = yup
     return (
       placeable ||
       this.createError({ path: "street", message: "Add a street address, a city and state, a ZIP code, or latitude and longitude" })
+    );
+  });
+
+// Fetch locations for a regional or national brand: any states and cities, at least one of them. Errors on a
+// city are keyed "cities.2.city" / "cities.2.state", as the API reports them.
+export const locationFetchSchema = yup
+  .object({
+    states: yup.array(yup.string().required()).max(MAX_FETCH_STATES, `Choose at most ${MAX_FETCH_STATES} states`),
+    cities: yup
+      .array(
+        yup.object({
+          city: yup.string().trim().required("City is required").max(120, "Keep the city under 120 characters"),
+          state: yup.string().required("Choose a US state"),
+        })
+      )
+      .max(MAX_FETCH_CITIES, `Add at most ${MAX_FETCH_CITIES} cities`),
+  })
+  .test("some", function (v) {
+    return (
+      (v.states?.length ?? 0) + (v.cities?.length ?? 0) > 0 ||
+      this.createError({ path: "states", message: "Choose at least one state or city" })
     );
   });

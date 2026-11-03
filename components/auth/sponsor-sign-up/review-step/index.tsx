@@ -8,6 +8,7 @@ import { CARD } from "@/components/sponsor/styles";
 import StepHeading from "@/components/auth/sponsor-sign-up/step-heading";
 import LegalModal from "@/components/auth/sponsor-sign-up/legal-modal";
 import type { SponsorSignUpForm } from "@/components/auth/sponsor-sign-up/data";
+import { formatAddress } from "@/components/sponsor/profile/data";
 import type { LegalDocument, SponsorSignupOptions, SponsorTypeCode } from "@/utils/types/sponsor-profile";
 
 const ROW = "flex flex-wrap gap-x-5 gap-y-2 items-center py-4";
@@ -61,7 +62,7 @@ export default function ReviewStep({
           <Button variant="text" size="sm" label="Edit" aria-label="Edit account" onClick={() => onEdit(1)} className={EDIT} />
         </div>
 
-        <div className={ROW}>
+        <div className={cn(ROW, "border-b border-[#222]")}>
           <div className={ROW_LABEL}>BRAND</div>
           <div className="flex-[1_1_220px] min-w-0 text-[15px] leading-[1.5] break-words">
             {form.name}
@@ -71,6 +72,23 @@ export default function ReviewStep({
             </span>
           </div>
           <Button variant="text" size="sm" label="Edit" aria-label="Edit brand" onClick={() => onEdit(2)} className={EDIT} />
+        </div>
+
+        <div className={ROW}>
+          <div className={ROW_LABEL}>MAIN LOCATION</div>
+          <div className="flex-[1_1_220px] min-w-0 text-[15px] leading-[1.5] break-words">
+            {formatAddress({ address: form.street, city: form.city, state: form.state, zipCode: form.zip })}
+            <br />
+            <span className="text-[#bdbdbd]">{`${form.latitude}, ${form.longitude}`}</span>
+          </div>
+          <Button
+            variant="text"
+            size="sm"
+            label="Edit"
+            aria-label="Edit main location"
+            onClick={() => onEdit(2)}
+            className={EDIT}
+          />
         </div>
       </div>
 

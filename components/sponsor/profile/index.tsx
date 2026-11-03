@@ -5,13 +5,14 @@ import Button from "@/components/common/button";
 import Loader from "@/components/common/loader";
 import { OUTLINE_BUTTON } from "@/components/sponsor/styles";
 import AccountDetails from "@/components/sponsor/profile/account-details";
+import LocationFetch from "@/components/sponsor/profile/location-fetch";
 import SponsorDetails from "@/components/sponsor/profile/sponsor-details";
 import SponsorLocations from "@/components/sponsor/profile/sponsor-locations";
 import { useSponsorProfile } from "@/components/sponsor/profile/use-sponsor-profile";
 import { PROFILE_CARD, SMALL_BUTTON } from "@/components/sponsor/profile/styles";
 
-// How organizations see the sponsor: the account, the details from sign-up and the locations their search
-// starts from.
+// How organizations see the sponsor: the account, the details from sign-up, finding their stores, and the
+// locations their search starts from.
 export default function SponsorProfile() {
   const { profile, options, failed, lookupTimedOut, reload, setProfile } = useSponsorProfile();
 
@@ -31,10 +32,10 @@ export default function SponsorProfile() {
         <div className="flex flex-col gap-6">
           <AccountDetails account={profile.account} onSaved={setProfile} />
           <SponsorDetails brand={profile.brand} options={options} onSaved={setProfile} />
+          <LocationFetch profile={profile} onChange={setProfile} reload={reload} timedOut={lookupTimedOut} />
           <SponsorLocations
             locations={profile.locations}
-            lookup={profile.locationsFetch}
-            lookupTimedOut={lookupTimedOut}
+            hasMain={profile.mainLocation !== null}
             onChange={setProfile}
             reload={reload}
           />

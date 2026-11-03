@@ -321,6 +321,11 @@ export const routes = {
     // GET the locations, POST one; PATCH / DELETE one by id.
     sponsorLocations: "fanhub/sponsor-profile/locations",
     sponsorLocation: (id: string) => `fanhub/sponsor-profile/locations/${id}`,
+    // Finding the brand's other stores on request (FANHUB_SPONSOR_LOCATION_FETCH_FRONTEND.md): POST starts one
+    // (202), the list is the 20 latest (directly in `data`), and one fetch comes with its locations per area.
+    sponsorLocationsFetch: "fanhub/sponsor-profile/locations/fetch",
+    sponsorLocationFetches: "fanhub/sponsor-profile/locations/fetches",
+    sponsorLocationFetch: (runId: string) => `fanhub/sponsor-profile/locations/fetches/${runId}`,
     // The organisation's own view (organiser token): its packages as sponsors see them (?eventId= for a
     // tournament), its events, and who activated what.
     orgSponsorPackages: "fanhub/org/sponsor-packages/packages",
