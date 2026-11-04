@@ -55,6 +55,8 @@ export interface MediaGame {
   // A school game: which side is the school, and each side's school team id (the opponent's when it is in Fan Hub).
   schoolSide?: "home" | "away";
   schoolTeamIds?: { home: string | null; away: string | null };
+  // A school game: each side's team name, when GET /schedules/games has it (useOrgGames({ teamNames })).
+  teamNames?: { home?: string; away?: string };
   id: string;
   // ISO date-time.
   start: string;

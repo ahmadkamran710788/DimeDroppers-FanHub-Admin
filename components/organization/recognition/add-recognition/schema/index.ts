@@ -14,7 +14,7 @@ export const customizeRecognitionSchema = (rules: {
     gameId: rules.needsGame ? yup.string().required("Choose the game") : yup.string(),
     side: rules.needsSide ? yup.string().required("Choose the team") : yup.string(),
     teamId: rules.needsTeam ? yup.string().required("Choose the team") : yup.string(),
-    giverId: rules.needsPeople ? yup.string().required("Choose the staff member or parent giving this recognition") : yup.string(),
+    giverId: rules.needsPeople ? yup.string().required("This team has no staff member or parent to send as Recognized By yet") : yup.string(),
     playerId: rules.needsPeople ? yup.string().required("Choose the player") : yup.string(),
     message: yup
       .string()

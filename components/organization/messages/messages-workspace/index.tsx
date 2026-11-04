@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
-import { ArrowLeft, ChevronRight, Plus } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import Button from "@/components/common/button";
 import Loader from "@/components/common/loader";
 import { fetchConversation, startDirect } from "@/components/organization/messages/chat-api";
@@ -11,21 +10,16 @@ import ConversationRow from "@/components/organization/messages/conversation-row
 import GroupForm from "@/components/organization/messages/group-form";
 
 import MemberPicker from "@/components/organization/messages/member-picker";
-import type { ChatAudience, MemberTab, OrgConversation, TeamMember } from "@/components/organization/messages/types";
-import type { Team } from "@/components/organization/teams/data";
-import { useOrgTeams } from "@/components/organization/teams/use-org-teams";
-import { useSetup } from "@/context/setup";
-
-// Clickable team rows (crest, two lines of text): native <button>s, not action buttons.
-const ROW = "cursor-pointer w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-left transition-colors";
+import TeamPicker from "@/components/organization/messages/team-picker";
+import type { ChatAudience, ChatTeam, MemberTab, OrgConversation, TeamMember } from "@/components/organization/messages/types";
 const ICON_BUTTON = "cursor-pointer size-9 bg-transparent hover:bg-white/10";
 
 // "chat" keeps the conversation it was opened with; the polled list's newer copy wins when there is one.
 type View =
   | { kind: "list" }
   | { kind: "team" }
-  | { kind: "members"; team: Team }
-  | { kind: "group"; team: Team; audience: ChatAudience }
+  | { kind: "members"; team: ChatTeam }
+  | { kind: "group"; team: ChatTeam; audience: ChatAudience }
   | { kind: "chat"; conversation: OrgConversation };
 
 interface MessagesWorkspaceProps {
@@ -44,8 +38,6 @@ interface MessagesWorkspaceProps {
 // Parents / Staff / Followers tabs for a direct chat, or a tab / chosen people for a group.
 // Rendered on the Communications page.
 export default function MessagesWorkspace({ conversations, loading, onRefresh, onUpsert, initialChatId }: MessagesWorkspaceProps) {
-  const { savedSchool } = useSetup();
-  const { teams, loading: teamsLoading } = useOrgTeams();
   const [view, setView] = useState<View>(loading || conversations.length > 0 ? { kind: "list" } : { kind: "team" });
   const [tab, setTab] = useState<MemberTab>("players");
   const [selected, setSelected] = useState<string[]>([]);
@@ -53,7 +45,7 @@ export default function MessagesWorkspace({ conversations, loading, onRefresh, o
   // The linked chat, shown as soon as the polled list contains it; cleared when the user goes back.
   const [pendingChatId, setPendingChatId] = useState(initialChatId ?? null);
 
-  const pickTeam = (team: Team) => {
+  const pickTeam = (team: ChatTeam) => {
     setTab("players");
     setSelected([]);
     setView({ kind: "members", team });
@@ -65,7 +57,7 @@ export default function MessagesWorkspace({ conversations, loading, onRefresh, o
   };
 
   // Reopens the existing direct chat with this fan, or starts one (idempotent per team + fan).
-  const openDirect = async (team: Team, member: TeamMember) => {
+  const openDirect = async (team: ChatTeam, member: TeamMember) => {
     const known = conversations.find((c) => c.id === member.directConversationId);
     if (known) {
       setView({ kind: "chat", conversation: known });
@@ -74,7 +66,7 @@ export default function MessagesWorkspace({ conversations, loading, onRefresh, o
     setOpeningFanId(member.fan.id);
     const conversation = member.directConversationId
       ? await fetchConversation(member.directConversationId)
-      : await startDirect(team.id, member.fan.id);
+      : await startDirect(team, member.fan.id);
     setOpeningFanId(null);
     if (conversation) openChat(conversation);
   };
@@ -108,7 +100,6 @@ export default function MessagesWorkspace({ conversations, loading, onRefresh, o
           ? "New Group"
           : "Messages";
 
-  const crest = savedSchool?.logoUrl || "/images/preview-crest.png";
 
   return (
     <>
@@ -179,32 +170,7 @@ export default function MessagesWorkspace({ conversations, loading, onRefresh, o
               ))
             ))}
 
-          {view.kind === "team" &&
-            (teamsLoading ? (
-              <Loader />
-            ) : teams.length === 0 ? (
-              <p className="py-12 text-center text-sm text-white/50">No teams yet. Add a team to message its people.</p>
-            ) : (
-              teams.map((t) => (
-                <button key={t.id} type="button" onClick={() => pickTeam(t)} className={ROW}>
-                  <Image
-                    src={crest}
-                    alt=""
-                    width={40}
-                    height={40}
-                    // The school logo may be an uploaded remote URL with no configured image host.
-                    unoptimized={crest.startsWith("http")}
-                    className="size-10 shrink-0 rounded-full object-cover bg-black/40 p-0.5 border-2"
-                    style={{ borderColor: t.ring }}
-                  />
-                  <span className="flex-1 flex flex-col min-w-0">
-                    <span className="text-sm font-semibold text-white truncate">{t.name}</span>
-                    <span className="text-xs text-white/50 truncate">{`${t.sport} · ${t.level}`}</span>
-                  </span>
-                  <ChevronRight className="size-4 text-white/50" />
-                </button>
-              ))
-            ))}
+          {view.kind === "team" && <TeamPicker onPick={pickTeam} />}
         </div>
       )}
     </>

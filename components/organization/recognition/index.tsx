@@ -217,7 +217,7 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
                   <p className="py-10 text-center text-sm text-error">{fw.galleryError}</p>
                 ) : jobs.length > 0 ? (
                   <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 min-[1800px]:grid-cols-6 gap-3">
                       {jobs.map((j) =>
                         j.resultUrl ? (
                           <PhotoTile

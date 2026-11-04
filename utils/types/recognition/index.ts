@@ -51,6 +51,8 @@ export interface RecognitionBody {
   recognizedBy: RecognitionRef;
   player: RecognitionRef;
   scheduleEventId?: string;
+  // The card colour, #RRGGBB (required).
+  hexColor: string;
 }
 
 // A recognition as the API returns it, with the card data filled in from the ids.
@@ -73,6 +75,10 @@ export interface Recognition {
     teamName: string | null;
   };
   scheduleEventId: string | null;
+  // The card colour (#RRGGBB); missing / null on older rows = the template's.
+  hexColor?: string | null;
+  // The resolved team.
+  teamId?: string | null;
   game: {
     startUtc: string;
     home: { name: string; logoUrl: string | null };

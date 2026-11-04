@@ -60,10 +60,12 @@ export interface ScheduleListResponse {
   data: [{ items: ScheduleItem[]; pagination: SchedulePagination; summary: ScheduleSummary }];
 }
 
-// One side of a GET /schedules/games row.
+// One side of a GET /schedules/games row: id / name are the school, teamId / teamName its team.
 export interface ScheduleGameSide {
   id: string | null;
   name: string | null;
+  teamId?: string | null;
+  teamName?: string | null;
 }
 
 // A row of GET /fanhub/org/schedules/games (games only).

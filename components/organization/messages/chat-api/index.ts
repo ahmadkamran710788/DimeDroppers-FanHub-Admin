@@ -1,5 +1,5 @@
 import toast from "react-hot-toast";
-import type { ChatAudience, OrgChatMessage, OrgConversation, TeamMembers } from "@/components/organization/messages/types";
+import { teamRef, type ChatAudience, type ChatTeam, type OrgChatMessage, type OrgConversation, type TeamMembers } from "@/components/organization/messages/types";
 import { backendFetch, forceSignOut } from "@/utils/api-call";
 import { extractApiErrorMessage } from "@/utils/api-error";
 import { routes } from "@/utils/routes";
@@ -47,8 +47,13 @@ export const fetchConversations = () => request<OrgConversation>(routes.api.orgC
 export const fetchConversation = async (id: string) =>
   first(await request<OrgConversation>(routes.api.orgChatConversation(id), { failure: "Couldn't open this conversation." }));
 
-export const fetchMembers = async (schoolTeamId: string) =>
-  first(await request<TeamMembers>(routes.api.orgChatTeamMembers(schoolTeamId), { failure: "Couldn't load this team's members." }));
+export const fetchMembers = async (team: ChatTeam) =>
+  first(
+    await request<TeamMembers>(
+      team.kind === "FANHUB_TEAM" ? routes.api.orgChatFanHubTeamMembers(team.id) : routes.api.orgChatTeamMembers(team.id),
+      { failure: "Couldn't load this team's members." }
+    )
+  );
 
 // One page of messages, oldest first. `before` (a message id) pages back to older ones.
 export const fetchMessages = (conversationId: string, before?: string) => {
@@ -59,17 +64,17 @@ export const fetchMessages = (conversationId: string, before?: string) => {
 };
 
 // Opens the direct chat with one fan of the team, or returns the existing one.
-export const startDirect = async (schoolTeamId: string, fanId: string) =>
+export const startDirect = async (team: ChatTeam, fanId: string) =>
   first(
     await request<OrgConversation>(routes.api.orgChatDirect, {
       method: "POST",
-      body: { schoolTeamId, fanId },
+      body: { ...teamRef(team), fanId },
       failure: "Couldn't start the conversation.",
     })
   );
 
 export interface NewGroup {
-  schoolTeamId: string;
+  team: ChatTeam;
   title: string;
   audience: ChatAudience;
   fanIds?: string[];
@@ -77,11 +82,11 @@ export interface NewGroup {
 }
 
 // Creates a new group every time; `body`, when given, is sent as its first message.
-export const startGroup = async (group: NewGroup) =>
+export const startGroup = async ({ team, ...rest }: NewGroup) =>
   first(
     await request<OrgConversation>(routes.api.orgChatGroup, {
       method: "POST",
-      body: { ...group },
+      body: { ...teamRef(team), ...rest },
       failure: "Couldn't create the group.",
     })
   );

@@ -351,6 +351,8 @@ export const routes = {
     // Messages — the org chats with the people of its teams (FANHUB_ORG_CHAT_ADMIN.md).
     // Who can be messaged, per tab (players / parents / staff / followers): GET ?tab=&search=.
     orgChatTeamMembers: (schoolTeamId: string) => `fanhub/org/chat/teams/${schoolTeamId}/members`,
+    // The same for a tournament's event team (FANHUB_ORG_TOURNAMENT_CHAT_ADMIN.md).
+    orgChatFanHubTeamMembers: (fanHubTeamId: string) => `fanhub/org/chat/fanhub-teams/${fanHubTeamId}/members`,
     // The org's conversations, newest activity first: GET ?schoolTeamId= (all teams without it).
     orgChatConversations: "fanhub/org/chat/conversations",
     // POST opens (or reuses) a direct chat with one fan of the team.

@@ -16,8 +16,9 @@ import { useGamePeople, type PeopleSource } from "@/components/organization/reco
 import WhoStep, { type Audience } from "@/components/organization/recognition/add-recognition/who-step";
 import DonorCard, { SAMPLE_DONOR, type DonorTemplate } from "@/components/organization/recognition/donor-card";
 import PlayerCard, { type PlayerRecognition, type PlayerTemplate } from "@/components/organization/recognition/player-card";
+import { cardBackground, cardHexOf } from "@/components/organization/recognition/add-recognition/data";
 import RecognitionPreview from "@/components/organization/recognition/recognition-preview";
-import { badgeKeyOf, badgeLabelOf, cardOf, playerTemplateOf, roleLabelOf, templateKeyOf } from "@/components/organization/recognition/recognition-api";
+import { badgeKeyOf, badgeLabelOf, cardOf, playerTemplateOf, roleLabelOf, templateHexOf, templateKeyOf } from "@/components/organization/recognition/recognition-api";
 import apiCall from "@/utils/api-call";
 import type { Recognition, RecognitionBody, RecognitionStatus } from "@/utils/types/recognition";
 import type { RecognitionTemplate } from "@/components/organization/recognition/recognitions-data";
@@ -62,6 +63,8 @@ export default function AddRecognitionPage({ editId }: { editId?: string }) {
   const [audienceError, setAudienceError] = useState("");
   // The award badge, picked in Details.
   const [badge, setBadge] = useState<RecognitionTemplate>("Hustle");
+  // The card colour picked in Details: "" (the template's), a preset gradient or a hex. Preview only: the API has no colour field yet.
+  const [color, setColor] = useState("");
   const [donorTemplate, setDonorTemplate] = useState<DonorTemplate>("Profile & Campaign");
   const [playerTemplate, setPlayerTemplate] = useState<PlayerTemplate>("Game");
   // Every template is offered whoever is recognized (for now); this is the group the picked one is from.
@@ -89,6 +92,7 @@ export default function AddRecognitionPage({ editId }: { editId?: string }) {
       setKind("player");
       setPlayerTemplate(playerTemplateOf(r.template));
       setBadge(badgeLabelOf(r.awardBadge));
+      setColor(r.hexColor ?? "");
       setForm((prev) => ({ ...prev, message: r.description }));
     });
     return () => {
@@ -131,27 +135,21 @@ export default function AddRecognitionPage({ editId }: { editId?: string }) {
     setErrors((prev) => ({ ...prev, teamId: "" }));
   };
 
-  // Recognized By starts on the first staff member / parent until the admin picks someone.
-  const giverIdOf = (id: string) => (givers.some((p) => p.id === id) ? id : (givers[0]?.id ?? ""));
-  const shown = { ...form, giverId: giverIdOf(form.giverId) };
-  const teamOf = (giverId: string) => givers.find((p) => p.id === giverId)?.teamKey;
+  const player = players.find((p) => p.id === form.playerId);
+  // The panel shows the organisation as Recognized By; the API still takes a person, so the first staff
+  // member / parent of the player's team is sent.
+  const giver = player ? (givers.find((p) => p.teamKey === player.teamKey) ?? givers[0]) : givers[0];
+  const shown = { ...form, giverId: giver?.id ?? "" };
 
   const update = <K extends keyof CustomizeForm>(key: K, value: CustomizeForm[K]) => {
     setForm((prev) => ({
       ...prev,
       [key]: value,
-      // A giver only shouts out their own team's players: another team's giver clears the player.
-      ...(key === "giverId" && teamOf(value as string) !== teamOf(giverIdOf(prev.giverId)) && { playerId: "" }),
       // Another side of the game brings other people.
       ...(key === "side" && { giverId: "", playerId: "" }),
     }));
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: "" }));
   };
-
-  const giver = givers.find((p) => p.id === shown.giverId);
-  // The players of the giver's team; none until a giver is chosen.
-  const teamPlayers = giver ? players.filter((p) => p.teamKey === giver.teamKey) : [];
-  const player = teamPlayers.find((p) => p.id === form.playerId);
 
   // The preview: the kept recognition's game and player, or what's picked so far (a placeholder where
   // nothing is yet); the badge and message as edited.
@@ -210,6 +208,7 @@ export default function AddRecognitionPage({ editId }: { editId?: string }) {
       status,
       awardBadge: badgeKeyOf(badge),
       description: form.message.trim(),
+      hexColor: cardHexOf(color) || templateHexOf(playerTemplate),
       ...people,
     };
     setSaving(true);
@@ -273,9 +272,11 @@ export default function AddRecognitionPage({ editId }: { editId?: string }) {
             isTournament={isTournament}
             badge={badge}
             onBadge={setBadge}
+            color={color}
+            onColor={setColor}
             onGame={pickGame}
             onTeam={pickTeam}
-            players={teamPlayers}
+            players={players}
             sourceChosen={!!source}
             kept={
               kept
@@ -287,9 +288,7 @@ export default function AddRecognitionPage({ editId }: { editId?: string }) {
                   }
                 : null
             }
-            gameSides={needsSide && game ? { home: game.home.shortName, away: game.away.shortName } : null}
-            giverChosen={!!giver}
-            givers={givers}
+            gameSides={needsSide && game ? { home: game.teamNames?.home ?? game.home.shortName, away: game.teamNames?.away ?? game.away.shortName } : null}
             peopleLoading={peopleLoading}
             form={shown}
             errors={errors}
@@ -302,11 +301,12 @@ export default function AddRecognitionPage({ editId }: { editId?: string }) {
                 isDonor ? (
                   <DonorCard template={donorTemplate} data={SAMPLE_DONOR} />
                 ) : (
-                  <PlayerCard template={playerTemplate} data={previewData} />
+                  <PlayerCard template={playerTemplate} data={previewData} gradient={cardBackground(color)} />
                 )
               }
               description="This is how it will appear on the fan app."
             />
+            {!isDonor && org?.name && <p className="mt-2 px-1 text-xs text-white/60 truncate">{`By ${org.name}`}</p>}
           </div>
         </div>
       )}

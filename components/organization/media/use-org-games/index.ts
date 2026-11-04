@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { orgKindOf, useAuth } from "@/context/auth";
 import type { MediaGame, MediaTeam } from "@/components/organization/media/data";
 import { useSelectedEvent } from "@/context/selected-event";
@@ -8,7 +8,7 @@ import { useSetup } from "@/context/setup";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type { TournamentScheduleGame, TournamentScheduleResponse, TournamentScheduleSide } from "@/utils/types/exposure-event";
-import type { ScheduleItem, ScheduleListResponse } from "@/utils/types/schedule";
+import type { ScheduleGamesResponse, ScheduleItem, ScheduleListResponse } from "@/utils/types/schedule";
 
 const FALLBACK_LOGO = "/images/preview-crest.png";
 // A game is taken as over this long after its start (the school list carries no live status).
@@ -93,7 +93,8 @@ const toTournamentGame = (g: TournamentScheduleGame): MediaGame => {
 // - Tournament: the games of the event picked in the shared event picker (GET /exposure/schedules?eventId=),
 //   by start time.
 // `games` is undefined for any other organisation kind (the page then shows its sample games).
-export function useOrgGames() {
+// `teamNames`: a school game also carries its two teams' names (`teamNames`, from GET /schedules/games).
+export function useOrgGames({ teamNames = false }: { teamNames?: boolean } = {}) {
   const { org } = useAuth();
   const orgKind = orgKindOf(org);
   const isSchool = orgKind === "school";
@@ -130,6 +131,28 @@ export function useOrgGames() {
     };
   }, [isSchool, schoolName, schoolLogo]);
 
+  // Team names of the school's games by schedule id, read from GET /schedules/games (GET /schedules has none).
+  // A side without a teamName (often the opponent) keeps its school name.
+  const [sideNames, setSideNames] = useState<Map<string, { home?: string; away?: string }> | null>(null);
+  useEffect(() => {
+    if (!isSchool || !teamNames) return;
+    let cancelled = false;
+    apiCall<ScheduleGamesResponse>({
+      endpoint: routes.api.listScheduleGames,
+      method: "GET",
+      data: { page: 1, limit: GAMES_LIMIT, sortOrder: "desc" },
+    }).then((result) => {
+      if (cancelled) return;
+      const rows = result.success ? (result.data?.data?.[0]?.schedules ?? []) : [];
+      setSideNames(
+        new Map(rows.map((r) => [r.id, { home: r.home?.teamName || undefined, away: r.away?.teamName || undefined }]))
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isSchool, teamNames]);
+
   useEffect(() => {
     if (!eventId) return;
     let cancelled = false;
@@ -147,14 +170,23 @@ export function useOrgGames() {
     };
   }, [eventId]);
 
+  const namedSchoolGames = useMemo(
+    () =>
+      (schoolGames ?? []).map((g) => {
+        const names = sideNames?.get(g.id);
+        return names ? { ...g, teamNames: names } : g;
+      }),
+    [schoolGames, sideNames]
+  );
+
   const games = isSchool
-    ? (schoolGames ?? [])
+    ? namedSchoolGames
     : isTournament
       ? eventGames?.eventId === eventId
         ? eventGames.games
         : []
       : undefined;
-  const loading = isSchool ? schoolGames === null : isTournament && !noEvents && (!eventId || eventGames?.eventId !== eventId);
+  const loading = isSchool ? schoolGames === null || (teamNames && sideNames === null) : isTournament && !noEvents && (!eventId || eventGames?.eventId !== eventId);
 
   return { games, loading, isTournament, event, setEvent, noEvents };
 }

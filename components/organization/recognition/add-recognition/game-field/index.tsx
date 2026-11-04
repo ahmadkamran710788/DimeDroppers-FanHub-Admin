@@ -21,7 +21,7 @@ const gameLabel = (g: MediaGame) =>
 // The game of a "Game" template: a tournament picks the event (the shared picker) then one of its games;
 // a school picks one of its own games.
 export default function GameField({ gameId, onGame, error }: GameFieldProps) {
-  const { games = [], loading, isTournament, event, setEvent, noEvents } = useOrgGames();
+  const { games = [], loading, isTournament, event, setEvent, noEvents } = useOrgGames({ teamNames: true });
 
   return (
     <div className="flex flex-col gap-3">

@@ -15,18 +15,18 @@ import {
   TAB_LABEL,
   tagLabel,
   type ChatAudience,
+  type ChatTeam,
   type MemberTab,
   type TeamMember,
   type TeamMembers,
 } from "@/components/organization/messages/types";
-import type { Team } from "@/components/organization/teams/data";
 import { cn } from "@/utils/cn";
 
 const ROW = "cursor-pointer w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-left transition-colors disabled:opacity-50 disabled:cursor-wait";
 const TEXT_BUTTON = "cursor-pointer flex items-center gap-2 text-sm font-medium text-white/70 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
 
 interface MemberPickerProps {
-  team: Team;
+  team: ChatTeam;
   tab: MemberTab;
   onTabChange: (tab: MemberTab) => void;
   // Fans picked for a group, kept across tabs.
@@ -55,10 +55,12 @@ export default function MemberPicker({
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selecting, setSelecting] = useState(selected.length > 0);
+  // Bumped by Retry after a failed load.
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    fetchMembers(team.id).then((data) => {
+    fetchMembers(team).then((data) => {
       if (cancelled) return;
       setMembers(data);
       setLoading(false);
@@ -66,7 +68,16 @@ export default function MemberPicker({
     return () => {
       cancelled = true;
     };
-  }, [team.id]);
+    // The id (and kind) covers the team.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [team.id, attempt]);
+
+  // The members call failed (the API already toasted why): an error, not an empty team.
+  const failed = !loading && members === null;
+  const retry = () => {
+    setLoading(true);
+    setAttempt((n) => n + 1);
+  };
 
   // The response holds the whole team, so search filters here instead of refetching.
   const query = search.trim().toLowerCase();
@@ -111,7 +122,7 @@ export default function MemberPicker({
             label={`Message all ${TAB_LABEL[tab]}`}
             icon={<Megaphone className="size-4" strokeWidth={2} />}
             onClick={() => onNewGroup(TAB_AUDIENCE[tab])}
-            disabled={loading || tabCount === 0}
+            disabled={loading || failed || tabCount === 0}
             className={TEXT_BUTTON}
           />
           <Button
@@ -127,6 +138,11 @@ export default function MemberPicker({
       <div className="flex-1 min-h-0 overflow-y-auto px-5 py-3 flex flex-col gap-3">
         {loading ? (
           <Loader />
+        ) : failed ? (
+          <div className="py-12 flex flex-col items-center gap-3 text-center">
+            <p className="text-sm text-white/50">Couldn&apos;t load this team&apos;s members.</p>
+            <Button variant="text" size="sm" label="Try again" onClick={retry} className={TEXT_BUTTON} />
+          </div>
         ) : rows.length === 0 ? (
           <p className="py-12 text-center text-sm text-white/50">
             {query ? "Nobody matches that search." : `No ${TAB_LABEL[tab].toLowerCase()} with a Fan Hub account yet.`}

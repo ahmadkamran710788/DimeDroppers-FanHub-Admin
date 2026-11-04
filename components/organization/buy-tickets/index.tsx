@@ -23,6 +23,7 @@ import { useTicketGames, type GameTicketFilter } from "@/components/organization
 import { useTicketCampaigns } from "@/components/organization/buy-tickets/use-ticket-campaigns";
 import { useTicketOverview } from "@/components/organization/buy-tickets/use-ticket-overview";
 import { useOrgTeams } from "@/components/organization/teams/use-org-teams";
+import { orgKindOf, useAuth } from "@/context/auth";
 import apiCall from "@/utils/api-call";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
@@ -98,6 +99,8 @@ export default function BuyTicketsPage() {
   });
   // The sports and levels to filter by are the org's teams'.
   const { teams } = useOrgTeams();
+  // A tournament has no teams of its own to filter by, so it gets no Sport / Level filters.
+  const isTournament = orgKindOf(useAuth().org) === "tournament";
   const sportOptions = useMemo(() => optionsOf(teams.map((t) => t.sport)), [teams]);
   const levelOptions = useMemo(() => optionsOf(teams.map((t) => t.level)), [teams]);
   const filtered = !!search || status !== "all" || !!homeAway || !!sports || !!level;
@@ -336,30 +339,34 @@ export default function BuyTicketsPage() {
               }}
               labelClassName={FILTER_LABEL}
             />
-            <Select
-              label="Sport"
-              name="sports"
-              variant="dark"
-              value={sports}
-              options={sportOptions}
-              onChange={(e) => {
-                setSports(e.target.value);
-                setPage(1);
-              }}
-              labelClassName={FILTER_LABEL}
-            />
-            <Select
-              label="Level"
-              name="level"
-              variant="dark"
-              value={level}
-              options={levelOptions}
-              onChange={(e) => {
-                setLevel(e.target.value);
-                setPage(1);
-              }}
-              labelClassName={FILTER_LABEL}
-            />
+            {!isTournament && (
+              <>
+                <Select
+                  label="Sport"
+                  name="sports"
+                  variant="dark"
+                  value={sports}
+                  options={sportOptions}
+                  onChange={(e) => {
+                    setSports(e.target.value);
+                    setPage(1);
+                  }}
+                  labelClassName={FILTER_LABEL}
+                />
+                <Select
+                  label="Level"
+                  name="level"
+                  variant="dark"
+                  value={level}
+                  options={levelOptions}
+                  onChange={(e) => {
+                    setLevel(e.target.value);
+                    setPage(1);
+                  }}
+                  labelClassName={FILTER_LABEL}
+                />
+              </>
+            )}
           </div>
 
           <p className="text-xs text-white/60">Click a game to see the tickets sold for it.</p>
