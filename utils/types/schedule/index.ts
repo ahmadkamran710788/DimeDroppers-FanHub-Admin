@@ -22,6 +22,9 @@ export interface ScheduleItem {
   sports: string | null;
   level: string | null;
   sourcePlatform: string;
+  // The school's team that plays the game, and the opponent when it is a school team in Fan Hub (schoolTeamIds).
+  teamId?: string | null;
+  opponentSchoolTeamId?: string | null;
   // GAME or PRACTICE; null when the event has no type (treated like a game).
   activityType?: "GAME" | "PRACTICE" | null;
   createdAt: string;

@@ -52,6 +52,9 @@ export interface MediaGame {
   fromApi?: boolean;
   // A tournament game's two teams (fanHubTeamIds, home first), for their rosters.
   teamIds?: string[];
+  // A school game: which side is the school, and each side's school team id (the opponent's when it is in Fan Hub).
+  schoolSide?: "home" | "away";
+  schoolTeamIds?: { home: string | null; away: string | null };
   id: string;
   // ISO date-time.
   start: string;

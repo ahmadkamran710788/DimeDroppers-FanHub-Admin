@@ -52,6 +52,10 @@ const toMediaGame = (g: ScheduleItem, school: MediaTeam, now: number): MediaGame
     fromApi: true,
     id: g.id,
     start,
+    schoolSide: away ? "away" : "home",
+    schoolTeamIds: away
+      ? { home: g.opponentSchoolTeamId ?? null, away: g.teamId ?? null }
+      : { home: g.teamId ?? null, away: g.opponentSchoolTeamId ?? null },
     home: away ? opponent : school,
     away: away ? school : opponent,
     status,

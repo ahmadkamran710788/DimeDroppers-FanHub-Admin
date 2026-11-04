@@ -23,10 +23,14 @@ export interface PhotoboothGame {
   utcTime: string | null;
 }
 
+// Where the org's review of an image stands: PENDING (not reviewed), ACCEPTED (on the fan wall) or REJECTED.
+export type PhotoboothReviewStatus = "PENDING" | "ACCEPTED" | "REJECTED";
+
 // One fan photobooth image (a "job"). `resultUrl` is a presigned image URL, set once COMPLETED.
 export interface PhotoboothJob {
   id: string;
   status: PhotoboothJobStatus;
+  reviewStatus: PhotoboothReviewStatus;
   progress: number;
   resultUrl: string | null;
   createdAt: string;
@@ -47,7 +51,7 @@ export interface FanWallItem {
   id: string;
   sortOrder: number;
   createdAt: string;
-  photoboothJob: Omit<PhotoboothJob, "progress" | "fan"> & {
+  photoboothJob: Omit<PhotoboothJob, "progress" | "fan" | "reviewStatus"> & {
     fan: { id: string; name: string; avatarUrl: string | null };
   };
 }
