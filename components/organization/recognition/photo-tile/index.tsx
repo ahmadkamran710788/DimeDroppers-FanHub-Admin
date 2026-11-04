@@ -58,7 +58,7 @@ export default function PhotoTile({
       ref={ref}
       {...(added ? {} : dragProps)}
       className={cn(
-        "group relative overflow-hidden rounded-[6px] border-2 bg-black/40",
+        "@container group relative overflow-hidden rounded-[6px] border-2 bg-black/40",
         draggable ? "cursor-grab active:cursor-grabbing" : "cursor-default",
         dropTarget ? "border-white/60" : "border-white/15",
         className
@@ -142,10 +142,10 @@ export default function PhotoTile({
                 type="button"
                 onClick={onAccept}
                 aria-label={`Accept ${alt} and add it to the fan wall`}
-                className="h-8 px-2.5 rounded-[6px] bg-success/90 hover:bg-success flex items-center gap-1 text-xs font-semibold text-white"
+                className="h-8 px-2 @[12rem]:px-2.5 rounded-[6px] bg-success/90 hover:bg-success flex items-center gap-1 text-xs font-semibold text-white"
               >
                 <Check className="size-3.5" strokeWidth={3} />
-                Accept
+                <span className="hidden @[12rem]:inline">Accept</span>
               </button>
             )}
             {onReject && (
@@ -153,10 +153,10 @@ export default function PhotoTile({
                 type="button"
                 onClick={onReject}
                 aria-label={`Reject ${alt}`}
-                className="h-8 px-2.5 rounded-[6px] bg-error/90 hover:bg-error flex items-center gap-1 text-xs font-semibold text-white"
+                className="h-8 px-2 @[12rem]:px-2.5 rounded-[6px] bg-error/90 hover:bg-error flex items-center gap-1 text-xs font-semibold text-white"
               >
                 <X className="size-3.5" strokeWidth={3} />
-                Reject
+                <span className="hidden @[12rem]:inline">Reject</span>
               </button>
             )}
           </span>
