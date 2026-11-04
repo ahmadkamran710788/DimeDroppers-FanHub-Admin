@@ -11,7 +11,6 @@ import Input from "@/components/common/input";
 import MultiSelect, { ALL, type MultiSelectValue } from "@/components/common/multi-select";
 import Select from "@/components/common/select";
 import { CARD, FIELD, OUTLINE_BUTTON, PRIMARY_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
-import InsetSection from "@/components/sponsor/find-organizations/inset-section";
 import { orgSearchSchema } from "@/components/sponsor/find-organizations/schema";
 import type { SponsorStore } from "@/components/sponsor/find-organizations/use-sponsor-stores";
 import {
@@ -23,6 +22,8 @@ import {
 import type { FilterOption, SponsorSearchFilters } from "@/utils/types/sponsor-packages";
 
 const CONTROL = cn(FIELD, "h-12 text-[16px] min-w-0");
+// Each group of filters sits in its own card.
+const SECTION = cn(CARD, "rounded-[8px] p-4 lg:p-6 flex flex-col gap-6 min-w-0");
 const HINT = "text-[13px] text-[#a8a8a8]";
 // A text button that reads as a link inside a hint.
 const LINK = "inline text-[13px] font-normal text-[#c9b8ff] underline hover:text-white";
@@ -114,122 +115,120 @@ export default function SearchFilters({ filters, stores, onSearch, searching = f
   }
 
   return (
-    <form
-      aria-label="Filters"
-      noValidate
-      onSubmit={search}
-      className={cn(CARD, "rounded-[8px] p-4 lg:p-6 flex flex-col gap-6")}
-    >
-      {/* By organization. */}
-      <div className="flex flex-col gap-2">
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))] gap-4 items-start">
-          <Input
-            label="ORGANIZATION NAME"
-            labelHint={
-              <span className={cn(HINT, areaInUse && "opacity-50")}>
-                Search by organization to find the sponsorship packages they have available
-              </span>
-            }
-            name="org-name"
-            value={form.name}
-            onChange={(e) => update("name", e.target.value)}
-            placeholder="Search by name"
-            error={errors.name}
-            maxLength={120}
-            disabled={areaInUse}
-            className="min-w-0"
-            labelClassName={cn(SECTION_LABEL, areaInUse && "opacity-50")}
-            inputClassName={cn(CONTROL, "py-0 px-[14px] placeholder:text-[#757575]")}
-          />
-          <div className="flex flex-col gap-[10px] min-w-0">
-            <div className={cn(SECTION_LABEL, areaInUse && "opacity-50")}>ORGANIZATION TYPE</div>
-            <FilterChips
-              variant="pill"
-              ariaLabel="Organization type"
-              options={[{ label: "All", value: "", disabled: areaInUse }, ...chipOptions(filters?.organizationTypes, areaInUse)]}
-              value={form.type}
-              onChange={(type) => update("type", type)}
+    <form aria-label="Filters" noValidate onSubmit={search} className="flex flex-col gap-6">
+      {/* Where to search: by organization or near the brand's locations. */}
+      <section aria-label="Organization or location" className={SECTION}>
+        {/* By organization. */}
+        <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))] gap-4 items-start">
+            <Input
+              label="ORGANIZATION NAME"
+              labelHint={
+                <span className={cn(HINT, areaInUse && "opacity-50")}>
+                  Search by organization to find the sponsorship packages they have available
+                </span>
+              }
+              name="org-name"
+              value={form.name}
+              onChange={(e) => update("name", e.target.value)}
+              placeholder="Search by name"
+              error={errors.name}
+              maxLength={120}
+              disabled={areaInUse}
+              className="min-w-0"
+              labelClassName={cn(SECTION_LABEL, areaInUse && "opacity-50")}
+              inputClassName={cn(CONTROL, "py-0 px-[14px] placeholder:text-[#757575]")}
+            />
+            <div className="flex flex-col gap-[10px] min-w-0">
+              <div className={cn(SECTION_LABEL, areaInUse && "opacity-50")}>ORGANIZATION TYPE</div>
+              <FilterChips
+                variant="pill"
+                ariaLabel="Organization type"
+                options={[{ label: "All", value: "", disabled: areaInUse }, ...chipOptions(filters?.organizationTypes, areaInUse)]}
+                value={form.type}
+                onChange={(type) => update("type", type)}
+              />
+            </div>
+          </div>
+          {areaInUse && (
+            <p className={HINT}>
+              Searching near your brand locations.{" "}
+              <Button variant="text" size="sm" label="Clear the location search" onClick={clearArea} className={LINK} /> to
+              search by organization instead.
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-4 text-[13px] font-bold tracking-[1px] text-[#a8a8a8]">
+          <span className="h-px flex-1 bg-[#262626]" aria-hidden />
+          OR
+          <span className="h-px flex-1 bg-[#262626]" aria-hidden />
+        </div>
+
+        {/* By location. Brand locations takes two of the 200px columns once there's room for two. One radius
+            applies to every picked store (the API takes one). */}
+        <div className="flex flex-col gap-2">
+          <div className="@container grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 items-start">
+            <MultiSelect
+              label="BRAND LOCATIONS"
+              labelHint={
+                <span className={cn(HINT, orgInUse && "opacity-50")}>
+                  Search by your brand locations to find the organizations with sponsorship packages near them
+                </span>
+              }
+              name="org-locations"
+              value={current.stores}
+              onChange={(picked) => update("stores", picked)}
+              options={(stores ?? []).map((s) => ({ label: s.label, value: s.id, hint: s.hint }))}
+              allLabel={`All my locations (${stores?.length ?? 0})`}
+              max={MAX_PICKED_STORES}
+              countLabel={(count) => `${count} locations`}
+              placeholder={!stores ? "Loading your locations…" : stores.length ? "Anywhere" : "No locations yet"}
+              searchPlaceholder="Search your locations"
+              disabled={!stores?.length || orgInUse}
+              variant="dark"
+              className="min-w-0 @min-[416px]:col-span-2"
+              labelClassName={cn(SECTION_LABEL, orgInUse && "opacity-50")}
+              selectClassName={cn(CONTROL, "px-3")}
+            />
+            {/* Whole miles only; checked against the API's limit on submit. */}
+            <Input
+              label="RADIUS (MILES)"
+              name="org-radius"
+              value={current.radius}
+              onChange={(e) => update("radius", e.target.value.replace(/\D/g, "").slice(0, 3))}
+              placeholder={String(filters?.radiusDefaultMiles ?? 25)}
+              inputMode="numeric"
+              disabled={!searchesNearStores(applied)}
+              error={errors.radius}
+              className="min-w-0"
+              labelClassName={cn(SECTION_LABEL, orgInUse && "opacity-50")}
+              inputClassName={cn(CONTROL, "py-0 px-[14px] placeholder:text-[#757575]")}
             />
           </div>
-        </div>
-        {areaInUse && (
-          <p className={HINT}>
-            Searching near your brand locations.{" "}
-            <Button variant="text" size="sm" label="Clear the location search" onClick={clearArea} className={LINK} /> to
-            search by organization instead.
-          </p>
-        )}
-      </div>
-
-      <div className="flex items-center gap-4 text-[13px] font-bold tracking-[1px] text-[#a8a8a8]">
-        <span className="h-px flex-1 bg-[#262626]" aria-hidden />
-        OR
-        <span className="h-px flex-1 bg-[#262626]" aria-hidden />
-      </div>
-
-      {/* By location. Brand locations takes two of the 200px columns once there's room for two. One radius
-          applies to every picked store (the API takes one). */}
-      <div className="flex flex-col gap-2">
-        <div className="@container grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 items-start">
-          <MultiSelect
-            label="BRAND LOCATIONS"
-            labelHint={
-              <span className={cn(HINT, orgInUse && "opacity-50")}>
-                Search by your brand locations to find the organizations with sponsorship packages near them
-              </span>
-            }
-            name="org-locations"
-            value={current.stores}
-            onChange={(picked) => update("stores", picked)}
-            options={(stores ?? []).map((s) => ({ label: s.label, value: s.id, hint: s.hint }))}
-            allLabel={`All my locations (${stores?.length ?? 0})`}
-            max={MAX_PICKED_STORES}
-            countLabel={(count) => `${count} locations`}
-            placeholder={!stores ? "Loading your locations…" : stores.length ? "Anywhere" : "No locations yet"}
-            searchPlaceholder="Search your locations"
-            disabled={!stores?.length || orgInUse}
-            variant="dark"
-            className="min-w-0 @min-[416px]:col-span-2"
-            labelClassName={cn(SECTION_LABEL, orgInUse && "opacity-50")}
-            selectClassName={cn(CONTROL, "px-3")}
-          />
-          {/* Whole miles only; checked against the API's limit on submit. */}
-          <Input
-            label="RADIUS (MILES)"
-            name="org-radius"
-            value={current.radius}
-            onChange={(e) => update("radius", e.target.value.replace(/\D/g, "").slice(0, 3))}
-            placeholder={String(filters?.radiusDefaultMiles ?? 25)}
-            inputMode="numeric"
-            disabled={!searchesNearStores(applied)}
-            error={errors.radius}
-            className="min-w-0"
-            labelClassName={cn(SECTION_LABEL, orgInUse && "opacity-50")}
-            inputClassName={cn(CONTROL, "py-0 px-[14px] placeholder:text-[#757575]")}
-          />
-        </div>
-        {stores && !stores.length ? (
-          <p className={HINT}>
-            Add your locations on your{" "}
-            <Link href={routes.ui.sponsor.profile} className="text-[#c9b8ff] underline hover:text-white">
-              Sponsor Profile
-            </Link>{" "}
-            to find organizations near them.
-          </p>
-        ) : (
-          orgInUse && (
+          {stores && !stores.length ? (
             <p className={HINT}>
-              Searching by organization.{" "}
-              <Button variant="text" size="sm" label="Clear the organization search" onClick={clearOrg} className={LINK} />{" "}
-              to search near your brand locations instead.
+              Add your locations on your{" "}
+              <Link href={routes.ui.sponsor.profile} className="text-[#c9b8ff] underline hover:text-white">
+                Sponsor Profile
+              </Link>{" "}
+              to find organizations near them.
             </p>
-          )
-        )}
-      </div>
+          ) : (
+            orgInUse && (
+              <p className={HINT}>
+                Searching by organization.{" "}
+                <Button variant="text" size="sm" label="Clear the organization search" onClick={clearOrg} className={LINK} />{" "}
+                to search near your brand locations instead.
+              </p>
+            )
+          )}
+        </div>
+      </section>
 
       {/* Works with either search: only organizations with a package within the budget, and with games in the
           season. */}
-      <div className="flex flex-col gap-6 border-t border-[#262626] pt-6">
+      <section aria-label="Budget, season, sports and gender" className={SECTION}>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 items-start">
           <Input
             label="SPONSOR BUDGET"
@@ -285,26 +284,30 @@ export default function SearchFilters({ filters, stores, onSearch, searching = f
             onChange={(genders) => update("genders", genders)}
           />
         </div>
+      </section>
 
-        {/* The organization's physical assets, by the category it gave them (the list from GET /filters). It keeps
-            organizations with a sponsor-enabled asset in any picked category; tournaments are checked per event. */}
-        <InsetSection title="PHYSICAL ASSET CATEGORY" description="Physical assets the organization offers, by type">
-          <MultiSelect
-            label="Physical asset category"
-            name="org-asset-categories"
-            value={form.assetCategories}
-            onChange={(picked) => update("assetCategories", picked === ALL ? [] : picked)}
-            options={chipOptions(filters?.physicalAssetCategories)}
-            countLabel={(count) => `${count} categories`}
-            placeholder={filters ? "Any category" : "Loading categories…"}
-            searchPlaceholder="Search categories"
-            disabled={!filters?.physicalAssetCategories?.length}
-            variant="dark"
-            labelClassName="sr-only"
-            selectClassName={cn(CONTROL, "px-3")}
-          />
-        </InsetSection>
-      </div>
+      {/* The organization's physical assets, by the category it gave them (the list from GET /filters). It keeps
+          organizations with a sponsor-enabled asset in any picked category; tournaments are checked per event. */}
+      <section aria-label="Physical asset category" className={cn(SECTION, "gap-3")}>
+        <div>
+          <div className={SECTION_LABEL}>PHYSICAL ASSET CATEGORY</div>
+          <div className={cn(HINT, "mt-[2px]")}>Physical assets the organization offers, by type</div>
+        </div>
+        <MultiSelect
+          label="Physical asset category"
+          name="org-asset-categories"
+          value={form.assetCategories}
+          onChange={(picked) => update("assetCategories", picked === ALL ? [] : picked)}
+          options={chipOptions(filters?.physicalAssetCategories)}
+          countLabel={(count) => `${count} categories`}
+          placeholder={filters ? "Any category" : "Loading categories…"}
+          searchPlaceholder="Search categories"
+          disabled={!filters?.physicalAssetCategories?.length}
+          variant="dark"
+          labelClassName="sr-only"
+          selectClassName={cn(CONTROL, "px-3")}
+        />
+      </section>
 
       <div className="flex justify-end gap-3 flex-wrap">
         <Button
