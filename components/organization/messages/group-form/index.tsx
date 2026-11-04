@@ -7,8 +7,7 @@ import Input from "@/components/common/input";
 import Textarea from "@/components/common/textarea";
 import { startGroup } from "@/components/organization/messages/chat-api";
 import { groupSchema } from "@/components/organization/messages/schema";
-import type { ChatAudience, OrgConversation } from "@/components/organization/messages/types";
-import type { Team } from "@/components/organization/teams/data";
+import type { ChatAudience, ChatTeam, OrgConversation } from "@/components/organization/messages/types";
 import { validateAndSetErrors } from "@/utils/validation";
 
 const AUDIENCE_HINT: Record<ChatAudience, string> = {
@@ -21,7 +20,7 @@ const AUDIENCE_HINT: Record<ChatAudience, string> = {
 };
 
 interface GroupFormProps {
-  team: Team;
+  team: ChatTeam;
   initialAudience: ChatAudience;
   // Fans picked in select mode; offered as the "Selected" audience.
   selected: string[];
@@ -49,7 +48,7 @@ export default function GroupForm({ team, initialAudience, selected, onCreated }
     if (!(await validateAndSetErrors(groupSchema, { title, body }, setErrors))) return;
     setSaving(true);
     const conversation = await startGroup({
-      schoolTeamId: team.id,
+      team,
       title: title.trim(),
       audience,
       ...(audience === "CUSTOM" && { fanIds: selected }),

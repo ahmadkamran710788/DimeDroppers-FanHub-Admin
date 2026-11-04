@@ -25,9 +25,23 @@ export interface TeamMember {
   directConversationId: string | null;
 }
 
-// GET /teams/{schoolTeamId}/members. A fan may be on several tabs.
+// A school team (schoolTeamId) or a tournament's event team (fanHubTeamId).
+export type ChatTeamKind = "SCHOOL_TEAM" | "FANHUB_TEAM";
+
+// The team a conversation is about, as the chat screens need it.
+export interface ChatTeam {
+  id: string;
+  name: string;
+  kind: ChatTeamKind;
+}
+
+// The id field the API takes for this team in a direct or group chat.
+export const teamRef = (team: ChatTeam) =>
+  team.kind === "FANHUB_TEAM" ? { fanHubTeamId: team.id } : { schoolTeamId: team.id };
+
+// GET /teams/{schoolTeamId}/members or /fanhub-teams/{fanHubTeamId}/members. A fan may be on several tabs.
 export interface TeamMembers {
-  team: { id: string; name: string };
+  team: { id: string; name: string; kind?: ChatTeamKind };
   tabs: Record<MemberTab, TeamMember[]>;
   counts: Record<MemberTab, number>;
 }
@@ -77,7 +91,7 @@ export interface OrgConversation {
   id: string;
   type: "DIRECT" | "GROUP";
   title: string | null;
-  team: { id: string; name: string } | null;
+  team: { id: string; name: string; kind?: ChatTeamKind } | null;
   participants: { fan: ChatFan; lastReadAt: string | null }[];
   lastMessage: ChatLastMessage | null;
   lastMessageAt: string | null;
