@@ -42,6 +42,8 @@ interface SearchFiltersProps {
   stores: SponsorStore[] | null;
   // Called with the validated filters when the sponsor presses Show organizations.
   onSearch: (search: OrgSearch) => void;
+  // A search has run, so results are showing; until then Clear filters only resets the form.
+  searched?: boolean;
   // A search is running: the button waits.
   searching?: boolean;
 }
@@ -52,7 +54,13 @@ const chipOptions = (options: FilterOption[] | undefined, disabled = false) =>
 // Where the sponsor searches either by organization (name, type) or near their stores (locations, radius),
 // then narrows by budget, season, sports, genders and physical asset categories. Changes apply on submit.
 // It shows straight away; only the Locations list waits for the stores.
-export default function SearchFilters({ filters, stores, onSearch, searching = false }: SearchFiltersProps) {
+export default function SearchFilters({
+  filters,
+  stores,
+  onSearch,
+  searched = false,
+  searching = false,
+}: SearchFiltersProps) {
   const [form, setForm] = useState<FilterForm>({ ...DEFAULT_SEARCH, stores: null, radius: null });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -102,6 +110,8 @@ export default function SearchFilters({ filters, stores, onSearch, searching = f
     };
     setForm(next);
     setErrors({});
+    // Nothing is showing yet, so there are no results to refresh.
+    if (!searched) return;
     // The results follow straight away, so they never show filters that are no longer set; a radius that
     // isn't valid yet keeps its error and the results wait for it.
     const cleared = { ...current, ...next, stores: current.stores, radius: current.radius };
