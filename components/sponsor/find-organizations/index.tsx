@@ -15,7 +15,6 @@ import PackagesPanel from "@/components/sponsor/find-organizations/packages-pane
 import SearchFilters from "@/components/sponsor/find-organizations/search-filters";
 import { useSponsorStores } from "@/components/sponsor/find-organizations/use-sponsor-stores";
 import {
-  DEFAULT_SEARCH,
   DEFAULT_SORT,
   PAGE_SIZE,
   STAT_TINTS,
@@ -76,30 +75,10 @@ interface Results {
 // (GET /fanhub/sponsor-packages/organizations), and a panel with the selected one's packages.
 export default function FindOrganizations() {
   const [filters, setFilters] = useState<SponsorSearchFilters | null>(null);
-  const [filtersLoaded, setFiltersLoaded] = useState(false);
   const stores = useSponsorStores();
-  // The last search run, its sort and the page shown. Until the sponsor searches, near all their stores at
-  // the default radius (anywhere without stores), once the stores and filters have loaded.
-  const [chosen, setChosen] = useState<OrgSearch | null>(null);
-  const search = useMemo<OrgSearch | null>(
-    () =>
-      chosen ??
-      (stores && filtersLoaded
-        ? {
-            ...DEFAULT_SEARCH,
-            stores: stores.length ? ALL : [],
-            radius: filters ? String(filters.radiusDefaultMiles) : "",
-          }
-        : null),
-    [chosen, stores, filtersLoaded, filters]
-  );
-  // The results' Location filter: one of the searched stores, or "" for all of them. The backend does the
-  // narrowing (the search runs again for that store), so it works across every page.
-  const [narrowTo, setNarrowTo] = useState("");
-  const shown = useMemo<OrgSearch | null>(
-    () => (search && narrowTo ? { ...search, stores: [narrowTo] } : search),
-    [search, narrowTo]
-  );
+  // The last search run, its sort and the page shown. Nothing is searched until the sponsor presses Show
+  // organizations, so the stats and the list stay hidden until then.
+  const [search, setSearch] = useState<OrgSearch | null>(null);
   // The stores the search above was near: the Location filter's choices.
   const searchedStores =
     !search || !stores
@@ -107,6 +86,17 @@ export default function FindOrganizations() {
       : search.stores === ALL
         ? stores
         : stores.filter((s) => (search.stores as string[]).includes(s.id));
+  // The store the sponsor picked in the results' Location filter; "" until they pick one.
+  const [pickedStore, setPickedStore] = useState("");
+  // The results' Location filter: one of the searched stores, the first by default ("" when there's only one
+  // or none, so nothing to narrow). The backend does the narrowing (the search runs again for that store), so
+  // it works across every page.
+  const narrowTo =
+    searchedStores.length > 1 ? (searchedStores.find((s) => s.id === pickedStore) ?? searchedStores[0]).id : "";
+  const shown = useMemo<OrgSearch | null>(
+    () => (search && narrowTo ? { ...search, stores: [narrowTo] } : search),
+    [search, narrowTo]
+  );
   const [sort, setSort] = useState<SponsorSearchSort>(DEFAULT_SORT);
   const [page, setPage] = useState(1);
   const [results, setResults] = useState<Results | null>(null);
@@ -120,7 +110,6 @@ export default function FindOrganizations() {
     sponsorRequest<SponsorSearchFilters>("GET", routes.api.sponsorFilters).then((r) => {
       if (r.view) setFilters(r.view);
       else toast.error(r.message ?? "Couldn't load the search filters.");
-      setFiltersLoaded(true);
     });
   }, []);
 
@@ -157,15 +146,16 @@ export default function FindOrganizations() {
     };
   }, [key, shown, sort, page]);
 
-  const loading = results?.key !== key;
+  // Before the first search there's nothing to wait for.
+  const loading = !!shown && results?.key !== key;
   const items = results?.items ?? [];
   // The open organization, or the first result.
   const selected = items.find((o) => o.id === selectedId) ?? items[0];
 
   function runSearch(next: OrgSearch) {
-    setChosen(next);
-    // A new search shows all of its stores again.
-    setNarrowTo("");
+    setSearch(next);
+    // A new search starts again on its first store.
+    setPickedStore("");
     setPage(1);
     // The sort the sponsor picked stays; Nearest only applies near stores.
     if (!searchesNearStores(next) && sort === "NEAREST") setSort(DEFAULT_SORT);
@@ -218,89 +208,99 @@ export default function FindOrganizations() {
         </p>
       </div>
 
-      <SearchFilters filters={filters} stores={stores} onSearch={runSearch} searching={loading && page === 1} />
+      <SearchFilters
+        filters={filters}
+        stores={stores}
+        onSearch={runSearch}
+        searched={!!search}
+        searching={loading && page === 1}
+      />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-10">
-        {stats.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
-      </div>
-
-      <div className="flex flex-wrap gap-6 items-start">
-        <section
-          ref={listRef}
-          aria-label="Organizations"
-          className="flex-[1_1_400px] min-w-0 flex flex-col gap-[14px] scroll-mt-6"
-        >
-          <div className="flex justify-between items-center gap-3 flex-wrap">
-            <h3 className="font-display font-black text-xl lg:text-[28px] uppercase leading-tight">Organizations</h3>
-            <div className="flex items-center gap-3 flex-wrap">
-              {/* Results for one of the searched stores, or all of them; the city tells same-named stores apart. */}
-              {searchedStores.length > 1 && (
-                <Select
-                  label="Location"
-                  name="results-location"
-                  value={narrowTo}
-                  onChange={(e) => {
-                    setNarrowTo(e.target.value);
-                    setPage(1);
-                  }}
-                  options={[
-                    { label: `All searched locations (${searchedStores.length})`, value: "" },
-                    ...searchedStores.map((s) => ({ label: s.area ? `${s.label} · ${s.area}` : s.label, value: s.id })),
-                  ]}
-                  variant="dark"
-                  className="w-[260px] max-w-full"
-                  labelClassName="sr-only"
-                  selectClassName="h-12 rounded-[8px] px-3.5 text-sm"
-                />
-              )}
-              {sorts.length > 0 && (
-                <FilterChipMenu
-                  label={`Sort: ${sortLabel}`}
-                  ariaLabel="Sort"
-                  items={sorts.map((s) => ({
-                    label: s.label,
-                    onSelect: () => {
-                      setSort(s.code as SponsorSearchSort);
-                      setPage(1);
-                    },
-                  }))}
-                />
-              )}
-            </div>
+      {search && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-10">
+            {stats.map((stat) => (
+              <StatCard key={stat.label} {...stat} />
+            ))}
           </div>
-          {loading ? (
-            <Loader />
-          ) : items.length ? (
-            <>
-              {items.map((org) => (
-                <OrgCard key={org.id} org={org} selected={org.id === selected?.id} onSelect={() => setSelectedId(org.id)} />
-              ))}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4">
-                <span className="text-xs text-white/80">{`Showing ${from} to ${to} of ${results?.total ?? 0} organizations`}</span>
-                <Pagination page={page} pageCount={results?.totalPages ?? 0} onChange={goToPage} />
+    
+          <div className="flex flex-wrap gap-6 items-start">
+            <section
+              ref={listRef}
+              aria-label="Organizations"
+              className="flex-[1_1_400px] min-w-0 flex flex-col gap-[14px] scroll-mt-6"
+            >
+              <div className="flex justify-between items-center gap-3 flex-wrap">
+                <h3 className="font-display font-black text-xl lg:text-[28px] uppercase leading-tight">Organizations</h3>
+                <div className="flex items-center gap-3 flex-wrap">
+                  {/* Results for one of the searched stores, the first by default; the city tells same-named stores apart. */}
+                  {searchedStores.length > 1 && (
+                    <Select
+                      label="Location"
+                      name="results-location"
+                      value={narrowTo}
+                      onChange={(e) => {
+                        setPickedStore(e.target.value);
+                        setPage(1);
+                      }}
+                      options={searchedStores.map((s) => ({
+                        label: s.area ? `${s.label} · ${s.area}` : s.label,
+                        value: s.id,
+                      }))}
+                      variant="dark"
+                      className="w-[260px] max-w-full"
+                      labelClassName="sr-only"
+                      selectClassName="h-12 rounded-[8px] px-3.5 text-sm"
+                    />
+                  )}
+                  {sorts.length > 0 && (
+                    <FilterChipMenu
+                      label={`Sort: ${sortLabel}`}
+                      ariaLabel="Sort"
+                      items={sorts.map((s) => ({
+                        label: s.label,
+                        onSelect: () => {
+                          setSort(s.code as SponsorSearchSort);
+                          setPage(1);
+                        },
+                      }))}
+                    />
+                  )}
+                </div>
               </div>
-            </>
-          ) : (
-            <p className={cn(CARD, "rounded-[8px] p-6 text-[15px] text-[#a8a8a8]")}>
-              No organizations match these filters. Try a wider radius or a bigger budget, or clear some of the
-              other filters.
-            </p>
-          )}
-        </section>
-
-        {selected && shown && (
-          <PackagesPanel
-            key={selected.id}
-            org={selected}
-            eventFilters={eventFiltersOf(shown)}
-            budgetCents={budgetCentsOf(shown)}
-            radiusMiles={results?.radiusMiles ?? null}
-            onActivated={() => setRefreshes((n) => n + 1)}
-          />
-        )}
-      </div>
+              {loading ? (
+                <Loader />
+              ) : items.length ? (
+                <>
+                  {items.map((org) => (
+                    <OrgCard key={org.id} org={org} selected={org.id === selected?.id} onSelect={() => setSelectedId(org.id)} />
+                  ))}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4">
+                    <span className="text-xs text-white/80">{`Showing ${from} to ${to} of ${results?.total ?? 0} organizations`}</span>
+                    <Pagination page={page} pageCount={results?.totalPages ?? 0} onChange={goToPage} />
+                  </div>
+                </>
+              ) : (
+                <p className={cn(CARD, "rounded-[8px] p-6 text-[15px] text-[#a8a8a8]")}>
+                  No organizations match these filters. Try a wider radius or a bigger budget, or clear some of the
+                  other filters.
+                </p>
+              )}
+            </section>
+    
+            {selected && shown && (
+              <PackagesPanel
+                key={selected.id}
+                org={selected}
+                eventFilters={eventFiltersOf(shown)}
+                budgetCents={budgetCentsOf(shown)}
+                radiusMiles={results?.radiusMiles ?? null}
+                onActivated={() => setRefreshes((n) => n + 1)}
+              />
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
