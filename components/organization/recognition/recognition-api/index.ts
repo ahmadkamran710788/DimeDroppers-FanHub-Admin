@@ -1,3 +1,5 @@
+import { cardHexOf } from "@/components/organization/recognition/add-recognition/data";
+import { PLAYER_TEMPLATES } from "@/components/organization/recognition/player-card";
 import type { PlayerRecognition, PlayerTemplate } from "@/components/organization/recognition/player-card";
 import type { RecognitionTemplate } from "@/components/organization/recognition/recognitions-data";
 import type { AwardBadge, Recognition, RecognitionBody, RecognitionStatus, RecognitionTemplateKey } from "@/utils/types/recognition";
@@ -9,6 +11,9 @@ const TEMPLATE_KEY: Partial<Record<PlayerTemplate, RecognitionTemplateKey>> = { 
 export const templateKeyOf = (t: PlayerTemplate) => TEMPLATE_KEY[t];
 
 export const playerTemplateOf = (key: RecognitionTemplateKey): PlayerTemplate => (key === "PLAYER_GAME" ? "Game" : "Profile");
+
+// A template's own card colour as a hex (its gradient's first stop): the hexColor sent when none is picked.
+export const templateHexOf = (t: PlayerTemplate) => cardHexOf(PLAYER_TEMPLATES.find((p) => p.name === t)?.gradient ?? "") || "#2563EB";
 
 // "Player of the Game" ↔ "PLAYER_OF_THE_GAME".
 export const badgeKeyOf = (label: RecognitionTemplate) => label.toUpperCase().replace(/ /g, "_") as AwardBadge;
@@ -54,4 +59,5 @@ export const bodyOf = (r: Recognition, status: RecognitionStatus): RecognitionBo
   player: { type: r.player.type, id: r.player.id },
   ...(r.scheduleEventId && { scheduleEventId: r.scheduleEventId }),
   ...(r.eventId && { eventId: r.eventId }),
+  hexColor: r.hexColor || templateHexOf(playerTemplateOf(r.template)),
 });

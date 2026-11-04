@@ -11,8 +11,9 @@ import RowActionsMenu from "@/components/common/row-actions-menu";
 import SearchInput from "@/components/common/search-input";
 import StatusPill from "@/components/common/status-pill";
 import EventSelect from "@/components/organization/event-select";
+import { cardBackground } from "@/components/organization/recognition/add-recognition/data";
 import PlayerCard from "@/components/organization/recognition/player-card";
-import { badgeLabelOf, cardOf, playerTemplateOf, roleLabelOf } from "@/components/organization/recognition/recognition-api";
+import { badgeLabelOf, cardOf, playerTemplateOf } from "@/components/organization/recognition/recognition-api";
 import { useRecognitions } from "@/components/organization/recognition/use-recognitions";
 import { orgKindOf, useAuth } from "@/context/auth";
 import { useSelectedEvent } from "@/context/selected-event";
@@ -100,7 +101,7 @@ export default function RecognitionPosts() {
           {shown.map((r) => (
             <div key={r.id} className="flex flex-col gap-2">
               <div className="relative">
-                <PlayerCard template={playerTemplateOf(r.template)} data={cardOf(r)} />
+                <PlayerCard template={playerTemplateOf(r.template)} data={cardOf(r)} gradient={cardBackground(r.hexColor ?? "")} />
                 <RowActionsMenu
                   ariaLabel={`Actions for ${r.player.name}'s recognition`}
                   className="absolute top-3 right-3 size-9 bg-black/30"
@@ -114,7 +115,7 @@ export default function RecognitionPosts() {
                 />
               </div>
               <div className="flex items-center justify-between gap-2 px-1 text-xs text-white/60">
-                <span className="truncate">{`By ${r.recognizedBy.name} · ${roleLabelOf(r.recognizedBy.role)} · ${fmtDate(r.createdAt)}`}</span>
+                <span className="truncate">{`By ${org?.name || r.recognizedBy.name} · ${fmtDate(r.createdAt)}`}</span>
                 <StatusPill
                   label={r.status === "PUBLISHED" ? "Published" : "Draft"}
                   color={r.status === "PUBLISHED" ? "bg-[#1F5F3A]" : "bg-[#5C4A12]"}

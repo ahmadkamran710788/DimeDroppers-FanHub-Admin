@@ -1,17 +1,17 @@
 "use client";
 
-import { User, Users, UserStar } from "lucide-react";
+import { User, Users } from "lucide-react";
 import Button from "@/components/common/button";
 import Select from "@/components/common/select";
 import Textarea from "@/components/common/textarea";
 import type { MediaGame } from "@/components/organization/media/data";
-import { MESSAGE_MAX, SHOUTOUT_TEMPLATES } from "@/components/organization/recognition/add-recognition/data";
+import { CARD_COLORS, HEX_COLOR, MESSAGE_MAX, SHOUTOUT_TEMPLATES } from "@/components/organization/recognition/add-recognition/data";
 import GameField from "@/components/organization/recognition/add-recognition/game-field";
 import SectionHeading from "@/components/organization/recognition/add-recognition/section-heading";
 import Selectable from "@/components/organization/recognition/add-recognition/selectable";
 import TeamField, { type PickedTeam } from "@/components/organization/recognition/add-recognition/team-field";
 import type { GamePerson } from "@/components/organization/recognition/add-recognition/use-game-people";
-import type { PlayerTemplate } from "@/components/organization/recognition/player-card";
+import { PLAYER_TEMPLATES, type PlayerTemplate } from "@/components/organization/recognition/player-card";
 import type { RecognitionTemplate } from "@/components/organization/recognition/recognitions-data";
 import { TEMPLATES } from "@/components/organization/recognition/templates";
 import { cn } from "@/utils/cn";
@@ -35,10 +35,12 @@ interface CustomizeStepProps {
   // The award badge (label and icon on the card); the colours stay the template's.
   badge: RecognitionTemplate;
   onBadge: (t: RecognitionTemplate) => void;
+  // The card colour: "" (the template's own), a preset gradient or a hex.
+  color: string;
+  onColor: (gradient: string) => void;
   onGame: (game: MediaGame) => void;
   onTeam: (team: PickedTeam) => void;
   players: GamePerson[];
-  givers: GamePerson[];
   peopleLoading: boolean;
   // Whether the game / team the people come from is picked yet.
   sourceChosen: boolean;
@@ -46,8 +48,6 @@ interface CustomizeStepProps {
   kept: { giver: string; player: string; game: string | null; onChange: () => void } | null;
   // A school game's two teams, to pick whose people to list; null otherwise.
   gameSides: { home: string; away: string } | null;
-  // Players only list once a giver is chosen (their own team's).
-  giverChosen: boolean;
   form: CustomizeForm;
   errors: Record<string, string>;
   update: <K extends keyof CustomizeForm>(key: K, value: CustomizeForm[K]) => void;
@@ -57,7 +57,6 @@ const LABEL = "text-white text-sm";
 const CARD = "rounded-[10px] border border-white/10 bg-white/[0.04] p-5 lg:p-6 flex flex-col gap-6";
 const HEADING = "font-display font-black text-xl uppercase text-white";
 const playerLabel = (p: GamePerson) => `${p.number !== undefined ? `#${p.number} ` : ""}${p.name} · ${p.team}`;
-const giverLabel = (p: GamePerson) => `${p.name} · ${p.role} · ${p.team}`;
 
 // Step 3 of Add Recognition, with the fields the picked template needs (FANHUB_RECOGNITION_TEMPLATES_AND_RULES):
 // - "Game" (template 5): the game (a school then picks one of its two teams), then Recognized By and the
@@ -70,15 +69,15 @@ export default function CustomizeStep({
   isTournament,
   badge,
   onBadge,
+  color,
+  onColor,
   onGame,
   onTeam,
   players,
-  givers,
   peopleLoading,
   sourceChosen,
   kept,
   gameSides,
-  giverChosen,
   form,
   errors,
   update,
@@ -106,8 +105,6 @@ export default function CustomizeStep({
                   <dd className="text-white truncate">{kept.game}</dd>
                 </>
               )}
-              <dt className="text-white/60">Recognized By</dt>
-              <dd className="text-white truncate">{kept.giver}</dd>
               <dt className="text-white/60">Player</dt>
               <dd className="text-white truncate">{kept.player}</dd>
             </dl>
@@ -144,31 +141,9 @@ export default function CustomizeStep({
           </div>
         )}
 
-        {/* Who gives it, and the player */}
+        {/* The player (Recognized By is the organisation, sent on its own) */}
         <div className="flex flex-col gap-4">
           <h4 className={HEADING}>Select a Player</h4>
-          <Select
-            variant="dark"
-            label="Recognized By"
-            name="giverId"
-            required
-            value={form.giverId}
-            onChange={(e) => update("giverId", e.target.value)}
-            options={givers.map((p) => ({ label: giverLabel(p), value: p.id }))}
-            placeholder={
-              !sourceChosen
-                ? waitingFor
-                : peopleLoading
-                  ? "Loading…"
-                  : givers.length
-                    ? "Choose a staff member or parent"
-                    : "No staff or parents on this team yet"
-            }
-            icon={<UserStar className="size-5" strokeWidth={2} />}
-            disabled={!sourceChosen || peopleLoading || givers.length === 0}
-            error={errors.giverId}
-            labelClassName={LABEL}
-          />
           <Select
             variant="dark"
             label="Player"
@@ -180,17 +155,15 @@ export default function CustomizeStep({
             placeholder={
               !sourceChosen
                 ? waitingFor
-                : !giverChosen
-                  ? "Choose who's giving it first"
-                  : peopleLoading
+                : peopleLoading
                     ? "Loading…"
                     : players.length
                       ? "Choose a player"
                       : "No players on this team yet"
             }
             icon={<User className="size-5" strokeWidth={2} />}
-            disabled={!giverChosen || peopleLoading || players.length === 0}
-            error={errors.playerId}
+            disabled={!sourceChosen || peopleLoading || players.length === 0}
+            error={errors.playerId || errors.giverId}
             labelClassName={LABEL}
           />
         </div>
@@ -216,6 +189,59 @@ export default function CustomizeStep({
                 <span className="truncate">{t}</span>
               </Selectable>
             ))}
+          </div>
+        </div>
+
+        {/* Card colour */}
+        <div className="flex flex-col gap-4">
+          <h4 className={HEADING}>Card Color</h4>
+          <div className="flex flex-wrap gap-3">
+            {CARD_COLORS.map((c) => (
+              <button
+                key={c.name}
+                type="button"
+                onClick={() => onColor(c.gradient)}
+                aria-label={c.name === "Template" ? "Template colour" : c.name}
+                aria-pressed={c.gradient === color}
+                title={c.name}
+                className={cn(
+                  "size-10 rounded-full ring-2 ring-offset-2 ring-offset-[#0b0b0b] transition",
+                  c.gradient === color ? "ring-white" : "ring-transparent hover:ring-white/40"
+                )}
+                style={{ background: c.gradient || PLAYER_TEMPLATES.find((t) => t.name === template)?.gradient }}
+              />
+            ))}
+            {/* Any colour: the browser's picker, or a hex typed in. */}
+            <label
+              title="Custom colour"
+              className={cn(
+                "relative size-10 rounded-full ring-2 ring-offset-2 ring-offset-[#0b0b0b] cursor-pointer overflow-hidden",
+                HEX_COLOR.test(color) ? "ring-white" : "ring-transparent hover:ring-white/40"
+              )}
+              style={{ background: HEX_COLOR.test(color) ? color : "conic-gradient(red,yellow,lime,cyan,blue,magenta,red)" }}
+            >
+              <input
+                type="color"
+                aria-label="Custom colour"
+                value={HEX_COLOR.test(color) ? color : "#3b82f6"}
+                onChange={(e) => onColor(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+            </label>
+            <input
+              type="text"
+              aria-label="Hex colour"
+              placeholder="#3B82F6"
+              maxLength={7}
+              defaultValue={HEX_COLOR.test(color) ? color : ""}
+              key={HEX_COLOR.test(color) ? color : "none"}
+              onChange={(e) => {
+                const v = e.target.value.trim();
+                const hex = v.startsWith("#") ? v : `#${v}`;
+                if (HEX_COLOR.test(hex)) onColor(hex);
+              }}
+              className="h-10 w-28 rounded-[10px] border border-white/10 bg-white/[0.06] px-3 text-sm text-white uppercase placeholder:text-white/40 outline-none focus:border-white/30"
+            />
           </div>
         </div>
 

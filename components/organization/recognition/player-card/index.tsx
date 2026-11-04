@@ -99,16 +99,18 @@ function Game({ game }: { game: NonNullable<PlayerRecognition["game"]> }) {
 interface PlayerCardProps {
   template: PlayerTemplate;
   data: PlayerRecognition;
+  // A colour picked in Details, in place of the template's.
+  gradient?: string;
   className?: string;
 }
 
 // A player recognition as fans will see it. "Profile & Game" opens with the player then the game, "Game"
 // opens with the game and ends with the player (the original shout-out card), "Profile" has no game.
 // Every template shows the badge and the shout-out.
-export default function PlayerCard({ template, data, className }: PlayerCardProps) {
+export default function PlayerCard({ template, data, gradient, className }: PlayerCardProps) {
   const style = PLAYER_TEMPLATES.find((t) => t.name === template) ?? PLAYER_TEMPLATES[0];
   return (
-    <div className={cn("rounded-[14px] p-5 flex flex-col gap-4 text-white text-left", className)} style={{ background: style.gradient }}>
+    <div className={cn("rounded-[14px] p-5 flex flex-col gap-4 text-white text-left", className)} style={{ background: gradient || style.gradient }}>
       {template !== "Game" && <Profile player={data.player} className={DIVIDER} />}
       {template !== "Profile" &&
         (data.game ? (
