@@ -61,7 +61,7 @@ export default function OrgCard({ org, selected, onSelect }: OrgCardProps) {
           )}
           <span className="text-[#a8a8a8]">
             <strong className="text-white">{org.upcomingGameCount.toLocaleString("en-US")}</strong>{" "}
-            {org.upcomingGameCount === 1 ? "game left" : "games left"}
+            {org.upcomingGameCount === 1 ? "game" : "games"}
           </span>
           <span className="text-[#a8a8a8]">
             <strong className="text-white">{org.packageCount}</strong> {org.packageCount === 1 ? "package" : "packages"}

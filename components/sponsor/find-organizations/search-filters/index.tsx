@@ -176,9 +176,10 @@ export default function SearchFilters({
         </div>
 
         {/* By location. Brand locations takes two of the 200px columns once there's room for two. One radius
-            applies to every picked store (the API takes one). */}
+            applies to every picked store (the API takes one). Both fields share the grid's rows (label, field,
+            error) as subgrids, so the two fields stay level when the hint wraps or the radius shows an error. */}
         <div className="flex flex-col gap-2">
-          <div className="@container grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 items-start">
+          <div className="@container grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-x-4 gap-y-2">
             <MultiSelect
               label="BRAND LOCATIONS"
               labelHint={
@@ -197,11 +198,12 @@ export default function SearchFilters({
               searchPlaceholder="Search your locations"
               disabled={!stores?.length || orgInUse}
               variant="dark"
-              className="min-w-0 @min-[416px]:col-span-2"
+              className="min-w-0 @min-[416px]:col-span-2 row-span-2 grid grid-cols-1 grid-rows-subgrid"
               labelClassName={cn(SECTION_LABEL, orgInUse && "opacity-50")}
               selectClassName={cn(CONTROL, "px-3")}
             />
-            {/* Whole miles only; checked against the API's limit on submit. */}
+            {/* Whole miles only; checked against the API's limit on submit. The label sits on its field, and a
+                third row opens for the error. Stacked (under three columns), it keeps 16px from the field above. */}
             <Input
               label="RADIUS (MILES)"
               name="org-radius"
@@ -211,8 +213,11 @@ export default function SearchFilters({
               inputMode="numeric"
               disabled={!searchesNearStores(applied)}
               error={errors.radius}
-              className="min-w-0"
-              labelClassName={cn(SECTION_LABEL, orgInUse && "opacity-50")}
+              className={cn(
+                "min-w-0 row-span-2 grid grid-cols-1 grid-rows-subgrid @max-[632px]:mt-2",
+                errors.radius && "row-span-3"
+              )}
+              labelClassName={cn(SECTION_LABEL, "self-end", orgInUse && "opacity-50")}
               inputClassName={cn(CONTROL, "py-0 px-[14px] placeholder:text-[#757575]")}
             />
           </div>
