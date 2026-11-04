@@ -4,7 +4,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { CalendarDays, ChevronDown, Eye, Image as ImageIcon, Newspaper, Trash2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import Button from "@/components/common/button";
-import Checkbox from "@/components/common/checkbox";
 import ConfirmModal from "@/components/common/confirm-modal";
 import FilterChipMenu, { FILTER_CHIP } from "@/components/common/filter-chip-menu";
 import Loader from "@/components/common/loader";
@@ -14,8 +13,8 @@ import Tabs from "@/components/common/tabs";
 import PhotoPreview, { type PhotoPreviewItem } from "@/components/organization/recognition/photo-preview";
 import PhotoTemplates from "@/components/organization/recognition/photo-templates";
 import PhotoTile from "@/components/organization/recognition/photo-tile";
-import RecognitionsTable from "@/components/organization/recognition/recognitions-table";
-import { useFanWall, type GalleryStatus } from "@/components/organization/recognition/use-fan-wall";
+import RecognitionPosts from "@/components/organization/recognition/recognition-posts";
+import { useFanWall, type GalleryStatus, type ReviewFilter } from "@/components/organization/recognition/use-fan-wall";
 import { cn } from "@/utils/cn";
 import { registerPhotoboothImageCache } from "@/utils/photobooth-image-cache";
 import type { PhotoboothJob } from "@/utils/types/fan-wall";
@@ -39,7 +38,6 @@ const CARD = "rounded-[10px] border border-white/10 bg-white/[0.04] p-4 lg:p-5 f
 
 // Drag payload: where the photo came from and its id (a photobooth job id from the gallery, a wall item
 // id from the wall).
-type DragSource = { from: "grid" | "layout"; id: string } | null;
 
 const fmtDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : null;
@@ -61,8 +59,8 @@ function CardHeader({ title, description, actions }: { title: string; descriptio
 export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: { initialSection?: RecognitionSection }) {
   const [section, setSection] = useState<RecognitionSection>(initialSection);
   const [tab, setTab] = useState<Tab>("All Photos");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [drag, setDrag] = useState<DragSource>(null);
+  // A wall photo being dragged to a new place in the wall.
+  const [drag, setDrag] = useState<string | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   // The photo shown at full size, from a click on a gallery or wall tile.
@@ -73,34 +71,18 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
   useEffect(registerPhotoboothImageCache, []);
 
   const jobs = fw.gallery?.items ?? [];
-  // Only finished images (with a picture) can go on the wall.
-  const addable = (j: PhotoboothJob) => j.status === "COMPLETED" && !!j.resultUrl && !fw.onWall.has(j.id);
-  const selectable = jobs.filter(addable);
-  const allSelected = selectable.length > 0 && selectable.every((j) => selected.has(j.id));
-  const someSelected = selectable.some((j) => selected.has(j.id));
+  // The image's review status; an older response without one counts as accepted when it's on the wall.
+  const reviewOf = (j: PhotoboothJob) => j.reviewStatus ?? (fw.onWall.has(j.id) ? "ACCEPTED" : "PENDING");
+  // Only finished, pending images (with a picture) can be accepted or rejected.
+  const pending = (j: PhotoboothJob) => j.status === "COMPLETED" && !!j.resultUrl && reviewOf(j) === "PENDING";
 
-  const toggle = (id: string) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(selectable.map((j) => j.id)));
-
-  const addSelected = async () => {
-    await fw.add(selectable.filter((j) => selected.has(j.id)).map((j) => j.id));
-    setSelected(new Set());
-  };
-
-  // A drop on the wall: a gallery image is added there, a wall image moves there.
+  // A drop on the wall moves the dragged wall photo there.
   const dropAt = (index: number | null) => {
-    const source = drag;
+    const id = drag;
     setDrag(null);
     setOverIndex(null);
-    if (!source || fw.busy) return;
-    if (source.from === "grid") void fw.add([source.id], index ?? undefined);
-    else void fw.move(source.id, index ?? fw.wall.length);
+    if (!id || fw.busy) return;
+    void fw.move(id, index ?? fw.wall.length);
   };
 
   const summary = fw.gallery?.summary;
@@ -112,6 +94,13 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
   ];
   const statusLabel = (o: (typeof STATUS_OPTIONS)[number]) => (o.count === undefined ? o.label : `${o.label} (${o.count})`);
   const currentStatus = STATUS_OPTIONS.find((o) => o.value === fw.status) ?? STATUS_OPTIONS[0];
+  const REVIEW_OPTIONS: { label: string; value: ReviewFilter }[] = [
+    { label: "All reviews", value: "" },
+    { label: "Pending", value: "PENDING" },
+    { label: "Accepted", value: "ACCEPTED" },
+    { label: "Rejected", value: "REJECTED" },
+  ];
+  const currentReview = REVIEW_OPTIONS.find((o) => o.value === fw.review) ?? REVIEW_OPTIONS[0];
 
   const pagination = fw.gallery?.pagination;
   const showLayout = tab === "All Photos";
@@ -157,7 +146,7 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
       </div>
 
       {section === "Recognition Posts" ? (
-        <RecognitionsTable />
+        <RecognitionPosts />
       ) : (
         <>
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -196,6 +185,11 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
                   ariaLabel="Filter by status"
                   items={STATUS_OPTIONS.map((o) => ({ label: statusLabel(o), onSelect: () => fw.setStatus(o.value) }))}
                 />
+                <FilterChipMenu
+                  label={currentReview.label}
+                  ariaLabel="Filter by review"
+                  items={REVIEW_OPTIONS.map((o) => ({ label: o.label, onSelect: () => fw.setReview(o.value) }))}
+                />
                 {UPCOMING_FILTERS.map((label) => (
                   <button
                     key={label}
@@ -215,27 +209,7 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
               <section className={CARD}>
                 <CardHeader
                   title={`Photobooth Gallery (${pagination?.total ?? 0})`}
-                  description="Photos fans made with the photobooth at your games. Drag them onto the Fan Wall, or select them and add."
-                  actions={
-                    <>
-                      <button
-                        type="button"
-                        onClick={toggleAll}
-                        disabled={selectable.length === 0}
-                        className="flex items-center gap-2 text-sm text-white disabled:opacity-50"
-                        aria-pressed={allSelected}
-                      >
-                        <Checkbox checked={allSelected} indeterminate={!allSelected && someSelected} variant="white" />
-                        Select All
-                      </button>
-                      <Button
-                        label={fw.busy ? "Adding…" : "Add to Fan Wall"}
-                        className="h-10 min-w-0 px-4 text-sm border border-white/15 bg-white/[0.06]"
-                        disabled={!someSelected || fw.busy}
-                        onClick={addSelected}
-                      />
-                    </>
-                  }
+                  description="Photos fans made with the photobooth at your games. Accept a photo to add it to the Fan Wall."
                 />
                 {fw.galleryLoading ? (
                   <Loader />
@@ -252,9 +226,10 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
                             alt={imageAlt(j.fan.name)}
                             caption={j.fan.name}
                             subcaption={[j.template.name, j.game.title, fmtDate(j.game.utcTime)].filter(Boolean).join(" · ")}
-                            added={fw.onWall.has(j.id)}
-                            selected={selected.has(j.id)}
-                            onToggle={addable(j) ? () => toggle(j.id) : undefined}
+                            added={reviewOf(j) === "ACCEPTED"}
+                            onAccept={pending(j) && !fw.busy ? () => void fw.add([j.id]) : undefined}
+                            rejected={reviewOf(j) === "REJECTED"}
+                            onReject={pending(j) && !fw.busy ? () => void fw.reject(j.id) : undefined}
                             onOpen={() =>
                               setPreview({
                                 src: j.resultUrl!,
@@ -264,15 +239,6 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
                               })
                             }
                             className="aspect-square"
-                            dragProps={
-                              addable(j)
-                                ? {
-                                    draggable: true,
-                                    onDragStart: () => setDrag({ from: "grid", id: j.id }),
-                                    onDragEnd: () => setDrag(null),
-                                  }
-                                : undefined
-                            }
                           />
                         ) : (
                           // Not finished yet (queued, failed): no picture to show.
@@ -363,7 +329,7 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
                               className="w-32 h-28 shrink-0"
                               dragProps={{
                                 draggable: !fw.busy,
-                                onDragStart: () => setDrag({ from: "layout", id: item.id }),
+                                onDragStart: () => setDrag(item.id),
                                 onDragEnd: () => {
                                   setDrag(null);
                                   setOverIndex(null);
@@ -377,7 +343,7 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
                           ) : null
                         )}
                         {fw.wall.length === 0 && (
-                          <p className="m-auto text-sm text-white/50">Drag photos here, or select them and press Add to Fan Wall.</p>
+                          <p className="m-auto text-sm text-white/50">Accept photos in the gallery to add them here.</p>
                         )}
                       </>
                     )}

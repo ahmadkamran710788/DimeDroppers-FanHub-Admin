@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { GripVertical, UserRound, X } from "lucide-react";
+import { Check, GripVertical, UserRound, X } from "lucide-react";
 import Image from "next/image";
-import Checkbox from "@/components/common/checkbox";
 import { cn } from "@/utils/cn";
 import { useQueuedImage } from "@/components/organization/recognition/use-queued-image";
 import { evictPhotoboothImage } from "@/utils/photobooth-image-cache";
@@ -11,12 +10,14 @@ import { evictPhotoboothImage } from "@/utils/photobooth-image-cache";
 interface PhotoTileProps {
   src: string;
   alt: string;
-  // Grid mode: toggles selection. Layout mode: pass onRemove instead.
-  selected?: boolean;
-  onToggle?: () => void;
+  // Gallery: accept (adds it to the fan wall) or reject the photo. Wall: pass onRemove instead.
+  onAccept?: () => void;
+  onReject?: () => void;
   onRemove?: () => void;
-  // Already on the fan wall: shows a badge instead of the checkbox and can't be dragged again.
+  // Already on the fan wall: shows an Accepted badge instead of the buttons.
   added?: boolean;
+  // Rejected: shows a Rejected badge instead of the buttons.
+  rejected?: boolean;
   // Lines over the bottom of the image, e.g. the fan's name and the template.
   caption?: string;
   subcaption?: string;
@@ -29,14 +30,15 @@ interface PhotoTileProps {
   onOpen?: () => void;
 }
 
-// Fan photo thumbnail with a drag handle and either a select checkbox or a remove button.
+// Fan photo thumbnail: Accept / Reject buttons in the gallery, or a drag handle and a remove button on the wall.
 export default function PhotoTile({
   src,
   alt,
-  selected,
-  onToggle,
+  onAccept,
+  onReject,
   onRemove,
   added = false,
+  rejected = false,
   caption,
   subcaption,
   dropTarget,
@@ -49,6 +51,7 @@ export default function PhotoTile({
   const failed = failedSrc === src;
   // Fan photos are large: each waits until it's near the screen and its turn in the image queue.
   const { ref, started, loaded, settle } = useQueuedImage(src);
+  const draggable = !added && !!dragProps?.draggable;
 
   return (
     <div
@@ -56,8 +59,8 @@ export default function PhotoTile({
       {...(added ? {} : dragProps)}
       className={cn(
         "group relative overflow-hidden rounded-[6px] border-2 bg-black/40",
-        added ? "cursor-default" : "cursor-grab active:cursor-grabbing",
-        selected ? "border-[#FF34BF]" : dropTarget ? "border-white/60" : "border-white/15",
+        draggable ? "cursor-grab active:cursor-grabbing" : "cursor-default",
+        dropTarget ? "border-white/60" : "border-white/15",
         className
       )}
     >
@@ -116,26 +119,47 @@ export default function PhotoTile({
           className="absolute inset-0 cursor-[inherit]"
         />
       )}
-      {!added && (
+      {draggable && (
         <span className="pointer-events-none absolute top-1.5 left-1.5 size-8 rounded-[6px] bg-black/60 flex items-center justify-center">
           <GripVertical className="size-4 text-white" strokeWidth={2} />
         </span>
       )}
       {added ? (
-        <span className="absolute top-1.5 right-1.5 h-7 px-2 rounded-[6px] bg-success/90 flex items-center text-xs font-semibold text-white">
-          On wall
+        <span className="absolute top-1.5 right-1.5 h-7 px-2 rounded-[6px] bg-success/90 flex items-center gap-1 text-xs font-semibold text-white">
+          <Check className="size-3.5" strokeWidth={3} />
+          Accepted
+        </span>
+      ) : rejected ? (
+        <span className="absolute top-1.5 right-1.5 h-7 px-2 rounded-[6px] bg-error/90 flex items-center gap-1 text-xs font-semibold text-white">
+          <X className="size-3.5" strokeWidth={3} />
+          Rejected
         </span>
       ) : (
-        onToggle && (
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-pressed={selected}
-            aria-label={selected ? `Deselect ${alt}` : `Select ${alt}`}
-            className="absolute top-1.5 right-1.5 size-8 rounded-[6px] bg-black/60 flex items-center justify-center"
-          >
-            <Checkbox checked={!!selected} variant="white" />
-          </button>
+        (onAccept || onReject) && (
+          <span className="absolute top-1.5 inset-x-1.5 flex justify-end gap-1.5">
+            {onAccept && (
+              <button
+                type="button"
+                onClick={onAccept}
+                aria-label={`Accept ${alt} and add it to the fan wall`}
+                className="h-8 px-2.5 rounded-[6px] bg-success/90 hover:bg-success flex items-center gap-1 text-xs font-semibold text-white"
+              >
+                <Check className="size-3.5" strokeWidth={3} />
+                Accept
+              </button>
+            )}
+            {onReject && (
+              <button
+                type="button"
+                onClick={onReject}
+                aria-label={`Reject ${alt}`}
+                className="h-8 px-2.5 rounded-[6px] bg-error/90 hover:bg-error flex items-center gap-1 text-xs font-semibold text-white"
+              >
+                <X className="size-3.5" strokeWidth={3} />
+                Reject
+              </button>
+            )}
+          </span>
         )
       )}
       {onRemove && (

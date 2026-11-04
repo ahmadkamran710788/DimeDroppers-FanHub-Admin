@@ -47,6 +47,8 @@ export const routes = {
     // Opens the page on the Recognition Posts section.
     recognitionPosts: "/recognition?view=posts",
     addRecognition: "/recognition/add",
+    // The same wizard, filled with one recognition to edit (PATCH /fanhub/org/recognitions/:id).
+    editRecognition: (id: string) => `/recognition/add?edit=${id}`,
     sponsors: "/sponsors",
     helpCenter: "/help-center",
     addSponsor: "/sponsors/add",
@@ -333,7 +335,15 @@ export const routes = {
     orgSponsorActivations: "fanhub/org/sponsor-packages/activations",
     // Recognition & Fan Wall: fans' photobooth images and the wall the org builds from them
     // (FANHUB_ORG_PHOTOBOOTH_FAN_WALL_FRONTEND.md).
+    // Recognitions (FANHUB_ORG_RECOGNITIONS_FRONTEND.md): the read-only templates (?category=&template=),
+    // and the recognitions — GET list (?status=&category=&template=&page=&limit=) / POST create.
+    recognitionWallTemplates: "fanhub/org/recognition-wall-templates",
+    recognitions: "fanhub/org/recognitions",
+    // GET one, PATCH (full body, same as create), DELETE (soft).
+    recognition: (id: string) => `fanhub/org/recognitions/${id}`,
     photoboothJobs: "fanhub/org/photobooth/jobs",
+    // POST { photoboothJobId } marks a completed image REJECTED (FANHUB_ORG_PHOTOBOOTH_FAN_WALL_FRONTEND.md).
+    photoboothJobsReject: "fanhub/org/photobooth/jobs/reject",
     fanWall: "fanhub/org/fan-wall",
     fanWallItems: "fanhub/org/fan-wall/items",
     fanWallItem: (itemId: string) => `fanhub/org/fan-wall/items/${itemId}`,
