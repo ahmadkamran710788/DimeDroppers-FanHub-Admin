@@ -57,9 +57,6 @@ export const PLAN_STAT_TINTS = {
   costPerParent: "#7a4a2e",
 };
 
-// Refinements offered under the composer; picking one adds it to the description.
-export const SUGGESTIONS = ["Add soccer in Tampa", "More Watch Live, fewer banners", "Cut the budget to $40,000"];
-
 // Longest campaign description Dime AI takes.
 export const PROMPT_MAX_LENGTH = 1000;
 

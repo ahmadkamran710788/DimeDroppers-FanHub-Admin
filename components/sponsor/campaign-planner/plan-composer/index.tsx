@@ -12,12 +12,7 @@ import Textarea from "@/components/common/textarea";
 import { GOAL_OPTIONS, SEASON_OPTIONS } from "@/components/sponsor/data";
 import { FIELD, PRIMARY_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
 import { campaignRequestSchema } from "@/components/sponsor/campaign-planner/schema";
-import {
-  DEFAULT_REQUEST,
-  PROMPT_MAX_LENGTH,
-  SUGGESTIONS,
-  type CampaignRequest,
-} from "@/components/sponsor/campaign-planner/data";
+import { DEFAULT_REQUEST, PROMPT_MAX_LENGTH, type CampaignRequest } from "@/components/sponsor/campaign-planner/data";
 
 const CONTROL = cn(FIELD, "h-12 text-[16px] min-w-0");
 
@@ -41,11 +36,6 @@ export default function PlanComposer({ onBuild }: PlanComposerProps) {
 
   // Change handler for one field; editing it clears its error.
   const setField = (field: RequestField) => (e: React.ChangeEvent<FieldElement>) => update(field, e.target.value);
-
-  function addSuggestion(suggestion: string) {
-    const prompt = form.prompt.trim();
-    update("prompt", prompt ? `${prompt} ${suggestion}.` : `${suggestion}.`);
-  }
 
   async function build(e: React.FormEvent) {
     e.preventDefault();
@@ -123,18 +113,6 @@ export default function PlanComposer({ onBuild }: PlanComposerProps) {
             className={cn(PRIMARY_BUTTON, "h-12 px-4 rounded-[10px] text-base")}
           />
         </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-sm text-[#a8a8a8]">Try:</span>
-        {SUGGESTIONS.map((suggestion) => (
-          <Button
-            key={suggestion}
-            label={suggestion}
-            onClick={() => addSuggestion(suggestion)}
-            className="h-auto min-h-10 min-w-0 px-[14px] rounded-full bg-[#0b0b0b] border border-[#333] text-[#d4d4d4] text-sm font-normal backdrop-blur-none"
-          />
-        ))}
       </div>
     </form>
   );
