@@ -5,7 +5,7 @@ import { useSetup } from "@/context/setup";
 import Image from "next/image";
 import { orgKindOf, useAuth, type OrgKind } from "@/context/auth";
 import SidebarFrame, { type NavSection } from "@/components/layout/sidebar-frame";
-import { Bot, BotMessageSquare, ClipboardList, FileText, GitFork, LayoutDashboard, Layers, MapPin, MessagesSquare, ShoppingBag, Sparkles, Star, Trophy, Video } from "lucide-react";
+import { Bot, BotMessageSquare, ClipboardList, CreditCard, FileText, GitFork, HandHeart, LayoutDashboard, Layers, MapPin, MessagesSquare, ShoppingBag, Sparkles, Star, Trophy, Video } from "lucide-react";
 
 // Setup Wizard is not in the sidebar: first-time setup is a full-screen flow after
 // sign-in, and afterwards the organization is edited from Profile.
@@ -57,6 +57,8 @@ const NAV_SECTIONS: NavSection[] = [
       { icon: "/icons/icon-business.svg", label: "Sponsors", href: routes.ui.sponsors },
       { icon: <Bot className="size-6" strokeWidth={1.5} />, label: "Sponsor AI Agent", href: routes.ui.sponsorAiAgent, badge: "NEW" },
       { icon: "/icons/icon-sponsor-messages.svg", label: "Sponsor Messages", href: routes.ui.sponsorMessages },
+      { icon: <HandHeart className="size-6" strokeWidth={1.5} />, label: "Fundable Needs", href: routes.ui.fundableNeeds },
+      { icon: <CreditCard className="size-6" strokeWidth={1.5} />, label: "Virtual Cards", href: routes.ui.virtualCards },
       { icon: "/icons/icon-bolt.svg", label: "Inventory", href: routes.ui.inventory },
     ],
   },
