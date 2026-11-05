@@ -27,6 +27,7 @@ import { useSelectedEvent } from "@/context/selected-event";
 import toast from "react-hot-toast";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
+import { useOrgTeams } from "@/components/organization/teams/use-org-teams";
 
 const STEPS = ["who", "template", "details"] as const;
 type Step = (typeof STEPS)[number];
@@ -38,6 +39,7 @@ const INITIAL_FORM: CustomizeForm = {
   playerId: "",
   message: "",
   giverId: "",
+  period: "",
 };
 
 // One side of a school game: that team's roster by its schoolTeamId (the schedule's teamId or
@@ -93,7 +95,7 @@ export default function AddRecognitionPage({ editId }: { editId?: string }) {
       setPlayerTemplate(playerTemplateOf(r.template));
       setBadge(badgeLabelOf(r.awardBadge));
       setColor(r.hexColor ?? "");
-      setForm((prev) => ({ ...prev, message: r.description }));
+      setForm((prev) => ({ ...prev, message: r.description, period: r.period ?? "" }));
     });
     return () => {
       cancelled = true;
@@ -135,11 +137,21 @@ export default function AddRecognitionPage({ editId }: { editId?: string }) {
     setErrors((prev) => ({ ...prev, teamId: "" }));
   };
 
-  const player = players.find((p) => p.id === form.playerId);
-  // The panel shows the organisation as Recognized By; the API still takes a person, so the first staff
-  // member / parent of the player's team is sent.
-  const giver = player ? (givers.find((p) => p.teamKey === player.teamKey) ?? givers[0]) : givers[0];
-  const shown = { ...form, giverId: giver?.id ?? "" };
+  // Recognized By: a staff member (no parents), head coaches first; the first one until another is picked.
+  const staff = givers
+    .filter((p) => p.refType !== "ROSTER_PARENT" && p.role !== "Parent")
+    .sort((a, b) => Number(/head coach/i.test(b.role)) - Number(/head coach/i.test(a.role)));
+  const giver = staff.find((p) => p.id === form.giverId) ?? staff[0];
+  // The giver only shouts out their own team's players.
+  const teamPlayers = giver ? players.filter((p) => p.teamKey === giver.teamKey) : [];
+  const player = teamPlayers.find((p) => p.id === form.playerId);
+  // A school team's sport (its department), for the preview; the player list doesn't carry it.
+  const { teams: orgTeams } = useOrgTeams(!isTournament);
+  const sportOfTeam = (id?: string | null) => (id ? orgTeams.find((t) => t.id === id)?.sport || undefined : undefined);
+
+  // "Athlete of the Month" is for a month: this month until another is picked.
+  const isMonthBadge = badge === "Athlete of the Month";
+  const shown = { ...form, giverId: giver?.id ?? "", period: form.period || new Date().toISOString().slice(0, 7) };
 
   const update = <K extends keyof CustomizeForm>(key: K, value: CustomizeForm[K]) => {
     setForm((prev) => ({
@@ -147,6 +159,8 @@ export default function AddRecognitionPage({ editId }: { editId?: string }) {
       [key]: value,
       // Another side of the game brings other people.
       ...(key === "side" && { giverId: "", playerId: "" }),
+      // A giver from another team clears the player.
+      ...(key === "giverId" && staff.find((p) => p.id === value)?.teamKey !== giver?.teamKey && { playerId: "" }),
     }));
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: "" }));
   };
@@ -154,14 +168,38 @@ export default function AddRecognitionPage({ editId }: { editId?: string }) {
   // The preview: the kept recognition's game and player, or what's picked so far (a placeholder where
   // nothing is yet); the badge and message as edited.
   const previewData: PlayerRecognition = kept
-    ? { ...cardOf(kept), badge, description: form.message.trim() || "Your shout-out will appear here." }
+    ? (() => {
+        const card = cardOf(kept, org?.name);
+        // Older recognitions come back without a sport: their team's.
+        const sport = card.player.sport ?? sportOfTeam(kept.teamId);
+        return { ...card, player: { ...card.player, sport }, badge, description: form.message.trim() || "Your shout-out will appear here.", period: isMonthBadge ? shown.period : undefined };
+      })()
     : {
     player: player
-      ? { name: player.name, number: player.number, team: player.team }
-      : { name: "Select a player", team: giver?.team ?? team?.name ?? "" },
-    game: game ? { date: game.start, home: { name: game.home.shortName, logo: game.home.logo }, away: { name: game.away.shortName, logo: game.away.logo } } : null,
+      ? {
+          name: player.name,
+          number: player.number,
+          photo: player.photo,
+          // The picked team's name (the roster's own label is a group like "Players").
+          team: (form.side && game ? (game.teamNames?.[form.side] ?? game[form.side].shortName) : team?.name) ?? player.team,
+          // The game's or picked team's sport, and the picked side's school (a school game; else the organisation).
+          sport: sportOfTeam(needsGame ? (form.side && game ? game.schoolTeamIds?.[form.side] : null) : team?.id) ?? (needsGame ? game?.sport : team?.sport) ?? undefined,
+          school: isTournament ? undefined : form.side && game ? game[form.side].shortName : org?.name,
+        }
+      : { name: "Select a player", team: team?.name ?? "" },
+    game: game
+      ? {
+          date: game.start,
+          home: { name: game.home.shortName, logo: game.home.logo },
+          away: { name: game.away.shortName, logo: game.away.logo },
+          // A school game: the side not picked is the opponent (its school, as on the published card).
+          opponent: form.side ? (form.side === "home" ? game.away.shortName : game.home.shortName) : undefined,
+        }
+      : null,
     badge,
     description: form.message.trim() || "Your shout-out will appear here.",
+    period: isMonthBadge ? shown.period : undefined,
+    recognizedBy: giver ? { name: giver.name, role: giver.role, at: new Date().toISOString() } : undefined,
   };
 
   const index = STEPS.indexOf(step);
@@ -183,7 +221,7 @@ export default function AddRecognitionPage({ editId }: { editId?: string }) {
   // Creates the recognition (POST /fanhub/org/recognitions) and goes to Recognition Posts, where it shows as
   // its card. apiCall toasts the API's reason when it refuses (e.g. a player not on the giver's team).
   const save = async (status: RecognitionStatus) => {
-    const rules = kept ? { needsGame: false, needsTeam: false, needsSide: false, needsPeople: false } : { needsGame, needsTeam, needsSide, needsPeople: true };
+    const rules = kept ? { needsGame: false, needsTeam: false, needsSide: false, needsPeople: false, needsPeriod: isMonthBadge } : { needsGame, needsTeam, needsSide, needsPeople: true, needsPeriod: isMonthBadge };
     if (!(await validateAndSetErrors(customizeRecognitionSchema(rules), shown, setErrors))) return;
     const template = templateKeyOf(playerTemplate);
     if (!template || (!kept && (!player || !giver))) return;
@@ -208,6 +246,7 @@ export default function AddRecognitionPage({ editId }: { editId?: string }) {
       status,
       awardBadge: badgeKeyOf(badge),
       description: form.message.trim(),
+      ...(isMonthBadge && { period: shown.period }),
       hexColor: cardHexOf(color) || templateHexOf(playerTemplate),
       ...people,
     };
@@ -276,7 +315,8 @@ export default function AddRecognitionPage({ editId }: { editId?: string }) {
             onColor={setColor}
             onGame={pickGame}
             onTeam={pickTeam}
-            players={players}
+            players={teamPlayers}
+            givers={staff}
             sourceChosen={!!source}
             kept={
               kept
@@ -306,7 +346,6 @@ export default function AddRecognitionPage({ editId }: { editId?: string }) {
               }
               description="This is how it will appear on the fan app."
             />
-            {!isDonor && org?.name && <p className="mt-2 px-1 text-xs text-white/60 truncate">{`By ${org.name}`}</p>}
           </div>
         </div>
       )}

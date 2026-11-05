@@ -11,6 +11,7 @@ export type AwardBadge =
   | "FAN_LOVE"
   | "GAME_CHANGER"
   | "PLAYER_OF_THE_GAME"
+  | "ATHLETE_OF_THE_MONTH"
   | "RISING_STAR"
   | "LEADERSHIP"
   | "THANK_YOU";
@@ -53,6 +54,8 @@ export interface RecognitionBody {
   scheduleEventId?: string;
   // The card colour, #RRGGBB (required).
   hexColor: string;
+  // ATHLETE_OF_THE_MONTH only: the month it's for, "YYYY-MM".
+  period?: string;
 }
 
 // A recognition as the API returns it, with the card data filled in from the ids.
@@ -73,12 +76,18 @@ export interface Recognition {
     position: string | null;
     grade: string | null;
     teamName: string | null;
+    // The player's linked Fan Hub account (presigned avatar URL); null without one.
+    fan?: { name: string | null; profileUrl: string | null } | null;
   };
   scheduleEventId: string | null;
+  // ATHLETE_OF_THE_MONTH: the month it's for, "YYYY-MM".
+  period?: string | null;
   // The card colour (#RRGGBB); missing / null on older rows = the template's.
   hexColor?: string | null;
-  // The resolved team.
+  // The resolved team, and its sport and school.
   teamId?: string | null;
+  sport?: string | null;
+  schoolName?: string | null;
   game: {
     startUtc: string;
     home: { name: string; logoUrl: string | null };

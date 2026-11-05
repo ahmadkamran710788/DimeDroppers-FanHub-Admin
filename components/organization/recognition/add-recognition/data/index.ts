@@ -8,6 +8,7 @@ export const SHOUTOUT_TEMPLATES: RecognitionTemplate[] = [
   "Fan Love",
   "Game Changer",
   "Player of the Game",
+  "Athlete of the Month",
   "Rising Star",
   "Leadership",
   "Thank You",

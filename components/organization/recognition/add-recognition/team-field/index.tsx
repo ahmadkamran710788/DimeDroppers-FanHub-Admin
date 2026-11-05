@@ -13,6 +13,8 @@ import type { DivisionTeamsTreeResponse, TreeEvent } from "@/utils/types/exposur
 export interface PickedTeam {
   id: string;
   name: string;
+  // A school team's sport.
+  sport?: string;
 }
 
 interface TeamFieldProps {
@@ -93,7 +95,7 @@ function SchoolTeamField({ teamId, onTeam, error }: TeamFieldProps) {
       value={teamId}
       onChange={(e) => {
         const team = teams.find((t) => t.id === e.target.value);
-        if (team) onTeam({ id: team.id, name: team.name });
+        if (team) onTeam({ id: team.id, name: team.name, sport: team.sport || undefined });
       }}
       options={teams.map((t) => ({ label: `${t.name} · ${t.sport} · ${t.level}`, value: t.id }))}
       placeholder={loading ? "Loading…" : teams.length ? "Choose a team" : "No teams yet"}

@@ -8,16 +8,17 @@ import ConfirmModal from "@/components/common/confirm-modal";
 import FilterChipMenu, { FILTER_CHIP } from "@/components/common/filter-chip-menu";
 import Loader from "@/components/common/loader";
 import Pagination from "@/components/common/pagination";
-import SearchInput from "@/components/common/search-input";
 import Tabs from "@/components/common/tabs";
 import PhotoPreview, { type PhotoPreviewItem } from "@/components/organization/recognition/photo-preview";
 import PhotoTemplates from "@/components/organization/recognition/photo-templates";
 import PhotoTile from "@/components/organization/recognition/photo-tile";
 import RecognitionPosts from "@/components/organization/recognition/recognition-posts";
-import { useFanWall, type GalleryStatus, type ReviewFilter } from "@/components/organization/recognition/use-fan-wall";
+import EventSelect from "@/components/organization/event-select";
+import { useFanWall, wallImageOf, type ReviewFilter } from "@/components/organization/recognition/use-fan-wall";
+import { orgKindOf, useAuth } from "@/context/auth";
+import { useSelectedEvent } from "@/context/selected-event";
 import { cn } from "@/utils/cn";
 import { registerPhotoboothImageCache } from "@/utils/photobooth-image-cache";
-import type { PhotoboothJob } from "@/utils/types/fan-wall";
 
 const SECTIONS = [
   { label: "Recognition Posts", icon: <Newspaper className="size-5" strokeWidth={1.5} /> },
@@ -28,8 +29,8 @@ export type RecognitionSection = (typeof SECTIONS)[number]["label"];
 const TABS = ["All Photos", "Uploaded Photos", "Templates"] as const;
 type Tab = (typeof TABS)[number];
 
-// Filters the photobooth API doesn't offer yet; they stay visible and say so.
-const UPCOMING_FILTERS = ["All Events", "All Teams", "All Uploaders", "Date Range"];
+// Filters the uploads API doesn't offer yet; they stay visible and say so.
+const UPCOMING_FILTERS = ["All Teams", "All Uploaders", "Date Range"];
 
 // Uploading, the fan app preview and the filters above have no API yet.
 const comingSoon = () => toast("Coming soon.");
@@ -42,7 +43,7 @@ const CARD = "rounded-[10px] border border-white/10 bg-white/[0.04] p-4 lg:p-5 f
 const fmtDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : null;
 
-const imageAlt = (fan: string) => `Photobooth image by ${fan}`;
+const imageAlt = (fan: string) => `Fan photo by ${fan}`;
 
 function CardHeader({ title, description, actions }: { title: string; description: string; actions?: ReactNode }) {
   return (
@@ -65,16 +66,16 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
   const [confirmClear, setConfirmClear] = useState(false);
   // The photo shown at full size, from a click on a gallery or wall tile.
   const [preview, setPreview] = useState<PhotoPreviewItem | null>(null);
-  const fw = useFanWall();
+  const { org } = useAuth();
+  const isTournament = orgKindOf(org) === "tournament";
+  // A tournament reviews one event's uploads at a time (the shared event picker).
+  const { event, setEvent } = useSelectedEvent();
+  const fw = useFanWall(isTournament ? event?.id : undefined);
 
   // Each fan image is downloaded once per browser instead of on every load (see utils/photobooth-image-cache).
   useEffect(registerPhotoboothImageCache, []);
 
-  const jobs = fw.gallery?.items ?? [];
-  // The image's review status; an older response without one counts as accepted when it's on the wall.
-  const reviewOf = (j: PhotoboothJob) => j.reviewStatus ?? (fw.onWall.has(j.id) ? "ACCEPTED" : "PENDING");
-  // Only finished, pending images (with a picture) can be accepted or rejected.
-  const pending = (j: PhotoboothJob) => j.status === "COMPLETED" && !!j.resultUrl && reviewOf(j) === "PENDING";
+  const drafts = fw.gallery?.items ?? [];
 
   // A drop on the wall moves the dragged wall photo there.
   const dropAt = (index: number | null) => {
@@ -85,17 +86,7 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
     void fw.move(id, index ?? fw.wall.length);
   };
 
-  const summary = fw.gallery?.summary;
-  const STATUS_OPTIONS: { label: string; value: GalleryStatus; count?: number }[] = [
-    { label: "Completed", value: "COMPLETED", count: summary?.completedCount },
-    { label: "All statuses", value: "", count: summary?.totalJobs },
-    { label: "Queued", value: "QUEUED", count: summary?.queuedCount },
-    { label: "Failed", value: "FAILED", count: summary?.failedCount },
-  ];
-  const statusLabel = (o: (typeof STATUS_OPTIONS)[number]) => (o.count === undefined ? o.label : `${o.label} (${o.count})`);
-  const currentStatus = STATUS_OPTIONS.find((o) => o.value === fw.status) ?? STATUS_OPTIONS[0];
   const REVIEW_OPTIONS: { label: string; value: ReviewFilter }[] = [
-    { label: "All reviews", value: "" },
     { label: "Pending", value: "PENDING" },
     { label: "Accepted", value: "ACCEPTED" },
     { label: "Rejected", value: "REJECTED" },
@@ -170,21 +161,16 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
             </div>
           ) : (
             <>
-              {/* Search (fan name or email), status, and the filters that are coming */}
+              {/* Review status (and a tournament's event), and the filters that are coming */}
               <div className="flex flex-wrap gap-3">
-                <SearchInput
-                  variant="dark"
-                  placeholder="Search by fan name or email..."
-                  value={fw.query}
-                  onChange={(e) => fw.setQuery(e.target.value)}
-                  aria-label="Search photos"
-                  className="w-full sm:w-72"
-                />
-                <FilterChipMenu
-                  label={statusLabel(currentStatus)}
-                  ariaLabel="Filter by status"
-                  items={STATUS_OPTIONS.map((o) => ({ label: statusLabel(o), onSelect: () => fw.setStatus(o.value) }))}
-                />
+                {isTournament && (
+                  <EventSelect
+                    value={event?.id ?? ""}
+                    onChange={(id, name) => setEvent(id ? { id, name } : null)}
+                    allowAll={false}
+                    selectedName={event?.name}
+                  />
+                )}
                 <FilterChipMenu
                   label={currentReview.label}
                   ariaLabel="Filter by review"
@@ -205,52 +191,41 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
                 ))}
               </div>
 
-              {/* Photobooth gallery */}
+              {/* Fan uploads: photos fans upload from the app, to accept or reject */}
               <section className={CARD}>
                 <CardHeader
-                  title={`Photobooth Gallery (${pagination?.total ?? 0})`}
-                  description="Photos fans made with the photobooth at your games. Accept a photo to add it to the Fan Wall."
+                  title={`Fan Uploads (${pagination?.total ?? 0})`}
+                  description="Photos fans uploaded from the app. Accept a photo to add it to the Fan Wall. New photobooth photos go to the Fan Wall on their own."
                 />
-                {fw.galleryLoading ? (
+                {isTournament && !event ? (
+                  <p className="py-10 text-center text-sm text-white/60">Pick an event to see its fan uploads.</p>
+                ) : fw.galleryLoading ? (
                   <Loader />
                 ) : fw.galleryError ? (
                   <p className="py-10 text-center text-sm text-error">{fw.galleryError}</p>
-                ) : jobs.length > 0 ? (
+                ) : drafts.length > 0 ? (
                   <>
                     <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 min-[1800px]:grid-cols-6 gap-3">
-                      {jobs.map((j) =>
-                        j.resultUrl ? (
+                      {drafts.map((d) => {
+                        const fan = d.fan?.name ?? "A fan";
+                        const subcaption = fmtDate(d.createdAt) ?? undefined;
+                        const pending = d.status === "PENDING" && !fw.busy;
+                        return (
                           <PhotoTile
-                            key={j.id}
-                            src={j.resultUrl}
-                            alt={imageAlt(j.fan.name)}
-                            caption={j.fan.name}
-                            subcaption={[j.template.name, j.game.title, fmtDate(j.game.utcTime)].filter(Boolean).join(" · ")}
-                            added={reviewOf(j) === "ACCEPTED"}
-                            onAccept={pending(j) && !fw.busy ? () => void fw.add([j.id]) : undefined}
-                            rejected={reviewOf(j) === "REJECTED"}
-                            onReject={pending(j) && !fw.busy ? () => void fw.reject(j.id) : undefined}
-                            onOpen={() =>
-                              setPreview({
-                                src: j.resultUrl!,
-                                alt: imageAlt(j.fan.name),
-                                caption: j.fan.name,
-                                subcaption: [j.template.name, j.game.title, fmtDate(j.game.utcTime)].filter(Boolean).join(" · "),
-                              })
-                            }
+                            key={d.id}
+                            src={d.imageUrl}
+                            alt={imageAlt(fan)}
+                            caption={fan}
+                            subcaption={subcaption}
+                            added={d.status === "ACCEPTED"}
+                            onAccept={pending ? () => void fw.accept(d.id) : undefined}
+                            rejected={d.status === "REJECTED"}
+                            onReject={pending ? () => void fw.reject(d.id) : undefined}
+                            onOpen={() => setPreview({ src: d.imageUrl, alt: imageAlt(fan), caption: fan, subcaption })}
                             className="aspect-square"
                           />
-                        ) : (
-                          // Not finished yet (queued, failed): no picture to show.
-                          <div
-                            key={j.id}
-                            className="aspect-square rounded-[6px] border-2 border-white/15 bg-black/40 flex flex-col items-center justify-center gap-1 p-2 text-center text-white"
-                          >
-                            <span className="text-xs font-semibold capitalize">{j.status.toLowerCase()}</span>
-                            <span className="text-[11px] text-white/60 truncate max-w-full">{j.fan.name}</span>
-                          </div>
-                        )
-                      )}
+                        );
+                      })}
                     </div>
                     {pagination && (
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -266,7 +241,7 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
                   </>
                 ) : (
                   <p className="py-10 text-center text-sm text-white/50">
-                    {fw.query.trim() ? "No photos match your search." : "No photobooth photos yet."}
+                    {fw.review === "PENDING" ? "No fan uploads waiting for review." : `No ${currentReview.label.toLowerCase()} fan uploads.`}
                   </p>
                 )}
               </section>
@@ -310,21 +285,16 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
                       <p className="m-auto text-sm text-error">{fw.wallError}</p>
                     ) : (
                       <>
-                        {fw.wall.map((item, i) =>
-                          item.photoboothJob.resultUrl ? (
+                        {fw.wall.map((item, i) => {
+                          const { src, fan } = wallImageOf(item);
+                          return src ? (
                             <PhotoTile
                               key={item.id}
-                              src={item.photoboothJob.resultUrl}
-                              alt={imageAlt(item.photoboothJob.fan.name)}
-                              caption={item.photoboothJob.fan.name}
+                              src={src}
+                              alt={imageAlt(fan)}
+                              caption={fan}
                               onRemove={fw.busy ? undefined : () => void fw.remove([item.id])}
-                              onOpen={() =>
-                                setPreview({
-                                  src: item.photoboothJob.resultUrl!,
-                                  alt: imageAlt(item.photoboothJob.fan.name),
-                                  caption: item.photoboothJob.fan.name,
-                                })
-                              }
+                              onOpen={() => setPreview({ src, alt: imageAlt(fan), caption: fan })}
                               dropTarget={drag !== null && overIndex === i}
                               className="w-32 h-28 shrink-0"
                               dragProps={{
@@ -340,10 +310,10 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
                                 },
                               }}
                             />
-                          ) : null
-                        )}
+                          ) : null;
+                        })}
                         {fw.wall.length === 0 && (
-                          <p className="m-auto text-sm text-white/50">Accept photos in the gallery to add them here.</p>
+                          <p className="m-auto text-sm text-white/50">Accept fan uploads to add them here; new photobooth photos appear on their own.</p>
                         )}
                       </>
                     )}
@@ -359,7 +329,7 @@ export default function RecognitionPage({ initialSection = "Fan Wall Photos" }: 
         isOpen={confirmClear}
         onClose={() => setConfirmClear(false)}
         title="Clear the fan wall?"
-        message={`All ${fw.wall.length} photos will be removed from the Fan Wall. They stay in the gallery, so you can add them again.`}
+        message={`All ${fw.wall.length} photos will be removed from the Fan Wall. Fan uploads go back to Pending, so you can accept them again.`}
         confirmLabel="Clear All"
         busyLabel="Clearing…"
         destructive

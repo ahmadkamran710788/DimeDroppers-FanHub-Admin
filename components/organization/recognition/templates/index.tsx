@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import {
+  Award,
   BadgeCheck,
   Flame,
   GraduationCap,
@@ -121,6 +122,12 @@ export const TEMPLATES: Record<RecognitionTemplate, TemplateInfo> = {
     pill: "bg-[#713F12]",
     gradient: "linear-gradient(160deg,#B45309,#A16207 55%,#713F12)",
     description: "Celebrate an exceptional overall performance.",
+  },
+  "Athlete of the Month": {
+    icon: (c = ICON) => <Award className={`${c} text-amber-300`} strokeWidth={2} />,
+    pill: "bg-[#78350F]",
+    gradient: "linear-gradient(160deg,#D97706,#B45309 55%,#78350F)",
+    description: "Celebrate a player's month: effort, results and character.",
   },
   "Rising Star": {
     icon: (c = ICON) => <Rocket className={`${c} text-slate-200`} strokeWidth={2} />,

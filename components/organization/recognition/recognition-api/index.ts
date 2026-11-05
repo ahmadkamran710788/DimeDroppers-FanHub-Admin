@@ -28,24 +28,41 @@ export const badgeLabelOf = (key: AwardBadge) =>
 // "PARENT" → "Parent"; titles like "Head Coach" stay as they are.
 export const roleLabelOf = (role: string) => (role === role.toUpperCase() ? role.charAt(0) + role.slice(1).toLowerCase() : role);
 
+// The one of a game's two sides that isn't `school`; undefined when that can't be told.
+const opponentOf = (sides: string[], school?: string | null) => {
+  const own = school?.trim().toUpperCase();
+  if (!own) return undefined;
+  const others = sides.filter((n) => n.trim().toUpperCase() !== own);
+  return others.length === 1 ? others[0] : undefined;
+};
+
 // The card data of a recognition from the API.
-export const cardOf = (r: Recognition): PlayerRecognition => ({
+// `orgName` stands in for the player's school when the API has none (to tell the opponent apart).
+export const cardOf = (r: Recognition, orgName?: string): PlayerRecognition => ({
   player: {
     name: r.player.name,
     number: r.player.jerseyNumber && /^\d+$/.test(r.player.jerseyNumber) ? Number(r.player.jerseyNumber) : undefined,
     position: r.player.position ?? undefined,
     grade: r.player.grade ? `Grade ${r.player.grade}` : undefined,
     team: r.player.teamName ?? "",
+    sport: r.sport ?? undefined,
+    school: r.schoolName ?? undefined,
+    photo: r.player.fan?.profileUrl ?? undefined,
   },
   game: r.game
     ? {
         date: r.game.startUtc,
         home: { name: r.game.home.name, logo: r.game.home.logoUrl ?? "" },
         away: { name: r.game.away.name, logo: r.game.away.logoUrl ?? "" },
+        // The side that isn't the player's school (the API's schoolName, else the organisation's name).
+        opponent: opponentOf([r.game.home.name, r.game.away.name], r.schoolName || orgName),
       }
     : null,
   badge: badgeLabelOf(r.awardBadge),
   description: r.description,
+  ...(r.period && { period: r.period }),
+  // Who gave it, and when (from createdAt).
+  recognizedBy: { name: r.recognizedBy.name, role: roleLabelOf(r.recognizedBy.role), at: r.createdAt },
 });
 
 // The full PATCH body of a recognition with a new status (PATCH replaces every editable field).
@@ -60,4 +77,5 @@ export const bodyOf = (r: Recognition, status: RecognitionStatus): RecognitionBo
   ...(r.scheduleEventId && { scheduleEventId: r.scheduleEventId }),
   ...(r.eventId && { eventId: r.eventId }),
   hexColor: r.hexColor || templateHexOf(playerTemplateOf(r.template)),
+  ...(r.awardBadge === "ATHLETE_OF_THE_MONTH" && r.period && { period: r.period }),
 });

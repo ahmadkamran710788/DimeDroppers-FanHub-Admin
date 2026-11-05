@@ -26,7 +26,6 @@ const STATUS_OPTIONS: { label: string; value: RecognitionStatus | "" }[] = [
   { label: "Draft", value: "DRAFT" },
 ];
 
-const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 // Recognition Posts: every recognition (GET /fanhub/org/recognitions) as its card, in rows, newest
 // first. Each card has a ⋮ menu (edit, publish / unpublish, delete) at its top right, and its status and
@@ -101,7 +100,7 @@ export default function RecognitionPosts() {
           {shown.map((r) => (
             <div key={r.id} className="flex flex-col gap-2">
               <div className="relative">
-                <PlayerCard template={playerTemplateOf(r.template)} data={cardOf(r)} gradient={cardBackground(r.hexColor ?? "")} />
+                <PlayerCard template={playerTemplateOf(r.template)} data={cardOf(r, org?.name)} gradient={cardBackground(r.hexColor ?? "")} />
                 <RowActionsMenu
                   ariaLabel={`Actions for ${r.player.name}'s recognition`}
                   className="absolute top-3 right-3 size-9 bg-black/30"
@@ -114,8 +113,7 @@ export default function RecognitionPosts() {
                   ]}
                 />
               </div>
-              <div className="flex items-center justify-between gap-2 px-1 text-xs text-white/60">
-                <span className="truncate">{`By ${org?.name || r.recognizedBy.name} · ${fmtDate(r.createdAt)}`}</span>
+              <div className="flex items-center justify-end gap-2 px-1">
                 <StatusPill
                   label={r.status === "PUBLISHED" ? "Published" : "Draft"}
                   color={r.status === "PUBLISHED" ? "bg-[#1F5F3A]" : "bg-[#5C4A12]"}

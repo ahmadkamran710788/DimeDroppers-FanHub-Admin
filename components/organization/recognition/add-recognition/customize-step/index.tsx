@@ -1,8 +1,9 @@
 "use client";
 
-import { User, Users } from "lucide-react";
+import { User, Users, UserStar } from "lucide-react";
 import Button from "@/components/common/button";
 import Select from "@/components/common/select";
+import Input from "@/components/common/input";
 import Textarea from "@/components/common/textarea";
 import type { MediaGame } from "@/components/organization/media/data";
 import { CARD_COLORS, HEX_COLOR, MESSAGE_MAX, SHOUTOUT_TEMPLATES } from "@/components/organization/recognition/add-recognition/data";
@@ -27,6 +28,8 @@ export interface CustomizeForm {
   message: string;
   // The staff member or parent giving the recognition.
   giverId: string;
+  // "Athlete of the Month": the month it's for, "YYYY-MM".
+  period: string;
 }
 
 interface CustomizeStepProps {
@@ -41,6 +44,8 @@ interface CustomizeStepProps {
   onGame: (game: MediaGame) => void;
   onTeam: (team: PickedTeam) => void;
   players: GamePerson[];
+  // Recognized By: the staff members to pick from.
+  givers: GamePerson[];
   peopleLoading: boolean;
   // Whether the game / team the people come from is picked yet.
   sourceChosen: boolean;
@@ -74,6 +79,7 @@ export default function CustomizeStep({
   onGame,
   onTeam,
   players,
+  givers,
   peopleLoading,
   sourceChosen,
   kept,
@@ -146,6 +152,20 @@ export default function CustomizeStep({
           <h4 className={HEADING}>Select a Player</h4>
           <Select
             variant="dark"
+            label="Recognized By"
+            name="giverId"
+            required
+            value={form.giverId}
+            onChange={(e) => update("giverId", e.target.value)}
+            options={givers.map((p) => ({ label: `${p.name} · ${p.role}`, value: p.id }))}
+            placeholder={!sourceChosen ? waitingFor : peopleLoading ? "Loading…" : givers.length ? "Choose a staff member" : "No staff on this team yet"}
+            icon={<UserStar className="size-5" strokeWidth={2} />}
+            disabled={!sourceChosen || peopleLoading || givers.length === 0}
+            error={errors.giverId}
+            labelClassName={LABEL}
+          />
+          <Select
+            variant="dark"
             label="Player"
             name="playerId"
             required
@@ -163,7 +183,7 @@ export default function CustomizeStep({
             }
             icon={<User className="size-5" strokeWidth={2} />}
             disabled={!sourceChosen || peopleLoading || players.length === 0}
-            error={errors.playerId || errors.giverId}
+            error={errors.playerId}
             labelClassName={LABEL}
           />
         </div>
@@ -191,6 +211,21 @@ export default function CustomizeStep({
             ))}
           </div>
         </div>
+
+        {badge === "Athlete of the Month" && (
+          <Input
+            type="month"
+            label="Month"
+            name="period"
+            required
+            variant="dark"
+            inputClassName="[color-scheme:dark]"
+            labelClassName={LABEL}
+            value={form.period}
+            onChange={(e) => update("period", e.target.value)}
+            error={errors.period}
+          />
+        )}
 
         {/* Card colour */}
         <div className="flex flex-col gap-4">

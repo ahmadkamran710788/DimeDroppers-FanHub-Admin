@@ -57,6 +57,8 @@ export interface MediaGame {
   schoolTeamIds?: { home: string | null; away: string | null };
   // A school game: each side's team name, when GET /schedules/games has it (useOrgGames({ teamNames })).
   teamNames?: { home?: string; away?: string };
+  // A school game's sport, e.g. "Basketball".
+  sport?: string;
   id: string;
   // ISO date-time.
   start: string;
