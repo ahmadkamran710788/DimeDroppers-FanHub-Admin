@@ -57,6 +57,14 @@ export const routes = {
     sponsorAiAgent: "/sponsor-ai-agent",
     sponsorMessages: "/sponsor-messages",
     sponsorMessagesThread: (sponsorId: string) => `/sponsor-messages?thread=${sponsorId}`,
+    fundableNeeds: "/fundable-needs",
+    // `type` starts the form on that type of need (the one filtered on the list).
+    createFundableNeed: (type?: string) =>
+      type ? `/fundable-needs/create?type=${encodeURIComponent(type)}` : "/fundable-needs/create",
+    editFundableNeed: (needId: string) => `/fundable-needs/${needId}/edit`,
+    virtualCards: "/virtual-cards",
+    // Opens Virtual Cards on that need's card.
+    virtualCard: (needId: string) => `/virtual-cards?card=${needId}`,
     userDetails: (id: string | number) => `users/${id}`,
     setupWizard: {
       // Every setup step starts with this; the organization layout leaves these pages full-screen.

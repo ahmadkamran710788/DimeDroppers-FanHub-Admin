@@ -48,6 +48,20 @@ export const formatMoney = (amount: number): string =>
     maximumFractionDigits: 2,
   });
 
+// "1 need" / "3 needs" (for words that take an "s").
+export const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
+
+// A calendar date as yyyy-mm-dd in local time (not UTC, which can be a day off).
+export const toIsoDate = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+// yyyy-mm-dd (or a full ISO timestamp's date part) as "Oct 4, 2026", read as a calendar date so no
+// timezone moves it a day.
+export const formatShortDate = (iso: string): string => {
+  const [year, month, day] = iso.slice(0, 10).split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
 // Select options whose label is also the value.
 export const toOptions = (labels: string[]) => labels.map((label) => ({ label, value: label }));
 

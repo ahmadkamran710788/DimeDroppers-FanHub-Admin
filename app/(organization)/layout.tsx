@@ -48,6 +48,8 @@ const PAGE_TITLES: Record<string, string> = {
   [routes.ui.sponsorAddOns]: "Sponsors",
   [routes.ui.sponsorAiAgent]: "Sponsor AI Agent",
   [routes.ui.sponsorMessages]: "Sponsor Messages",
+  [routes.ui.fundableNeeds]: "Fundable Needs",
+  [routes.ui.virtualCards]: "Virtual Cards",
 };
 
 export default function DashboardLayout({
