@@ -4,13 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { backendFetch } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
-import type { FanWallItem, FanWallPage, PhotoboothGallery, PhotoboothReviewStatus } from "@/utils/types/fan-wall";
+import type { FanWallDraftPage, FanWallItem, FanWallPage, PhotoboothReviewStatus } from "@/utils/types/fan-wall";
 
 // Gallery images per page.
 export const GALLERY_PAGE_SIZE = 24;
 // The wall is loaded whole (the API caps a page, and a reorder answers, at 100).
 const WALL_LIMIT = 100;
-const SEARCH_DELAY_MS = 300;
 
 interface Result<T> {
   status: number;
@@ -18,7 +17,7 @@ interface Result<T> {
   message?: string;
 }
 
-// backendFetch (not apiCall) so the backend's own message (e.g. 409 "already on the fan wall") reaches
+// backendFetch (not apiCall) so the backend's own message (e.g. 409 "already been reviewed") reaches
 // the toast, and nothing is cached: the wall changes with every action.
 async function request<T>(method: "GET" | "POST" | "PATCH" | "DELETE", endpoint: string, body?: unknown): Promise<Result<T>> {
   try {
@@ -43,59 +42,47 @@ const query = (params: Record<string, string | number | undefined>) =>
       .map(([k, v]) => [k, String(v)])
   ).toString();
 
-// Gallery status filter: a job status, or "" for every status.
-export type GalleryStatus = "COMPLETED" | "FAILED" | "QUEUED" | "";
-// Gallery review filter: a review status, or "" for every one.
-export type ReviewFilter = PhotoboothReviewStatus | "";
+// Gallery review filter: the drafts API takes one review status at a time.
+export type ReviewFilter = PhotoboothReviewStatus;
 
-// State and actions for Fan Wall Photos: the photobooth gallery (searchable, by status and review, paged)
-// and the wall built from it. Accepting adds an image to the wall, rejecting marks it rejected, removing it
-// from the wall puts it back to pending. Everything is saved straight away; there is no Save step.
-export function useFanWall() {
-  // Gallery
-  const [query_, setQuery] = useState("");
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<GalleryStatus>("COMPLETED");
-  const [review, setReview] = useState<ReviewFilter>("");
+// The image and fan of a wall item, whichever source it came from (a photobooth image or a fan's upload).
+export const wallImageOf = (item: FanWallItem) => {
+  const upload = item.source === "UPLOAD" || (!item.photoboothJob && item.upload);
+  return upload
+    ? { src: item.upload?.imageUrl ?? null, fan: item.upload?.fan?.name ?? "A fan" }
+    : { src: item.photoboothJob?.resultUrl ?? null, fan: item.photoboothJob?.fan.name ?? "A fan" };
+};
+
+// State and actions for Fan Wall Photos: the gallery of photos fans uploaded from the app (the review queue,
+// by review status, paged; a tournament by event) and the wall. Accepting adds a photo to the wall,
+// rejecting marks it rejected; removing an uploaded photo from the wall puts it back to pending. New
+// photobooth images reach the wall without review. Everything is saved straight away; there is no Save step.
+export function useFanWall(eventId?: string) {
+  // Gallery (fan uploads)
+  const [review, setReview] = useState<ReviewFilter>("PENDING");
   const [page, setPage] = useState(1);
-  const [gallery, setGallery] = useState<{ key: string; view?: PhotoboothGallery; error?: string } | null>(null);
+  const [galleryVersion, setGalleryVersion] = useState(0);
+  const [gallery, setGallery] = useState<{ key: string; view?: FanWallDraftPage; error?: string } | null>(null);
   // Wall
   const [wall, setWall] = useState<FanWallItem[] | null>(null);
   const [wallError, setWallError] = useState<string | null>(null);
   // Actions in flight, so the wall doesn't take two at once.
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setSearch(query_.trim());
-      setPage(1);
-    }, SEARCH_DELAY_MS);
-    return () => clearTimeout(t);
-  }, [query_]);
-
-  const galleryKey = `${status}|${review}|${search}|${page}`;
+  const galleryKey = `${review}|${eventId ?? ""}|${page}|${galleryVersion}`;
   useEffect(() => {
     let cancelled = false;
-    request<PhotoboothGallery>(
+    request<FanWallDraftPage>(
       "GET",
-      `${routes.api.photoboothJobs}?${query({ page, limit: GALLERY_PAGE_SIZE, status, reviewStatus: review, search })}`
+      `${routes.api.fanWallDrafts}?${query({ status: review, eventId, page, limit: GALLERY_PAGE_SIZE })}`
     ).then((r) => {
       if (!cancelled) setGallery({ key: galleryKey, view: r.view, error: r.view ? undefined : r.message });
     });
     return () => {
       cancelled = true;
     };
-  }, [galleryKey, page, status, review, search]);
-
-  // Shows a new review status on gallery cards straight away (the API already saved it).
-  const markReview = (jobIds: string[], reviewStatus: PhotoboothReviewStatus) => {
-    const ids = new Set(jobIds);
-    setGallery((prev) =>
-      prev?.view
-        ? { ...prev, view: { ...prev.view, items: prev.view.items.map((j) => (ids.has(j.id) ? { ...j, reviewStatus } : j)) } }
-        : prev
-    );
-  };
+  }, [galleryKey, review, eventId, page]);
+  const reloadGallery = () => setGalleryVersion((v) => v + 1);
 
   const loadWall = useCallback(() => {
     request<FanWallPage>("GET", `${routes.api.fanWall}?${query({ page: 1, limit: WALL_LIMIT })}`).then((r) => {
@@ -108,42 +95,18 @@ export function useFanWall() {
   useEffect(loadWall, [loadWall]);
 
   const items = wall ?? [];
-  // Images already on the wall, by photobooth job id.
-  const onWall = new Set(items.map((i) => i.photoboothJob.id));
 
-  // Adds images to the end of the wall, one request each (the API takes one at a time), then puts them
-  // at `index` when the drop landed inside the wall.
-  const add = async (jobIds: string[], index?: number) => {
-    const fresh = jobIds.filter((id) => !onWall.has(id));
-    if (fresh.length === 0) {
-      toast("This image is already on the fan wall.");
-      return;
-    }
+  // Accepts or rejects one uploaded photo. A 409 means it was already reviewed: the list is reloaded.
+  const reviewDraft = async (draftId: string, decision: "accept" | "reject") => {
     setBusy(true);
-    const added: FanWallItem[] = [];
-    for (const photoboothJobId of fresh) {
-      const r = await request<FanWallItem>("POST", routes.api.fanWallItems, { photoboothJobId });
-      if (r.view) added.push(r.view);
-      else if (r.status === 409) {
-        toast.error("This image is already on the fan wall.");
-        markReview([photoboothJobId], "ACCEPTED");
-        loadWall();
-      } else toast.error(r.message ?? "Couldn't add the image.");
-    }
-    // Accepting puts the image on the wall and marks it ACCEPTED.
-    markReview(
-      added.map((i) => i.photoboothJob.id),
-      "ACCEPTED"
-    );
-    let next = [...items, ...added];
-    setWall(next);
-    if (added.length && index !== undefined && index < items.length) {
-      // Move the new ones from the end to where they were dropped.
-      next = [...items.slice(0, index), ...added, ...items.slice(index)];
-      await saveOrder(next, [...items, ...added]);
-    }
+    const endpoint = decision === "accept" ? routes.api.fanWallDraftAccept(draftId) : routes.api.fanWallDraftReject(draftId);
+    const r = await request<{ id: string }>("POST", endpoint);
     setBusy(false);
-    if (added.length) toast.success(added.length === 1 ? "Added to the fan wall" : `Added ${added.length} images to the fan wall`);
+    if (r.status === 200) {
+      toast.success(decision === "accept" ? "Added to the fan wall" : "Photo rejected");
+      if (decision === "accept") loadWall();
+    } else toast.error(r.message ?? (decision === "accept" ? "Couldn't accept the photo." : "Couldn't reject the photo."));
+    reloadGallery();
   };
 
   // Sends the new order; shows it straight away and puts the old one back if the API refuses.
@@ -180,41 +143,16 @@ export function useFanWall() {
       if (r.status === 200 || r.status === 404) removed.add(id);
       else toast.error(r.message ?? "Couldn't remove the image.");
     }
-    // Off the wall, the image is back to pending in the gallery and can be reviewed again.
-    markReview(
-      items.filter((i) => removed.has(i.id)).map((i) => i.photoboothJob.id),
-      "PENDING"
-    );
     setWall((prev) => (prev ?? []).filter((i) => !removed.has(i.id)));
     setBusy(false);
-  };
-
-  // Rejects one completed image. A 409 means it was already rejected, or is on the wall (remove it first).
-  const reject = async (photoboothJobId: string) => {
-    setBusy(true);
-    const r = await request<null>("POST", routes.api.photoboothJobsReject, { photoboothJobId });
-    setBusy(false);
-    if (r.status === 200) {
-      markReview([photoboothJobId], "REJECTED");
-      toast.success("Image rejected");
-    } else if (r.status === 409 && /accepted/i.test(r.message ?? "")) {
-      toast.error("This image is on the fan wall. Remove it from the wall first.");
-      markReview([photoboothJobId], "ACCEPTED");
-    } else if (r.status === 409) markReview([photoboothJobId], "REJECTED");
-    else toast.error(r.message ?? "Couldn't reject the image.");
+    // An uploaded photo taken off the wall is back to pending in the gallery.
+    if (items.some((i) => removed.has(i.id) && i.source === "UPLOAD")) reloadGallery();
   };
 
   const currentGallery = gallery?.key === galleryKey ? gallery : null;
 
   return {
     // Gallery
-    query: query_,
-    setQuery,
-    status,
-    setStatus: (s: GalleryStatus) => {
-      setStatus(s);
-      setPage(1);
-    },
     review,
     setReview: (r: ReviewFilter) => {
       setReview(r);
@@ -225,15 +163,14 @@ export function useFanWall() {
     galleryLoading: !currentGallery,
     gallery: currentGallery?.view ?? null,
     galleryError: currentGallery?.error ?? null,
+    accept: (draftId: string) => reviewDraft(draftId, "accept"),
+    reject: (draftId: string) => reviewDraft(draftId, "reject"),
     // Wall
     wall: items,
     wallLoading: wall === null && !wallError,
     wallError,
-    onWall,
     busy,
-    add,
     move,
     remove,
-    reject,
   };
 }

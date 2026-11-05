@@ -53,6 +53,7 @@ const toMediaGame = (g: ScheduleItem, school: MediaTeam, now: number): MediaGame
     id: g.id,
     start,
     schoolSide: away ? "away" : "home",
+    sport: g.sports ?? undefined,
     schoolTeamIds: away
       ? { home: g.opponentSchoolTeamId ?? null, away: g.teamId ?? null }
       : { home: g.teamId ?? null, away: g.opponentSchoolTeamId ?? null },

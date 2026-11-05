@@ -23,6 +23,8 @@ export interface GamePerson {
   name: string;
   // Jersey number (school players only).
   number?: number;
+  // Roster photo, else the linked fan's avatar (presigned links).
+  photo?: string;
   // Shown under the giver's name on the card, e.g. "Head Coach", "Parent".
   role: string;
   team: string;
@@ -38,6 +40,9 @@ interface RosterPlayerEntry {
   firstName: string;
   lastName: string | null;
   number: string | null;
+  photoUrl?: string | null;
+  // The linked fan account; its avatar stands in when the roster has no photo.
+  fan?: { avatarUrl?: string | null } | null;
   onRoster: boolean;
   parents: { id: string; firstName: string; lastName: string | null }[];
 }
@@ -114,6 +119,7 @@ async function loadSchool(schoolTeamId?: string): Promise<People> {
       id: p.id,
       name: fullName(p.firstName, p.lastName),
       number: p.number && /^\d+$/.test(p.number) ? Number(p.number) : undefined,
+      photo: p.photoUrl ?? p.fan?.avatarUrl ?? undefined,
       role: "Player",
       team: "Players",
       teamKey: "school",

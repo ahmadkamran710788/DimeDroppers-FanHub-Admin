@@ -348,6 +348,10 @@ export const routes = {
     fanWallItems: "fanhub/org/fan-wall/items",
     fanWallItem: (itemId: string) => `fanhub/org/fan-wall/items/${itemId}`,
     fanWallReorder: "fanhub/org/fan-wall/reorder",
+    // Photos fans upload from the app: the review queue, and accept (adds it to the wall) / reject.
+    fanWallDrafts: "fanhub/org/fan-wall/drafts",
+    fanWallDraftAccept: (draftId: string) => `fanhub/org/fan-wall/drafts/${draftId}/accept`,
+    fanWallDraftReject: (draftId: string) => `fanhub/org/fan-wall/drafts/${draftId}/reject`,
     // Messages — the org chats with the people of its teams (FANHUB_ORG_CHAT_ADMIN.md).
     // Who can be messaged, per tab (players / parents / staff / followers): GET ?tab=&search=.
     orgChatTeamMembers: (schoolTeamId: string) => `fanhub/org/chat/teams/${schoolTeamId}/members`,

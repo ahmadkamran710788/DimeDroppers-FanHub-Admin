@@ -10,6 +10,7 @@ export type RecognitionTemplate =
   | "Game Changer"
   | "Fan Favorite"
   | "Player of the Game"
+  | "Athlete of the Month"
   | "Rising Star"
   | "Leadership"
   | "Motivator"

@@ -9,13 +9,15 @@ export const customizeRecognitionSchema = (rules: {
   needsTeam: boolean;
   needsSide: boolean;
   needsPeople: boolean;
+  needsPeriod: boolean;
 }) =>
   yup.object({
     gameId: rules.needsGame ? yup.string().required("Choose the game") : yup.string(),
     side: rules.needsSide ? yup.string().required("Choose the team") : yup.string(),
     teamId: rules.needsTeam ? yup.string().required("Choose the team") : yup.string(),
-    giverId: rules.needsPeople ? yup.string().required("This team has no staff member or parent to send as Recognized By yet") : yup.string(),
+    giverId: rules.needsPeople ? yup.string().required("Choose the staff member giving this recognition") : yup.string(),
     playerId: rules.needsPeople ? yup.string().required("Choose the player") : yup.string(),
+    period: rules.needsPeriod ? yup.string().matches(/^\d{4}-\d{2}$/, "Choose the month").required("Choose the month") : yup.string(),
     message: yup
       .string()
       .trim()
