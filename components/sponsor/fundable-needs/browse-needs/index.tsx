@@ -1,0 +1,77 @@
+"use client";
+
+import { useState } from "react";
+import FilterChipMenu from "@/components/common/filter-chip-menu";
+import FilterChips from "@/components/common/filter-chips";
+import StatCard from "@/components/common/stat-card";
+import NeedCard from "@/components/sponsor/fundable-needs/need-card";
+import FundPanel from "@/components/sponsor/fundable-needs/fund-panel";
+import {
+  AREA_OPTIONS,
+  CATEGORY_OPTIONS,
+  NEEDS,
+  SORT_OPTIONS,
+  STATS,
+  type Category,
+} from "@/components/sponsor/fundable-needs/data";
+
+// Picking a need starts the panel on the $500 preset.
+const DEFAULT_AMOUNT_INDEX = 1;
+
+
+// The Browse needs tab: open asks from nearby organizations, and a panel to fund the selected one.
+export default function BrowseNeeds() {
+  const [category, setCategory] = useState<Category>("All");
+  const [selectedId, setSelectedId] = useState(NEEDS[0].id);
+  const [amountIndex, setAmountIndex] = useState(DEFAULT_AMOUNT_INDEX);
+  const [area, setArea] = useState(AREA_OPTIONS[0].value);
+  const [sort, setSort] = useState(SORT_OPTIONS[0].value);
+
+  const shown = NEEDS.filter((n) => category === "All" || n.category === category.toUpperCase());
+  // The panel keeps the selected need even when the filter hides its card.
+  const selected = NEEDS.find((n) => n.id === selectedId) ?? NEEDS[0];
+
+  function selectNeed(id: number) {
+    setSelectedId(id);
+    setAmountIndex(DEFAULT_AMOUNT_INDEX);
+  }
+
+  return (
+    // Spacing follows the admin pages (gap-10).
+    <div className="flex flex-col gap-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-10">
+        {STATS.map((stat) => (
+          <StatCard key={stat.label} {...stat} />
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-4 items-center justify-between">
+        <FilterChips variant="pill" ariaLabel="Category" options={CATEGORY_OPTIONS} value={category} onChange={setCategory} />
+        <div className="flex gap-3 flex-wrap">
+          <FilterChipMenu
+            label={`Area: ${area}`}
+            ariaLabel="Area"
+            items={AREA_OPTIONS.map((o) => ({ label: o.label, onSelect: () => setArea(o.value) }))}
+          />
+          <FilterChipMenu
+            label={`Sort: ${sort}`}
+            ariaLabel="Sort"
+            items={SORT_OPTIONS.map((o) => ({ label: o.label, onSelect: () => setSort(o.value) }))}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-6 items-start">
+        <section
+          aria-label="Needs"
+          className="flex-[1_1_520px] min-w-0 grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-[18px]"
+        >
+          {shown.map((need) => (
+            <NeedCard key={need.id} need={need} selected={need.id === selectedId} onSelect={() => selectNeed(need.id)} />
+          ))}
+        </section>
+        <FundPanel need={selected} amountIndex={amountIndex} onAmountChange={setAmountIndex} />
+      </div>
+    </div>
+  );
+}

@@ -40,7 +40,7 @@ export const NEEDS: FundableNeed[] = [
 export const STATS: Stat[] = [
   { label: "OPEN NEEDS NEARBY", value: "6", tint: "#3d6f3e", caption: "2 closing in the next 10 days" },
   { label: "STILL NEEDED", value: "$20,250", tint: "#3d5194", caption: "across 4 organizations" },
-  { label: "FUNDED BY YOU", value: "$1,200", tint: "#5e4277", caption: "2 needs this season" },
+  { label: "FUNDED BY YOU", value: "$1,200", tint: "#5e4277", caption: "3 needs this season" },
 ];
 
 // Preset amounts; the panel adds a fourth, "Fund rest", for what the need still lacks.
@@ -49,3 +49,72 @@ export const PRESET_AMOUNTS = [250, 500, 1000];
 export const AREA_OPTIONS = toOptions(["Within 25 mi", "Within 50 mi", "Statewide"]);
 export const SORT_OPTIONS = toOptions(["Closing soonest", "Closest to goal", "Smallest ask"]);
 export const BRAND_ASSET_OPTIONS = toOptions(["Primary logo · full color", "Wordmark · white", "Logo mark only"]);
+
+// A purchase the organization made with a need's card. "pending" is authorized but not settled yet; a
+// declined one never left the card (e.g. a store type the need doesn't allow).
+export interface SpendTransaction {
+  id: string;
+  merchant: string;
+  // yyyy-mm-dd.
+  date: string;
+  // The store type, as the card network reports it.
+  category: string;
+  amount: number;
+  status: "approved" | "pending" | "declined";
+}
+
+// A need this sponsor has funded: one of NEEDS (by id), what they gave, and how its card is being spent.
+export interface FundedNeed {
+  needId: number;
+  // yyyy-mm-dd.
+  fundedOn: string;
+  // What this sponsor gave.
+  amount: number;
+  description: string;
+  // When the need closes; yyyy-mm-dd.
+  endsOn: string;
+  // When the need's card was issued; yyyy-mm-dd.
+  cardIssuedOn: string;
+  transactions: SpendTransaction[];
+}
+
+export const FUNDED_NEEDS: FundedNeed[] = [
+  {
+    needId: 0,
+    fundedOn: "2026-09-28",
+    amount: 500,
+    description:
+      "Our varsity and JV volleyball teams are still playing on nets and poles from 2009. The padding is torn and one pole no longer locks. This covers two competition nets, a pole set and new safety padding for the main gym.",
+    endsOn: "2026-11-22",
+    cardIssuedOn: "2026-10-02",
+    transactions: [
+      { id: "tla-1", merchant: "Net World Sports", date: "2026-10-14", category: "Sporting goods stores", amount: 640, status: "approved" },
+      { id: "tla-2", merchant: "Shell", date: "2026-10-16", category: "Gas station", amount: 42.1, status: "declined" },
+      { id: "tla-3", merchant: "Big Box Sports", date: "2026-11-03", category: "Sporting goods stores", amount: 212.5, status: "approved" },
+    ],
+  },
+  {
+    needId: 1,
+    fundedOn: "2026-10-06",
+    amount: 500,
+    description:
+      "Our U14 girls qualified for the State Cup in Madison. This pays for a charter bus and two nights of hotel rooms for 18 players and 4 coaches, so no family is left out because of travel costs.",
+    endsOn: "2026-11-13",
+    cardIssuedOn: "2026-10-09",
+    transactions: [
+      { id: "lys-1", merchant: "Coach Charter Lines", date: "2026-10-24", category: "Bus and charter lines", amount: 1450, status: "approved" },
+      { id: "lys-2", merchant: "Lakeview Inn & Suites", date: "2026-10-25", category: "Hotels and lodging", amount: 620, status: "approved" },
+      { id: "lys-3", merchant: "Lakeview Inn & Suites", date: "2026-10-27", category: "Hotels and lodging", amount: 85, status: "pending" },
+    ],
+  },
+  {
+    needId: 2,
+    fundedOn: "2026-10-27",
+    amount: 200,
+    description:
+      "We stream every home game for families who can’t attend. Our single phone setup keeps dropping. This buys two cameras, a tripod kit and a streaming encoder for the stadium press box.",
+    endsOn: "2026-12-04",
+    cardIssuedOn: "2026-10-28",
+    transactions: [],
+  },
+];
