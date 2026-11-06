@@ -1,39 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import FilterChipMenu from "@/components/common/filter-chip-menu";
-import FilterChips from "@/components/common/filter-chips";
-import StatCard from "@/components/common/stat-card";
-import NeedCard from "@/components/sponsor/fundable-needs/need-card";
-import FundPanel from "@/components/sponsor/fundable-needs/fund-panel";
-import {
-  AREA_OPTIONS,
-  CATEGORY_OPTIONS,
-  NEEDS,
-  SORT_OPTIONS,
-  STATS,
-  type Category,
-} from "@/components/sponsor/fundable-needs/data";
+import Tabs from "@/components/common/tabs";
+import BrowseNeeds from "@/components/sponsor/fundable-needs/browse-needs";
+import FundedNeeds from "@/components/sponsor/fundable-needs/funded-needs";
+import { FUNDED_NEEDS } from "@/components/sponsor/fundable-needs/data";
 
-// Picking a need starts the panel on the $500 preset.
-const DEFAULT_AMOUNT_INDEX = 1;
+export type FundableNeedsTab = "browse" | "funded";
 
+const TABS: FundableNeedsTab[] = ["browse", "funded"];
 
-// Sponsor landing page: open asks from nearby organizations, and a panel to fund the selected one.
-export default function FundableNeeds() {
-  const [category, setCategory] = useState<Category>("All");
-  const [selectedId, setSelectedId] = useState(NEEDS[0].id);
-  const [amountIndex, setAmountIndex] = useState(DEFAULT_AMOUNT_INDEX);
-  const [area, setArea] = useState(AREA_OPTIONS[0].value);
-  const [sort, setSort] = useState(SORT_OPTIONS[0].value);
+const TAB_LABELS: Record<FundableNeedsTab, string> = {
+  browse: "Browse needs",
+  funded: "My funded needs",
+};
 
-  const shown = NEEDS.filter((n) => category === "All" || n.category === category.toUpperCase());
-  // The panel keeps the selected need even when the filter hides its card.
-  const selected = NEEDS.find((n) => n.id === selectedId) ?? NEEDS[0];
+interface FundableNeedsProps {
+  // From ?tab=.
+  initialTab?: FundableNeedsTab;
+}
 
-  function selectNeed(id: number) {
-    setSelectedId(id);
-    setAmountIndex(DEFAULT_AMOUNT_INDEX);
+// Sponsor Fundable Needs: browse open asks and fund one, or follow the needs you've funded and how the
+// organization spends them. Both panels stay mounted (only hidden), so Browse keeps its picked need.
+export default function FundableNeeds({ initialTab = "browse" }: FundableNeedsProps) {
+  const [tab, setTab] = useState<FundableNeedsTab>(initialTab);
+
+  function open(next: FundableNeedsTab) {
+    setTab(next);
+    // Keeps the tab on a refresh or a copied link, without a navigation.
+    window.history.replaceState(null, "", `?tab=${next}`);
   }
 
   return (
@@ -48,39 +43,19 @@ export default function FundableNeeds() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-10">
-        {STATS.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
-      </div>
-
-      <div className="flex flex-wrap gap-4 items-center justify-between">
-        <FilterChips variant="pill" ariaLabel="Category" options={CATEGORY_OPTIONS} value={category} onChange={setCategory} />
-        <div className="flex gap-3 flex-wrap">
-          <FilterChipMenu
-            label={`Area: ${area}`}
-            ariaLabel="Area"
-            items={AREA_OPTIONS.map((o) => ({ label: o.label, onSelect: () => setArea(o.value) }))}
-          />
-          <FilterChipMenu
-            label={`Sort: ${sort}`}
-            ariaLabel="Sort"
-            items={SORT_OPTIONS.map((o) => ({ label: o.label, onSelect: () => setSort(o.value) }))}
-          />
+      <Tabs
+        tabs={TABS}
+        active={tab}
+        onChange={open}
+        labels={TAB_LABELS}
+        counts={{ funded: FUNDED_NEEDS.length }}
+        className="flex-wrap"
+      />
+      {TABS.map((t) => (
+        <div key={t} role="tabpanel" aria-label={TAB_LABELS[t]} hidden={t !== tab}>
+          {t === "browse" ? <BrowseNeeds /> : <FundedNeeds />}
         </div>
-      </div>
-
-      <div className="flex flex-wrap gap-6 items-start">
-        <section
-          aria-label="Needs"
-          className="flex-[1_1_520px] min-w-0 grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-[18px]"
-        >
-          {shown.map((need) => (
-            <NeedCard key={need.id} need={need} selected={need.id === selectedId} onSelect={() => selectNeed(need.id)} />
-          ))}
-        </section>
-        <FundPanel need={selected} amountIndex={amountIndex} onAmountChange={setAmountIndex} />
-      </div>
+      ))}
     </div>
   );
 }
