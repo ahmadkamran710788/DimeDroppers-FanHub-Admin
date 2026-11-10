@@ -23,7 +23,8 @@ export default function NeedPreview({ data }: { data: NeedPreviewData }) {
       <h3 className="font-display font-black text-xl lg:text-[28px] uppercase leading-tight text-white">
         Preview (what sponsors see)
       </h3>
-      <div className="flex flex-col gap-3 rounded-[8px] bg-surface-06 p-5 text-white backdrop-blur-[24px]">
+      {/* No backdrop blur: it sticks while the form scrolls, and over the blurred page it looked the same. */}
+      <div className="flex flex-col gap-3 rounded-[8px] bg-surface-06 p-5 text-white">
         <div className="flex flex-wrap items-center gap-2">
           <TypeChip label={data.categoryName || "Type of need"} />
           <span className="text-xs text-white/60">{data.forText || "Who it's for"}</span>

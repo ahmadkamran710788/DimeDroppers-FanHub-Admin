@@ -66,13 +66,19 @@ function statsOf(summary: SponsorNeedsSummary | undefined, nearby: boolean, fail
 
 // What the Location filter calls each store, by id: "Dell · Austin, TX" (a brand's stores often share its
 // name), or the address for a store without a name. Stores that would still read the same show their full
-// address, so no two choices look alike.
+// address, and the same place saved twice gets a number ("… (2)"), so no two choices look alike.
 function storeNames(stores: SponsorStore[]): Map<string, string> {
   const short = (s: SponsorStore) => (s.hint && s.area ? `${s.label} · ${s.area}` : s.label);
   const counts = new Map<string, number>();
   for (const s of stores) counts.set(short(s), (counts.get(short(s)) ?? 0) + 1);
+  const seen = new Map<string, number>();
   return new Map(
-    stores.map((s) => [s.id, s.hint && (counts.get(short(s)) ?? 0) > 1 ? `${s.label} · ${s.hint}` : short(s)])
+    stores.map((s) => {
+      const name = s.hint && (counts.get(short(s)) ?? 0) > 1 ? `${s.label} · ${s.hint}` : short(s);
+      const n = (seen.get(name) ?? 0) + 1;
+      seen.set(name, n);
+      return [s.id, n > 1 ? `${name} (${n})` : name];
+    })
   );
 }
 

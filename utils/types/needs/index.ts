@@ -335,7 +335,8 @@ export interface CreateNeedRequest {
   categoryCode: string;
   eventId?: string;
   scheduleEventId?: string;
-  teamId: string | null;
+  // Left out for the whole event / any team; never null.
+  teamId?: string;
   title: string;
   description: string;
   whyItMatters?: string;

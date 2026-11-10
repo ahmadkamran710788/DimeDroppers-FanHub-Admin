@@ -20,8 +20,11 @@ export default function FilterChipMenu({ label, ariaLabel, items }: FilterChipMe
       className={FILTER_CHIP}
       trigger={
         <>
-          {label}
-          <ChevronDown className="size-4" strokeWidth={2} />
+          {/* A long pick (e.g. a store's name and address) is cut with "…" so the chip row doesn't stretch. */}
+          <span title={label} className="min-w-0 max-w-[18rem] truncate">
+            {label}
+          </span>
+          <ChevronDown className="size-4 shrink-0" strokeWidth={2} />
         </>
       }
       items={items}

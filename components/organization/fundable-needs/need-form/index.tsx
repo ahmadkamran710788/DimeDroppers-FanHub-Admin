@@ -26,7 +26,7 @@ import {
   gameTime,
   gameTitle,
 } from "@/components/organization/fundable-needs/data";
-import { FIELD, HINT, LABEL, amountInput } from "@/components/organization/fundable-needs/field-styles";
+import { FIELD, FLAT_CARD, HINT, LABEL, amountInput } from "@/components/organization/fundable-needs/field-styles";
 import { needSchema } from "@/components/organization/fundable-needs/schema";
 import { sponsorList, sponsorRequest } from "@/components/sponsor/sponsor-api";
 import { centsToInput, dollars, dollarsToCents } from "@/utils/needs";
@@ -209,7 +209,8 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
       const body: CreateNeedRequest = {
         categoryCode: draft.categoryCode,
         ...(options.scope === "EVENT" ? { eventId: draft.eventId } : { scheduleEventId: draft.game?.id ?? "" }),
-        teamId: draft.teamId || null,
+        // "No specific team" leaves it out: the API takes a team's id or nothing (null is a 400).
+        ...(draft.teamId && { teamId: draft.teamId }),
         title,
         description,
         ...(why && { whyItMatters: why }),
@@ -295,7 +296,7 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
               </p>
             )}
 
-            <SectionCard title="Who is this need for?">
+            <SectionCard title="Who is this need for?" className={FLAT_CARD}>
               {editing && need ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <Select
@@ -408,7 +409,7 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
               )}
             </SectionCard>
 
-            <SectionCard title="About the need">
+            <SectionCard title="About the need" className={FLAT_CARD}>
               <div className="flex flex-col gap-2">
                 <Select
                   label="What kind of need is this?"
@@ -445,6 +446,7 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
                 error={errors.title}
                 labelClassName={LABEL}
                 inputClassName={FIELD}
+                hintClassName={HINT}
               />
               <Input
                 label="Goal amount"
@@ -467,6 +469,7 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
                 }
                 labelClassName={LABEL}
                 inputClassName={FIELD}
+                hintClassName={HINT}
               />
               <Textarea
                 label="What does this cover?"
@@ -495,7 +498,7 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
               />
             </SectionCard>
 
-            <SectionCard title="Virtual card for this need">
+            <SectionCard title="Virtual card for this need" className={FLAT_CARD}>
               <p className="flex items-start gap-3 text-sm leading-[1.5] text-white/80">
                 <CreditCard className="size-5 shrink-0 text-[#638BFE]" strokeWidth={1.8} aria-hidden="true" />
                 {`Sponsor money for this need loads onto your Stripe virtual card for ${category ? category.name.toLowerCase() : "this kind of need"}: one card per kind of need, reused for your next one after this need ends. It only works at the merchant categories below; other purchases are declined.`}
@@ -533,10 +536,11 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
                 hint={COMING_SOON}
                 labelClassName={LABEL}
                 inputClassName={FIELD}
+                hintClassName={HINT}
               />
             </SectionCard>
 
-            <SectionCard title="What the sponsor gets in return">
+            <SectionCard title="What the sponsor gets in return" className={FLAT_CARD}>
               <div className="flex items-center gap-3 rounded-[8px] border border-white/15 bg-white/5 px-4 py-3 opacity-80">
                 <Star className="size-5 shrink-0 text-success" strokeWidth={1.8} aria-hidden="true" />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">

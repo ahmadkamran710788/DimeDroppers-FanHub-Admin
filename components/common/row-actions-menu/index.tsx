@@ -41,21 +41,31 @@ export default function RowActionsMenu({ items, ariaLabel, className, trigger }:
         {trigger ?? <MoreVertical className="w-4 h-4 text-white" strokeWidth={2} />}
       </button>
       {open && (
-        <FloatingPanel anchorRef={triggerRef} onClose={close} role="menu" aria-label={ariaLabel} className="min-w-[160px]">
-          {items.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                close();
-                item.onSelect();
-              }}
-              className={cn(MENU_ITEM, "hover:bg-white/10", item.variant === "destructive" && "text-red-400")}
-            >
-              {item.label}
-            </button>
-          ))}
+        // A long menu (e.g. a sponsor's many store locations) scrolls inside the panel instead of running off
+        // the screen, and a long label is cut with "…" (full text on hover), as in the Select and MultiSelect.
+        <FloatingPanel
+          anchorRef={triggerRef}
+          onClose={close}
+          className="min-w-[160px] max-w-[min(420px,calc(100vw-16px))]"
+        >
+          <div role="menu" aria-label={ariaLabel} className="flex flex-col max-h-[320px] overflow-y-auto">
+            {items.map((item, i) => (
+              <button
+                // By position: two items may share a label (e.g. two stores with the same name).
+                key={`${i}:${item.label}`}
+                type="button"
+                role="menuitem"
+                title={item.label}
+                onClick={() => {
+                  close();
+                  item.onSelect();
+                }}
+                className={cn(MENU_ITEM, "truncate hover:bg-white/10", item.variant === "destructive" && "text-red-400")}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </FloatingPanel>
       )}
     </>
