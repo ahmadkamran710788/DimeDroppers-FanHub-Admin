@@ -1,5 +1,5 @@
-// Field styling shared by the need form and the Record funding panel: white labels over white fields
-// with a 2px hairline border, as on the other admin forms (e.g. Create Campaign).
+// Field styling for the need form: white labels over white fields with a 2px hairline border, as on the
+// other admin forms (e.g. Create Campaign).
 export const LABEL = "text-white";
 export const FIELD = "bg-white border-2 border-[rgba(11,28,45,0.11)]";
 

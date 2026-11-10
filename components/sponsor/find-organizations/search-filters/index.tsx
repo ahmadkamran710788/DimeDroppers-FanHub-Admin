@@ -10,7 +10,15 @@ import FilterChips from "@/components/common/filter-chips";
 import Input from "@/components/common/input";
 import MultiSelect, { ALL, type MultiSelectValue } from "@/components/common/multi-select";
 import Select from "@/components/common/select";
-import { CARD, FIELD, OUTLINE_BUTTON, PRIMARY_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
+import {
+  CARD,
+  FIELD,
+  HINT,
+  HINT_LINK,
+  OUTLINE_BUTTON,
+  PRIMARY_BUTTON,
+  SECTION_LABEL,
+} from "@/components/sponsor/styles";
 import { orgSearchSchema } from "@/components/sponsor/find-organizations/schema";
 import type { SponsorStore } from "@/components/sponsor/find-organizations/use-sponsor-stores";
 import {
@@ -24,7 +32,6 @@ import type { FilterOption, SponsorSearchFilters } from "@/utils/types/sponsor-p
 const CONTROL = cn(FIELD, "h-12 text-[16px] min-w-0");
 // Each group of filters sits in its own card.
 const SECTION = cn(CARD, "rounded-[8px] p-4 lg:p-6 flex flex-col gap-6 min-w-0");
-const HINT = "text-[13px] text-[#a8a8a8]";
 // A text button that reads as a link inside a hint.
 const LINK = "inline text-[13px] font-normal text-[#c9b8ff] underline hover:text-white";
 
@@ -224,7 +231,7 @@ export default function SearchFilters({
           {stores && !stores.length ? (
             <p className={HINT}>
               Add your locations on your{" "}
-              <Link href={routes.ui.sponsor.profile} className="text-[#c9b8ff] underline hover:text-white">
+              <Link href={routes.ui.sponsor.profile} className={HINT_LINK}>
                 Sponsor Profile
               </Link>{" "}
               to find organizations near them.

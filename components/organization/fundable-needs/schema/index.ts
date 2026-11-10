@@ -1,28 +1,50 @@
 import * as yup from "yup";
+import { DESCRIPTION_MAX, TITLE_MAX, WHY_MAX } from "@/components/organization/fundable-needs/data";
+import { dollars } from "@/utils/needs";
+import type { NeedScope } from "@/utils/types/needs";
 
-export const TITLE_MAX = 80;
-export const COVERS_MAX = 300;
-export const WHY_MAX = 300;
+interface NeedSchemaOptions {
+  // EVENT: a tournament picks an event; GAME: a school picks a game.
+  scope: NeedScope;
+  // Editing: only the name, the texts and the goal can change.
+  editing: boolean;
+  goalMinCents: number;
+  goalMaxCents: number;
+  // Editing: the goal can't go below what sponsors have already given.
+  raisedCents?: number;
+}
 
-// Create / edit a need.
-export const needSchema = yup.object({
-  event: yup.string().required("Choose the event this need is for."),
-  type: yup.string().required("Choose what kind of need this is."),
-  title: yup
-    .string()
-    .trim()
-    .required("Give the need a name sponsors will understand.")
-    .max(TITLE_MAX, `Keep the name to ${TITLE_MAX} characters.`),
-  covers: yup.string().trim().required("Say what this need pays for.").max(COVERS_MAX, `Keep it to ${COVERS_MAX} characters.`),
-  why: yup.string().trim().max(WHY_MAX, `Keep it to ${WHY_MAX} characters.`),
-  mccs: yup.array(yup.string()).min(1, "Allow at least one merchant category."),
-});
-
-// Record a sponsor's funding of a need.
-export const fundingSchema = yup.object({
-  sponsor: yup.string().trim().required("Enter the sponsor’s name."),
-  amount: yup
-    .string()
-    .required("Enter an amount above $0.")
-    .test("is-positive", "Enter an amount above $0.", (v) => Number(v) > 0),
-});
+// Create / edit a need, with the API's rules. The keys match the API's field names, so a 400 from the
+// backend lands on the same fields.
+export const needSchema = ({ scope, editing, goalMinCents, goalMaxCents, raisedCents = 0 }: NeedSchemaOptions) => {
+  const floor = Math.max(goalMinCents, raisedCents);
+  return yup.object({
+    categoryCode: editing ? yup.string() : yup.string().required("Choose what kind of need this is."),
+    eventId:
+      !editing && scope === "EVENT" ? yup.string().required("Choose the event this need is for.") : yup.string(),
+    scheduleEventId:
+      !editing && scope === "GAME" ? yup.string().required("Choose the game this need is for.") : yup.string(),
+    title: yup
+      .string()
+      .trim()
+      .required("Give the need a name sponsors will understand.")
+      .max(TITLE_MAX, `Keep the name to ${TITLE_MAX} characters.`),
+    description: yup
+      .string()
+      .trim()
+      .required("Say what this need pays for.")
+      .max(DESCRIPTION_MAX, `Keep it to ${DESCRIPTION_MAX.toLocaleString("en-US")} characters.`),
+    whyItMatters: yup.string().trim().max(WHY_MAX, `Keep it to ${WHY_MAX.toLocaleString("en-US")} characters.`),
+    goalCents: yup
+      .number()
+      .typeError("Enter the goal amount.")
+      .required("Enter the goal amount.")
+      .min(
+        floor,
+        raisedCents > goalMinCents
+          ? `The goal can't be lower than the ${dollars(raisedCents)} already raised.`
+          : `The goal must be at least ${dollars(goalMinCents)}.`
+      )
+      .max(goalMaxCents, `The goal can be at most ${dollars(goalMaxCents)}.`),
+  });
+};

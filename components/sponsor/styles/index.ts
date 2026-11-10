@@ -3,6 +3,12 @@
 // Dark card (#141414 with a #222 border), e.g. over SectionCard's translucent fill.
 export const CARD = "bg-[#141414] border border-[#222] backdrop-blur-none";
 
+// A grey line of help under a field or filter row.
+export const HINT = "text-[13px] text-[#a8a8a8]";
+
+// A link inside a HINT ("…on your Sponsor Profile").
+export const HINT_LINK = "text-[#c9b8ff] underline hover:text-white";
+
 // Small caps label above a field or group ("AMOUNT", "BRAND NAME").
 export const SECTION_LABEL = "text-[13px] font-semibold tracking-[1px] text-[#c4c4c4]";
 

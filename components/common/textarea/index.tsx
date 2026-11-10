@@ -25,6 +25,7 @@ interface TextareaProps {
   fieldClassName?: string;
   // Hide the character counter (the limit still applies).
   showCounter?: boolean;
+  disabled?: boolean;
 }
 
 export default function Textarea({
@@ -44,6 +45,7 @@ export default function Textarea({
   labelClassName,
   fieldClassName,
   showCounter = true,
+  disabled,
 }: TextareaProps) {
   const onLight = variant === "onLight";
   const counter = (
@@ -71,9 +73,10 @@ export default function Textarea({
         placeholder={placeholder}
         maxLength={maxLength}
         rows={rows}
+        disabled={disabled}
         className={cn(
           "w-full rounded-[8px] text-base font-medium px-4 py-3 outline-none resize-none",
-          "focus:border-steel-blue transition-colors",
+          "focus:border-steel-blue transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
           fieldVariant === "dark"
             ? "bg-white/[0.06] text-white border border-white/15 placeholder:text-white/40"
             : "bg-white text-midnight-navy border-2 border-[rgba(11,28,45,0.11)] placeholder:text-[rgba(11,28,45,0.4)]",

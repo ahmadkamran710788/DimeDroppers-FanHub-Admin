@@ -1,120 +1,74 @@
-import { toOptions } from "@/utils/helper";
-import type { Crest } from "@/components/sponsor/org-crest";
-import type { Stat } from "@/components/common/stat-card";
+import type { FilterChipOption } from "@/components/common/filter-chips";
+import type { BrandDisplay, NeedSponsorSort, NeedStatus } from "@/utils/types/needs";
 
-// Mock data for the Fundable Needs page until the sponsor API is integrated.
+// Fundable Needs (sponsor side): the filter, sort and form options. The needs themselves come from
+// GET /fanhub/sponsor-needs (docs/endpoints/FANHUB_FUNDABLE_NEEDS_FRONTEND.md §5).
 
-export const CATEGORIES = ["All", "Equipment", "Travel", "Tech", "Scholarships", "Facilities"] as const;
-export type Category = (typeof CATEGORIES)[number];
-export const CATEGORY_OPTIONS = CATEGORIES.map((c) => ({ label: c, value: c }));
+// "All" sends no categoryCode.
+export const ALL_CATEGORIES = "ALL";
 
-export interface FundableNeed extends Crest {
-  id: number;
-  org: string;
-  title: string;
-  // Upper-case label of one of CATEGORIES (not "All").
-  category: string;
-  raised: number;
-  goal: number;
-  daysLeft: number;
-  // What the sponsor's brand gets.
-  recognition: string;
-}
+// The need types. Only Travel and Transportation is switched on in the backend so far; the others show as
+// "Coming soon" and are never sent. Their codes are placeholders until the backend confirms them: switching
+// one on means fixing its code and dropping `disabled`.
+export const CATEGORY_CHIPS: FilterChipOption<string>[] = [
+  { value: ALL_CATEGORIES, label: "All" },
+  ...[
+    { value: "EQUIPMENT_AND_UNIFORMS", label: "Equipment & uniforms" },
+    { value: "TRAVEL_AND_TRANSPORTATION", label: "Travel & transport", enabled: true },
+    { value: "MEDIA_AND_STREAMING", label: "Media & streaming" },
+    { value: "FACILITIES_AND_OPERATIONS", label: "Facilities & operations" },
+    { value: "DEVELOPMENT_AND_EDUCATION", label: "Development & education" },
+    { value: "HEALTH_AND_WELLNESS", label: "Health & wellness" },
+  ].map(({ enabled, ...chip }) =>
+    enabled ? chip : { ...chip, disabled: true, badge: "Soon", title: "Coming soon" }
+  ),
+];
 
-const CRESTS: Record<string, Crest> = {
-  "Twin Lakes Academy": { color: "#3d6f3e", trim: "#a3e3a5" },
-  "Lakeview Youth Soccer Club": { color: "#3d5194", trim: "#9fb4f0" },
-  "Silver Ridge High School": { color: "#5e4277", trim: "#cdb3ec" },
-  "Northfield Community College": { color: "#7a4a2e", trim: "#f0b98f" },
-};
+// Which of the sponsor's stores the needs are near (brandLocationIds): all of them, or one store's id.
+export const ALL_STORES = "ALL";
 
-export const NEEDS: FundableNeed[] = [
-  { org: "Twin Lakes Academy", title: "New volleyball nets & poles", category: "EQUIPMENT", raised: 1150, goal: 3200, daysLeft: 18, recognition: "Logo on net padding · 3 social posts" },
-  { org: "Lakeview Youth Soccer Club", title: "Travel to the State Cup", category: "TRAVEL", raised: 2400, goal: 6000, daysLeft: 9, recognition: "Logo on travel shirts · livestream thank-you" },
-  { org: "Silver Ridge High School", title: "Livestream camera kit", category: "TECH", raised: 600, goal: 2500, daysLeft: 30, recognition: "“Presented by” tag on every home stream" },
-  { org: "Northfield Community College", title: "Hockey team helmets", category: "EQUIPMENT", raised: 4100, goal: 5000, daysLeft: 6, recognition: "Helmet decal · scoreboard thank-you" },
-  { org: "Twin Lakes Academy", title: "Summer camp scholarships", category: "SCHOLARSHIPS", raised: 900, goal: 4000, daysLeft: 45, recognition: "Named scholarship · awards night mention" },
-  { org: "Silver Ridge High School", title: "Dugout renovation", category: "FACILITIES", raised: 3300, goal: 12000, daysLeft: 60, recognition: "Dugout signage for two seasons" },
-].map((need, id) => ({ id, ...CRESTS[need.org], ...need }));
+// The area around those stores: "" = anywhere (no brandLocationIds), otherwise the radius in miles.
+export const ANYWHERE = "";
+export const DEFAULT_RADIUS = "25";
+export const AREA_OPTIONS = [
+  { value: ANYWHERE, label: "Anywhere" },
+  ...["10", "25", "50", "100"].map((miles) => ({ value: miles, label: `Within ${miles} mi` })),
+];
 
-export const STATS: Stat[] = [
-  { label: "OPEN NEEDS NEARBY", value: "6", tint: "#3d6f3e", caption: "2 closing in the next 10 days" },
-  { label: "STILL NEEDED", value: "$20,250", tint: "#3d5194", caption: "across 4 organizations" },
-  { label: "FUNDED BY YOU", value: "$1,200", tint: "#5e4277", caption: "3 needs this season" },
+// NEAREST needs an area (it sorts by distance to the sponsor's stores).
+export const SORT_OPTIONS: { value: NeedSponsorSort; label: string; needsArea?: boolean }[] = [
+  { value: "CLOSING_SOONEST", label: "Closing soonest" },
+  { value: "NEWEST", label: "Newest" },
+  { value: "NEAREST", label: "Nearest", needsArea: true },
+];
+
+// "Show my brand as".
+export const BRAND_DISPLAY_OPTIONS: { value: BrandDisplay; label: string }[] = [
+  { value: "LOGO_FULL_COLOR", label: "Logo · full color" },
+  { value: "LOGO_ONE_COLOR", label: "Logo · one color" },
+  { value: "NAME_ONLY", label: "Name only" },
 ];
 
 // Preset amounts; the panel adds a fourth, "Fund rest", for what the need still lacks.
-export const PRESET_AMOUNTS = [250, 500, 1000];
+export const PRESET_AMOUNTS_CENTS = [25000, 50000, 100000];
+export const MIN_CONTRIBUTION_CENTS = 1000;
+export const NOTE_MAX = 1000;
 
-export const AREA_OPTIONS = toOptions(["Within 25 mi", "Within 50 mi", "Statewide"]);
-export const SORT_OPTIONS = toOptions(["Closing soonest", "Closest to goal", "Smallest ask"]);
-export const BRAND_ASSET_OPTIONS = toOptions(["Primary logo · full color", "Wordmark · white", "Logo mark only"]);
+// A need closing within this many days shows its deadline in orange (the summary's "closing soon" window).
+export const URGENT_DAYS = 10;
 
-// A purchase the organization made with a need's card. "pending" is authorized but not settled yet; a
-// declined one never left the card (e.g. a store type the need doesn't allow).
-export interface SpendTransaction {
-  id: string;
-  merchant: string;
-  // yyyy-mm-dd.
-  date: string;
-  // The store type, as the card network reports it.
-  category: string;
-  amount: number;
-  status: "approved" | "pending" | "declined";
-}
+export const NEEDS_PAGE_SIZE = 12;
+export const FUNDED_PAGE_SIZE = 10;
+export const TRANSACTIONS_PAGE_SIZE = 20;
 
-// A need this sponsor has funded: one of NEEDS (by id), what they gave, and how its card is being spent.
-export interface FundedNeed {
-  needId: number;
-  // yyyy-mm-dd.
-  fundedOn: string;
-  // What this sponsor gave.
-  amount: number;
-  description: string;
-  // When the need closes; yyyy-mm-dd.
-  endsOn: string;
-  // When the need's card was issued; yyyy-mm-dd.
-  cardIssuedOn: string;
-  transactions: SpendTransaction[];
-}
+// A need's status as the sponsor reads it.
+export const NEED_STATUS_LABEL: Record<NeedStatus, string> = {
+  OPEN: "Open",
+  FUNDED: "Fully funded",
+  ENDED: "Ended, settling",
+  CLOSED: "Closed",
+  CANCELLED: "Cancelled",
+};
 
-export const FUNDED_NEEDS: FundedNeed[] = [
-  {
-    needId: 0,
-    fundedOn: "2026-09-28",
-    amount: 500,
-    description:
-      "Our varsity and JV volleyball teams are still playing on nets and poles from 2009. The padding is torn and one pole no longer locks. This covers two competition nets, a pole set and new safety padding for the main gym.",
-    endsOn: "2026-11-22",
-    cardIssuedOn: "2026-10-02",
-    transactions: [
-      { id: "tla-1", merchant: "Net World Sports", date: "2026-10-14", category: "Sporting goods stores", amount: 640, status: "approved" },
-      { id: "tla-2", merchant: "Shell", date: "2026-10-16", category: "Gas station", amount: 42.1, status: "declined" },
-      { id: "tla-3", merchant: "Big Box Sports", date: "2026-11-03", category: "Sporting goods stores", amount: 212.5, status: "approved" },
-    ],
-  },
-  {
-    needId: 1,
-    fundedOn: "2026-10-06",
-    amount: 500,
-    description:
-      "Our U14 girls qualified for the State Cup in Madison. This pays for a charter bus and two nights of hotel rooms for 18 players and 4 coaches, so no family is left out because of travel costs.",
-    endsOn: "2026-11-13",
-    cardIssuedOn: "2026-10-09",
-    transactions: [
-      { id: "lys-1", merchant: "Coach Charter Lines", date: "2026-10-24", category: "Bus and charter lines", amount: 1450, status: "approved" },
-      { id: "lys-2", merchant: "Lakeview Inn & Suites", date: "2026-10-25", category: "Hotels and lodging", amount: 620, status: "approved" },
-      { id: "lys-3", merchant: "Lakeview Inn & Suites", date: "2026-10-27", category: "Hotels and lodging", amount: 85, status: "pending" },
-    ],
-  },
-  {
-    needId: 2,
-    fundedOn: "2026-10-27",
-    amount: 200,
-    description:
-      "We stream every home game for families who can’t attend. Our single phone setup keeps dropping. This buys two cameras, a tripod kit and a streaming encoder for the stadium press box.",
-    endsOn: "2026-12-04",
-    cardIssuedOn: "2026-10-28",
-    transactions: [],
-  },
-];
+// Shared with the organisation screens; re-exported so the sponsor components import from one place.
+export { dollars, daysLeftLabel, placeLabel, humanizeSlug } from "@/utils/needs";
