@@ -66,6 +66,9 @@ export interface LiveGamesPage {
 }
 
 export interface RecapSide {
+  // The team (e.g. "Dallas Falcons") and its id; the school is the organisation for a tournament.
+  Team?: string | null;
+  Teamid?: string | null;
   School: string | null;
   Score: number | null;
   Logo: string | null;

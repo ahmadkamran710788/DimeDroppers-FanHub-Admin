@@ -16,7 +16,8 @@ export interface LoadedRecap {
 
 const STATUS: Record<string, string> = { final: "Final", live: "Live", pending: "Upcoming" };
 
-const team = (side: RecapSide, score: number): GameTeam => ({ name: side.School ?? "TBD", logo: side.Logo, score });
+// The team's name, else its school's.
+const team = (side: RecapSide, score: number): GameTeam => ({ name: side.Team || side.School || "TBD", logo: side.Logo, score });
 
 const leader = (l: RecapLeader | null): TeamLeader | null =>
   l && {
