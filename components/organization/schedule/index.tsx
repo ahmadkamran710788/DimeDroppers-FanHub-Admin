@@ -30,6 +30,7 @@ import Pagination from "@/components/common/pagination";
 import EventSelect from "@/components/organization/event-select";
 import { useSelectedEvent } from "@/context/selected-event";
 import EventGames from "@/components/organization/schedule/event-games";
+import { useOrgGames } from "@/components/organization/media/use-org-games";
 import { US_STATE_OPTIONS } from "@/components/organization/org-form/form";
 import type { ExposureEvent, ExposureEventsResponse, ExposureEventView } from "@/utils/types/exposure-event";
 import {
@@ -456,6 +457,31 @@ function NextGameCard({ game }: { game: ScheduleItem | null }) {
           <div className="text-white text-2xl font-extrabold font-display whitespace-nowrap">{time}</div>
         </div>
         <TeamSide name={game.opponent ?? "TBD"} logoUrl={game.opponentLogoUrl} />
+      </div>
+    </div>
+  );
+}
+
+// A tournament's next game: the first upcoming game of the event in the shared picker, with both of its teams
+// (the organisation isn't one of them).
+function TournamentNextGameCard() {
+  const { games } = useOrgGames();
+  // Games come by start time; the first not yet played or live.
+  const game = games?.find((g) => g.status === "upcoming");
+  if (!game) return null;
+  // `start` is the real instant here, so it's shown in local time.
+  const time = new Date(game.start).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+
+  return (
+    <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 backdrop-blur-xl flex flex-col gap-4">
+      <div className="text-white text-base font-bold uppercase font-display tracking-wide">Next Game</div>
+      <div className="flex items-center justify-between gap-2 p-4 bg-white/5 rounded-lg outline outline-1 outline-white/10">
+        <TeamSide name={game.home.shortName || "TBD"} logoUrl={game.home.logo || undefined} />
+        <div className="flex-1 min-w-0 flex flex-col items-center gap-1 text-center">
+          <div className="text-white/60 text-xs font-medium uppercase whitespace-nowrap">{formatNextGameDate(game.start)}</div>
+          <div className="text-white text-2xl font-extrabold font-display whitespace-nowrap">{time}</div>
+        </div>
+        <TeamSide name={game.away.shortName || "TBD"} logoUrl={game.away.logo || undefined} />
       </div>
     </div>
   );
@@ -937,7 +963,7 @@ export default function SchedulePage() {
 
       {/* Right sidebar */}
       <div className="w-full lg:w-[320px] lg:shrink-0 flex flex-col gap-6">
-        <NextGameCard game={nextGame} />
+        {isTournament ? <TournamentNextGameCard /> : <NextGameCard game={nextGame} />}
         <MiniCalendar games={games} />
         {!isTournament && <ScheduleTools onAddGame={() => setShowAddModal(true)} />}
       </div>

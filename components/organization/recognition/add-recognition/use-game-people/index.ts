@@ -91,11 +91,17 @@ async function loadTournament(teamsOf: { id: string; name: string }[]): Promise<
         apiCall<ExposureListResponse<ExposurePlayer>>({ endpoint: routes.api.exposureTeamPlayers(teamId), method: "GET" }),
         apiCall<TeamRoleListResponse>({ endpoint: routes.api.teamRoles, method: "GET", data: { fanHubTeamId: teamId, status: "ACTIVE" } }),
       ]);
+      const members = roles.success ? roleRows(roles.data) : [];
+      // A player's photo is their linked fan's (a PLAYER role points at the player by fanHubPlayerId).
+      const photoOf = (playerId: string) => {
+        const fan = members.find((m) => m.role === "PLAYER" && m.fanHubPlayerId === playerId)?.fan;
+        return fan?.avatarUrl ?? fan?.profileUrl ?? undefined;
+      };
       return {
         players: (players.success ? (players.data?.data ?? []) : []).map(
-          (p): GamePerson => ({ id: p.id, name: fullName(p.firstName, p.lastName), role: "Player", team, teamKey: teamId, refType: "TOURNAMENT_PLAYER" })
+          (p): GamePerson => ({ id: p.id, name: fullName(p.firstName, p.lastName), photo: photoOf(p.id), role: "Player", team, teamKey: teamId, refType: "TOURNAMENT_PLAYER" })
         ),
-        givers: (roles.success ? roleRows(roles.data) : [])
+        givers: members
           .filter((m) => m.status === "ACTIVE" && m.role !== "PLAYER")
           .map((m): GamePerson => ({ id: m.id, name: m.fan?.name || m.email, role: m.staffTitle ?? ROLE_LABEL[m.role], team, teamKey: teamId, refType: "TEAM_ROLE" })),
       };

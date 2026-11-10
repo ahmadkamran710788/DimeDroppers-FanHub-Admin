@@ -48,7 +48,7 @@ export default function RecognitionPosts() {
   const shown = recognitions.filter(
     (r) =>
       !q ||
-      [r.player.name, badgeLabelOf(r.awardBadge), r.recognizedBy.name, r.description].some((v) => v.toLowerCase().includes(q))
+      [r.player.name, badgeLabelOf(r.awardBadge), r.recognizedBy.name, r.description].some((v) => (v ?? "").toLowerCase().includes(q))
   );
 
   return (
@@ -102,7 +102,7 @@ export default function RecognitionPosts() {
               <div className="relative">
                 <PlayerCard template={playerTemplateOf(r.template)} data={cardOf(r, org?.name)} gradient={cardBackground(r.hexColor ?? "")} />
                 <RowActionsMenu
-                  ariaLabel={`Actions for ${r.player.name}'s recognition`}
+                  ariaLabel={`Actions for ${r.player.name || "this player"}'s recognition`}
                   className="absolute top-3 right-3 size-9 bg-black/30"
                   items={[
                     { label: "Edit Recognition", onSelect: () => router.push(routes.ui.editRecognition(r.id)) },
@@ -130,7 +130,7 @@ export default function RecognitionPosts() {
         isOpen={!!deleting}
         onClose={() => setDeleting(null)}
         title="Delete Recognition"
-        message={`${deleting?.player.name}'s recognition will be removed from the fan wall.`}
+        message={`${deleting?.player.name || "This player"}'s recognition will be removed from the fan wall.`}
         confirmLabel="Delete"
         busyLabel="Deleting…"
         destructive

@@ -53,9 +53,11 @@ export const SAMPLE_PLAYER: PlayerRecognition = {
   recognizedBy: { name: "Twin Lakes Academy", at: new Date(Date.now() - 2 * 3600 * 1000).toISOString() },
 };
 
-const initials = (name: string) =>
-  name
+// The API can send a null name (e.g. a removed player): no initials then.
+const initials = (name: string | null | undefined) =>
+  (name ?? "")
     .split(" ")
+    .filter(Boolean)
     .map((w) => w[0])
     .join("")
     .slice(0, 2)
