@@ -3,7 +3,9 @@ export const routes = {
     indexRoute: "/",
     profile: "/profile",
     signIn: "/auth/sign-in",
+    // Pick an organization or a sponsor account; each opens its own sign-up form.
     signUp: "/auth/sign-up",
+    organizationSignUp: "/auth/sign-up/organization",
     // Sponsor sign-up: Account → Brand → Review, sent as one request on Finish.
     sponsorSignUp: "/auth/sponsor-sign-up",
     schedule: "/schedule",
@@ -58,13 +60,13 @@ export const routes = {
     sponsorMessages: "/sponsor-messages",
     sponsorMessagesThread: (sponsorId: string) => `/sponsor-messages?thread=${sponsorId}`,
     fundableNeeds: "/fundable-needs",
-    // `type` starts the form on that type of need (the one filtered on the list).
-    createFundableNeed: (type?: string) =>
-      type ? `/fundable-needs/create?type=${encodeURIComponent(type)}` : "/fundable-needs/create",
+    // `categoryCode` starts the form on that category (the one filtered on the list).
+    createFundableNeed: (categoryCode?: string) =>
+      categoryCode ? `/fundable-needs/create?category=${encodeURIComponent(categoryCode)}` : "/fundable-needs/create",
     editFundableNeed: (needId: string) => `/fundable-needs/${needId}/edit`,
     virtualCards: "/virtual-cards",
-    // Opens Virtual Cards on that need's card.
-    virtualCard: (needId: string) => `/virtual-cards?card=${needId}`,
+    // Opens Virtual Cards on that card (a card serves one category, need after need).
+    virtualCard: (cardId: string) => `/virtual-cards?card=${encodeURIComponent(cardId)}`,
     userDetails: (id: string | number) => `users/${id}`,
     setupWizard: {
       // Every setup step starts with this; the organization layout leaves these pages full-screen.
@@ -74,6 +76,10 @@ export const routes = {
     // Sponsor role (app/(sponsor)). Sponsorships is where a sponsor lands after sign-in.
     sponsor: {
       fundableNeeds: "/sponsor/fundable-needs",
+      // A tab of Fundable Needs; with a contribution, the page confirms that payment on load (Stripe's
+      // return_url after a redirect-based payment).
+      fundableNeedsTab: (tab: "browse" | "funded", contributionId?: string) =>
+        `/sponsor/fundable-needs?tab=${tab}${contributionId ? `&contribution=${encodeURIComponent(contributionId)}` : ""}`,
       // Campaign Planner (national accounts) and Find Organizations, as tabs; ?tab= picks one.
       sponsorships: "/sponsor/sponsorships",
       findOrganizations: "/sponsor/sponsorships?tab=find",
@@ -320,6 +326,35 @@ export const routes = {
     // (FANHUB_SPONSOR_CART_GENDER_PHYSICAL_ASSETS_FRONTEND.md).
     sponsorCartQuote: "fanhub/sponsor-packages/activations/quote",
     sponsorCartActivate: "fanhub/sponsor-packages/activations/batch",
+    // Fundable Needs, organisation side (FANHUB_FUNDABLE_NEEDS_FRONTEND.md §4). GET what the create form
+    // offers, the teams (?eventId= for a tournament), a school's games, the stat cards and the cards (paged).
+    orgNeedOptions: "fanhub/org/needs/options",
+    orgNeedTeams: "fanhub/org/needs/teams",
+    orgNeedGames: "fanhub/org/needs/games",
+    orgNeedsSummary: "fanhub/org/needs/summary",
+    orgNeedCards: "fanhub/org/needs/cards",
+    // GET the needs (paged, ?status=&categoryCode=), POST one.
+    orgNeeds: "fanhub/org/needs",
+    // GET one (with its sponsor payments and card history), PATCH it while spending is open.
+    orgNeed: (id: string) => `fanhub/org/needs/${id}`,
+    // POST: only before any sponsor has paid.
+    orgNeedCancel: (id: string) => `fanhub/org/needs/${id}/cancel`,
+    // POST, no body: answers the need with its updated card.
+    orgNeedCardFreeze: (id: string) => `fanhub/org/needs/${id}/card/freeze`,
+    orgNeedCardUnfreeze: (id: string) => `fanhub/org/needs/${id}/card/unfreeze`,
+    // POST { nonce } from Stripe.js: the ephemeral key for Stripe Issuing Elements (show card details).
+    orgNeedCardEphemeralKey: (id: string) => `fanhub/org/needs/${id}/card/ephemeral-key`,
+    // Fundable Needs, sponsor side (FANHUB_FUNDABLE_NEEDS_FRONTEND.md §5). GET the open needs (paged) and the
+    // Browse stat cards, the needs this sponsor has funded, and where their money went on one need.
+    sponsorNeeds: "fanhub/sponsor-needs",
+    sponsorNeedsSummary: "fanhub/sponsor-needs/summary",
+    sponsorFundedNeeds: "fanhub/sponsor-needs/funded",
+    sponsorNeedUtilization: (needId: string) => `fanhub/sponsor-needs/${needId}/utilization`,
+    // POST { amountCents, brandDisplay, note } with an Idempotency-Key: starts a Stripe payment (clientSecret);
+    // then POST { paymentIntentId } to confirm once Stripe is done.
+    sponsorNeedContributions: (needId: string) => `fanhub/sponsor-needs/${needId}/contributions`,
+    sponsorContributionConfirm: (contributionId: string) =>
+      `fanhub/sponsor-needs/contributions/${contributionId}/confirm`,
     // Sponsor sign-up and profile (FANHUB_SPONSOR_SIGNUP_PROFILE_FRONTEND.md). GET, no token: sponsor
     // types, categories, the password and logo rules, and the paths of the legal documents.
     sponsorSignupOptions: "fanhub/sponsor-auth/options",

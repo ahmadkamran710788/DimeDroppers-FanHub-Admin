@@ -1,19 +1,17 @@
 import { cn } from "@/utils/cn";
-import { formatMoney } from "@/utils/helper";
-import OrgCrest from "@/components/sponsor/org-crest";
+import OrgMonogram from "@/components/sponsor/find-organizations/org-monogram";
 import { CARD } from "@/components/sponsor/styles";
-import type { FundableNeed } from "@/components/sponsor/fundable-needs/data";
+import { dollars } from "@/components/sponsor/fundable-needs/data";
+import type { SponsorFundedNeed } from "@/utils/types/needs";
 
 interface FundedNeedCardProps {
-  need: FundableNeed;
-  // What this sponsor gave.
-  amount: number;
+  funded: SponsorFundedNeed;
   selected: boolean;
   onSelect: () => void;
 }
 
 // One need the sponsor has funded, in the My funded needs list; picking it shows its spending.
-export default function FundedNeedCard({ need, amount, selected, onSelect }: FundedNeedCardProps) {
+export default function FundedNeedCard({ funded, selected, onSelect }: FundedNeedCardProps) {
   return (
     // A clickable card (shows this need's spending), not an action button.
     <button
@@ -26,15 +24,17 @@ export default function FundedNeedCard({ need, amount, selected, onSelect }: Fun
       )}
     >
       <span className="flex gap-3 items-center">
-        <OrgCrest orgName={need.org} color={need.color} trim={need.trim} width={34} height={40} />
+        <OrgMonogram logoUrl={funded.organization.logoUrl} size="sm" />
         <span className="min-w-0 flex flex-col gap-0.5">
-          <span className="text-base font-semibold">{need.title}</span>
-          <span className="text-[13px] text-[#bdbdbd]">{need.org}</span>
+          <span className="text-base font-semibold break-words">{funded.need.title}</span>
+          <span className="text-[13px] text-[#bdbdbd] truncate">{funded.organization.name}</span>
         </span>
       </span>
       <span className="mt-3 pt-3 border-t border-[#262626] flex justify-between items-baseline gap-3">
         <span className="text-[13px] text-[#bdbdbd]">You funded</span>
-        <span className="font-display font-extrabold text-[26px] leading-none">{formatMoney(amount)}</span>
+        <span className="font-display font-extrabold text-[26px] leading-none">
+          {dollars(funded.yourContributionCents)}
+        </span>
       </span>
     </button>
   );

@@ -62,6 +62,12 @@ export const formatShortDate = (iso: string): string => {
   return new Date(year, month - 1, day).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 };
 
+// A moment (a full ISO timestamp, e.g. a need's endsAt or a payment's paidAt) as "Dec 13, 2026" in the
+// viewer's time zone. Unlike formatShortDate, it doesn't take the UTC date part: 2026-12-14T04:59Z is still
+// Dec 13 in Florida.
+export const formatInstantDate = (iso: string): string =>
+  new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
 // Select options whose label is also the value.
 export const toOptions = (labels: string[]) => labels.map((label) => ({ label, value: label }));
 

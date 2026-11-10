@@ -1,108 +1,259 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { ArrowLeft, CreditCard, Star } from "lucide-react";
-import FilterChips from "@/components/common/filter-chips";
+import { ArrowLeft, CreditCard, DollarSign, Lock, Star } from "lucide-react";
+import Button from "@/components/common/button";
 import Input from "@/components/common/input";
+import Loader from "@/components/common/loader";
 import PageHeading from "@/components/common/page-heading";
 import SectionCard from "@/components/common/section-card";
 import Select from "@/components/common/select";
 import Textarea from "@/components/common/textarea";
 import WizardFooter from "@/components/common/wizard-footer";
+import GamePicker from "@/components/organization/fundable-needs/game-picker";
 import NeedPreview from "@/components/organization/fundable-needs/need-preview";
 import {
-  MCC_CATEGORIES,
-  MOCK_EVENTS,
-  NEED_TYPES,
-  NEED_TYPE_OPTIONS,
-  TYPE_MCC,
-  mccLabel,
+  COMING_SOON,
+  DESCRIPTION_MAX,
+  TITLE_MAX,
+  WHY_MAX,
+  categoryLook,
+  eventOptionLabel,
+  forLabel,
+  gameTime,
+  gameTitle,
 } from "@/components/organization/fundable-needs/data";
-import { FIELD, HINT, LABEL } from "@/components/organization/fundable-needs/field-styles";
-import { COVERS_MAX, TITLE_MAX, WHY_MAX, needSchema } from "@/components/organization/fundable-needs/schema";
-import { useFundableNeeds } from "@/context/fundable-needs";
-import { toOptions } from "@/utils/helper";
+import { FIELD, FLAT_CARD, HINT, LABEL, amountInput } from "@/components/organization/fundable-needs/field-styles";
+import { needSchema } from "@/components/organization/fundable-needs/schema";
+import { sponsorList, sponsorRequest } from "@/components/sponsor/sponsor-api";
+import { centsToInput, dollars, dollarsToCents } from "@/utils/needs";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
-import type { FundableNeed, NeedDraft, NeedType } from "@/utils/types/fundable-need";
+import type {
+  CreateNeedRequest,
+  NeedGame,
+  NeedOptions,
+  NeedTeam,
+  OrgNeedDetail,
+  OrgNeedListItem,
+  UpdateNeedRequest,
+} from "@/utils/types/needs";
 
-const EMPTY: NeedDraft = { event: "", team: "", type: "", title: "", covers: "", why: "", mccs: [], merchant: "" };
+// What's typed so far. The goal is the dollars as typed; it's sent as cents.
+interface Draft {
+  categoryCode: string;
+  eventId: string;
+  teamId: string;
+  game: NeedGame | null;
+  title: string;
+  description: string;
+  whyItMatters: string;
+  goal: string;
+}
 
-const EVENT_OPTIONS = MOCK_EVENTS.map((e) => ({ label: `${e.name} · ${e.dates}`, value: e.name }));
+const EMPTY: Draft = {
+  categoryCode: "",
+  eventId: "",
+  teamId: "",
+  game: null,
+  title: "",
+  description: "",
+  whyItMatters: "",
+  goal: "",
+};
 
-const isNeedType = (value?: string): value is NeedType => NEED_TYPES.some((t) => t.name === value);
+// The API's field names; a 400 naming one of them is shown under that field (scheduleEventId is the game).
+const FIELD_PATHS = ["categoryCode", "eventId", "scheduleEventId", "teamId", "title", "description", "whyItMatters", "goalCents"];
 
-// A new need starts with the type it was created from (if any) and that type's first two categories.
-const newDraft = (type?: string): NeedDraft =>
-  isNeedType(type) ? { ...EMPTY, type, mccs: TYPE_MCC[type].slice(0, 2) } : EMPTY;
+// The form's fields → the error each one clears when it changes.
+const ERROR_KEY: Partial<Record<keyof Draft, string>> = { game: "scheduleEventId", goal: "goalCents" };
 
-const draftOf = (n: FundableNeed): NeedDraft => ({
-  event: n.event,
-  team: n.team,
-  type: n.type,
-  title: n.title,
-  covers: n.covers,
-  why: n.why,
-  mccs: n.mccs,
-  merchant: n.merchant,
+// A new need starts on the category it was created from when that one is switched on, or on the only one
+// that is.
+function newDraft(options: NeedOptions, initialCategory?: string): Draft {
+  const enabled = options.categories.filter((c) => c.isEnabled);
+  const start = enabled.find((c) => c.code === initialCategory) ?? (enabled.length === 1 ? enabled[0] : undefined);
+  return { ...EMPTY, categoryCode: start?.code ?? "" };
+}
+
+const draftOf = (need: OrgNeedDetail): Draft => ({
+  ...EMPTY,
+  categoryCode: need.category.code,
+  eventId: need.event?.id ?? "",
+  teamId: need.team?.id ?? "",
+  title: need.title,
+  description: need.description,
+  whyItMatters: need.whyItMatters ?? "",
+  goal: centsToInput(need.money.goalCents),
 });
+
+interface Loaded {
+  key: number;
+  options?: NeedOptions;
+  need?: OrgNeedDetail;
+  error?: string;
+}
 
 interface NeedFormProps {
   // Set to edit that need instead of creating one.
   needId?: string;
-  // Create: the type to start on (from the list's type filter).
-  initialType?: string;
+  // Create: the category code to start on (from the list's type filter).
+  initialCategory?: string;
 }
 
-// Create a fundable need (publishing it issues its virtual card) or edit one. The preview beside the
-// form shows the need as sponsors will see it.
-export default function NeedForm({ needId, initialType }: NeedFormProps) {
+// Create a fundable need (POST /fanhub/org/needs) or edit one (PATCH, while spending is open). A tournament's
+// need is for one of its events, a school's for one game; either can name a team. The need ends by itself
+// when its event or game is over. The preview beside the form shows it as sponsors will see it.
+export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
   const router = useRouter();
-  const { needs, ready, saveNeed } = useFundableNeeds();
   const editing = needId !== undefined;
-  const original = editing ? needs.find((n) => n.id === needId) : undefined;
-  // Editing: filled from the need once it's found (one saved in this browser arrives after hydration).
-  const [draft, setDraft] = useState<NeedDraft | null>(editing ? null : newDraft(initialType));
-  if (draft === null && original) setDraft(draftOf(original));
+  // Bumped to load again (Try again, or after a 409 on save).
+  const [reloads, setReloads] = useState(0);
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [teams, setTeams] = useState<{ key: string; items?: NeedTeam[]; error?: string } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      sponsorRequest<NeedOptions>("GET", routes.api.orgNeedOptions),
+      needId ? sponsorRequest<OrgNeedDetail>("GET", routes.api.orgNeed(needId)) : Promise.resolve(null),
+    ]).then(([o, n]) => {
+      if (cancelled) return;
+      const error = !o.view ? o.message : n && !n.view ? n.message : undefined;
+      setLoaded({ key: reloads, options: o.view, need: n?.view, error: error ?? undefined });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [needId, reloads]);
+
+  const current = loaded?.key === reloads ? loaded : null;
+  const options = current?.options;
+  const need = current?.need;
+  // The draft starts once everything it needs has loaded (again after a reload).
+  if (!draft && options && !current?.error && (!editing || need)) {
+    setDraft(editing && need ? draftOf(need) : newDraft(options, initialCategory));
+  }
+
+  const scope = need?.scope ?? options?.scope;
+  // Creating: a tournament's teams follow the chosen event; a school's are its own.
+  const teamsKey =
+    !draft || editing || !scope ? null : scope === "EVENT" ? (draft.eventId ? `event:${draft.eventId}` : null) : "school";
+  useEffect(() => {
+    if (!teamsKey) return;
+    let cancelled = false;
+    const eventId = teamsKey.startsWith("event:") ? teamsKey.slice("event:".length) : undefined;
+    sponsorList<NeedTeam>(routes.api.orgNeedTeams, { eventId }).then((r) => {
+      if (!cancelled) setTeams({ key: teamsKey, items: r.items, error: r.items ? undefined : r.message });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [teamsKey]);
+  const currentTeams = teamsKey && teams?.key === teamsKey ? teams : null;
 
   const back = () => router.push(routes.ui.fundableNeeds);
+  // Editing a need whose event or game is over: shown, but nothing can change.
+  const readOnly = editing && !!need && !need.spendingOpen;
 
-  const clearError = (...keys: string[]) => {
+  const update = (patch: Partial<Draft>) => {
+    setDraft((prev) => prev && { ...prev, ...patch });
+    const keys = (Object.keys(patch) as (keyof Draft)[]).map((k) => ERROR_KEY[k] ?? k);
     if (keys.some((k) => errors[k])) setErrors((prev) => ({ ...prev, ...Object.fromEntries(keys.map((k) => [k, ""])) }));
   };
 
-  const update = (patch: Partial<NeedDraft>) => {
-    setDraft((prev) => prev && { ...prev, ...patch });
-    clearError(...Object.keys(patch));
-  };
-
   async function save() {
-    if (!draft || !(await validateAndSetErrors(needSchema, draft, setErrors)) || !draft.type) return;
+    if (!draft || !options || saving || readOnly) return;
+    const goalCents = dollarsToCents(draft.goal);
+    const schema = needSchema({
+      scope: scope ?? options.scope,
+      editing,
+      goalMinCents: options.limits.goalCentsMin,
+      goalMaxCents: options.limits.goalCentsMax,
+      raisedCents: need?.money.raisedCents,
+    });
+    const values = {
+      categoryCode: draft.categoryCode,
+      eventId: draft.eventId,
+      scheduleEventId: draft.game?.id ?? "",
+      title: draft.title,
+      description: draft.description,
+      whyItMatters: draft.whyItMatters,
+      goalCents,
+    };
+    if (!(await validateAndSetErrors(schema, values, setErrors))) return;
+
     const title = draft.title.trim();
-    saveNeed(
-      {
-        type: draft.type,
+    const description = draft.description.trim();
+    const why = draft.whyItMatters.trim();
+    let request: Promise<{ status: number; view?: OrgNeedListItem; message?: string; errors?: { path: string; message: string }[] }>;
+    if (editing && need) {
+      // Only what changed; an emptied "why it matters" clears it.
+      const body: UpdateNeedRequest = {};
+      if (title !== need.title) body.title = title;
+      if (description !== need.description) body.description = description;
+      if (why !== (need.whyItMatters ?? "")) body.whyItMatters = why || null;
+      if (goalCents !== need.money.goalCents) body.goalCents = goalCents;
+      if (Object.keys(body).length === 0) {
+        toast("No changes to save.");
+        return;
+      }
+      request = sponsorRequest<OrgNeedListItem>("PATCH", routes.api.orgNeed(need.id), { body });
+    } else {
+      const body: CreateNeedRequest = {
+        categoryCode: draft.categoryCode,
+        ...(options.scope === "EVENT" ? { eventId: draft.eventId } : { scheduleEventId: draft.game?.id ?? "" }),
+        // "No specific team" leaves it out: the API takes a team's id or nothing (null is a 400).
+        ...(draft.teamId && { teamId: draft.teamId }),
         title,
-        covers: draft.covers.trim(),
-        why: draft.why.trim(),
-        event: draft.event,
-        team: draft.team,
-        mccs: draft.mccs,
-        merchant: draft.merchant.trim(),
-      },
-      needId
+        description,
+        ...(why && { whyItMatters: why }),
+        goalCents,
+      };
+      request = sponsorRequest<OrgNeedListItem>("POST", routes.api.orgNeeds, { body });
+    }
+
+    setSaving(true);
+    const r = await request;
+    setSaving(false);
+    if (r.view) {
+      toast.success(editing ? `Saved changes to “${title}”.` : `Need published: “${title}”. Sponsors can fund it now.`);
+      back();
+      return;
+    }
+    const fieldErrors = Object.fromEntries(
+      (r.errors ?? []).filter((e) => FIELD_PATHS.includes(e.path)).map((e) => [e.path, e.message])
     );
-    toast.success(editing ? `Saved changes to “${title}”.` : `Need created: “${title}”. The Sponsor AI Agent can now pitch it.`);
-    back();
+    if (Object.keys(fieldErrors).length) setErrors((prev) => ({ ...prev, ...fieldErrors }));
+    toast.error(r.message ?? "Couldn't save the need, please try again.");
+    // 409: it can't be changed any more (its event or game is over); show it as it is now.
+    if (editing && r.status === 409) {
+      setDraft(null);
+      setReloads((n) => n + 1);
+    }
   }
 
-  const event = draft ? MOCK_EVENTS.find((e) => e.name === draft.event) : undefined;
-  const teamOptions = event ? [{ label: "No specific team (whole event)", value: "" }, ...toOptions(event.teams)] : [];
-  const typeInfo = draft?.type ? NEED_TYPES.find((t) => t.name === draft.type) : undefined;
+  const category = options?.categories.find((c) => c.code === draft?.categoryCode);
+  const event = options?.events.find((e) => e.id === draft?.eventId);
+  const goalCents = draft ? dollarsToCents(draft.goal) : NaN;
+  const raised = need?.money.raisedCents ?? 0;
+  const teamName = editing ? need?.team?.name : currentTeams?.items?.find((t) => t.id === draft?.teamId)?.name;
+  const forText =
+    editing && need
+      ? forLabel(need)
+      : scope === "EVENT"
+        ? [teamName ?? (event ? "Whole event" : ""), event?.name ?? ""].filter(Boolean).join(" · ")
+        : [teamName, draft?.game ? `${gameTitle(draft.game)} · ${gameTime(draft.game.utcTime)}` : ""].filter(Boolean).join(" · ");
+  const teamOptions = (noTeamLabel: string) => [
+    { label: noTeamLabel, value: "" },
+    ...(currentTeams?.items ?? []).map((t) => ({ label: t.name, value: t.id })),
+  ];
 
   return (
     <div className="flex flex-col gap-10 pb-24">
@@ -118,74 +269,170 @@ export default function NeedForm({ needId, initialType }: NeedFormProps) {
         title={editing ? "Edit need" : "Create a fundable need"}
         description={
           editing
-            ? "Update what this need is for and where its card can be used. Its funding and card stay as they are."
-            : "Tell sponsors what you need funded. Publishing it issues the need its own virtual card."
+            ? "Change the name, what it covers, why it matters or the goal. Who it's for and its type stay as published."
+            : "Tell sponsors what you need funded. It ends by itself when its event or game is over."
         }
       />
 
-      {!draft ? (
-        <p className="py-16 text-center text-sm text-white/60">{ready ? "This need could not be found." : "Loading need…"}</p>
+      {!current ? (
+        <Loader className="py-16" />
+      ) : current.error || !draft || !options ? (
+        <div className="flex flex-col items-center gap-3 py-16 text-center">
+          <p className="text-sm text-white/60">
+            {current.error ? `Couldn't load the form: ${current.error}` : "This need could not be found."}
+          </p>
+          <Button variant="outline" label="Try again" onClick={() => setReloads((n) => n + 1)} />
+        </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,639fr)_minmax(0,445fr)] gap-6 lg:gap-10 items-start">
           <div className="flex min-w-0 flex-col gap-6">
-            <SectionCard title="Who is this need for?">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <Select
-                  label="Event"
-                  name="event"
-                  required
-                  value={draft.event}
-                  onChange={(e) => {
-                    const next = MOCK_EVENTS.find((x) => x.name === e.target.value);
-                    // A team belongs to one event: keep it only if it plays in the new one.
-                    update({ event: e.target.value, team: next?.teams.includes(draft.team) ? draft.team : "" });
-                  }}
-                  options={EVENT_OPTIONS}
-                  placeholder="Choose an event"
-                  error={errors.event}
-                  labelClassName={LABEL}
-                  selectClassName={FIELD}
-                />
-                <div className="flex flex-col gap-2">
+            {readOnly && (
+              <p
+                role="status"
+                className="flex items-center gap-3 rounded-[8px] border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/80"
+              >
+                <Lock className="size-5 shrink-0" strokeWidth={1.8} aria-hidden="true" />
+                This need can no longer be changed: its event or game is over.
+              </p>
+            )}
+
+            <SectionCard title="Who is this need for?" className={FLAT_CARD}>
+              {editing && need ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <Select
-                    label="Team (optional)"
-                    name="team"
-                    value={draft.team}
-                    onChange={(e) => update({ team: e.target.value })}
-                    options={teamOptions}
-                    placeholder="Choose an event first"
-                    disabled={!event}
+                    label={need.scope === "EVENT" ? "Event" : "Game"}
+                    name="target"
+                    value="target"
+                    onChange={() => {}}
+                    options={[
+                      {
+                        label: need.event
+                          ? need.event.name || "Event"
+                          : need.game
+                            ? `${gameTitle(need.game)} · ${gameTime(need.game.utcTime)}`
+                            : "—",
+                        value: "target",
+                      },
+                    ]}
+                    disabled
                     labelClassName={LABEL}
                     selectClassName={FIELD}
                   />
-                  <p className={HINT}>
-                    {event ? `${event.teams.length} teams registered for this event` : "Teams load after you pick an event."}
-                  </p>
+                  <Select
+                    label="Team"
+                    name="team"
+                    value="team"
+                    onChange={() => {}}
+                    options={[{ label: need.team?.name ?? "No specific team", value: "team" }]}
+                    disabled
+                    labelClassName={LABEL}
+                    selectClassName={FIELD}
+                  />
+                  <p className={`${HINT} sm:col-span-2`}>Who a need is for can&apos;t change after it&apos;s published.</p>
                 </div>
-              </div>
+              ) : scope === "EVENT" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="flex flex-col gap-2">
+                    <Select
+                      label="Event"
+                      name="eventId"
+                      required
+                      value={draft.eventId}
+                      onChange={(e) => update({ eventId: e.target.value, teamId: "" })}
+                      options={options.events.map((ev) => ({ label: eventOptionLabel(ev), value: ev.id }))}
+                      placeholder={options.events.length ? "Choose an event" : "No upcoming events"}
+                      disabled={options.events.length === 0}
+                      error={errors.eventId}
+                      labelClassName={LABEL}
+                      selectClassName={FIELD}
+                    />
+                    {options.events.length === 0 && (
+                      <p className={HINT}>Only events that haven&apos;t ended can have a need.</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Select
+                      label="Team (optional)"
+                      name="teamId"
+                      value={draft.teamId}
+                      onChange={(e) => update({ teamId: e.target.value })}
+                      options={draft.eventId && currentTeams?.items ? teamOptions("No specific team (whole event)") : []}
+                      placeholder={!draft.eventId ? "Choose an event first" : "Loading teams…"}
+                      disabled={!draft.eventId || !currentTeams?.items}
+                      error={errors.teamId}
+                      labelClassName={LABEL}
+                      selectClassName={FIELD}
+                    />
+                    {!errors.teamId && (
+                      <p className={HINT}>
+                        {!draft.eventId
+                          ? "Teams load after you pick an event."
+                          : currentTeams?.items
+                            ? `${currentTeams.items.length} teams registered for this event`
+                            : currentTeams?.error
+                              ? `Couldn't load the teams: ${currentTeams.error}`
+                              : "Loading teams…"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-6">
+                  <div className="flex flex-col gap-2">
+                    <Select
+                      label="Team (optional)"
+                      name="teamId"
+                      value={draft.teamId}
+                      onChange={(e) => update({ teamId: e.target.value, game: null })}
+                      options={currentTeams?.items ? teamOptions("All teams") : []}
+                      placeholder="Loading teams…"
+                      disabled={!currentTeams?.items}
+                      error={errors.teamId}
+                      labelClassName={LABEL}
+                      selectClassName={FIELD}
+                    />
+                    {!errors.teamId && (
+                      <p className={HINT}>
+                        {currentTeams?.error
+                          ? `Couldn't load your teams: ${currentTeams.error}`
+                          : "Pick a team to name it on the need and see only its games."}
+                      </p>
+                    )}
+                  </div>
+                  <GamePicker
+                    value={draft.game}
+                    onChange={(game) => update({ game })}
+                    teamId={draft.teamId}
+                    error={errors.scheduleEventId}
+                  />
+                </div>
+              )}
             </SectionCard>
 
-            <SectionCard title="About the need">
+            <SectionCard title="About the need" className={FLAT_CARD}>
               <div className="flex flex-col gap-2">
                 <Select
                   label="What kind of need is this?"
-                  name="type"
+                  name="categoryCode"
                   required
-                  value={draft.type}
-                  onChange={(e) => {
-                    const type = e.target.value;
-                    if (!isNeedType(type)) return;
-                    // Keep the categories that still apply; otherwise start on the new type's first two.
-                    const kept = draft.mccs.filter((slug) => TYPE_MCC[type].includes(slug));
-                    update({ type, mccs: kept.length ? kept : TYPE_MCC[type].slice(0, 2) });
-                  }}
-                  options={NEED_TYPE_OPTIONS}
+                  value={draft.categoryCode}
+                  onChange={(e) => update({ categoryCode: e.target.value })}
+                  // Only the types switched on; when editing, the need's own type too (the field is locked
+                  // then, and it may have been switched off since).
+                  options={options.categories
+                    .filter((c) => c.isEnabled || c.code === draft.categoryCode)
+                    .map((c) => ({ label: c.name, value: c.code }))}
                   placeholder="Choose a type"
-                  error={errors.type}
+                  disabled={editing}
+                  error={errors.categoryCode}
                   labelClassName={LABEL}
                   selectClassName={FIELD}
                 />
-                {!errors.type && <p className={HINT}>{typeInfo?.description ?? "Sponsors browse needs by type."}</p>}
+                {!errors.categoryCode && (
+                  <p className={HINT}>
+                    {(category && categoryLook(category.name).description) || "Sponsors browse needs by type."}
+                  </p>
+                )}
               </div>
               <Input
                 label="Name of the need"
@@ -195,100 +442,143 @@ export default function NeedForm({ needId, initialType }: NeedFormProps) {
                 onChange={(e) => update({ title: e.target.value })}
                 placeholder="e.g. Bus and hotel for the 17U Boys at Nationals"
                 maxLength={TITLE_MAX}
+                disabled={readOnly}
                 error={errors.title}
                 labelClassName={LABEL}
                 inputClassName={FIELD}
+                hintClassName={HINT}
+              />
+              <Input
+                label="Goal amount"
+                name="goalCents"
+                required
+                value={draft.goal}
+                onChange={(e) => {
+                  const next = amountInput(e.target.value);
+                  if (next !== null) update({ goal: next });
+                }}
+                placeholder="e.g. 1500"
+                icon={<DollarSign className="h-5 w-5" />}
+                inputMode="decimal"
+                disabled={readOnly}
+                error={errors.goalCents}
+                hint={
+                  raised > options.limits.goalCentsMin
+                    ? `At least the ${dollars(raised)} already raised, up to ${dollars(options.limits.goalCentsMax)}.`
+                    : `Between ${dollars(options.limits.goalCentsMin)} and ${dollars(options.limits.goalCentsMax)}. Sponsors can fund it until it's reached.`
+                }
+                labelClassName={LABEL}
+                inputClassName={FIELD}
+                hintClassName={HINT}
               />
               <Textarea
                 label="What does this cover?"
-                name="covers"
+                name="description"
                 required
-                value={draft.covers}
-                onChange={(e) => update({ covers: e.target.value })}
+                value={draft.description}
+                onChange={(e) => update({ description: e.target.value })}
                 placeholder="List exactly what the money pays for, e.g. charter bus round trip and two hotel nights for 12 players and 3 coaches"
-                maxLength={COVERS_MAX}
+                maxLength={DESCRIPTION_MAX}
                 rows={3}
                 counterInLabel
-                error={errors.covers}
+                disabled={readOnly}
+                error={errors.description}
               />
               <Textarea
                 label="Why it matters (optional)"
-                name="why"
-                value={draft.why}
-                onChange={(e) => update({ why: e.target.value })}
+                name="whyItMatters"
+                value={draft.whyItMatters}
+                onChange={(e) => update({ whyItMatters: e.target.value })}
                 placeholder="A sentence or two on the impact for players and families"
                 maxLength={WHY_MAX}
                 rows={3}
                 counterInLabel
-                error={errors.why}
+                disabled={readOnly}
+                error={errors.whyItMatters}
               />
             </SectionCard>
 
-            <SectionCard title="Virtual card for this need">
+            <SectionCard title="Virtual card for this need" className={FLAT_CARD}>
               <p className="flex items-start gap-3 text-sm leading-[1.5] text-white/80">
                 <CreditCard className="size-5 shrink-0 text-[#638BFE]" strokeWidth={1.8} aria-hidden="true" />
-                Publishing this need creates its own Stripe virtual card. Sponsor money loads onto it as it comes in, and it
-                can only be used in the merchant categories you allow below.
+                {`Sponsor money for this need loads onto your Stripe virtual card for ${category ? category.name.toLowerCase() : "this kind of need"}: one card per kind of need, reused for your next one after this need ends. It only works at the merchant categories below; other purchases are declined.`}
               </p>
               <div className="flex flex-col gap-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-base font-medium text-white">
-                    Allowed merchant categories<span className="text-error"> *</span>
-                  </span>
-                  <span className="text-xs text-white/60">{`${draft.mccs.length} selected`}</span>
-                </div>
-                {draft.type ? (
-                  <FilterChips
-                    multiple
-                    ariaLabel="Allowed merchant categories"
-                    options={TYPE_MCC[draft.type].map((slug) => ({
-                      value: slug,
-                      label: `${mccLabel(slug)} · MCC ${MCC_CATEGORIES[slug].code}`,
-                    }))}
-                    value={draft.mccs}
-                    onChange={(mccs) => update({ mccs })}
-                  />
+                <span className="text-base font-medium text-white">
+                  {`Allowed merchant categories${category ? ` · ${category.allowedCategories.length}` : ""}`}
+                </span>
+                {category ? (
+                  <ul className="flex flex-wrap gap-2">
+                    {category.allowedCategories.map((mc) => (
+                      <li
+                        key={mc.stripeCategory}
+                        className="flex min-w-0 flex-col gap-0.5 rounded-[8px] border border-[#638BFE]/60 bg-[#638BFE]/10 px-3 py-2"
+                      >
+                        <span className="text-sm font-medium text-white">{mc.label}</span>
+                        <span className="font-mono text-[11px] text-white/60">{mc.mcc ? `MCC ${mc.mcc}` : mc.stripeCategory}</span>
+                      </li>
+                    ))}
+                  </ul>
                 ) : (
-                  <p className={HINT}>Choose a type of need first to see matching categories.</p>
+                  <p className={HINT}>Choose a type of need first to see where the card works.</p>
                 )}
-                {errors.mccs && <p className="text-sm text-error">{errors.mccs}</p>}
+                {category && (
+                  <p className={HINT}>{`Set for this kind of need. Choosing your own categories: ${COMING_SOON.toLowerCase()}.`}</p>
+                )}
               </div>
               <Input
                 label="Lock to one merchant (optional)"
                 name="merchant"
-                value={draft.merchant}
-                onChange={(e) => update({ merchant: e.target.value })}
+                value=""
+                onChange={() => {}}
                 placeholder="e.g. Coastal Charter Bus Co."
-                hint="Leave empty to allow any merchant in these categories. Purchases outside them are declined."
+                disabled
+                hint={COMING_SOON}
                 labelClassName={LABEL}
                 inputClassName={FIELD}
+                hintClassName={HINT}
               />
             </SectionCard>
 
-            <SectionCard title="What the sponsor gets in return">
-              <div className="flex items-center gap-3 rounded-[8px] border border-success/40 bg-success/10 px-4 py-3">
+            <SectionCard title="What the sponsor gets in return" className={FLAT_CARD}>
+              <div className="flex items-center gap-3 rounded-[8px] border border-white/15 bg-white/5 px-4 py-3 opacity-80">
                 <Star className="size-5 shrink-0 text-success" strokeWidth={1.8} aria-hidden="true" />
-                <span className="flex flex-col gap-0.5">
-                  <span className="text-sm font-semibold text-white">Instant spot on your Recognition &amp; Fan Wall</span>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="flex flex-wrap items-center gap-2 text-sm font-semibold text-white">
+                    Instant spot on your Recognition &amp; Fan Wall
+                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-white/70">
+                      {COMING_SOON}
+                    </span>
+                  </span>
                   <span className="text-[13px] leading-[1.5] text-white/75">
-                    The moment a sponsor funds this need, they’re shown on your Fan Wall. This is the only sponsor benefit for
-                    fundable needs.
+                    The moment a sponsor funds this need, they&apos;ll be shown on your Fan Wall. This is the only sponsor
+                    benefit for fundable needs.
                   </span>
                 </span>
               </div>
             </SectionCard>
           </div>
 
-          <NeedPreview draft={draft} />
+          <NeedPreview
+            data={{
+              categoryName: category?.name ?? "",
+              forText,
+              title: draft.title,
+              description: draft.description,
+              whyItMatters: draft.whyItMatters,
+              goal: Number.isFinite(goalCents) && goalCents > 0 ? dollars(goalCents) : "",
+              allowedCategories: category?.allowedCategories ?? [],
+            }}
+          />
         </div>
       )}
 
       <WizardFooter
         onBack={back}
         backLabel="Cancel"
-        primaryLabel={editing ? "Save changes" : "Publish need"}
+        primaryLabel={saving ? "Saving…" : editing ? "Save changes" : "Publish need"}
         onPrimary={() => void save()}
-        primaryDisabled={!draft}
+        primaryDisabled={!draft || saving || readOnly}
       />
     </div>
   );

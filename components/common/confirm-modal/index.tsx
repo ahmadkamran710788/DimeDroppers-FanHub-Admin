@@ -19,6 +19,8 @@ interface ConfirmModalProps {
   children?: ReactNode;
   // The confirm button waits, e.g. until something in `children` is picked.
   confirmDisabled?: boolean;
+  // The close button's label ("Cancel" by default); change it when the action itself is a cancel.
+  cancelLabel?: string;
 }
 
 // Yes/no popup for an action that needs a second look (remove, withdraw, delete…).
@@ -33,6 +35,7 @@ export default function ConfirmModal({
   destructive = false,
   children,
   confirmDisabled = false,
+  cancelLabel = "Cancel",
 }: ConfirmModalProps) {
   const [busy, setBusy] = useState(false);
 
@@ -49,7 +52,7 @@ export default function ConfirmModal({
         <p className="text-midnight-navy/80 text-base leading-6">{message}</p>
         {children}
         <div className="flex gap-3">
-          <Button label="Cancel" variant="secondary" onClick={onClose} fullWidth />
+          <Button label={cancelLabel} variant="secondary" onClick={onClose} fullWidth />
           <Button
             label={busy ? busyLabel : confirmLabel}
             variant={destructive ? "danger" : "cta"}

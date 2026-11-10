@@ -28,6 +28,9 @@ interface InputProps {
   variant?: "light" | "dark";
   // Muted helper line under the field (hidden while an error is shown).
   hint?: string;
+  // Colour of the hint and counter under the field, e.g. "text-white/60" for a light field on a dark card
+  // (the light variant's default is navy, for light pages).
+  hintClassName?: string;
   // Stops typing at this many characters and shows a live "42/60" counter under the field.
   maxLength?: number;
   // Browser autofill hint, e.g. "email" or "new-password".
@@ -54,6 +57,7 @@ export default function Input({
   inputClassName,
   variant = "light",
   hint,
+  hintClassName,
   maxLength,
   autoComplete,
   inputMode,
@@ -136,10 +140,18 @@ export default function Input({
           {error ? (
             <p className="text-sm text-error">{error}</p>
           ) : (
-            hint && <p className={cn("text-sm", dark ? "text-white/70" : "text-midnight-navy/60")}>{hint}</p>
+            hint && (
+              <p className={cn("text-sm", dark ? "text-white/70" : "text-midnight-navy/60", hintClassName)}>{hint}</p>
+            )
           )}
           {maxLength !== undefined && (
-            <span className={cn("ml-auto shrink-0 text-sm tabular-nums", dark ? "text-white/70" : "text-midnight-navy/60")}>
+            <span
+              className={cn(
+                "ml-auto shrink-0 text-sm tabular-nums",
+                dark ? "text-white/70" : "text-midnight-navy/60",
+                hintClassName
+              )}
+            >
               {`${value.length}/${maxLength}`}
             </span>
           )}
