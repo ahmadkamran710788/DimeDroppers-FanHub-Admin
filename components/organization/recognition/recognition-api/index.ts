@@ -40,7 +40,8 @@ const opponentOf = (sides: string[], school?: string | null) => {
 // `orgName` stands in for the player's school when the API has none (to tell the opponent apart).
 export const cardOf = (r: Recognition, orgName?: string): PlayerRecognition => ({
   player: {
-    name: r.player.name,
+    // A removed player can come back without a name.
+    name: r.player.name || "Unknown player",
     number: r.player.jerseyNumber && /^\d+$/.test(r.player.jerseyNumber) ? Number(r.player.jerseyNumber) : undefined,
     position: r.player.position ?? undefined,
     grade: r.player.grade ? `Grade ${r.player.grade}` : undefined,
@@ -62,7 +63,7 @@ export const cardOf = (r: Recognition, orgName?: string): PlayerRecognition => (
   description: r.description,
   ...(r.period && { period: r.period }),
   // Who gave it, and when (from createdAt).
-  recognizedBy: { name: r.recognizedBy.name, role: roleLabelOf(r.recognizedBy.role), at: r.createdAt },
+  recognizedBy: { name: r.recognizedBy.name || "Unknown", role: roleLabelOf(r.recognizedBy.role), at: r.createdAt },
 });
 
 // The full PATCH body of a recognition with a new status (PATCH replaces every editable field).

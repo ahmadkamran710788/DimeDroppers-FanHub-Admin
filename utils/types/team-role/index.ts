@@ -19,7 +19,8 @@ export interface TeamRoleMember {
   requestedAt: string | null;
   expiresAt: string | null;
   createdAt: string;
-  fan: { id: string; name: string | null; email: string } | null;
+  // avatarUrl / profileUrl: the fan's presigned photo, when the API sends one.
+  fan: { id: string; name: string | null; email: string; avatarUrl?: string | null; profileUrl?: string | null } | null;
 }
 
 export interface TeamRoleListResponse {
