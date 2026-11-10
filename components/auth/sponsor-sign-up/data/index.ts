@@ -4,12 +4,19 @@ import type { FieldError } from "@/components/sponsor/sponsor-api";
 export const STEPS = ["Account", "Brand", "Review"] as const;
 export const DONE_STEP = STEPS.length + 1;
 
-// What the brand panel promises a new sponsor.
-export const BENEFITS = [
-  "Packages for Predictions, Voting, Watch Live and more",
-  "Banners and on-site space from the organization",
-  "Dime AI campaign planning for national brands",
-];
+// The brand panel beside the form: the Dime Sponsors pitch and what it promises a new sponsor.
+export const BRAND_PANEL = {
+  mark: { src: "/DSLogoMark.svg", width: 44, height: 44 },
+  name: "DIME SPONSORS",
+  title: "Put your brand where the home team plays",
+  text: "Find local organizations, buy sponsorship packages built around their game days, and fund the things their teams need.",
+  perks: [
+    "Packages for Predictions, Voting, Watch Live and more",
+    "Banners and on-site space from the organization",
+    "Dime AI campaign planning for national brands",
+  ],
+  already: "Already a sponsor?",
+};
 
 export interface SponsorSignUpForm {
   contact: string;

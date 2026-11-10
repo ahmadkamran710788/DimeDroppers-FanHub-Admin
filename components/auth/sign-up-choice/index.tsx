@@ -1,73 +1,79 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Building2, ChevronRight, Handshake } from "lucide-react";
+import { Briefcase, Building2 } from "lucide-react";
+import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
+import AuthCard, { AUTH_LINK } from "@/components/auth/auth-card";
 
 interface AccountChoice {
   href: string;
   icon: ReactNode;
+  // The icon's circle and the call to action's colour.
+  circle: string;
+  ctaColor: string;
   title: string;
   description: string;
+  cta: string;
 }
 
 const CHOICES: AccountChoice[] = [
   {
     href: routes.ui.organizationSignUp,
-    icon: <Building2 className="size-6" strokeWidth={1.75} />,
-    title: "Sign up as an organization",
+    icon: <Building2 className="size-6" strokeWidth={1.7} aria-hidden />,
+    circle: "bg-[#4338ca]",
+    ctaColor: "text-[#8ea2ff]",
+    title: "I’m an organization",
     description:
-      "For schools, clubs and tournament organizers. Launch your fan hub, run your games and events, and raise money from sponsors.",
+      "Tournaments, schools, club teams and leagues. Build your Fan Hub, find sponsors and fund your needs.",
+    cta: "Sign up as an organization →",
   },
   {
     href: routes.ui.sponsorSignUp,
-    icon: <Handshake className="size-6" strokeWidth={1.75} />,
-    title: "Sign up as a sponsor",
-    description:
-      "For brands and local businesses. Find teams and events near your stores, sponsor them, and fund their needs.",
+    icon: <Briefcase className="size-6" strokeWidth={1.7} aria-hidden />,
+    circle: "bg-[#be185d]",
+    ctaColor: "text-[#f9a8d4]",
+    title: "I’m a sponsor",
+    description: "Brands and local businesses. Find organizations, activate sponsorship packages and fund needs.",
+    cta: "Sign up as a sponsor →",
   },
 ];
 
 // The sign-up entry point (from "Create one" on the sign-in page): pick an organization or a sponsor
-// account, then that account's own sign-up form opens.
+// account, then that account's own sign-up opens.
 export default function SignUpChoice() {
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-display font-black text-[32px] uppercase leading-none text-white">
-          Create account
+    <AuthCard size="lg" aria-labelledby="choose-title" className="gap-[26px]">
+      <div className="flex flex-col gap-2">
+        <h1 id="choose-title" className="font-display font-black text-[40px] uppercase leading-none text-white">
+          Create an account
         </h1>
-        <p className="text-sm text-white/70">Choose how you&apos;ll use Dime Fan Hub.</p>
+        <p className="text-[#a1a1aa]">How will you use Dime Fan Hub?</p>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
         {CHOICES.map((choice) => (
-          // A whole clickable card that opens a sign-up form, not an action button.
+          // A whole clickable card that opens a sign-up, not an action button.
           <Link
             key={choice.href}
             href={choice.href}
-            className="group flex items-center gap-4 rounded-[8px] border border-white/15 bg-white/5 p-4 transition-colors duration-200 hover:border-steel-blue hover:bg-white/10 focus-visible:outline-none focus-visible:border-steel-blue"
+            className="flex flex-col items-start gap-[14px] rounded-[12px] border border-[#262b35] bg-[#0f131b] p-6 text-left text-white transition-colors hover:border-[#6b8afd] hover:bg-[#121827] focus-visible:outline-none focus-visible:border-[#6b8afd]"
           >
-            <span className="flex size-12 flex-none items-center justify-center rounded-[8px] bg-white/10 text-white">
+            <span className={cn("size-[52px] rounded-full flex items-center justify-center", choice.circle)}>
               {choice.icon}
             </span>
-            <span className="flex min-w-0 flex-auto flex-col gap-1">
-              <span className="text-base font-semibold text-white">{choice.title}</span>
-              <span className="text-[13px] leading-[1.45] text-white/70">{choice.description}</span>
-            </span>
-            <ChevronRight
-              aria-hidden="true"
-              className="size-5 flex-none text-white/50 transition-colors duration-200 group-hover:text-white"
-            />
+            <span className="font-display font-black text-[28px] leading-none">{choice.title}</span>
+            <span className="text-[#a1a1aa] leading-[1.5]">{choice.description}</span>
+            <span className={cn("mt-auto font-semibold", choice.ctaColor)}>{choice.cta}</span>
           </Link>
         ))}
       </div>
 
-      <p className="text-center text-sm text-white/70">
+      <p className="text-center text-[#d4d4d8]">
         Already have an account?{" "}
-        <Link href={routes.ui.signIn} className="font-medium text-steel-blue hover:underline">
+        <Link href={routes.ui.signIn} className={AUTH_LINK}>
           Sign in
         </Link>
       </p>
-    </div>
+    </AuthCard>
   );
 }

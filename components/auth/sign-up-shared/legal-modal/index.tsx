@@ -44,7 +44,7 @@ interface LegalModalProps {
   onClose: () => void;
 }
 
-// The Sponsor Terms or Privacy Policy, read on the Review step without leaving the wizard.
+// The terms or Privacy Policy, read on a sign-up's Review step without leaving the wizard.
 export default function LegalModal({ doc, label, isOpen, onClose }: LegalModalProps) {
   return (
     <Modal

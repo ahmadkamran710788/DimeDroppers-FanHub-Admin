@@ -4,9 +4,9 @@ import { cn } from "@/utils/cn";
 import Input from "@/components/common/input";
 import PhoneInput from "@/components/common/phone-input";
 import { SECTION_LABEL } from "@/components/sponsor/styles";
-import StepHeading from "@/components/auth/sponsor-sign-up/step-heading";
+import StepHeading from "@/components/auth/sign-up-shared/step-heading";
 import type { SponsorSignUpForm } from "@/components/auth/sponsor-sign-up/data";
-import { INPUT, OPTIONAL_HINT } from "@/components/auth/sponsor-sign-up/styles";
+import { INPUT, OPTIONAL_HINT } from "@/components/auth/sign-up-shared/styles";
 
 interface AccountStepProps {
   form: SponsorSignUpForm;

@@ -6,10 +6,10 @@ import LocationPicker from "@/components/common/location-picker";
 import Select from "@/components/common/select";
 import { US_STATE_OPTIONS } from "@/components/organization/org-form/form";
 import { SECTION_LABEL } from "@/components/sponsor/styles";
-import StepHeading from "@/components/auth/sponsor-sign-up/step-heading";
+import StepHeading from "@/components/auth/sign-up-shared/step-heading";
 import SponsorTypePicker from "@/components/auth/sponsor-sign-up/sponsor-type-picker";
 import type { MainLocationField, SponsorSignUpForm } from "@/components/auth/sponsor-sign-up/data";
-import { INPUT, OPTIONAL_HINT, SELECT } from "@/components/auth/sponsor-sign-up/styles";
+import { INPUT, OPTIONAL_HINT, SELECT } from "@/components/auth/sign-up-shared/styles";
 import type { SponsorSignupOptions, SponsorTypeCode } from "@/utils/types/sponsor-profile";
 
 type FieldElement = HTMLInputElement | HTMLSelectElement;

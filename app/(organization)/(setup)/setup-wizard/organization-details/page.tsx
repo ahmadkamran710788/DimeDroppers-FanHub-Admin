@@ -34,9 +34,10 @@ const CHECKLIST: ChecklistItem[] = [
   { label: "Sport", done: (f) => !!f.sport, clubOnly: true },
   { label: "Level", done: (f) => !!f.level, clubOnly: true },
   { label: "Address", done: (f) => !!(f.streetAddress && f.city && f.state && f.zipCode) },
-  { label: "Conference\\League", done: (f) => !!f.conference },
+  { label: "Conference\\League (Optional)", done: (f) => !!f.conference, optional: true },
   { label: "Description (Optional)", done: (f) => !!f.description, optional: true },
-  { label: "Contact Information", done: (f) => !!(f.contactName && f.contactPosition && f.phone && f.email && f.website) },
+  // The website is optional, as on the sign-up.
+  { label: "Contact Information", done: (f) => !!(f.contactName && f.contactPosition && f.phone && f.email) },
   {
     label: "Social Media (Optional)",
     done: (f) => !!(f.facebookUrl || f.instagramUrl || f.xUrl || f.youtubeUrl || f.tiktokUrl),

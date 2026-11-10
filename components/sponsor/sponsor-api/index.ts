@@ -33,7 +33,7 @@ export const toQuery = (params?: QueryParams) => {
 // message reaches the screen untouched and nothing is cached (prices and availability change after an
 // activation). A FormData body is sent as multipart: the browser sets the Content-Type with its boundary.
 export async function sponsorRequest<T>(
-  method: "GET" | "POST" | "PATCH" | "DELETE",
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
   endpoint: string,
   { params, body, headers }: { params?: QueryParams; body?: unknown; headers?: Record<string, string> } = {}
 ): Promise<SponsorApiResult<T>> {
