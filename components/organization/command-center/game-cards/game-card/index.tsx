@@ -14,7 +14,7 @@ export default function GameCard({ game }: { game: LiveGame }) {
   return (
     <Link
       href={routes.ui.gameRecap(game.id)}
-      className="flex items-center gap-3 sm:gap-6 rounded-[12px] p-4 sm:px-6 bg-black/50 border border-white/10 transition-colors hover:bg-black/70"
+      className="flex items-center gap-3 sm:gap-4 rounded-[12px] p-4 sm:px-5 min-w-0 overflow-hidden bg-black/50 border border-white/10 transition-colors hover:bg-black/70"
     >
       <div className="w-10 shrink-0 flex flex-col items-center text-white">
         <span className="text-sm font-medium">{month}</span>
@@ -22,10 +22,11 @@ export default function GameCard({ game }: { game: LiveGame }) {
         <span className="text-sm text-white/80 capitalize">{weekday.toLowerCase()}</span>
       </div>
 
-      <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
-        <TeamSide name={game.home?.name ?? "TBD"} logoUrl={game.home?.logoUrl} size="lg" className="w-24 sm:w-32" />
+      {/* Both sides share the width and line up at the top (a name on two lines doesn't push its crest down). */}
+      <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
+        <TeamSide name={game.home?.name ?? "TBD"} logoUrl={game.home?.logoUrl} size="lg" className="w-auto flex-1 basis-0 shrink" />
 
-        <div className="flex flex-col items-center gap-2 text-center">
+        <div className="shrink-0 self-center flex flex-col items-center gap-2 text-center">
           {ended ? (
             <span className="h-7 px-3 rounded-[6px] bg-white/10 flex items-center text-sm font-medium text-white whitespace-nowrap">Final</span>
           ) : (
@@ -42,7 +43,7 @@ export default function GameCard({ game }: { game: LiveGame }) {
           </span>
         </div>
 
-        <TeamSide name={game.away?.name ?? "TBD"} logoUrl={game.away?.logoUrl} size="lg" className="w-24 sm:w-32" />
+        <TeamSide name={game.away?.name ?? "TBD"} logoUrl={game.away?.logoUrl} size="lg" className="w-auto flex-1 basis-0 shrink" />
       </div>
 
       <ChevronRight className="size-5 shrink-0 text-white/70" strokeWidth={1.5} />
