@@ -5,12 +5,9 @@ import Button from "@/components/common/button";
 import Checkbox from "@/components/common/checkbox";
 import StepHeading from "@/components/auth/sign-up-shared/step-heading";
 import LegalModal from "@/components/auth/sign-up-shared/legal-modal";
-import type { OrgSignUpForm } from "@/components/auth/organization-sign-up/data";
+import { isSchool, type OrgSignUpForm } from "@/components/auth/organization-sign-up/data";
 import {
-  EVENT_TYPE_OPTIONS,
-  LEVEL_OPTIONS,
   ORG_TYPE_OPTIONS,
-  SPORT_OPTIONS,
   US_STATE_OPTIONS,
   labelOf,
 } from "@/components/organization/org-form/form";
@@ -79,17 +76,8 @@ export default function ReviewStep({
       rows: [
         { label: "Organization name", value: form.organizationName },
         { label: "Organization type", value: form.organizationType && labelOf(ORG_TYPE_OPTIONS, form.organizationType) },
-        { label: "Event type", value: form.eventType && labelOf(EVENT_TYPE_OPTIONS, form.eventType) },
-        { label: "Team name", value: form.teamName },
-      ],
-    },
-    {
-      title: "Sport & level",
-      step: 2,
-      rows: [
-        { label: "Sport", value: form.sport && labelOf(SPORT_OPTIONS, form.sport) },
-        { label: "Level", value: form.level && labelOf(LEVEL_OPTIONS, form.level) },
-        { label: "Gender", value: form.gender },
+        // Only a school has a level.
+        ...(isSchool(form.organizationType) ? [{ label: "Level", value: form.level }] : []),
         { label: "Description", value: form.description },
       ],
     },

@@ -21,7 +21,6 @@ import type { FilterOption, SponsorSearchFilters } from "@/utils/types/sponsor-p
 import type { PlanGoal, SponsorPlanRequest } from "@/utils/types/sponsor-plan";
 
 const CONTROL = cn(FIELD, "h-12 text-[16px] min-w-0");
-const DEFAULT_RADIUS = 25;
 
 const chipOptions = (options: FilterOption[] | undefined) => (options ?? []).map((o) => ({ label: o.label, value: o.code }));
 
@@ -46,8 +45,7 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
   const [form, setForm] = useState<PlanForm>(DEFAULT_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Until the sponsor picks them, the radius and season follow the filters' default and first season.
-  const radius = form.radius || String(filters?.radiusDefaultMiles ?? DEFAULT_RADIUS);
+  // Until the sponsor picks one, the season follows the filters' first season.
   const season = form.season || filters?.seasons[0]?.code || "";
   const noStores = !!stores && stores.length === 0;
 
@@ -62,7 +60,7 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
     if (!(await validateAndSetErrors(campaignRequestSchema, form, setErrors))) return;
     const request: SponsorPlanRequest = {
       brandLocationIds: form.stores === ALL ? "ALL" : form.stores,
-      radiusMiles: Number(radius),
+      radiusMiles: Number(form.radius),
       budgetCents: Math.round(parseMoney(form.budget) * 100),
       ...(season && { season }),
       goal: form.goal,
@@ -82,7 +80,7 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
     >
       {filtersFailed && (
         <p className="text-sm text-[#f0c36a]">
-          Couldn’t load the radius, season, sport and gender options.{" "}
+          Couldn’t load the season, sport and gender options.{" "}
           <Button variant="text" size="sm" label="Try again" onClick={onRetryFilters} className="inline text-sm text-[#c9b8ff] underline" />
         </p>
       )}
@@ -108,20 +106,18 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
             labelClassName={SECTION_LABEL}
             selectClassName={cn(CONTROL, "px-3")}
           />
-          <Select
-            label="RADIUS"
+          {/* Whole miles, digits only (checked against the API's 1–250 when building). */}
+          <Input
+            label="RADIUS (MILES)"
             name="plan-radius"
-            value={radius}
-            onChange={(e) => update("radius", e.target.value)}
-            options={(filters?.radiusOptions ?? [DEFAULT_RADIUS]).map((miles) => ({
-              label: `${miles} miles`,
-              value: String(miles),
-            }))}
+            value={form.radius}
+            onChange={(e) => update("radius", e.target.value.replace(/\D/g, "").slice(0, 3))}
+            placeholder="25"
+            inputMode="numeric"
             error={errors.radius}
-            variant="dark"
             className="min-w-0"
             labelClassName={SECTION_LABEL}
-            selectClassName={cn(CONTROL, "px-3")}
+            inputClassName={cn(CONTROL, "py-0 px-[14px] placeholder:text-[#757575]")}
           />
         </div>
         {noStores && (

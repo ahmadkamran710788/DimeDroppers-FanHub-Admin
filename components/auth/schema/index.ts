@@ -53,11 +53,12 @@ export const orgAccountSchema = yup.object({
 export const orgDetailsSchema = yup.object({
   organizationName: yup.string().trim().required(REQUIRED).max(120, "Keep the name under 120 characters."),
   organizationType: yup.string().required(CHOOSE),
-  eventType: yup.string().required(CHOOSE),
-  teamName: yup.string().trim().required(REQUIRED).max(120, "Keep the team name under 120 characters."),
-  sport: yup.string().required(CHOOSE),
-  level: yup.string().required(CHOOSE),
-  gender: yup.string().required(CHOOSE),
+  // Only a school has a level ("school" is ORG_TYPE_OPTIONS' value).
+  level: yup.string().when("organizationType", {
+    is: "school",
+    then: (s) => s.required(CHOOSE),
+    otherwise: (s) => s.notRequired(),
+  }),
   description: yup.string().max(250, "Keep the description under 250 characters."),
 });
 

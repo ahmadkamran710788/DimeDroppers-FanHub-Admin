@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { toE164Phone } from "@/utils/helper";
-import { TEAM_NAME_KEY, setFanhubSchoolId } from "@/utils/auth/session";
+import { setFanhubSchoolId } from "@/utils/auth/session";
 import { validateAndSetErrors } from "@/utils/validation";
 import { useAuth } from "@/context/auth";
 import type { AuthSession } from "@/utils/types/auth";
@@ -30,6 +30,7 @@ import {
   INITIAL_FORM,
   REVIEW_STEP,
   STEPS,
+  isSchool,
   logoProblem,
   placeSignUpError,
   type MapField,
@@ -157,11 +158,17 @@ export default function OrganizationSignUp({ legal }: OrganizationSignUpProps) {
         setSchoolId(id);
       }
 
-      // Sign-up made the organisation with its name only; the rest goes in as the Profile page sends it.
-      const body = orgFormToFormData({ ...form, organizationName: form.organizationName.trim() }, logo?.file ?? null);
-      // The API doesn't keep these on an organisation yet (gender is on teams only, and the map pin isn't
-      // taken); sent so they're stored once it does.
-      body.append("gender", form.gender);
+      // Sign-up made the organisation with its name only; the rest goes in as the Profile page sends it. Only a
+      // school keeps a level (one picked before switching to another type is dropped).
+      const body = orgFormToFormData(
+        {
+          ...form,
+          organizationName: form.organizationName.trim(),
+          level: isSchool(form.organizationType) ? form.level : "",
+        },
+        logo?.file ?? null
+      );
+      // The API doesn't take the map pin on an organisation yet; sent so it's stored once it does.
       body.append("latitude", form.latitude.trim());
       body.append("longitude", form.longitude.trim());
       const saved = await sponsorRequest("PUT", routes.api.updateSchool(id), { body });
@@ -174,7 +181,6 @@ export default function OrganizationSignUp({ legal }: OrganizationSignUpProps) {
         );
         return;
       }
-      if (form.teamName.trim()) sessionStorage.setItem(TEAM_NAME_KEY, form.teamName.trim());
       goTo(DONE_STEP);
     } catch {
       toast.error("Something went wrong. Please try again.");
@@ -195,12 +201,7 @@ export default function OrganizationSignUp({ legal }: OrganizationSignUpProps) {
         phone: prev.phone || prev.accountPhone,
       }));
     }
-    if (step === 2) {
-      // An empty team name takes the organisation's.
-      const values = form.teamName.trim() ? form : { ...form, teamName: form.organizationName.trim() };
-      setForm(values);
-      if (!(await validateAndSetErrors(orgDetailsSchema, values, setErrors))) return;
-    }
+    if (step === 2 && !(await validateAndSetErrors(orgDetailsSchema, form, setErrors))) return;
     if (step === 3 && !(await validateAndSetErrors(orgLocationSchema, form, setErrors))) return;
     if (step === 4 && !(await validateAndSetErrors(orgBrandingSchema, form, setErrors))) return;
     if (step === REVIEW_STEP) {

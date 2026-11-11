@@ -2,7 +2,7 @@ import { ALL, type MultiSelectValue } from "@/components/common/multi-select";
 import type { PlanGoal } from "@/utils/types/sponsor-plan";
 
 // Campaign Planner (national brands), on POST /fanhub/sponsor-packages/plans/recommend
-// (FANHUB_SPONSOR_PLAN_FRONTEND.md). The radius options, seasons, sports and genders come from
+// (FANHUB_SPONSOR_PLAN_FRONTEND.md). The seasons, sports and genders come from
 // GET /fanhub/sponsor-packages/filters, the brand's locations from GET /fanhub/sponsor-profile/locations.
 
 // The goals the API takes (GET /filters doesn't list them).
@@ -15,12 +15,13 @@ export const GOAL_OPTIONS: { label: string; value: PlanGoal }[] = [
 // The API's limits.
 export const MIN_BUDGET_CENTS = 10_000;
 export const MAX_BUDGET_CENTS = 100_000_000_000;
+export const MAX_RADIUS_MILES = 250;
 
 // The composer as typed (chip values are API codes, e.g. "FOOTBALL").
 export interface PlanForm {
   // The brand's locations to plan around: ALL, or picked ids.
   stores: MultiSelectValue;
-  // Miles around each location, from GET /filters radiusOptions; "" until the filters load (their default).
+  // Whole miles around each location, as typed (digits only); the API takes 1 to 250.
   radius: string;
   // As typed ("$60,000").
   budget: string;
@@ -33,7 +34,8 @@ export interface PlanForm {
 
 export const DEFAULT_FORM: PlanForm = {
   stores: ALL,
-  radius: "",
+  // The API's default radius.
+  radius: "25",
   budget: "$60,000",
   season: "",
   goal: "BRAND_AWARENESS",
