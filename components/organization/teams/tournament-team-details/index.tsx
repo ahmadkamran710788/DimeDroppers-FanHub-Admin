@@ -18,9 +18,10 @@ import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import type {
   DivisionTeamsTreeResponse,
-  ExposureGame,
   ExposureListResponse,
   ExposurePlayer,
+  TournamentScheduleGame,
+  TournamentScheduleResponse,
   TreeTeam,
 } from "@/utils/types/exposure-event";
 
@@ -29,16 +30,19 @@ type Tab = (typeof TABS)[number];
 
 const dash = (v: string | null | undefined) => (v && v.trim() ? v : "—");
 const fullName = (p: ExposurePlayer) => [p.firstName, p.lastName].filter(Boolean).join(" ") || "Unnamed player";
-// The result from the team's side: "W 34–8" / "L 7–37" / "T 10–10". The title's first side is taken
-// to own the first score; anything else is shown as sent.
-function teamResult(game: ExposureGame, teamName: string): string {
-  const score = game.result?.match(/^\s*(\d+)\s*[-–]\s*(\d+)\s*$/);
-  if (!score) return game.result ?? "—";
-  const first = (game.title ?? "").split(/\s+vs\.?\s+/i)[0]?.trim().toLowerCase();
-  const [a, b] = [Number(score[1]), Number(score[2])];
-  const [mine, theirs] = first === teamName.trim().toLowerCase() ? [a, b] : [b, a];
+// The API caps a page at 100; one team rarely plays more in an event.
+const GAMES_LIMIT = 100;
+
+// The final score from the team's side: "W 34–8" / "L 7–37" / "T 10–10".
+function teamResult(g: TournamentScheduleGame, teamId: string): string {
+  if (!g.finalScore) return g.result ?? "—";
+  const isHome = g.home.teamId === teamId;
+  const [mine, theirs] = isHome ? [g.finalScore.home, g.finalScore.away] : [g.finalScore.away, g.finalScore.home];
   return `${mine > theirs ? "W" : mine < theirs ? "L" : "T"} ${mine}–${theirs}`;
 }
+
+// The real start (`start` is the venue's wall-clock time written with a "Z").
+const startOf = (g: TournamentScheduleGame) => g.utcTime || g.start;
 
 const fmtWhen = (iso: string) =>
   new Date(iso).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
@@ -62,13 +66,13 @@ interface TeamInfo {
 interface Loaded {
   info: TeamInfo | null;
   players: ExposurePlayer[];
-  games: ExposureGame[];
+  games: TournamentScheduleGame[];
 }
 
 // A tournament team's page (an Exposure team of one event), laid out like a school team's: header and
 // Players / Parents / Staff / Followers tabs, plus Stats and Schedule. Players come from GET
-// /exposure/teams/{id}/players; the schedule is the event's games in the team's division with the team
-// on one side. Staff and Parents are the team-roles invitations and members. The followers list and
+// /exposure/teams/{id}/players; the schedule is the team's games in the event, by team id (GET
+// /exposure/schedules?eventId&teamId). Staff and Parents are the team-roles invitations and members. The followers list and
 // stats have no tournament API yet.
 export default function TournamentTeamDetails({ eventId, teamId }: { eventId: string; teamId: string }) {
   const { savedSchool } = useSetup();
@@ -85,7 +89,11 @@ export default function TournamentTeamDetails({ eventId, teamId }: { eventId: st
         data: { eventId, page: 1, limit: 1 },
       }),
       apiCall<ExposureListResponse<ExposurePlayer>>({ endpoint: routes.api.exposureTeamPlayers(teamId), method: "GET" }),
-      apiCall<ExposureListResponse<ExposureGame>>({ endpoint: routes.api.exposureEventGames(eventId), method: "GET" }),
+      apiCall<TournamentScheduleResponse>({
+        endpoint: routes.api.exposureSchedules,
+        method: "GET",
+        data: { eventId, teamId, page: 1, limit: GAMES_LIMIT },
+      }),
     ]).then(([tree, players, games]) => {
       if (cancelled) return;
       const event = tree.success ? tree.data?.data?.[0]?.events?.[0] : undefined;
@@ -99,7 +107,9 @@ export default function TournamentTeamDetails({ eventId, teamId }: { eventId: st
       setLoaded({
         info,
         players: players.success ? (players.data?.data ?? []) : [],
-        games: games.success ? (games.data?.data ?? []) : [],
+        games: (games.success ? (games.data?.data?.[0]?.items ?? []) : []).sort(
+          (a, b) => new Date(startOf(a)).getTime() - new Date(startOf(b)).getTime()
+        ),
       });
     });
     return () => {
@@ -129,14 +139,7 @@ export default function TournamentTeamDetails({ eventId, teamId }: { eventId: st
   const { team, eventName, divisionName } = loaded.info;
   const crest = savedSchool?.logoUrl || "/images/preview-crest.png";
 
-  // The team's games: in its division (a game's `sports` is its division name) with the team on one
-  // side of its "A vs B" title or as the opponent. Games carry no team id.
-  const norm = (v: string | null | undefined) => (v ?? "").trim().toLowerCase();
-  const name = norm(team.name);
-  const games = loaded.games
-    .filter((g) => (divisionName === null || norm(g.sports) === norm(divisionName)) &&
-      [...(g.title ?? "").split(/\s+vs\.?\s+/i), g.opponent ?? ""].map(norm).includes(name))
-    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+  const games = loaded.games;
 
   const meta = [
     divisionName,
@@ -200,7 +203,7 @@ export default function TournamentTeamDetails({ eventId, teamId }: { eventId: st
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
               { label: "Games", value: games.length },
-              { label: "Played", value: games.filter((g) => g.result).length },
+              { label: "Played", value: games.filter((g) => g.finalScore || g.result).length },
               { label: "Followers", value: team.followerCount },
               { label: "Players", value: loaded.players.length },
             ].map((s) => (
@@ -227,10 +230,10 @@ export default function TournamentTeamDetails({ eventId, teamId }: { eventId: st
             ) : (
               games.map((g) => (
                 <div key={g.id} className="flex items-center border-b border-white/10 text-sm text-white">
-                  <div className="flex-1 min-w-[220px] px-2 py-4 font-semibold break-words">{g.title || (g.opponent ? `vs ${g.opponent}` : "Game")}</div>
-                  <div className="w-56 px-2 py-4">{fmtWhen(g.start)}</div>
+                  <div className="flex-1 min-w-[220px] px-2 py-4 font-semibold break-words">{`${g.home.teamName ?? "TBD"} vs ${g.away.teamName ?? "TBD"}`}</div>
+                  <div className="w-56 px-2 py-4">{fmtWhen(startOf(g))}</div>
                   <div className="w-56 px-2 py-4 break-words text-white/80">{g.location ?? "—"}</div>
-                  <div className="w-28 px-2 py-4 flex justify-center whitespace-nowrap">{teamResult(g, team.name)}</div>
+                  <div className="w-28 px-2 py-4 flex justify-center whitespace-nowrap">{teamResult(g, teamId)}</div>
                 </div>
               ))
             )}

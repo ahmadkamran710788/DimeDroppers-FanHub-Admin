@@ -9,6 +9,7 @@ import type { GameRequestConfig } from "@/components/organization/requests/confi
 import ReviewRequestModal, { type ReviewAction } from "@/components/organization/requests/review-request-modal";
 import apiCall from "@/utils/api-call";
 import { cn } from "@/utils/cn";
+import { knownGender } from "@/utils/helper";
 import type { GameRequest, GameRequestStatus, GameRequestsResponse } from "@/utils/types/game-request";
 
 const PAGE_SIZE = 20;
@@ -105,7 +106,7 @@ export default function GameRequests({ config, onPendingCount }: GameRequestsPro
         <div className="flex flex-col gap-1 min-w-0">
           <span className="text-sm font-semibold truncate">{r.game.title}</span>
           <span className="text-white/40 truncate">
-            {[r.game.sport, r.game.gender, fmtDateTime(r.game.utcTime)].filter(Boolean).join(" · ")}
+            {[r.game.sport, knownGender(r.game.gender), fmtDateTime(r.game.utcTime)].filter(Boolean).join(" · ")}
           </span>
         </div>
       ),

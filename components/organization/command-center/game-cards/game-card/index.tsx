@@ -8,7 +8,8 @@ import type { LiveGame } from "@/utils/types/command-center";
 // One live game: date column, both crests, and the "Live Now" badge (or "Final" once the
 // scorekeeper ended it) with the official score between them. Opens the game's recap.
 export default function GameCard({ game }: { game: LiveGame }) {
-  const { day, month, weekday } = parseGameDate(game.start);
+  // The real instant (`start` is the venue's wall-clock time with a "Z"), so the day is the viewer's.
+  const { day, month, weekday } = parseGameDate(game.utcTime || game.start);
   const ended = game.matchStatus === "final" || !!game.live.endedAt;
 
   return (

@@ -119,11 +119,11 @@ export default function TournamentTeams({ eventId, onTotals, focus, onFocus }: T
               {q ? "No teams match your search." : "No teams available in this division."}
             </p>
           ) : (
-            <div className="flex flex-col gap-2">
+            <ul className="flex flex-col gap-2">
               {teams.map((t) => (
                 <TeamRow key={t.id} team={t} href={routes.ui.tournamentTeam(event.id, t.id)} />
               ))}
-            </div>
+            </ul>
           )}
         </div>
       )}

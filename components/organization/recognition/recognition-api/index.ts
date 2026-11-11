@@ -47,7 +47,8 @@ export const cardOf = (r: Recognition, orgName?: string): PlayerRecognition => (
     grade: r.player.grade ? `Grade ${r.player.grade}` : undefined,
     team: r.player.teamName ?? "",
     sport: r.sport ?? undefined,
-    school: r.schoolName ?? undefined,
+    // A tournament's recognition (it has an event) shows the player's team, not a school, like its preview.
+    school: r.eventId ? undefined : (r.schoolName ?? undefined),
     photo: r.player.fan?.profileUrl ?? undefined,
   },
   game: r.game

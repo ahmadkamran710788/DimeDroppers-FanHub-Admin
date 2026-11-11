@@ -127,8 +127,8 @@ function EventList({ onPick }: { onPick: (event: PickedEvent) => void }) {
 type EventGame = ExposureGame & { campaign: TicketScheduleGame["campaign"] };
 
 // Step 2: the picked event's games. The list comes from GET /exposure/events/{id}/games (its ids are
-// the tickets API's game ids); GET /tickets/games?eventId= adds each game's campaign. That filter isn't
-// honoured by the API yet (it answers the org's games), so only rows whose ids match are joined.
+// the tickets API's game ids); GET /tickets/games?eventId= (the event's games only) adds each game's
+// campaign, joined by id.
 function EventGames({ eventId, campaignId, selected, onChange }: { eventId: string; campaignId?: string; selected: string[]; onChange: (ids: string[]) => void }) {
   const [loaded, setLoaded] = useState<{ eventId: string; games: EventGame[]; at: number } | null>(null);
 

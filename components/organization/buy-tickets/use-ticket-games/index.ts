@@ -16,6 +16,8 @@ interface GamesQuery {
   homeAway: "" | "home" | "away" | "neutral";
   sports: string;
   level: string;
+  // A tournament's picked event ("" = the whole organisation).
+  eventId?: string;
 }
 
 interface LoadedGames {
@@ -28,22 +30,22 @@ interface LoadedGames {
 // One page of the Schedules table from GET /fanhub/org/tickets/games, paged and filtered by the
 // API. The total stays while the next page loads so the pager doesn't jump.
 export function useTicketGames(query: GamesQuery) {
-  const { page, limit, search, status, homeAway, sports, level } = query;
+  const { page, limit, search, status, homeAway, sports, level, eventId = "" } = query;
   const [loaded, setLoaded] = useState<LoadedGames | null>(null);
   const [reloads, setReloads] = useState(0);
-  const key = JSON.stringify({ page, limit, search, status, homeAway, sports, level });
+  const key = JSON.stringify({ page, limit, search, status, homeAway, sports, level, eventId });
 
   useEffect(() => {
     let cancelled = false;
     apiCall<{ data: TicketGamesPage[] }>({
       endpoint: routes.api.ticketGames,
       method: "GET",
-      data: { page, limit, status, ...(search && { search }), ...(homeAway && { homeAway }), ...(sports && { sports }), ...(level && { level }) },
+      data: { page, limit, status, ...(search && { search }), ...(homeAway && { homeAway }), ...(sports && { sports }), ...(level && { level }), ...(eventId && { eventId }) },
     }).then((result) => {
       if (cancelled) return;
       const data = result.success ? result.data?.data?.[0] : undefined;
       setLoaded({
-        key: JSON.stringify({ page, limit, search, status, homeAway, sports, level }),
+        key: JSON.stringify({ page, limit, search, status, homeAway, sports, level, eventId }),
         games: data?.items ?? [],
         total: data?.pagination.total ?? 0,
       });
@@ -51,7 +53,7 @@ export function useTicketGames(query: GamesQuery) {
     return () => {
       cancelled = true;
     };
-  }, [page, limit, search, status, homeAway, sports, level, reloads]);
+  }, [page, limit, search, status, homeAway, sports, level, eventId, reloads]);
 
   const reload = useCallback(() => setReloads((n) => n + 1), []);
   const current = loaded?.key === key ? loaded : null;
