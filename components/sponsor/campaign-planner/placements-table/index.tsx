@@ -1,32 +1,42 @@
 import { cn } from "@/utils/cn";
-import { formatMoney } from "@/utils/helper";
 import Button from "@/components/common/button";
 import Checkbox from "@/components/common/checkbox";
 import FilterChips from "@/components/common/filter-chips";
-import TierBadge from "@/components/sponsor/tier-badge";
+import { dollars } from "@/utils/needs";
 import { CARD } from "@/components/sponsor/styles";
-import { MARKET_FILTER_OPTIONS, type MarketFilter, type Placement } from "@/components/sponsor/campaign-planner/data";
+import type { SponsorPlanLine, SponsorPlanMarket } from "@/utils/types/sponsor-plan";
 
 // Shared by the header and the rows so the columns line up.
 const COLUMNS = "grid grid-cols-[44px_2.2fr_0.9fr_1fr_2fr_1.8fr_0.9fr] gap-[14px] items-center px-[14px]";
 
+// "All" in the market filter (a market key otherwise).
+export const ALL_MARKETS = "ALL";
+
 interface PlacementsTableProps {
-  // The lines in the selected market.
-  placements: Placement[];
-  market: MarketFilter;
-  onMarketChange: (market: MarketFilter) => void;
-  // Ids of the lines dropped from the plan.
+  lines: SponsorPlanLine[];
+  // The plan's markets, for the filter chips.
+  markets: SponsorPlanMarket[];
+  // ALL_MARKETS or a market key.
+  market: string;
+  onMarketChange: (market: string) => void;
+  // Indexes of the lines dropped from the plan.
   excluded: ReadonlySet<number>;
-  onToggle: (id: number) => void;
+  onToggle: (index: number) => void;
 }
 
-// The plan line by line; unticking a line drops it from the totals.
-export default function PlacementsTable({ placements, market, onMarketChange, excluded, onToggle }: PlacementsTableProps) {
+// The plan line by line; unticking a line drops it from the totals (on screen only, nothing is sent).
+export default function PlacementsTable({ lines, markets, market, onMarketChange, excluded, onToggle }: PlacementsTableProps) {
+  const options = [
+    { label: "All", value: ALL_MARKETS },
+    ...markets.map((m) => ({ label: m.label, value: m.key })),
+  ];
   return (
     <section aria-label="What’s in the package" className={cn(CARD, "rounded-[8px] p-4 lg:p-6 flex flex-col gap-4")}>
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <h3 className="font-display font-black text-xl lg:text-[28px] uppercase leading-tight">What’s in the package</h3>
-        <FilterChips variant="pill" ariaLabel="Market" options={MARKET_FILTER_OPTIONS} value={market} onChange={onMarketChange} />
+        {markets.length > 1 && (
+          <FilterChips variant="pill" ariaLabel="Market" options={options} value={market} onChange={onMarketChange} />
+        )}
       </div>
       <p className="text-sm text-[#a8a8a8]">Untick a line to drop it from the plan. Totals update as you go.</p>
 
@@ -39,15 +49,17 @@ export default function PlacementsTable({ placements, market, onMarketChange, ex
             <span>MARKET</span>
             <span>PACKAGE</span>
             <span>IN-APP INVENTORY</span>
-            <span>PHYSICAL ASSETS</span>
+            <span>PHYSICAL ADD-ONS</span>
             <span className="text-right">COST</span>
           </div>
           <ul className="flex flex-col gap-2">
-            {placements.map((p) => {
-              const on = !excluded.has(p.id);
+            {lines.map((line, index) => {
+              if (market !== ALL_MARKETS && line.market.key !== market) return null;
+              const on = !excluded.has(index);
+              const name = line.event?.name ? `${line.organization.name} · ${line.event.name}` : line.organization.name;
               return (
                 <li
-                  key={p.id}
+                  key={`${line.schoolId}|${line.eventId ?? ""}|${index}`}
                   className={cn(
                     COLUMNS,
                     "py-3 rounded-[12px] border",
@@ -57,30 +69,36 @@ export default function PlacementsTable({ placements, market, onMarketChange, ex
                   <Button
                     size="icon"
                     icon={<Checkbox variant="violet" checked={on} />}
-                    aria-label={`Include ${p.org}`}
+                    aria-label={`Include ${name}`}
                     aria-pressed={on}
-                    onClick={() => onToggle(p.id)}
+                    onClick={() => onToggle(index)}
                     className="size-11 bg-transparent backdrop-blur-none"
                   />
                   <div className="min-w-0">
-                    <div className="text-[15px] font-bold">{p.org}</div>
-                    <div className="text-[13px] text-[#a8a8a8] mt-[2px]">
-                      {p.sport} · {p.reach.toLocaleString("en-US")} est. parents
-                    </div>
+                    <div className="text-[15px] font-bold break-words">{name}</div>
+                    <div className="text-[13px] text-[#a8a8a8] mt-[2px] leading-[1.4]">{line.reason}</div>
                   </div>
-                  <div className="text-sm">{p.market}</div>
+                  <div className="text-sm">{line.market.label}</div>
                   <div>
-                    <TierBadge tier={p.tier} />
+                    <span className="inline-block text-xs font-bold px-2 py-1 rounded-[6px] bg-[#2a2148] text-[#d9ccff] border border-[#4a3f7a]">
+                      {line.package?.name ?? "Physical add-ons only"}
+                    </span>
                   </div>
                   <div className="flex flex-wrap gap-[6px]">
-                    {p.inventory.map((item) => (
-                      <span key={item} className="text-xs px-2 py-1 rounded-full bg-[#1f1f1f] text-[#e0e0e0]">
-                        {item}
-                      </span>
-                    ))}
+                    {line.inAppInventory.length ? (
+                      line.inAppInventory.map((item) => (
+                        <span key={item} className="text-xs px-2 py-1 rounded-full bg-[#1f1f1f] text-[#e0e0e0]">
+                          {item}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[13px] text-[#757575]">—</span>
+                    )}
                   </div>
-                  <div className="text-[13px] text-[#d4d4d4] leading-[1.4]">{p.addOns}</div>
-                  <div className="text-base font-bold text-right">{formatMoney(p.cost)}</div>
+                  <div className="text-[13px] text-[#d4d4d4] leading-[1.4]">
+                    {line.physicalAssets.map((a) => a.name).join(" · ") || "—"}
+                  </div>
+                  <div className="text-base font-bold text-right">{dollars(line.totalCents)}</div>
                 </li>
               );
             })}
