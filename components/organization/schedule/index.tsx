@@ -651,9 +651,12 @@ export default function SchedulePage() {
 
   const nextGame = games.find((g) => new Date(g.start) > new Date()) ?? null;
   const gameStats = summary ? buildStatsFromSummary(summary) : buildStatsFromGames(games);
-  // A tournament's Events card counts its synced events (the games summary's "events" isn't that).
+  // A tournament gets only the Events card, counting its synced events (the games summary's "events"
+  // isn't that); its Total / Home / Away Games are a school's schedule, not the picked event's.
   const stats = isTournament
-    ? gameStats.map((st) => (st.label === "Events" ? { ...st, subtitle: "Synced events", value: eventsOrgTotal ?? 0 } : st))
+    ? gameStats
+        .filter((st) => st.label === "Events")
+        .map((st) => ({ ...st, subtitle: "Synced events", value: eventsOrgTotal ?? 0 }))
     : gameStats;
   // A tournament's Events tab always shows one event (the newest until another is picked).
   const showEventGames = activeTab === "Events" && (isTournament || !!pickedEvent);

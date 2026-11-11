@@ -80,7 +80,9 @@ export interface ExposureGame {
   title: string | null;
   opponent: string | null;
   location: string | null;
+  // The venue's wall-clock time written with a "Z"; utcTime is the real instant (when the API sends it).
   start: string;
+  utcTime?: string | null;
   end: string | null;
   isAllDay: boolean;
   status: string | null;

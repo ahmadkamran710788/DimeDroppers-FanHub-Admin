@@ -15,6 +15,7 @@ import Select from "@/components/common/select";
 import StatusPill from "@/components/common/status-pill";
 import Tabs from "@/components/common/tabs";
 import CampaignCard from "@/components/organization/buy-tickets/campaign-card";
+import EventSelect from "@/components/organization/event-select";
 import CreateCampaignModal from "@/components/organization/buy-tickets/create-campaign-modal";
 import { HOME_AWAY_COLOR, HOME_AWAY_LABEL } from "@/components/organization/buy-tickets/data";
 import GameAttendance from "@/components/organization/buy-tickets/game-attendance";
@@ -24,7 +25,9 @@ import { useTicketCampaigns } from "@/components/organization/buy-tickets/use-ti
 import { useTicketOverview } from "@/components/organization/buy-tickets/use-ticket-overview";
 import { useOrgTeams } from "@/components/organization/teams/use-org-teams";
 import { orgKindOf, useAuth } from "@/context/auth";
+import { useSelectedEvent } from "@/context/selected-event";
 import apiCall from "@/utils/api-call";
+import { knownGender } from "@/utils/helper";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import type { GameTicketStatus, TicketCampaign, TicketScheduleGame } from "@/utils/types/tickets";
@@ -52,6 +55,8 @@ const TICKET_STATUS: Record<GameTicketStatus, { label: string; color: string }> 
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+// The real start: `start` is the venue's wall-clock time written with a "Z", `utcTime` the true instant.
+const startOf = (g: TicketScheduleGame) => g.utcTime || g.start;
 
 type Detach = { game: TicketScheduleGame; campaign: NonNullable<TicketScheduleGame["campaign"]> };
 
@@ -88,6 +93,10 @@ export default function BuyTicketsPage() {
   const [tab, setTab] = useState<Tab>("Schedules");
   // The game whose tickets-sold breakdown is open under its row.
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // A tournament has no teams of its own to filter by, so it gets no Sport / Level filters.
+  const isTournament = orgKindOf(useAuth().org) === "tournament";
+  // A tournament lists one event's games: the one in the shared event picker.
+  const { event, setEvent } = useSelectedEvent();
   const { games, total, loading: gamesLoading, reload: reloadGames } = useTicketGames({
     page,
     limit: PAGE_SIZE,
@@ -96,11 +105,10 @@ export default function BuyTicketsPage() {
     homeAway,
     sports,
     level,
+    eventId: isTournament ? (event?.id ?? "") : "",
   });
   // The sports and levels to filter by are the org's teams'.
   const { teams } = useOrgTeams();
-  // A tournament has no teams of its own to filter by, so it gets no Sport / Level filters.
-  const isTournament = orgKindOf(useAuth().org) === "tournament";
   const sportOptions = useMemo(() => optionsOf(teams.map((t) => t.sport)), [teams]);
   const levelOptions = useMemo(() => optionsOf(teams.map((t) => t.level)), [teams]);
   const filtered = !!search || status !== "all" || !!homeAway || !!sports || !!level;
@@ -148,14 +156,18 @@ export default function BuyTicketsPage() {
       tint: STAT_TINTS.blue,
     },
     { label: "Upcoming Games", value: cards ? cards.upcomingGames : "—", caption: "Tickets on sale", tint: STAT_TINTS.green },
-    {
-      label: "Home Games",
-      value: cards ? cards.homeGames.value : "—",
-      caption: cards ? `${cards.homeGames.awayOrNeutral} away / neutral` : "",
-      tint: STAT_TINTS.purple,
-    },
-    { label: "Ticket Link", value: ticketLink ? "✓" : "—", caption: ticketLink ? "GoFan" : "Not set", tint: STAT_TINTS.brown },
   ];
+  // A tournament has no home side, and no GoFan link (External Links has none for it).
+  if (!isTournament)
+    stats.push(
+      {
+        label: "Home Games",
+        value: cards ? cards.homeGames.value : "—",
+        caption: cards ? `${cards.homeGames.awayOrNeutral} away / neutral` : "",
+        tint: STAT_TINTS.purple,
+      },
+      { label: "Ticket Link", value: ticketLink ? "✓" : "—", caption: ticketLink ? "GoFan" : "Not set", tint: STAT_TINTS.brown }
+    );
 
   const actionsFor = (g: TicketScheduleGame): RowAction[] => [
     {
@@ -174,6 +186,10 @@ export default function BuyTicketsPage() {
         ]
       : []),
   ];
+
+  // A tournament game is between two of its teams, named in its title ("A vs B"). The API's `matchup`
+  // puts the organisation's name on one side, so it isn't used.
+  const gameName = (g: TicketScheduleGame) => (isTournament ? g.title || g.matchup : g.opponent ? `vs ${g.opponent}` : g.title);
 
   const columns: Column<TicketScheduleGame>[] = [
     {
@@ -202,8 +218,8 @@ export default function BuyTicketsPage() {
             </span>
           )}
           <div className="flex flex-col gap-1 min-w-0">
-            <span className="text-sm font-semibold text-white truncate">{g.opponent ? `vs ${g.opponent}` : g.title}</span>
-            <span className="text-xs text-white/40 truncate">{[g.sports, g.level, g.gender].filter(Boolean).join(" · ") || g.title}</span>
+            <span className="text-sm font-semibold text-white truncate">{gameName(g)}</span>
+            <span className="text-xs text-white/40 truncate">{[g.sports, g.level, knownGender(g.gender)].filter(Boolean).join(" · ") || g.title}</span>
           </div>
         </div>
       ),
@@ -213,8 +229,8 @@ export default function BuyTicketsPage() {
       cls: "w-40 shrink-0 py-5",
       cell: (g) => (
         <div className="flex flex-col gap-1">
-          <span>{fmtDate(g.start)}</span>
-          <span className="text-white/60">{fmtTime(g.start)}</span>
+          <span>{fmtDate(startOf(g))}</span>
+          <span className="text-white/60">{fmtTime(startOf(g))}</span>
         </div>
       ),
     },
@@ -259,6 +275,8 @@ export default function BuyTicketsPage() {
       ),
     },
   ];
+  // A tournament has no home side, and no row actions (it has no GoFan page to open).
+  const shownColumns = isTournament ? columns.filter((c) => c.header !== "Home / Away" && c.header !== "Actions") : columns;
 
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
@@ -277,7 +295,7 @@ export default function BuyTicketsPage() {
         title="Remove From Game"
         message={
           detach
-            ? `Fans will no longer be able to buy "${detach.campaign.title}" for ${detach.game.opponent ? `vs ${detach.game.opponent}` : detach.game.title}. This isn't possible once tickets have been sold for the game.`
+            ? `Fans will no longer be able to buy "${detach.campaign.title}" for ${gameName(detach.game)}. This isn't possible once tickets have been sold for the game.`
             : ""
         }
         confirmLabel="Remove"
@@ -317,6 +335,17 @@ export default function BuyTicketsPage() {
           <>
           <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             <SearchInput value={query} onChange={(e) => onSearch(e.target.value)} aria-label="Search games" className="lg:max-w-sm" />
+            {isTournament && (
+              <EventSelect
+                value={event?.id ?? ""}
+                onChange={(id, name) => {
+                  setEvent(id ? { id, name } : null);
+                  setPage(1);
+                }}
+                allowAll={false}
+                selectedName={event?.name}
+              />
+            )}
             <FilterChips
               options={FILTERS}
               value={status}
@@ -326,53 +355,52 @@ export default function BuyTicketsPage() {
               }}
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:max-w-3xl">
-            <Select
-              label="Home / Away"
-              name="homeAway"
-              variant="dark"
-              value={homeAway}
-              options={HOME_AWAY_OPTIONS}
-              onChange={(e) => {
-                setHomeAway(e.target.value as HomeAway);
-                setPage(1);
-              }}
-              labelClassName={FILTER_LABEL}
-            />
-            {!isTournament && (
-              <>
-                <Select
-                  label="Sport"
-                  name="sports"
-                  variant="dark"
-                  value={sports}
-                  options={sportOptions}
-                  onChange={(e) => {
-                    setSports(e.target.value);
-                    setPage(1);
-                  }}
-                  labelClassName={FILTER_LABEL}
-                />
-                <Select
-                  label="Level"
-                  name="level"
-                  variant="dark"
-                  value={level}
-                  options={levelOptions}
-                  onChange={(e) => {
-                    setLevel(e.target.value);
-                    setPage(1);
-                  }}
-                  labelClassName={FILTER_LABEL}
-                />
-              </>
-            )}
-          </div>
+          {/* A tournament gets none of these filters (no home side, no teams of its own). */}
+          {!isTournament && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:max-w-3xl">
+              <Select
+                label="Home / Away"
+                name="homeAway"
+                variant="dark"
+                value={homeAway}
+                options={HOME_AWAY_OPTIONS}
+                onChange={(e) => {
+                  setHomeAway(e.target.value as HomeAway);
+                  setPage(1);
+                }}
+                labelClassName={FILTER_LABEL}
+              />
+              <Select
+                label="Sport"
+                name="sports"
+                variant="dark"
+                value={sports}
+                options={sportOptions}
+                onChange={(e) => {
+                  setSports(e.target.value);
+                  setPage(1);
+                }}
+                labelClassName={FILTER_LABEL}
+              />
+              <Select
+                label="Level"
+                name="level"
+                variant="dark"
+                value={level}
+                options={levelOptions}
+                onChange={(e) => {
+                  setLevel(e.target.value);
+                  setPage(1);
+                }}
+                labelClassName={FILTER_LABEL}
+              />
+            </div>
+          )}
 
           <p className="text-xs text-white/60">Click a game to see the tickets sold for it.</p>
           <div className="flex flex-col">
             <GenericTable
-              columns={columns}
+              columns={shownColumns}
               rows={games}
               getKey={(g) => g.id}
               loading={gamesLoading}

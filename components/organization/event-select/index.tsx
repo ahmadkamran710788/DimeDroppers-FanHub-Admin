@@ -53,8 +53,10 @@ export default function EventSelect({
     }).then((result) => {
       if (cancelled) return;
       const body = result.success ? result.data?.data?.[0] : undefined;
-      // The first page says whether the organisation has any event at all.
-      if (body && requested === 1) setNoEvents(body.items.length === 0);
+      // The first page says whether the organisation has any event at all. When it fails (apiCall toasts
+      // why), nothing can be picked either, so pages stop waiting for an event instead of loading forever;
+      // the next picker to mount asks again.
+      if (requested === 1) setNoEvents(body ? body.items.length === 0 : true);
       if (body) {
         setEvents((prev) => (requested === 1 ? body.items : [...prev, ...body.items]));
         setNextPage(body.pagination.isLast ? null : requested + 1);

@@ -86,3 +86,7 @@ export const parseMoney = (text: string): number => {
 
 // A coordinate as a form shows it: 6 decimals (about 10 cm), so 45.66981699999999 reads 45.669817; "" for none.
 export const coordinateText = (n: number | null) => (n === null ? "" : String(Number(n.toFixed(6))));
+
+// A gender worth showing: none when it's missing or Exposure's "unspecified" placeholder.
+export const knownGender = (gender: string | null | undefined) =>
+  gender && gender.trim().toLowerCase() !== "unspecified" ? gender : undefined;
