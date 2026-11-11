@@ -155,8 +155,8 @@ export const INITIAL_ORG_FORM: OrgFormState = {
   accentColor: "#231F20",
 };
 
-// Event Type, Team Name, Sport and Level only apply to club teams; for schools, leagues
-// and tournaments they are hidden, not validated and not sent.
+// Event Type, Team Name, Sport and Level are required for club teams. Other types can fill them too (sign-up
+// asks every organisation), but organisations made before that may not have them, so they stay optional.
 export const CLUB_TEAM = "club-team";
 export const isClubTeam = (organizationType: string) => organizationType === CLUB_TEAM;
 
@@ -190,7 +190,8 @@ export const orgSchema = yup.object({
     .string()
     .required("Zip code is required")
     .matches(/^\d{5}(-\d{4})?$/, "Enter a valid ZIP code"),
-  conference: yup.string().required("Conference/Division is required"),
+  // Optional, as on the sign-up.
+  conference: yup.string().notRequired(),
   description: yup.string().optional().max(250, "Max 250 characters"),
   contactName: yup.string().required("Contact name is required"),
   contactPosition: yup.string().required("Position is required"),
@@ -199,7 +200,8 @@ export const orgSchema = yup.object({
     .required("Phone is required")
     .test("us-phone", "Enter a valid US phone number", (v) => !!v && isValidPhoneNumber(v, "US")),
   email: yup.string().required("Email is required").email("Enter a valid email"),
-  website: yup.string().required("Website is required").url("Enter a valid URL"),
+  // Optional, as on the sign-up.
+  website: yup.string().url("Enter a valid URL").notRequired(),
   facebookUrl: yup.string().url("Enter a valid URL").notRequired(),
   instagramUrl: yup.string().url("Enter a valid URL").notRequired(),
   xUrl: yup.string().url("Enter a valid URL").notRequired(),
@@ -251,12 +253,12 @@ export function orgFormToFormData(form: OrgFormState, logoFile: File | null): Fo
   const body = new FormData();
   body.append("name", form.organizationName);
   body.append("organizationType", labelOf(ORG_TYPE_OPTIONS, form.organizationType));
-  if (isClubTeam(form.organizationType)) {
-    body.append("eventType", labelOf(EVENT_TYPE_OPTIONS, form.eventType));
-    body.append("teamName", form.teamName);
-    body.append("level", labelOf(LEVEL_OPTIONS, form.level));
-    body.append("sportsType", form.sport);
-  }
+  // Any organisation can have these now (sign-up asks every type). Only filled ones are sent: an empty one
+  // (e.g. a saved value that isn't in our lists) leaves what's stored alone instead of clearing it.
+  if (form.eventType) body.append("eventType", labelOf(EVENT_TYPE_OPTIONS, form.eventType));
+  if (form.teamName.trim()) body.append("teamName", form.teamName.trim());
+  if (form.level) body.append("level", labelOf(LEVEL_OPTIONS, form.level));
+  if (form.sport) body.append("sportsType", form.sport);
   body.append("streetAddress", form.streetAddress);
   body.append("city", form.city);
   body.append("state", form.state);

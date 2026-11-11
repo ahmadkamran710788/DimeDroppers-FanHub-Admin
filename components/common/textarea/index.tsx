@@ -1,9 +1,11 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { cn } from "@/utils/cn";
 
 interface TextareaProps {
-  label: string;
+  // Text, or text with a muted part (e.g. "DESCRIPTION · optional").
+  label: ReactNode;
   name: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;

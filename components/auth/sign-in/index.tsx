@@ -8,6 +8,7 @@ import { Mail, Lock } from "lucide-react";
 
 import Input from "@/components/common/input";
 import Button from "@/components/common/button";
+import AuthCard, { AUTH_LINK } from "@/components/auth/auth-card";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
 import { setFanhubSchoolId, setSponsorAccount } from "@/utils/auth/session";
@@ -21,6 +22,10 @@ interface SignInForm {
   email: string;
   password: string;
 }
+
+// The design's light fields on the dark card.
+const LABEL = "text-white font-medium";
+const FIELD = "bg-[#eef2fb] border-[#d6deef] rounded-[10px]";
 
 export default function SignIn() {
   const router = useRouter();
@@ -83,17 +88,16 @@ export default function SignIn() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-display font-black text-[32px] uppercase leading-none text-white">
-          Sign in
-        </h1>
-        <p className="text-sm text-white/70">
-          Welcome back. Sign in to manage your fan hub.
-        </p>
-      </div>
+    <AuthCard size="sm" aria-labelledby="sign-in-title">
+      {/* noValidate: the errors show under the fields (the design's), not as the browser's bubbles. */}
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-[22px]">
+        <div className="flex flex-col gap-2">
+          <h1 id="sign-in-title" className="font-display font-black text-[40px] uppercase leading-none text-white">
+            Sign in
+          </h1>
+          <p className="text-[#a1a1aa]">Welcome back. Sign in to manage your fan hub.</p>
+        </div>
 
-      <div className="flex flex-col gap-4">
         <Input
           label="Email"
           name="email"
@@ -101,9 +105,11 @@ export default function SignIn() {
           value={form.email}
           onChange={handleChange("email")}
           placeholder="you@organization.com"
+          autoComplete="email"
           icon={<Mail className="h-5 w-5" />}
           error={errors.email}
-          labelClassName="text-white"
+          labelClassName={LABEL}
+          inputClassName={FIELD}
         />
         <Input
           label="Password"
@@ -111,27 +117,30 @@ export default function SignIn() {
           type="password"
           value={form.password}
           onChange={handleChange("password")}
-          placeholder="Enter your password"
+          placeholder="Your password"
+          autoComplete="current-password"
           icon={<Lock className="h-5 w-5" />}
           error={errors.password}
-          labelClassName="text-white"
+          labelClassName={LABEL}
+          inputClassName={FIELD}
         />
-      </div>
 
-      <Button
-        type="submit"
-        variant="cta"
-        fullWidth
-        disabled={isSubmitting}
-        label={isSubmitting ? "Signing in…" : "Sign in"}
-      />
+        <Button
+          type="submit"
+          variant="cta"
+          fullWidth
+          disabled={isSubmitting}
+          label={isSubmitting ? "Signing in…" : "Sign in"}
+          className="h-[50px] rounded-[10px] text-[17px]"
+        />
 
-      <p className="text-center text-sm text-white/70">
-        Don&apos;t have an account?{" "}
-        <Link href={routes.ui.signUp} className="font-medium text-steel-blue hover:underline">
-          Create one
-        </Link>
-      </p>
-    </form>
+        <p className="text-center text-[#d4d4d8]">
+          Don&apos;t have an account?{" "}
+          <Link href={routes.ui.signUp} className={AUTH_LINK}>
+            Create one
+          </Link>
+        </p>
+      </form>
+    </AuthCard>
   );
 }

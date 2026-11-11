@@ -11,16 +11,18 @@ import { validateAndSetErrors } from "@/utils/validation";
 import Button from "@/components/common/button";
 import { OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
 import { sponsorAccountSchema, sponsorBrandSchema, sponsorMainLocationSchema } from "@/components/auth/schema";
-import BrandPanel from "@/components/auth/sponsor-sign-up/brand-panel";
-import SignUpSteps from "@/components/auth/sponsor-sign-up/sign-up-steps";
+import BrandPanel from "@/components/auth/sign-up-shared/brand-panel";
+import SignUpSteps from "@/components/auth/sign-up-shared/sign-up-steps";
 import AccountStep from "@/components/auth/sponsor-sign-up/account-step";
 import BrandStep from "@/components/auth/sponsor-sign-up/brand-step";
 import ReviewStep from "@/components/auth/sponsor-sign-up/review-step";
 import DoneStep from "@/components/auth/sponsor-sign-up/done-step";
 import type { SignUpSetup } from "@/components/auth/sponsor-sign-up/load-sign-up-setup";
 import {
+  BRAND_PANEL,
   DONE_STEP,
   INITIAL_FORM,
+  STEPS,
   placeSignUpError,
   type MainLocationField,
   type SponsorSignUpForm,
@@ -147,7 +149,7 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row">
-      <BrandPanel />
+      <BrandPanel {...BRAND_PANEL} />
 
       <main className="lg:flex-[1.3_1_520px] min-w-0 px-4 py-8 md:px-14 md:pt-12 md:pb-16 flex justify-center">
         <div ref={contentRef} className="w-full max-w-[640px] flex flex-col gap-7">
@@ -168,7 +170,7 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
           ) : (
             // POST, so a click before the page hydrates can't put the password in the URL (a form's default is GET).
             <form method="post" onSubmit={handleNext} noValidate className="flex flex-col gap-7">
-              <SignUpSteps current={step} />
+              <SignUpSteps steps={STEPS} current={step} />
 
               {step === 1 && (
                 <AccountStep

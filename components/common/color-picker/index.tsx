@@ -12,6 +12,8 @@ interface ColorPickerProps {
   className?: string;
   // E.g. a navy label inside a white dialog.
   labelClassName?: string;
+  // "light" (default): white field. "dark": near-black field with white text, as on the sign-up forms.
+  variant?: "light" | "dark";
 }
 
 export default function ColorPicker({
@@ -22,7 +24,9 @@ export default function ColorPicker({
   error,
   className,
   labelClassName,
+  variant = "light",
 }: ColorPickerProps) {
+  const dark = variant === "dark";
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   const handleHexChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,7 +44,10 @@ export default function ColorPicker({
       </label>
       <div
         className={cn(
-          "relative flex items-center h-12 rounded-[8px] bg-white border-2 border-[rgba(11,28,45,0.11)] overflow-hidden",
+          "relative flex items-center overflow-hidden",
+          dark
+            ? "h-[52px] rounded-[10px] bg-[#0b0b0b] border border-[#333]"
+            : "h-12 rounded-[8px] bg-white border-2 border-[rgba(11,28,45,0.11)]",
           error && "border-error"
         )}
       >
@@ -62,7 +69,10 @@ export default function ColorPicker({
           value={value}
           onChange={handleHexChange}
           maxLength={7}
-          className="flex-1 h-full px-2 text-midnight-navy text-base font-medium outline-none bg-transparent"
+          className={cn(
+            "flex-1 min-w-0 h-full px-2 text-base font-medium outline-none bg-transparent",
+            dark ? "text-white font-mono uppercase" : "text-midnight-navy"
+          )}
         />
         <input
           ref={colorInputRef}

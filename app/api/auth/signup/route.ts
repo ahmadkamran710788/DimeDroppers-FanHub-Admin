@@ -1,6 +1,6 @@
 import { config } from "@/config";
 import { routes } from "@/utils/routes";
-import { setAuthCookies } from "@/utils/auth/cookies";
+import { setAccountRoleCookie, setAuthCookies } from "@/utils/auth/cookies";
 import type { AuthSession } from "@/utils/types/auth";
 
 export const runtime = "nodejs";
@@ -8,7 +8,8 @@ export const runtime = "nodejs";
 /**
  * Proxy for FanHub Org Auth "Sign up".
  *
- * The browser posts `{ email, name, password, phone }` here; this server-only
+ * The browser posts `{ email, name, password, phone? }` here (name is the
+ * organisation's; phone is optional, as in the API); this server-only
  * handler forwards to the FanHub API and, on success (201), stores the returned
  * access/refresh tokens as httpOnly cookies. Non-2xx upstream responses are passed
  * straight through so the client can show the backend's message (e.g. 409
@@ -31,9 +32,9 @@ export async function POST(request: Request) {
       password?: string;
       phone?: string;
     };
-    if (!email || !name || !password || !phone) {
+    if (!email || !name || !password) {
       return Response.json(
-        { message: "Email, name, password and phone are required." },
+        { message: "Email, name and password are required." },
         { status: 400 }
       );
     }
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
     const upstream = await fetch(`${config.apiUrl}/${routes.api.authSignup}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, name, password, phone }),
+      body: JSON.stringify({ email, name, password, ...(phone && { phone }) }),
     });
 
     const body = await upstream.json().catch(() => ({
@@ -52,6 +53,8 @@ export async function POST(request: Request) {
       const session = body?.data?.[0] as AuthSession | undefined;
       if (session?.accessToken && session?.refreshToken) {
         await setAuthCookies(session.accessToken, session.refreshToken);
+        // As sign-in does, so a sponsor session from before in this browser can't keep its role.
+        await setAccountRoleCookie("ORGANISER");
         // Keep the refresh token out of the browser: it lives only in its httpOnly cookie.
         return Response.json(
           { ...body, data: [{ accessToken: session.accessToken, organization: session.organization }] },

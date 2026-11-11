@@ -5,7 +5,7 @@ export const routes = {
     signIn: "/auth/sign-in",
     // Pick an organization or a sponsor account; each opens its own sign-up form.
     signUp: "/auth/sign-up",
-    organizationSignUp: "/auth/sign-up/organization",
+    organizationSignUp: "/auth/organization-sign-up",
     // Sponsor sign-up: Account → Brand → Review, sent as one request on Finish.
     sponsorSignUp: "/auth/sponsor-sign-up",
     schedule: "/schedule",
