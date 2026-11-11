@@ -326,6 +326,8 @@ export const routes = {
     // (FANHUB_SPONSOR_CART_GENDER_PHYSICAL_ASSETS_FRONTEND.md).
     sponsorCartQuote: "fanhub/sponsor-packages/activations/quote",
     sponsorCartActivate: "fanhub/sponsor-packages/activations/batch",
+    // Campaign Planner (national brands): POST, one plan across organisations; not saved, nothing bought.
+    sponsorPlanRecommend: "fanhub/sponsor-packages/plans/recommend",
     // Fundable Needs, organisation side (FANHUB_FUNDABLE_NEEDS_FRONTEND.md §4). GET what the create form
     // offers, the teams (?eventId= for a tournament), a school's games, the stat cards and the cards (paged).
     orgNeedOptions: "fanhub/org/needs/options",

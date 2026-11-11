@@ -1,25 +1,20 @@
 import * as yup from "yup";
-import { formatMoney, parseMoney } from "@/utils/helper";
-import { PROMPT_MAX_LENGTH } from "@/components/sponsor/campaign-planner/data";
+import { parseMoney } from "@/utils/helper";
+import { ALL } from "@/components/common/multi-select";
+import { MAX_BUDGET_CENTS, MIN_BUDGET_CENTS } from "@/components/sponsor/campaign-planner/data";
 
-// Smallest budget Dime AI plans a campaign for.
-const MIN_BUDGET = 1000;
+const centsOf = (budget: string | undefined) => Math.round(parseMoney(budget ?? "") * 100);
 
-// The composer: what the sponsor wants, the budget, the season and the goal.
+// The composer, checked before a plan is asked for (the API checks the same; its budget message is zod's, so
+// the friendly one is given here).
 export const campaignRequestSchema = yup.object({
-  prompt: yup
-    .string()
-    .trim()
-    .required("Describe the campaign you want")
-    .max(PROMPT_MAX_LENGTH, `Keep the description under ${PROMPT_MAX_LENGTH.toLocaleString("en-US")} characters`),
+  stores: yup
+    .mixed<typeof ALL | string[]>()
+    .test("some-stores", "Choose at least one of your locations, or all of them", (v) => v === ALL || (Array.isArray(v) && v.length > 0)),
   budget: yup
     .string()
     .required("Total budget is required")
-    .test("is-amount", "Enter a budget like $60,000", (budget) => !budget || Number.isFinite(parseMoney(budget)))
-    .test("min-budget", `Budget must be at least ${formatMoney(MIN_BUDGET)}`, (budget) => {
-      const amount = parseMoney(budget ?? "");
-      return !Number.isFinite(amount) || amount >= MIN_BUDGET;
-    }),
-  season: yup.string().required("Pick a season"),
-  goal: yup.string().required("Pick a goal"),
+    .test("is-amount", "Enter a budget like $60,000", (b) => !b || Number.isFinite(parseMoney(b)))
+    .test("min-budget", "Enter a budget of at least $100", (b) => !Number.isFinite(parseMoney(b ?? "")) || centsOf(b) >= MIN_BUDGET_CENTS)
+    .test("max-budget", "Enter a budget of $1,000,000,000 or less", (b) => !Number.isFinite(parseMoney(b ?? "")) || centsOf(b) <= MAX_BUDGET_CENTS),
 });

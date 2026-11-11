@@ -1,97 +1,172 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { parseMoney } from "@/utils/helper";
+import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
 import Button from "@/components/common/button";
+import FilterChips from "@/components/common/filter-chips";
 import Input from "@/components/common/input";
+import MultiSelect, { ALL } from "@/components/common/multi-select";
 import Select from "@/components/common/select";
-import Textarea from "@/components/common/textarea";
-import { GOAL_OPTIONS, SEASON_OPTIONS } from "@/components/sponsor/data";
-import { FIELD, PRIMARY_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
+import { FIELD, HINT, HINT_LINK, PRIMARY_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
+import type { SponsorStore } from "@/components/sponsor/find-organizations/use-sponsor-stores";
+import { MAX_PICKED_STORES } from "@/components/sponsor/find-organizations/data";
 import { campaignRequestSchema } from "@/components/sponsor/campaign-planner/schema";
-import { DEFAULT_REQUEST, PROMPT_MAX_LENGTH, type CampaignRequest } from "@/components/sponsor/campaign-planner/data";
+import { DEFAULT_FORM, GOAL_OPTIONS, type PlanForm } from "@/components/sponsor/campaign-planner/data";
+import type { FilterOption, SponsorSearchFilters } from "@/utils/types/sponsor-packages";
+import type { PlanGoal, SponsorPlanRequest } from "@/utils/types/sponsor-plan";
 
 const CONTROL = cn(FIELD, "h-12 text-[16px] min-w-0");
+const DEFAULT_RADIUS = 25;
 
-type RequestField = keyof CampaignRequest;
-type FieldElement = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+const chipOptions = (options: FilterOption[] | undefined) => (options ?? []).map((o) => ({ label: o.label, value: o.code }));
+
+export type FieldErrors = Partial<Record<keyof PlanForm, string>>;
 
 interface PlanComposerProps {
-  // Called with the validated request, its budget parsed to dollars.
-  onBuild: (request: Omit<CampaignRequest, "budget"> & { budget: number }) => void;
+  // Radius options, seasons, sports and genders from GET /filters; null while they load (or failed).
+  filters: SponsorSearchFilters | null;
+  filtersFailed: boolean;
+  onRetryFilters: () => void;
+  // The brand's locations with a map point; null while they load.
+  stores: SponsorStore[] | null;
+  building: boolean;
+  // Asks for the plan; resolves the API's messages for fields (shown under them), or null.
+  onBuild: (request: SponsorPlanRequest) => Promise<FieldErrors | null>;
 }
 
-// Where the sponsor describes the campaign for Dime AI to plan.
-export default function PlanComposer({ onBuild }: PlanComposerProps) {
-  const [form, setForm] = useState(DEFAULT_REQUEST);
+// What the sponsor plans: around which locations, the budget, season and goal, and which sports and genders.
+// Dime AI picks the organizations itself; for a tournament, the events it plans are its events near these
+// locations.
+export default function PlanComposer({ filters, filtersFailed, onRetryFilters, stores, building, onBuild }: PlanComposerProps) {
+  const [form, setForm] = useState<PlanForm>(DEFAULT_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  function update(field: RequestField, value: string) {
+  // Until the sponsor picks them, the radius and season follow the filters' default and first season.
+  const radius = form.radius || String(filters?.radiusDefaultMiles ?? DEFAULT_RADIUS);
+  const season = form.season || filters?.seasons[0]?.code || "";
+  const noStores = !!stores && stores.length === 0;
+
+  function update<K extends keyof PlanForm>(field: K, value: PlanForm[K]) {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   }
 
-  // Change handler for one field; editing it clears its error.
-  const setField = (field: RequestField) => (e: React.ChangeEvent<FieldElement>) => update(field, e.target.value);
-
   async function build(e: React.FormEvent) {
     e.preventDefault();
+    if (building || noStores) return;
     if (!(await validateAndSetErrors(campaignRequestSchema, form, setErrors))) return;
-    onBuild({ ...form, budget: parseMoney(form.budget) });
+    const request: SponsorPlanRequest = {
+      brandLocationIds: form.stores === ALL ? "ALL" : form.stores,
+      radiusMiles: Number(radius),
+      budgetCents: Math.round(parseMoney(form.budget) * 100),
+      ...(season && { season }),
+      goal: form.goal,
+      ...(form.sports.length && { sports: form.sports }),
+      ...(form.genders.length && { genders: form.genders }),
+    };
+    const problems = await onBuild(request);
+    if (problems) setErrors(problems);
   }
 
   return (
     <form
-      aria-label="Describe your campaign"
+      aria-label="Plan your campaign"
       noValidate
       onSubmit={build}
       className="bg-[#141414] border border-[#2c2547] rounded-[8px] p-6 flex flex-col gap-[18px]"
     >
-      <Textarea
-        label="WHAT DO YOU WANT TO ACHIEVE?"
-        name="ai-prompt"
-        value={form.prompt}
-        onChange={setField("prompt")}
-        error={errors.prompt}
-        rows={3}
-        maxLength={PROMPT_MAX_LENGTH}
-        showCounter={false}
-        fieldVariant="dark"
-        labelClassName={SECTION_LABEL}
-        fieldClassName={cn(FIELD, "rounded-[12px] p-4 text-[17px] leading-[1.5] resize-y")}
-      />
+      {filtersFailed && (
+        <p className="text-sm text-[#f0c36a]">
+          Couldn’t load the radius, season, sport and gender options.{" "}
+          <Button variant="text" size="sm" label="Try again" onClick={onRetryFilters} className="inline text-sm text-[#c9b8ff] underline" />
+        </p>
+      )}
 
-      <div className="@container grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 items-start">
+      {/* Where: the brand's locations and one radius around each (the API takes one). */}
+      <div className="flex flex-col gap-2">
+        <div className="@container grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 items-start">
+          <MultiSelect
+            label="BRAND LOCATIONS"
+            name="plan-locations"
+            value={form.stores}
+            onChange={(picked) => update("stores", picked)}
+            options={(stores ?? []).map((s) => ({ label: s.label, value: s.id, hint: s.hint }))}
+            allLabel={`All my locations (${stores?.length ?? 0})`}
+            max={MAX_PICKED_STORES}
+            countLabel={(count) => `${count} locations`}
+            placeholder={!stores ? "Loading your locations…" : stores.length ? "Choose locations" : "No locations yet"}
+            searchPlaceholder="Search your locations"
+            disabled={!stores?.length}
+            error={errors.stores}
+            variant="dark"
+            className="min-w-0 @min-[416px]:col-span-2"
+            labelClassName={SECTION_LABEL}
+            selectClassName={cn(CONTROL, "px-3")}
+          />
+          <Select
+            label="RADIUS"
+            name="plan-radius"
+            value={radius}
+            onChange={(e) => update("radius", e.target.value)}
+            options={(filters?.radiusOptions ?? [DEFAULT_RADIUS]).map((miles) => ({
+              label: `${miles} miles`,
+              value: String(miles),
+            }))}
+            error={errors.radius}
+            variant="dark"
+            className="min-w-0"
+            labelClassName={SECTION_LABEL}
+            selectClassName={cn(CONTROL, "px-3")}
+          />
+        </div>
+        {noStores && (
+          <p className={HINT}>
+            The planner works around your stores. Add a store location with its address on your{" "}
+            <Link href={routes.ui.sponsor.profile} className={HINT_LINK}>
+              Sponsor Profile
+            </Link>{" "}
+            first.
+          </p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 items-start">
         <Input
           label="TOTAL BUDGET"
-          name="ai-budget"
+          name="plan-budget"
           value={form.budget}
-          onChange={setField("budget")}
+          onChange={(e) => update("budget", e.target.value)}
+          placeholder="e.g. $60,000"
           error={errors.budget}
           className="min-w-0"
           labelClassName={SECTION_LABEL}
-          inputClassName={cn(CONTROL, "py-0 px-[14px]")}
+          inputClassName={cn(CONTROL, "py-0 px-[14px] placeholder:text-[#757575]")}
         />
-        <Select
-          label="SEASON"
-          name="ai-season"
-          value={form.season}
-          onChange={setField("season")}
-          options={SEASON_OPTIONS}
-          error={errors.season}
-          variant="dark"
-          className="min-w-0"
-          labelClassName={SECTION_LABEL}
-          selectClassName={cn(CONTROL, "px-3")}
-        />
+        {/* The seasons still open (GET /filters); none left means any season. */}
+        {(filters?.seasons.length ?? 0) > 0 && (
+          <Select
+            label="SEASON"
+            name="plan-season"
+            value={season}
+            onChange={(e) => update("season", e.target.value)}
+            options={chipOptions(filters?.seasons)}
+            error={errors.season}
+            variant="dark"
+            className="min-w-0"
+            labelClassName={SECTION_LABEL}
+            selectClassName={cn(CONTROL, "px-3")}
+          />
+        )}
         <Select
           label="GOAL"
-          name="ai-goal"
+          name="plan-goal"
           value={form.goal}
-          onChange={setField("goal")}
+          onChange={(e) => update("goal", e.target.value as PlanGoal)}
           options={GOAL_OPTIONS}
           error={errors.goal}
           variant="dark"
@@ -99,20 +174,53 @@ export default function PlanComposer({ onBuild }: PlanComposerProps) {
           labelClassName={SECTION_LABEL}
           selectClassName={cn(CONTROL, "px-3")}
         />
-        {/* A blank label row keeps the button level with the fields, even when an error grows a field's
-            cell; it's dropped once the fields stack in one column (under 416px, two 200px columns). */}
-        <div className="flex flex-col gap-2">
-          <span aria-hidden="true" className={cn(SECTION_LABEL, "invisible hidden @min-[416px]:block")}>
-            BUILD
-          </span>
-          <Button
-            type="submit"
-            label="Build my plan"
-            icon={<Sparkles className="size-[18px]" strokeWidth={2} />}
-            fullWidth
-            className={cn(PRIMARY_BUTTON, "h-12 px-4 rounded-[10px] text-base")}
-          />
+      </div>
+
+      <div className="flex flex-col gap-[10px]">
+        <div className="flex justify-between gap-3 flex-wrap">
+          <div className={SECTION_LABEL}>SPORTS · SELECT ANY</div>
+          <div className={HINT}>{form.sports.length ? `${form.sports.length} selected` : "All sports"}</div>
         </div>
+        <FilterChips
+          variant="pill"
+          multiple
+          ariaLabel="Sports"
+          options={chipOptions(filters?.sports)}
+          value={form.sports}
+          onChange={(sports) => update("sports", sports)}
+        />
+        {errors.sports && <p className="text-sm text-error">{errors.sports}</p>}
+      </div>
+
+      <div className="flex flex-col gap-[10px]">
+        <div className="flex justify-between gap-3 flex-wrap">
+          <div className={SECTION_LABEL}>GENDER · SELECT ANY</div>
+          <div className={HINT}>{form.genders.length ? `${form.genders.length} selected` : "All genders"}</div>
+        </div>
+        <FilterChips
+          variant="pill"
+          multiple
+          ariaLabel="Gender"
+          options={chipOptions(filters?.genders)}
+          value={form.genders}
+          onChange={(genders) => update("genders", genders)}
+        />
+        {errors.genders && <p className="text-sm text-error">{errors.genders}</p>}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#262626] pt-[18px]">
+        <p className={cn(HINT, "flex-[1_1_280px]")}>
+          {building
+            ? "Dime AI is building your plan. This can take a minute or two; please keep this page open."
+            : "Dime AI picks organizations, packages and add-ons near your locations, within your budget."}
+        </p>
+        <Button
+          type="submit"
+          label={building ? "Building your plan…" : "Build my plan"}
+          icon={<Sparkles className="size-[18px]" strokeWidth={2} />}
+          disabled={building || noStores}
+          className={cn(PRIMARY_BUTTON, "h-12 px-6 rounded-[10px] text-base")}
+        />
       </div>
     </form>
   );
