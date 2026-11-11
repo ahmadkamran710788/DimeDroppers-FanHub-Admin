@@ -5,24 +5,18 @@ import Select from "@/components/common/select";
 import Textarea from "@/components/common/textarea";
 import { SECTION_LABEL } from "@/components/sponsor/styles";
 import StepHeading from "@/components/auth/sign-up-shared/step-heading";
-import { GROUP_HEADING, INPUT, OPTIONAL_HINT, SELECT, TEXTAREA } from "@/components/auth/sign-up-shared/styles";
-import GenderPicker from "@/components/auth/organization-sign-up/gender-picker";
-import type { StepProps } from "@/components/auth/organization-sign-up/data";
-import {
-  EVENT_TYPE_OPTIONS,
-  LEVEL_OPTIONS,
-  ORG_TYPE_OPTIONS,
-  SPORT_OPTIONS,
-} from "@/components/organization/org-form/form";
+import { INPUT, OPTIONAL_HINT, SELECT, TEXTAREA } from "@/components/auth/sign-up-shared/styles";
+import { SCHOOL_LEVEL_OPTIONS, isSchool, type StepProps } from "@/components/auth/organization-sign-up/data";
+import { ORG_TYPE_OPTIONS } from "@/components/organization/org-form/form";
 
 const HALF = "min-w-0 sm:col-span-3";
 
-// Step 2: the organisation, its team, sport and level. The lists are the Profile page's, so what's picked
-// here shows there too.
-export default function OrganizationStep({ form, errors, onField, onValue }: StepProps) {
+// Step 2: the organisation, its type and, for a school, its level.
+export default function OrganizationStep({ form, errors, onField }: StepProps) {
+  const school = isSchool(form.organizationType);
   return (
-    <section aria-label="Organization and team" className="flex flex-col gap-5">
-      <StepHeading title="Organization & team" description="Basic information about your organization, sport and level." />
+    <section aria-label="Organization" className="flex flex-col gap-5">
+      <StepHeading title="Organization & team" description="Basic information about your organization." />
 
       <div className="grid grid-cols-1 sm:grid-cols-6 gap-x-[18px] gap-y-[22px]">
         <Input
@@ -51,62 +45,22 @@ export default function OrganizationStep({ form, errors, onField, onValue }: Ste
           labelClassName={SECTION_LABEL}
           selectClassName={SELECT}
         />
-        <Select
-          label="EVENT TYPE"
-          name="org-event-type"
-          value={form.eventType}
-          onChange={onField("eventType")}
-          options={EVENT_TYPE_OPTIONS}
-          placeholder="Choose an event type…"
-          error={errors.eventType}
-          variant="dark"
-          className={HALF}
-          labelClassName={SECTION_LABEL}
-          selectClassName={SELECT}
-        />
-        <Input
-          label="TEAM NAME"
-          name="org-team-name"
-          value={form.teamName}
-          onChange={onField("teamName")}
-          placeholder={form.organizationName.trim() || "North Florida Hoop Group"}
-          hint="Leave empty to use your organization name."
-          error={errors.teamName}
-          variant="dark"
-          className="col-span-full"
-          labelClassName={SECTION_LABEL}
-          inputClassName={INPUT}
-        />
-
-        <h3 className={GROUP_HEADING}>Sport & level</h3>
-
-        <Select
-          label="SPORT"
-          name="org-sport"
-          value={form.sport}
-          onChange={onField("sport")}
-          options={SPORT_OPTIONS}
-          placeholder="Choose a sport…"
-          error={errors.sport}
-          variant="dark"
-          className={HALF}
-          labelClassName={SECTION_LABEL}
-          selectClassName={SELECT}
-        />
-        <Select
-          label="LEVEL"
-          name="org-level"
-          value={form.level}
-          onChange={onField("level")}
-          options={LEVEL_OPTIONS}
-          placeholder="Choose a level…"
-          error={errors.level}
-          variant="dark"
-          className={HALF}
-          labelClassName={SECTION_LABEL}
-          selectClassName={SELECT}
-        />
-        <GenderPicker value={form.gender} onChange={onValue("gender")} error={errors.gender} />
+        {/* Only a school has a level. */}
+        {school && (
+          <Select
+            label="LEVEL"
+            name="org-level"
+            value={form.level}
+            onChange={onField("level")}
+            options={SCHOOL_LEVEL_OPTIONS}
+            placeholder="Choose a level…"
+            error={errors.level}
+            variant="dark"
+            className={HALF}
+            labelClassName={SECTION_LABEL}
+            selectClassName={SELECT}
+          />
+        )}
         <Textarea
           label={
             <>

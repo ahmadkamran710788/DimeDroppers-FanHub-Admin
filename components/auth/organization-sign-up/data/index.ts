@@ -20,8 +20,14 @@ export const BRAND_PANEL = {
   already: "Already have an account?",
 };
 
-// The API's genders (on a team; the organisation has no gender yet).
-export const GENDER_OPTIONS = ["Boys", "Girls", "Coed"] as const;
+// A school's level, saved as these words (the organisation's level is free text in the API).
+export const SCHOOL_LEVEL_OPTIONS = ["Middle School", "High School", "High Middle"].map((level) => ({
+  label: level,
+  value: level,
+}));
+
+// Only a school has a level (organizationType holds the ORG_TYPE_OPTIONS value).
+export const isSchool = (organizationType: string) => organizationType === "school";
 
 // The organisation fields are the setup / Profile form's (OrgFormState), so the details are sent exactly as
 // the Profile page sends them. There, `email` and `phone` are the contact's (step 3); the account's are below.
@@ -31,7 +37,6 @@ export interface OrgSignUpForm extends OrgFormState {
   password: string;
   // Optional; masked as typed, "(555) 123-4567".
   accountPhone: string;
-  gender: string;
   // Where the organisation is, from the map (or typed), e.g. "28.538336" and "-81.379234". Sponsors' distance
   // search uses it. The API doesn't keep it on an organisation yet; it's sent so it's stored once it does.
   latitude: string;
@@ -51,7 +56,6 @@ export const INITIAL_FORM: OrgSignUpForm = {
   accountEmail: "",
   password: "",
   accountPhone: "",
-  gender: "",
   latitude: "",
   longitude: "",
 };
@@ -64,7 +68,7 @@ export interface StepProps {
   errors: Record<string, string>;
   // For an input, textarea or select: its change event.
   onField: (field: keyof OrgSignUpForm) => (e: React.ChangeEvent<FieldElement>) => void;
-  // For a control that gives the value itself (phone, colour, gender).
+  // For a control that gives the value itself (phone, colour).
   onValue: (field: keyof OrgSignUpForm) => (value: string) => void;
 }
 
@@ -103,11 +107,7 @@ const FIELD_STEPS: Record<string, { field: string; step: number }> = {
   phone: { field: "accountPhone", step: 1 },
   name: { field: "organizationName", step: 2 },
   organizationType: { field: "organizationType", step: 2 },
-  eventType: { field: "eventType", step: 2 },
-  teamName: { field: "teamName", step: 2 },
-  sportsType: { field: "sport", step: 2 },
   level: { field: "level", step: 2 },
-  gender: { field: "gender", step: 2 },
   description: { field: "description", step: 2 },
   streetAddress: { field: "streetAddress", step: 3 },
   city: { field: "city", step: 3 },
