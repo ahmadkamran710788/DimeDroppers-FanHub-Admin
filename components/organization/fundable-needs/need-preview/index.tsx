@@ -5,7 +5,7 @@ import type { MerchantCategory } from "@/utils/types/needs";
 
 export interface NeedPreviewData {
   categoryName: string;
-  // Who it's for: "Team · Event", or the game.
+  // Who it's for: "Team · Event", or for a school the team and its end date.
   forText: string;
   title: string;
   description: string;

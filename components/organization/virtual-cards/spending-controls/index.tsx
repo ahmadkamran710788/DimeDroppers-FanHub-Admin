@@ -4,10 +4,13 @@ import { formatInstantDate, plural } from "@/utils/helper";
 import { dollars } from "@/utils/needs";
 import type { OrgCardListItem } from "@/utils/types/needs";
 
-// Who the card's current need is for: the team (or the whole event) and the event, or the game.
+// Who the card's current need is for: the team (or the whole event) and the event; for a school, the team (or
+// all teams) and when it ends; or the game, for an older school need.
 function needFor({ currentNeed, needCount }: OrgCardListItem) {
   if (!currentNeed) return { value: "No need right now", sub: `${plural(needCount, "need")} so far` };
   if (currentNeed.event) return { value: currentNeed.team?.name ?? "Whole event", sub: currentNeed.event.name ?? "" };
+  if (currentNeed.scope === "SCHOOL")
+    return { value: currentNeed.team?.name ?? "All teams", sub: `Ends ${formatInstantDate(currentNeed.endsAt)}` };
   if (currentNeed.game)
     return {
       value: currentNeed.team?.name ?? gameTitle(currentNeed.game),

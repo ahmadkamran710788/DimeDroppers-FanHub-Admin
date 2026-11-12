@@ -2,7 +2,9 @@
 // organisation panel and the sponsor app. Money is in integer cents throughout.
 
 export type NeedStatus = "OPEN" | "FUNDED" | "ENDED" | "CLOSED" | "CANCELLED";
-export type NeedScope = "GAME" | "EVENT";
+// SCHOOL: a school's need, ending on a date it picks. EVENT: a tournament's, ending with its event. GAME: a
+// school's need from before 12 Nov 2026, ending 3 hours after its game.
+export type NeedScope = "SCHOOL" | "EVENT" | "GAME";
 export type CardStatus = "PENDING" | "INACTIVE" | "ACTIVE" | "CANCELED" | "FAILED";
 export type ContributionStatus = "PENDING" | "PROCESSING" | "PAID" | "FAILED";
 export type BrandDisplay = "LOGO_FULL_COLOR" | "LOGO_ONE_COLOR" | "NAME_ONLY";
@@ -37,7 +39,7 @@ export interface Need {
   category: { code: string; name: string };
   allowedCategories: MerchantCategory[];
   scope: NeedScope;
-  // Filled for a tournament's need; `game` for a school's.
+  // Filled for a tournament's need; `game` only for an older GAME need. Both are null for a SCHOOL need.
   event: { id: string; name: string | null; startDate: string | null; endDate: string | null } | null;
   game: {
     id: string;
@@ -296,10 +298,12 @@ export interface NeedEventOption {
 }
 
 // GET /fanhub/org/needs/options: what the create form offers. A tournament picks an event (scope EVENT), a
-// school picks a game (scope GAME, events empty).
+// school picks the day its need ends (scope SCHOOL, events empty).
 export interface NeedOptions {
   organizationKind: string;
   scope: NeedScope;
+  // A school's end-date limits (YYYY-MM-DD, today to 365 days ahead in its time zone); null for a tournament.
+  endDateRange: { min: string; max: string } | null;
   categories: NeedCategoryOption[];
   events: NeedEventOption[];
   brandDisplays: BrandDisplay[];
@@ -316,25 +320,11 @@ export interface NeedTeam {
   division: string | null;
 }
 
-// GET /fanhub/org/needs/games (paged, school only): a game that isn't over yet.
-export interface NeedGame {
-  id: string;
-  title: string | null;
-  opponent: string | null;
-  sports: string | null;
-  homeAway: string | null;
-  location: string | null;
-  utcTime: string | null;
-  // Funding and spending close then (3 hours after the start).
-  endsAt: string | null;
-  team: { id: string; name: string } | null;
-}
-
-// POST /fanhub/org/needs: eventId for a tournament, scheduleEventId (the game) for a school.
+// POST /fanhub/org/needs: eventId for a tournament, endDate (YYYY-MM-DD) for a school.
 export interface CreateNeedRequest {
   categoryCode: string;
   eventId?: string;
-  scheduleEventId?: string;
+  endDate?: string;
   // Left out for the whole event / any team; never null.
   teamId?: string;
   title: string;

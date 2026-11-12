@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { ArrowLeft, CreditCard, DollarSign, Lock, Star } from "lucide-react";
 import Button from "@/components/common/button";
+import DateField from "@/components/common/date-field";
 import Input from "@/components/common/input";
 import Loader from "@/components/common/loader";
 import PageHeading from "@/components/common/page-heading";
@@ -13,7 +14,6 @@ import SectionCard from "@/components/common/section-card";
 import Select from "@/components/common/select";
 import Textarea from "@/components/common/textarea";
 import WizardFooter from "@/components/common/wizard-footer";
-import GamePicker from "@/components/organization/fundable-needs/game-picker";
 import NeedPreview from "@/components/organization/fundable-needs/need-preview";
 import {
   COMING_SOON,
@@ -29,12 +29,12 @@ import {
 import { FIELD, FLAT_CARD, HINT, LABEL, amountInput } from "@/components/organization/fundable-needs/field-styles";
 import { needSchema } from "@/components/organization/fundable-needs/schema";
 import { sponsorList, sponsorRequest } from "@/components/sponsor/sponsor-api";
+import { formatInstantDate, formatShortDate } from "@/utils/helper";
 import { centsToInput, dollars, dollarsToCents } from "@/utils/needs";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
 import type {
   CreateNeedRequest,
-  NeedGame,
   NeedOptions,
   NeedTeam,
   OrgNeedDetail,
@@ -47,7 +47,8 @@ interface Draft {
   categoryCode: string;
   eventId: string;
   teamId: string;
-  game: NeedGame | null;
+  // A school's end date, YYYY-MM-DD.
+  endDate: string;
   title: string;
   description: string;
   whyItMatters: string;
@@ -58,18 +59,18 @@ const EMPTY: Draft = {
   categoryCode: "",
   eventId: "",
   teamId: "",
-  game: null,
+  endDate: "",
   title: "",
   description: "",
   whyItMatters: "",
   goal: "",
 };
 
-// The API's field names; a 400 naming one of them is shown under that field (scheduleEventId is the game).
-const FIELD_PATHS = ["categoryCode", "eventId", "scheduleEventId", "teamId", "title", "description", "whyItMatters", "goalCents"];
+// The API's field names; a 400 naming one of them is shown under that field.
+const FIELD_PATHS = ["categoryCode", "eventId", "endDate", "teamId", "title", "description", "whyItMatters", "goalCents"];
 
 // The form's fields → the error each one clears when it changes.
-const ERROR_KEY: Partial<Record<keyof Draft, string>> = { game: "scheduleEventId", goal: "goalCents" };
+const ERROR_KEY: Partial<Record<keyof Draft, string>> = { goal: "goalCents" };
 
 // A new need starts on the category it was created from when that one is switched on, or on the only one
 // that is.
@@ -105,8 +106,8 @@ interface NeedFormProps {
 }
 
 // Create a fundable need (POST /fanhub/org/needs) or edit one (PATCH, while spending is open). A tournament's
-// need is for one of its events, a school's for one game; either can name a team. The need ends by itself
-// when its event or game is over. The preview beside the form shows it as sponsors will see it.
+// need is for one of its events and ends with it; a school's ends at the end of the day it picks. Either can
+// name a team. The preview beside the form shows it as sponsors will see it.
 export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
   const router = useRouter();
   const editing = needId !== undefined;
@@ -159,7 +160,7 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
   const currentTeams = teamsKey && teams?.key === teamsKey ? teams : null;
 
   const back = () => router.push(routes.ui.fundableNeeds);
-  // Editing a need whose event or game is over: shown, but nothing can change.
+  // Editing a need that has ended: shown, but nothing can change.
   const readOnly = editing && !!need && !need.spendingOpen;
 
   const update = (patch: Partial<Draft>) => {
@@ -176,12 +177,13 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
       editing,
       goalMinCents: options.limits.goalCentsMin,
       goalMaxCents: options.limits.goalCentsMax,
+      endDateRange: options.endDateRange,
       raisedCents: need?.money.raisedCents,
     });
     const values = {
       categoryCode: draft.categoryCode,
       eventId: draft.eventId,
-      scheduleEventId: draft.game?.id ?? "",
+      endDate: draft.endDate,
       title: draft.title,
       description: draft.description,
       whyItMatters: draft.whyItMatters,
@@ -208,7 +210,7 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
     } else {
       const body: CreateNeedRequest = {
         categoryCode: draft.categoryCode,
-        ...(options.scope === "EVENT" ? { eventId: draft.eventId } : { scheduleEventId: draft.game?.id ?? "" }),
+        ...(options.scope === "EVENT" ? { eventId: draft.eventId } : { endDate: draft.endDate }),
         // "No specific team" leaves it out: the API takes a team's id or nothing (null is a 400).
         ...(draft.teamId && { teamId: draft.teamId }),
         title,
@@ -232,7 +234,7 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
     );
     if (Object.keys(fieldErrors).length) setErrors((prev) => ({ ...prev, ...fieldErrors }));
     toast.error(r.message ?? "Couldn't save the need, please try again.");
-    // 409: it can't be changed any more (its event or game is over); show it as it is now.
+    // 409: it can't be changed any more (it has ended); show it as it is now.
     if (editing && r.status === 409) {
       setDraft(null);
       setReloads((n) => n + 1);
@@ -249,7 +251,7 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
       ? forLabel(need)
       : scope === "EVENT"
         ? [teamName ?? (event ? "Whole event" : ""), event?.name ?? ""].filter(Boolean).join(" · ")
-        : [teamName, draft?.game ? `${gameTitle(draft.game)} · ${gameTime(draft.game.utcTime)}` : ""].filter(Boolean).join(" · ");
+        : [teamName, draft?.endDate ? `Ends ${formatShortDate(draft.endDate)}` : ""].filter(Boolean).join(" · ");
   const teamOptions = (noTeamLabel: string) => [
     { label: noTeamLabel, value: "" },
     ...(currentTeams?.items ?? []).map((t) => ({ label: t.name, value: t.id })),
@@ -270,7 +272,11 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
         description={
           editing
             ? "Change the name, what it covers, why it matters or the goal. Who it's for and its type stay as published."
-            : "Tell sponsors what you need funded. It ends by itself when its event or game is over."
+            : scope === "EVENT"
+              ? "Tell sponsors what you need funded. It ends by itself when its event is over."
+              : scope === "SCHOOL"
+                ? "Tell sponsors what you need funded. It ends by itself at the end of the day you pick."
+                : "Tell sponsors what you need funded. It ends by itself."
         }
       />
 
@@ -292,7 +298,7 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
                 className="flex items-center gap-3 rounded-[8px] border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/80"
               >
                 <Lock className="size-5 shrink-0" strokeWidth={1.8} aria-hidden="true" />
-                This need can no longer be changed: its event or game is over.
+                This need can no longer be changed: it has ended.
               </p>
             )}
 
@@ -300,7 +306,7 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
               {editing && need ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <Select
-                    label={need.scope === "EVENT" ? "Event" : "Game"}
+                    label={need.scope === "EVENT" ? "Event" : need.scope === "GAME" ? "Game" : "Ends"}
                     name="target"
                     value="target"
                     onChange={() => {}}
@@ -310,7 +316,7 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
                           ? need.event.name || "Event"
                           : need.game
                             ? `${gameTitle(need.game)} · ${gameTime(need.game.utcTime)}`
-                            : "—",
+                            : formatInstantDate(need.endsAt),
                         value: "target",
                       },
                     ]}
@@ -377,13 +383,32 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="flex flex-col gap-2">
+                    <DateField
+                      label="End date"
+                      name="endDate"
+                      required
+                      value={draft.endDate}
+                      onChange={(endDate) => update({ endDate })}
+                      placeholder="Choose a date"
+                      min={options.endDateRange?.min}
+                      max={options.endDateRange?.max}
+                      error={errors.endDate}
+                      labelClassName={LABEL}
+                    />
+                    {!errors.endDate && (
+                      <p className={HINT}>
+                        The need closes at the end of this day. Sponsors can fund it and you can spend until then.
+                      </p>
+                    )}
+                  </div>
                   <div className="flex flex-col gap-2">
                     <Select
                       label="Team (optional)"
                       name="teamId"
                       value={draft.teamId}
-                      onChange={(e) => update({ teamId: e.target.value, game: null })}
+                      onChange={(e) => update({ teamId: e.target.value })}
                       options={currentTeams?.items ? teamOptions("All teams") : []}
                       placeholder="Loading teams…"
                       disabled={!currentTeams?.items}
@@ -395,16 +420,10 @@ export default function NeedForm({ needId, initialCategory }: NeedFormProps) {
                       <p className={HINT}>
                         {currentTeams?.error
                           ? `Couldn't load your teams: ${currentTeams.error}`
-                          : "Pick a team to name it on the need and see only its games."}
+                          : "Pick a team to name it on the need."}
                       </p>
                     )}
                   </div>
-                  <GamePicker
-                    value={draft.game}
-                    onChange={(game) => update({ game })}
-                    teamId={draft.teamId}
-                    error={errors.scheduleEventId}
-                  />
                 </div>
               )}
             </SectionCard>

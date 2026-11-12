@@ -21,7 +21,6 @@ import type {
   Need,
   NeedCard,
   NeedEventOption,
-  NeedGame,
   NeedStatus,
 } from "@/utils/types/needs";
 
@@ -33,7 +32,6 @@ export const COMING_SOON = "Coming soon";
 
 export const NEEDS_PAGE_SIZE = 20;
 export const CARDS_PAGE_SIZE = 20;
-export const GAMES_PAGE_SIZE = 20;
 
 // The API's text limits for a need.
 export const TITLE_MAX = 120;
@@ -127,11 +125,10 @@ export const gameTime = (utcTime: string | null) =>
       })
     : "Time to be set";
 
-// "Funding and spending close at Fri, Nov 14, 10:00 PM".
-export const gameCloses = (game: NeedGame) => (game.endsAt ? `Funding and spending close at ${gameTime(game.endsAt)}` : "");
-
-// Who a need is for: "Jax Elite 17U Boys · Spring Kickoff", or the game for a school's need.
-export function forLabel(need: Pick<Need, "team" | "event" | "game">): string {
+// Who a need is for: "Jax Elite 17U Boys · Spring Kickoff" (tournament), the team or "All teams" (school), or
+// the game for an older school need.
+export function forLabel(need: Pick<Need, "scope" | "team" | "event" | "game">): string {
+  if (need.scope === "SCHOOL") return need.team?.name ?? "All teams";
   const target = need.event
     ? need.event.name || "Event"
     : need.game

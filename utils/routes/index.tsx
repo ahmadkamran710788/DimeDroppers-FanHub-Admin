@@ -332,7 +332,6 @@ export const routes = {
     // offers, the teams (?eventId= for a tournament), a school's games, the stat cards and the cards (paged).
     orgNeedOptions: "fanhub/org/needs/options",
     orgNeedTeams: "fanhub/org/needs/teams",
-    orgNeedGames: "fanhub/org/needs/games",
     orgNeedsSummary: "fanhub/org/needs/summary",
     orgNeedCards: "fanhub/org/needs/cards",
     // GET the needs (paged, ?status=&categoryCode=), POST one.

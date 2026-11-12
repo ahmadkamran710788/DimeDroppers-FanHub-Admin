@@ -12,6 +12,9 @@ interface DateFieldProps {
   onChange: (value: string) => void;
   placeholder?: string;
   min?: string;
+  max?: string;
+  // Adds a red asterisk after the label.
+  required?: boolean;
   error?: string;
   className?: string;
   labelClassName?: string;
@@ -35,6 +38,8 @@ export default function DateField({
   onChange,
   placeholder = "Select date",
   min,
+  max,
+  required,
   error,
   className,
   labelClassName,
@@ -56,6 +61,7 @@ export default function DateField({
     <div className={cn("flex flex-col gap-2", className)}>
       <label htmlFor={name} className={cn("text-base font-medium text-white", labelClassName)}>
         {label}
+        {required && <span className="text-error"> *</span>}
       </label>
       <div
         onClick={disabled ? undefined : open}
@@ -77,6 +83,7 @@ export default function DateField({
           type="date"
           value={value}
           min={min}
+          max={max}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
           className="absolute inset-0 opacity-0 pointer-events-none"
