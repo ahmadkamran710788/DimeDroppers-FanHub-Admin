@@ -3,17 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { config } from "@/config";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
-import { toE164Phone } from "@/utils/helper";
 import { setFanhubSchoolId } from "@/utils/auth/session";
 import { validateAndSetErrors } from "@/utils/validation";
 import { useAuth } from "@/context/auth";
-import type { AuthSession } from "@/utils/types/auth";
+import type { AuthSession, OrgSignUpOptions } from "@/utils/types/auth";
 import Button from "@/components/common/button";
 import { OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
-import { sponsorRequest, type FieldError } from "@/components/sponsor/sponsor-api";
-import { orgFormToFormData } from "@/components/organization/org-form/form";
+import type { FieldError } from "@/components/sponsor/sponsor-api";
 import { orgAccountSchema, orgBrandingSchema, orgDetailsSchema, orgLocationSchema } from "@/components/auth/schema";
 import BrandPanel from "@/components/auth/sign-up-shared/brand-panel";
 import SignUpSteps from "@/components/auth/sign-up-shared/sign-up-steps";
@@ -27,12 +26,13 @@ import DoneScreen from "@/components/auth/organization-sign-up/done-screen";
 import {
   BRAND_PANEL,
   DONE_STEP,
+  FALLBACK_OPTIONS,
   INITIAL_FORM,
   REVIEW_STEP,
   STEPS,
-  isSchool,
   logoProblem,
   placeSignUpError,
+  signUpFormData,
   type MapField,
   type OrgSignUpForm,
 } from "@/components/auth/organization-sign-up/data";
@@ -45,8 +45,8 @@ interface OrganizationSignUpProps {
 }
 
 // Organisation sign-up: Account → Organization → Location → Branding → Review, then "Account created".
-// Nothing is sent until "Create organization account": the account is created (which signs the organisation
-// in), then the organisation's details are saved the way the Profile page saves them.
+// Nothing is sent until "Create organization account": then one multipart POST creates the account and the
+// organisation together (FANHUB_ORG_SIGNUP_FRONTEND.md) and signs the organisation in.
 export default function OrganizationSignUp({ legal }: OrganizationSignUpProps) {
   const { setAuth } = useAuth();
   const [step, setStep] = useState(1);
@@ -55,12 +55,29 @@ export default function OrganizationSignUp({ legal }: OrganizationSignUpProps) {
   const [logo, setLogo] = useState<{ file: File; url: string } | null>(null);
   const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  // Set once the account exists. If saving the details then fails, the button retries only that, and the
-  // account step can't be changed any more.
-  const [schoolId, setSchoolId] = useState<string | null>(null);
+  // Types, levels, states and the password and logo rules: the built-in copy until the API's answer arrives.
+  const [options, setOptions] = useState<OrgSignUpOptions>(FALLBACK_OPTIONS);
   const contentRef = useRef<HTMLDivElement>(null);
   // The step whose heading last had focus, so the first render doesn't steal it.
   const shownStep = useRef(step);
+
+  // GET /signup/options, from the browser: the API's per-IP limit (shared with sign-in) then counts this
+  // visitor, not our server. Public, so no token; a failure keeps the built-in copy.
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${config.apiUrl}/${routes.api.authSignupOptions}`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        const fresh = json?.data?.[0] as OrgSignUpOptions | undefined;
+        if (!cancelled && fresh?.organizationTypes?.length && fresh.levels?.length && fresh.states?.length) {
+          setOptions(fresh);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Each new step starts at its heading.
   useEffect(() => {
@@ -98,7 +115,7 @@ export default function OrganizationSignUp({ legal }: OrganizationSignUpProps) {
   };
 
   async function pickLogo(file: File) {
-    const problem = await logoProblem(file);
+    const problem = await logoProblem(file, options.logo);
     if (problem) {
       setErrors((prev) => ({ ...prev, logo: problem }));
       return;
@@ -113,13 +130,12 @@ export default function OrganizationSignUp({ legal }: OrganizationSignUpProps) {
   };
 
   // A refusal goes back to the step with the failing field, its message under it; otherwise a toast.
-  function showProblem(status: number, message: string, fieldErrors: FieldError[], prefix = "") {
+  function showProblem(status: number, message: string, fieldErrors: FieldError[]) {
     const problem = placeSignUpError(status, message, fieldErrors);
     if (!problem) {
-      toast.error(prefix + message);
+      toast.error(message);
       return;
     }
-    if (prefix) toast.error(`${prefix}fix the highlighted field and save again.`);
     setStep(problem.step);
     setErrors(problem.errors);
   }
@@ -127,60 +143,26 @@ export default function OrganizationSignUp({ legal }: OrganizationSignUpProps) {
   async function createAccount() {
     setSubmitting(true);
     try {
-      let id = schoolId;
-      if (!id) {
-        // Our /api/auth/signup route keeps the tokens in httpOnly cookies, which signs the organisation in.
-        const res = await fetch(routes.api.proxyAuthSignup, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: form.organizationName.trim(),
-            email: form.accountEmail.trim(),
-            password: form.password,
-            ...(form.accountPhone && { phone: toE164Phone(form.accountPhone) }),
-          }),
-        });
-        const json = await res.json().catch(() => null);
-        if (!res.ok) {
-          const message: string = json?.message || "Couldn't create your account. Please try again.";
-          showProblem(res.status, message, Array.isArray(json?.data?.errors) ? json.data.errors : []);
-          return;
-        }
-        const organization = (json?.data?.[0] as AuthSession | undefined)?.organization;
-        if (!organization?.id) {
-          toast.error("Your account was created, but we couldn't sign you in. Sign in to finish setting up.");
-          return;
-        }
-        id = String(organization.id);
-        // The organisation's id is the school every org endpoint is scoped to.
-        setFanhubSchoolId(id);
-        setAuth(organization);
-        setSchoolId(id);
-      }
-
-      // Sign-up made the organisation with its name only; the rest goes in as the Profile page sends it. Only a
-      // school keeps a level (one picked before switching to another type is dropped).
-      const body = orgFormToFormData(
-        {
-          ...form,
-          organizationName: form.organizationName.trim(),
-          level: isSchool(form.organizationType) ? form.level : "",
-        },
-        logo?.file ?? null
-      );
-      // The API doesn't take the map pin on an organisation yet; sent so it's stored once it does.
-      body.append("latitude", form.latitude.trim());
-      body.append("longitude", form.longitude.trim());
-      const saved = await sponsorRequest("PUT", routes.api.updateSchool(id), { body });
-      if (saved.status < 200 || saved.status >= 300) {
-        showProblem(
-          saved.status,
-          saved.message ?? "Please try again.",
-          saved.errors ?? [],
-          "Your account is created, but your organization details weren't saved: "
-        );
+      // One multipart request (with the logo); our /api/auth/signup route forwards it and keeps the tokens in
+      // httpOnly cookies, which signs the organisation in.
+      const res = await fetch(routes.api.proxyAuthSignup, {
+        method: "POST",
+        body: signUpFormData(form, logo?.file ?? null, options),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        const message: string = json?.message || "Couldn't create your account. Please try again.";
+        showProblem(res.status, message, Array.isArray(json?.data?.errors) ? json.data.errors : []);
         return;
       }
+      const organization = (json?.data?.[0] as AuthSession | undefined)?.organization;
+      if (!organization?.id) {
+        toast.error("Your account was created. Sign in to open your Fan Hub.");
+        return;
+      }
+      // The organisation's id is the school every org endpoint is scoped to.
+      setFanhubSchoolId(String(organization.id));
+      setAuth(organization);
       goTo(DONE_STEP);
     } catch {
       toast.error("Something went wrong. Please try again.");
@@ -197,11 +179,14 @@ export default function OrganizationSignUp({ legal }: OrganizationSignUpProps) {
       setForm((prev) => ({
         ...prev,
         contactName: prev.contactName || prev.fullName.trim(),
-        email: prev.email || prev.accountEmail.trim(),
-        phone: prev.phone || prev.accountPhone,
+        contactEmail: prev.contactEmail || prev.email.trim(),
+        contactPhone: prev.contactPhone || prev.phone,
       }));
     }
-    if (step === 2 && !(await validateAndSetErrors(orgDetailsSchema, form, setErrors))) return;
+    if (step === 2) {
+      const levelTypes = options.organizationTypes.filter((t) => t.hasLevel).map((t) => t.code);
+      if (!(await validateAndSetErrors(orgDetailsSchema(levelTypes), form, setErrors))) return;
+    }
     if (step === 3 && !(await validateAndSetErrors(orgLocationSchema, form, setErrors))) return;
     if (step === 4 && !(await validateAndSetErrors(orgBrandingSchema, form, setErrors))) return;
     if (step === REVIEW_STEP) {
@@ -216,19 +201,9 @@ export default function OrganizationSignUp({ legal }: OrganizationSignUpProps) {
     return <DoneScreen fullName={form.fullName} organizationName={form.organizationName.trim()} />;
   }
 
-  // Once the account exists, its step is done for good.
-  const firstStep = schoolId ? 2 : 1;
   const hasErrors = step < REVIEW_STEP && Object.values(errors).some(Boolean);
   const primaryLabel =
-    step < REVIEW_STEP
-      ? "Continue"
-      : submitting
-        ? schoolId
-          ? "Saving…"
-          : "Creating account…"
-        : schoolId
-          ? "Save organization details"
-          : "Create organization account";
+    step < REVIEW_STEP ? "Continue" : submitting ? "Creating account…" : "Create organization account";
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row">
@@ -240,10 +215,21 @@ export default function OrganizationSignUp({ legal }: OrganizationSignUpProps) {
           <form method="post" onSubmit={handleNext} noValidate className="flex flex-col gap-7">
             <SignUpSteps steps={STEPS} current={step} />
 
-            {step === 1 && <AccountStep form={form} errors={errors} onField={onField} onValue={onValue} />}
-            {step === 2 && <OrganizationStep form={form} errors={errors} onField={onField} onValue={onValue} />}
+            {step === 1 && (
+              <AccountStep form={form} errors={errors} onField={onField} onValue={onValue} password={options.password} />
+            )}
+            {step === 2 && (
+              <OrganizationStep form={form} errors={errors} onField={onField} onValue={onValue} options={options} />
+            )}
             {step === 3 && (
-              <LocationStep form={form} errors={errors} onField={onField} onValue={onValue} onLocation={onLocation} />
+              <LocationStep
+                form={form}
+                errors={errors}
+                onField={onField}
+                onValue={onValue}
+                onLocation={onLocation}
+                states={options.states}
+              />
             )}
             {step === 4 && (
               <BrandingStep
@@ -254,13 +240,14 @@ export default function OrganizationSignUp({ legal }: OrganizationSignUpProps) {
                 logo={logo}
                 onLogo={pickLogo}
                 onRemoveLogo={() => setLogo(null)}
+                logoRules={options.logo}
               />
             )}
             {step === REVIEW_STEP && (
               <ReviewStep
                 form={form}
                 logoName={logo?.file.name ?? null}
-                accountCreated={!!schoolId}
+                options={options}
                 terms={legal.terms}
                 privacy={legal.privacy}
                 agree={agree}
@@ -281,15 +268,13 @@ export default function OrganizationSignUp({ legal }: OrganizationSignUpProps) {
                 >
                   ← Account type
                 </Link>
-              ) : step > firstStep ? (
+              ) : (
                 <Button
                   label="← Back"
                   onClick={() => goTo(step - 1)}
                   disabled={submitting}
                   className={cn(OUTLINE_BUTTON, NAV_BUTTON, "px-[22px] font-semibold")}
                 />
-              ) : (
-                <span />
               )}
               <div className="flex items-center gap-4 ml-auto">
                 {hasErrors && (

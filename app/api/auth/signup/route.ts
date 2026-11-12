@@ -6,14 +6,15 @@ import type { AuthSession } from "@/utils/types/auth";
 export const runtime = "nodejs";
 
 /**
- * Proxy for FanHub Org Auth "Sign up".
+ * Proxy for FanHub Org Auth "Sign up" (FANHUB_ORG_SIGNUP_FRONTEND.md).
  *
- * The browser posts `{ email, name, password, phone? }` here (name is the
- * organisation's; phone is optional, as in the API); this server-only
- * handler forwards to the FanHub API and, on success (201), stores the returned
- * access/refresh tokens as httpOnly cookies. Non-2xx upstream responses are passed
- * straight through so the client can show the backend's message (e.g. 409
- * "An account with this email already exists").
+ * The browser posts the whole sign-up here as multipart form data (the account,
+ * the organisation and the logo file); this server-only handler forwards it
+ * unchanged to the FanHub API (fetch sets the multipart boundary, so no
+ * Content-Type is set here) and, on success (201), stores the returned
+ * access/refresh tokens as httpOnly cookies. The API checks every field; its
+ * errors are passed straight through so the client can place them under their
+ * fields (e.g. 409 "An account with this email already exists").
  */
 export async function POST(request: Request) {
   if (!config.apiUrl) {
@@ -24,25 +25,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { email, name, password, phone } = (await request
-      .json()
-      .catch(() => ({}))) as {
-      email?: string;
-      name?: string;
-      password?: string;
-      phone?: string;
-    };
-    if (!email || !name || !password) {
-      return Response.json(
-        { message: "Email, name and password are required." },
-        { status: 400 }
-      );
+    const form = await request.formData().catch(() => null);
+    if (!form) {
+      return Response.json({ message: "Send the sign-up as form data." }, { status: 400 });
     }
 
     const upstream = await fetch(`${config.apiUrl}/${routes.api.authSignup}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, name, password, ...(phone && { phone }) }),
+      body: form,
     });
 
     const body = await upstream.json().catch(() => ({

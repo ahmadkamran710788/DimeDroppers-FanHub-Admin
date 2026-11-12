@@ -59,6 +59,9 @@ export interface OrganizationProfile extends AuthOrganization {
   city: string | null;
   state: string | null;
   zipCode: string | null;
+  // The organisation's map pin (set at sign-up); null for older organisations without one.
+  latitude: number | null;
+  longitude: number | null;
   timezone: string | null;
   contactName: string | null;
   contactEmail: string | null;
@@ -88,4 +91,18 @@ export interface AuthSession {
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
+}
+
+// Organisation sign-up (FANHUB_ORG_SIGNUP_FRONTEND.md): GET /fanhub/org-auth/signup/options.
+export type OrgSignUpType = "SCHOOL" | "TOURNAMENT" | "CLUB_TEAM" | "LEAGUE";
+export type OrgSignUpLevel = "MIDDLE_SCHOOL" | "HIGH_SCHOOL" | "HIGH_MIDDLE";
+
+export interface OrgSignUpOptions {
+  // `hasLevel`: the type asks for a level (a school).
+  organizationTypes: { code: OrgSignUpType; label: string; hasLevel: boolean }[];
+  levels: { code: OrgSignUpLevel; label: string }[];
+  // US states, `code` "FL".
+  states: { code: string; label: string }[];
+  password: { minLength: number; requiresNumber: boolean };
+  logo: { types: string[]; maxBytes: number; minPixels: number };
 }

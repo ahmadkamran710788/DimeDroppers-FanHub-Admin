@@ -1,7 +1,11 @@
+import { toE164Phone } from "@/utils/helper";
 import type { FieldError } from "@/components/sponsor/sponsor-api";
-import { INITIAL_ORG_FORM, type OrgFormState } from "@/components/organization/org-form/form";
+import { US_STATE_OPTIONS } from "@/components/organization/org-form/form";
+import type { OrgSignUpOptions } from "@/utils/types/auth";
 
-// Organisation sign-up (design: docs/ui/Signin&signup-html). Step 6 is the "account created" screen.
+// Organisation sign-up (design: docs/ui/Signin&signup-html; API: FANHUB_ORG_SIGNUP_FRONTEND.md). Everything is
+// sent once, on the last step, as one multipart POST /fanhub/org-auth/signup that creates the account and the
+// organisation together. Step 6 is the "account created" screen.
 export const STEPS = ["Account", "Organization", "Location", "Branding", "Review"] as const;
 export const REVIEW_STEP = STEPS.length;
 export const DONE_STEP = STEPS.length + 1;
@@ -20,45 +24,107 @@ export const BRAND_PANEL = {
   already: "Already have an account?",
 };
 
-// A school's level, saved as these words (the organisation's level is free text in the API).
-export const SCHOOL_LEVEL_OPTIONS = ["Middle School", "High School", "High Middle"].map((level) => ({
-  label: level,
-  value: level,
-}));
+// GET /signup/options answers fixed lists (constants in the API, which also takes the labels). The form starts
+// from this copy of them and switches to the API's answer when it arrives, so a slow or failed options request
+// never stops a sign-up; the API checks every field on submit anyway.
+export const FALLBACK_OPTIONS: OrgSignUpOptions = {
+  organizationTypes: [
+    { code: "SCHOOL", label: "School", hasLevel: true },
+    { code: "TOURNAMENT", label: "Tournament", hasLevel: false },
+    { code: "CLUB_TEAM", label: "Club Team", hasLevel: false },
+    { code: "LEAGUE", label: "League", hasLevel: false },
+  ],
+  levels: [
+    { code: "MIDDLE_SCHOOL", label: "Middle School" },
+    { code: "HIGH_SCHOOL", label: "High School" },
+    { code: "HIGH_MIDDLE", label: "High / Middle School" },
+  ],
+  // The same 51 (with DC) as the API's, in its order.
+  states: US_STATE_OPTIONS.map((s) => ({ code: s.value, label: s.label })),
+  password: { minLength: 8, requiresNumber: true },
+  logo: { types: ["image/png", "image/jpeg", "image/webp", "image/svg+xml"], maxBytes: 2 * 1024 * 1024, minPixels: 512 },
+};
 
-// Only a school has a level (organizationType holds the ORG_TYPE_OPTIONS value).
-export const isSchool = (organizationType: string) => organizationType === "school";
+// The chosen type asks for a level (a school).
+export const hasLevel = (options: OrgSignUpOptions, type: string) =>
+  options.organizationTypes.some((t) => t.code === type && t.hasLevel);
 
-// The organisation fields are the setup / Profile form's (OrgFormState), so the details are sent exactly as
-// the Profile page sends them. There, `email` and `phone` are the contact's (step 3); the account's are below.
-export interface OrgSignUpForm extends OrgFormState {
+// The form, named as the API's fields (so its error paths are the form's fields).
+export interface OrgSignUpForm {
+  // Step 1: the person who manages the Fan Hub (the sign-in account).
   fullName: string;
-  accountEmail: string;
+  email: string;
   password: string;
   // Optional; masked as typed, "(555) 123-4567".
-  accountPhone: string;
-  // Where the organisation is, from the map (or typed), e.g. "28.538336" and "-81.379234". Sponsors' distance
-  // search uses it. The API doesn't keep it on an organisation yet; it's sent so it's stored once it does.
+  phone: string;
+  // Step 2
+  organizationName: string;
+  // A type code ("SCHOOL"…); "" until chosen.
+  organizationType: string;
+  // A level code ("HIGH_MIDDLE"…), only for a type with a level.
+  level: string;
+  description: string;
+  // Step 3: where the games happen (the pin from the map, e.g. "28.538336"), and who fans and sponsors reach.
+  streetAddress: string;
+  city: string;
+  state: string;
+  zipCode: string;
   latitude: string;
   longitude: string;
+  conference: string;
+  contactName: string;
+  contactPosition: string;
+  contactPhone: string;
+  contactEmail: string;
+  website: string;
+  // Step 4
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  facebookUrl: string;
+  instagramUrl: string;
+  xUrl: string;
+  youtubeUrl: string;
+  tiktokUrl: string;
 }
 
-// The location fields the map fills together.
-export type MapField = "streetAddress" | "city" | "state" | "zipCode" | "latitude" | "longitude";
-
 export const INITIAL_FORM: OrgSignUpForm = {
-  ...INITIAL_ORG_FORM,
+  fullName: "",
+  email: "",
+  password: "",
+  phone: "",
+  organizationName: "",
+  organizationType: "",
+  level: "",
+  description: "",
+  streetAddress: "",
+  city: "",
+  state: "",
+  zipCode: "",
+  latitude: "",
+  longitude: "",
+  conference: "",
+  contactName: "",
+  contactPosition: "",
+  contactPhone: "",
+  contactEmail: "",
+  website: "",
   // The design's starting colours.
   primaryColor: "#FD212C",
   secondaryColor: "#FF525A",
   accentColor: "#F58220",
-  fullName: "",
-  accountEmail: "",
-  password: "",
-  accountPhone: "",
-  latitude: "",
-  longitude: "",
+  facebookUrl: "",
+  instagramUrl: "",
+  xUrl: "",
+  youtubeUrl: "",
+  tiktokUrl: "",
 };
+
+// The location fields the map fills together.
+export type MapField = "streetAddress" | "city" | "state" | "zipCode" | "latitude" | "longitude";
+
+// The API's description limit.
+export const DESCRIPTION_MAX = 2000;
 
 type FieldElement = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 
@@ -72,26 +138,35 @@ export interface StepProps {
   onValue: (field: keyof OrgSignUpForm) => (value: string) => void;
 }
 
-// The logo the API takes: PNG, JPG or SVG, up to 2 MB, a raster one at least 512×512. (A file it refuses
-// comes back as a 500 without a reason, so it's checked here first.)
-export const LOGO_ACCEPT = "image/png,image/jpeg,image/svg+xml";
-export const LOGO_RULE = "PNG, JPG or SVG · at least 512×512 · up to 2 MB";
-const LOGO_TYPES = LOGO_ACCEPT.split(",");
-const LOGO_MAX_BYTES = 2 * 1024 * 1024;
-const LOGO_MIN_PX = 512;
+const TYPE_NAMES: Record<string, string> = {
+  "image/png": "PNG",
+  "image/jpeg": "JPG",
+  "image/webp": "WEBP",
+  "image/svg+xml": "SVG",
+};
 
-// Why the API would refuse this logo, or null when it's fine.
-export async function logoProblem(file: File): Promise<string | null> {
-  if (!LOGO_TYPES.includes(file.type)) return "Use a PNG, JPG or SVG file.";
-  if (file.size > LOGO_MAX_BYTES) return "Use a file of 2 MB or less.";
+// "PNG, JPG, WEBP or SVG": the logo file types the API takes.
+const logoKinds = (types: string[]) => {
+  const names = types.map((t) => TYPE_NAMES[t] ?? t);
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} or ${names[names.length - 1]}` : (names[0] ?? "");
+};
+
+// "PNG, JPG, WEBP or SVG · at least 512×512 · up to 2 MB", from the API's logo rules.
+export const logoRuleText = ({ types, maxBytes, minPixels }: OrgSignUpOptions["logo"]) =>
+  `${logoKinds(types)} · at least ${minPixels}×${minPixels} · up to ${Math.round(maxBytes / (1024 * 1024))} MB`;
+
+// Why the API would refuse this logo (its rules), or null when it's fine. SVG has no size in pixels.
+export async function logoProblem(file: File, { types, maxBytes, minPixels }: OrgSignUpOptions["logo"]): Promise<string | null> {
+  if (!types.includes(file.type)) return `Use a ${logoKinds(types)} file.`;
+  if (file.size > maxBytes) return `Use a file of ${Math.round(maxBytes / (1024 * 1024))} MB or less.`;
   if (file.type === "image/svg+xml") return null;
   const url = URL.createObjectURL(file);
   try {
     const img = new Image();
     img.src = url;
     await img.decode();
-    return img.naturalWidth < LOGO_MIN_PX || img.naturalHeight < LOGO_MIN_PX
-      ? `Use an image at least ${LOGO_MIN_PX}×${LOGO_MIN_PX} pixels (this one is ${img.naturalWidth}×${img.naturalHeight}).`
+    return img.naturalWidth < minPixels || img.naturalHeight < minPixels
+      ? `Use an image at least ${minPixels}×${minPixels} pixels (this one is ${img.naturalWidth}×${img.naturalHeight}).`
       : null;
   } catch {
     return "We couldn't read this image. Try another file.";
@@ -100,37 +175,56 @@ export async function logoProblem(file: File): Promise<string | null> {
   }
 }
 
-// The API's field names (sign-up, then the organisation update) → the form field and the step that holds it.
-const FIELD_STEPS: Record<string, { field: string; step: number }> = {
-  email: { field: "accountEmail", step: 1 },
-  password: { field: "password", step: 1 },
-  phone: { field: "accountPhone", step: 1 },
-  name: { field: "organizationName", step: 2 },
-  organizationType: { field: "organizationType", step: 2 },
-  level: { field: "level", step: 2 },
-  description: { field: "description", step: 2 },
-  streetAddress: { field: "streetAddress", step: 3 },
-  city: { field: "city", step: 3 },
-  state: { field: "state", step: 3 },
-  zipCode: { field: "zipCode", step: 3 },
-  league: { field: "conference", step: 3 },
-  // Both shown under the map.
-  latitude: { field: "latitude", step: 3 },
-  longitude: { field: "latitude", step: 3 },
-  contactName: { field: "contactName", step: 3 },
-  contactPosition: { field: "contactPosition", step: 3 },
-  contactPhone: { field: "phone", step: 3 },
-  contactEmail: { field: "email", step: 3 },
-  website: { field: "website", step: 3 },
-  colors: { field: "primaryColor", step: 4 },
-  secondaryColor: { field: "secondaryColor", step: 4 },
-  accentColor: { field: "accentColor", step: 4 },
-  facebookUrl: { field: "facebookUrl", step: 4 },
-  instagramUrl: { field: "instagramUrl", step: 4 },
-  xUrl: { field: "xUrl", step: 4 },
-  youtubeUrl: { field: "youtubeUrl", step: 4 },
-  tiktokUrl: { field: "tiktokUrl", step: 4 },
-  logo: { field: "logo", step: 4 },
+const PHONE_FIELDS = new Set<keyof OrgSignUpForm>(["phone", "contactPhone"]);
+
+// The multipart body for POST /signup (the guide's §6.2): every filled field trimmed, empty ones left out, the
+// level only for a type that has one, phones as E.164 (as the Profile saves them), and the logo file.
+export function signUpFormData(form: OrgSignUpForm, logo: File | null, options: OrgSignUpOptions): FormData {
+  const data = new FormData();
+  const withLevel = hasLevel(options, form.organizationType);
+  for (const [key, raw] of Object.entries(form) as [keyof OrgSignUpForm, string][]) {
+    if (key === "level" && !withLevel) continue;
+    if (key === "password") {
+      data.append(key, raw);
+      continue;
+    }
+    const value = raw.trim();
+    if (value) data.append(key, PHONE_FIELDS.has(key) ? toE164Phone(value) : value);
+  }
+  if (logo) data.append("logo", logo);
+  return data;
+}
+
+// The step that holds each field (the API's error paths are the form's field names).
+const STEP_OF: Record<string, number> = {
+  fullName: 1,
+  email: 1,
+  password: 1,
+  phone: 1,
+  organizationName: 2,
+  organizationType: 2,
+  level: 2,
+  description: 2,
+  streetAddress: 3,
+  city: 3,
+  state: 3,
+  zipCode: 3,
+  latitude: 3,
+  longitude: 3,
+  conference: 3,
+  contactName: 3,
+  contactPosition: 3,
+  contactPhone: 3,
+  contactEmail: 3,
+  website: 3,
+  primaryColor: 4,
+  secondaryColor: 4,
+  accentColor: 4,
+  facebookUrl: 4,
+  instagramUrl: 4,
+  xUrl: 4,
+  youtubeUrl: 4,
+  tiktokUrl: 4,
 };
 
 export interface SignUpProblem {
@@ -138,12 +232,18 @@ export interface SignUpProblem {
   errors: Record<string, string>;
 }
 
-// Errors only come back on "Create organization account", so a refusal goes back to the step that holds the
-// failing field, with the message under it; null when it belongs to no field (429, 500…) and is shown as a
-// toast. A taken email (409) comes without a `path`.
+// A refusal goes back to the step that holds the failing field, with the message under it; null when it belongs
+// to no field (429, 500…) and is shown as a toast. A taken email (409) and the logo's problems come without a
+// `path`: the email goes to step 1, a "Logo …" message under the logo. The pin's two fields share the map's line.
 export function placeSignUpError(status: number, message: string, errors: FieldError[]): SignUpProblem | null {
-  if (status === 409) return { step: 1, errors: { accountEmail: message } };
-  const placed = errors.flatMap((e) => (FIELD_STEPS[e.path] ? [{ ...FIELD_STEPS[e.path], message: e.message }] : []));
+  if (status === 409) return { step: 1, errors: { email: message } };
+  if (!errors.length && /^logo\b/i.test(message)) return { step: 4, errors: { logo: message } };
+  const placed = errors.flatMap((e) => {
+    const field = e.path.split(".")[0];
+    return STEP_OF[field]
+      ? [{ field: field === "longitude" ? "latitude" : field, step: STEP_OF[field], message: e.message }]
+      : [];
+  });
   if (!placed.length) return null;
   const step = Math.min(...placed.map((p) => p.step));
   const fields: Record<string, string> = {};
