@@ -10,7 +10,8 @@ import Input from "@/components/common/input";
 import { OUTLINE_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
 import StepHeading from "@/components/auth/sign-up-shared/step-heading";
 import { GROUP_HEADING, INPUT } from "@/components/auth/sign-up-shared/styles";
-import { LOGO_ACCEPT, LOGO_RULE, type OrgSignUpForm, type StepProps } from "@/components/auth/organization-sign-up/data";
+import { logoRuleText, type OrgSignUpForm, type StepProps } from "@/components/auth/organization-sign-up/data";
+import type { OrgSignUpOptions } from "@/utils/types/auth";
 
 const HALF = "min-w-0 sm:col-span-3";
 const THIRD = "min-w-0 sm:col-span-2";
@@ -37,10 +38,21 @@ interface BrandingStepProps extends StepProps {
   logo: { file: File; url: string } | null;
   onLogo: (file: File) => void;
   onRemoveLogo: () => void;
+  // The API's logo rules (sign-up options).
+  logoRules: OrgSignUpOptions["logo"];
 }
 
 // Step 4: how the Fan Hub looks. All optional; the colours start at the design's defaults.
-export default function BrandingStep({ form, errors, onField, onValue, logo, onLogo, onRemoveLogo }: BrandingStepProps) {
+export default function BrandingStep({
+  form,
+  errors,
+  onField,
+  onValue,
+  logo,
+  onLogo,
+  onRemoveLogo,
+  logoRules,
+}: BrandingStepProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const tint = /^#[0-9a-fA-F]{6}$/.test(form.primaryColor) ? form.primaryColor : "#3f3f46";
 
@@ -76,9 +88,9 @@ export default function BrandingStep({ form, errors, onField, onValue, logo, onL
                   <Button variant="text" size="sm" label="Remove" onClick={onRemoveLogo} className="text-[#c9b8ff] hover:text-white" />
                 )}
               </div>
-              <span className="text-[13px] text-[#a8a8a8] truncate">{logo ? logo.file.name : LOGO_RULE}</span>
+              <span className="text-[13px] text-[#a8a8a8] truncate">{logo ? logo.file.name : logoRuleText(logoRules)}</span>
             </div>
-            <HiddenFileInput ref={fileRef} accept={LOGO_ACCEPT} onFiles={([file]) => onLogo(file)} />
+            <HiddenFileInput ref={fileRef} accept={logoRules.types.join(",")} onFiles={([file]) => onLogo(file)} />
           </div>
           {errors.logo && <p className="text-sm text-error">{errors.logo}</p>}
         </div>

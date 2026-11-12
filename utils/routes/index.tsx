@@ -108,6 +108,8 @@ export const routes = {
     proxyAuthSignin: "/api/auth/signin",
     authSignup: "fanhub/org-auth/signup",
     proxyAuthSignup: "/api/auth/signup",
+    // Public; read from the browser (the API's per-IP sign-up limit then counts the visitor, not our server).
+    authSignupOptions: "fanhub/org-auth/signup/options",
     authRefresh: "fanhub/org-auth/refresh",
     proxyAuthRefresh: "/api/auth/refresh",
     // Hands the browser the current access token (read from the httpOnly cookie, renewed if

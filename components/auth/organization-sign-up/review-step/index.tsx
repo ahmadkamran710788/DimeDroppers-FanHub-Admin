@@ -5,21 +5,21 @@ import Button from "@/components/common/button";
 import Checkbox from "@/components/common/checkbox";
 import StepHeading from "@/components/auth/sign-up-shared/step-heading";
 import LegalModal from "@/components/auth/sign-up-shared/legal-modal";
-import { isSchool, type OrgSignUpForm } from "@/components/auth/organization-sign-up/data";
-import {
-  ORG_TYPE_OPTIONS,
-  US_STATE_OPTIONS,
-  labelOf,
-} from "@/components/organization/org-form/form";
+import { hasLevel, type OrgSignUpForm } from "@/components/auth/organization-sign-up/data";
+import type { OrgSignUpOptions } from "@/utils/types/auth";
 import type { LegalDocument } from "@/utils/types/sponsor-profile";
+
+// The label for a code in one of the sign-up options' lists ("" when nothing is chosen).
+const labelIn = (list: { code: string; label: string }[], code: string) =>
+  code ? (list.find((o) => o.code === code)?.label ?? code) : "";
 
 // A text button that reads as a link inside the agreement sentence.
 const LINK = "inline text-[15px] font-normal text-[#c9b8ff] underline hover:text-white";
 
 interface Group {
   title: string;
-  // The step to go back to with Edit; none when it can't be changed any more.
-  step?: number;
+  // The step to go back to with Edit.
+  step: number;
   rows: { label: string; value: ReactNode }[];
 }
 
@@ -34,8 +34,8 @@ const swatch = (hex: string) => (
 interface ReviewStepProps {
   form: OrgSignUpForm;
   logoName: string | null;
-  // The account already exists (only the organisation details are left to save), so it can't be edited.
-  accountCreated: boolean;
+  // For the type, level and state labels (sign-up options).
+  options: OrgSignUpOptions;
   terms: LegalDocument | null;
   privacy: LegalDocument | null;
   agree: boolean;
@@ -49,7 +49,7 @@ interface ReviewStepProps {
 export default function ReviewStep({
   form,
   logoName,
-  accountCreated,
+  options,
   terms,
   privacy,
   agree,
@@ -62,12 +62,12 @@ export default function ReviewStep({
   const groups: Group[] = [
     {
       title: "Account",
-      step: accountCreated ? undefined : 1,
+      step: 1,
       rows: [
         { label: "Your full name", value: form.fullName },
-        { label: "Email", value: form.accountEmail },
+        { label: "Email", value: form.email },
         { label: "Password", value: "•".repeat(Math.min(form.password.length, 12)) },
-        { label: "Phone", value: form.accountPhone },
+        { label: "Phone", value: form.phone },
       ],
     },
     {
@@ -75,9 +75,9 @@ export default function ReviewStep({
       step: 2,
       rows: [
         { label: "Organization name", value: form.organizationName },
-        { label: "Organization type", value: form.organizationType && labelOf(ORG_TYPE_OPTIONS, form.organizationType) },
-        // Only a school has a level.
-        ...(isSchool(form.organizationType) ? [{ label: "Level", value: form.level }] : []),
+        { label: "Organization type", value: labelIn(options.organizationTypes, form.organizationType) },
+        // Only a type with a level (a school) has one.
+        ...(hasLevel(options, form.organizationType) ? [{ label: "Level", value: labelIn(options.levels, form.level) }] : []),
         { label: "Description", value: form.description },
       ],
     },
@@ -87,7 +87,7 @@ export default function ReviewStep({
       rows: [
         { label: "Street address", value: form.streetAddress },
         { label: "City", value: form.city },
-        { label: "State", value: form.state && labelOf(US_STATE_OPTIONS, form.state) },
+        { label: "State", value: labelIn(options.states, form.state) },
         { label: "Zip code", value: form.zipCode },
         { label: "Map pin", value: form.latitude && `${form.latitude}, ${form.longitude}` },
         { label: "Conference / division", value: form.conference },
@@ -99,8 +99,8 @@ export default function ReviewStep({
       rows: [
         { label: "Contact name", value: form.contactName },
         { label: "Position", value: form.contactPosition },
-        { label: "Phone", value: form.phone },
-        { label: "Email", value: form.email },
+        { label: "Phone", value: form.contactPhone },
+        { label: "Email", value: form.contactEmail },
         { label: "Website", value: form.website },
       ],
     },
@@ -139,14 +139,12 @@ export default function ReviewStep({
         >
           <div className="flex items-center justify-between gap-3">
             <h3 className="font-display font-black uppercase text-[22px] leading-none">{group.title}</h3>
-            {group.step && (
-              <Button
-                label="Edit"
-                aria-label={`Edit ${group.title.toLowerCase()}`}
-                onClick={() => onEdit(group.step as number)}
-                className="h-[38px] px-[14px] rounded-[8px] border border-[#4f46e5] bg-[#13122b] text-[#e0e7ff] text-sm font-medium backdrop-blur-none hover:bg-[#1d1b40]"
-              />
-            )}
+            <Button
+              label="Edit"
+              aria-label={`Edit ${group.title.toLowerCase()}`}
+              onClick={() => onEdit(group.step)}
+              className="h-[38px] px-[14px] rounded-[8px] border border-[#4f46e5] bg-[#13122b] text-[#e0e7ff] text-sm font-medium backdrop-blur-none hover:bg-[#1d1b40]"
+            />
           </div>
           <dl className="grid grid-cols-[minmax(110px,200px)_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
             {group.rows.map((row) => (

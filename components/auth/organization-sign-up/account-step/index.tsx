@@ -7,10 +7,16 @@ import { SECTION_LABEL } from "@/components/sponsor/styles";
 import StepHeading from "@/components/auth/sign-up-shared/step-heading";
 import { INPUT, OPTIONAL_HINT } from "@/components/auth/sign-up-shared/styles";
 import type { StepProps } from "@/components/auth/organization-sign-up/data";
+import type { OrgSignUpOptions } from "@/utils/types/auth";
 
-// Step 1: the person who manages the organisation's Fan Hub. Their name, email and phone also fill the
-// contact on step 3 (they can change it there).
-export default function AccountStep({ form, errors, onField, onValue }: StepProps) {
+interface AccountStepProps extends StepProps {
+  // The API's password rule (sign-up options).
+  password: OrgSignUpOptions["password"];
+}
+
+// Step 1: the person who manages the organisation's Fan Hub (the sign-in account). Their name, email and phone
+// also fill the contact on step 3 (they can change it there).
+export default function AccountStep({ form, errors, onField, onValue, password }: AccountStepProps) {
   return (
     <section aria-label="Create your account" className="flex flex-col gap-5">
       <StepHeading title="Create your account" description="The person who manages your organization’s Fan Hub." />
@@ -31,11 +37,11 @@ export default function AccountStep({ form, errors, onField, onValue }: StepProp
         label="EMAIL"
         name="org-email"
         type="email"
-        value={form.accountEmail}
-        onChange={onField("accountEmail")}
+        value={form.email}
+        onChange={onField("email")}
         placeholder="you@yourorganization.com"
         autoComplete="email"
-        error={errors.accountEmail}
+        error={errors.email}
         variant="dark"
         labelClassName={SECTION_LABEL}
         inputClassName={INPUT}
@@ -46,9 +52,9 @@ export default function AccountStep({ form, errors, onField, onValue }: StepProp
         type="password"
         value={form.password}
         onChange={onField("password")}
-        placeholder="At least 8 characters"
+        placeholder={`At least ${password.minLength} characters`}
         autoComplete="new-password"
-        hint="Use 8 or more characters with a number."
+        hint={`Use ${password.minLength} or more characters${password.requiresNumber ? " with a number" : ""}.`}
         error={errors.password}
         variant="dark"
         labelClassName={SECTION_LABEL}
@@ -62,10 +68,10 @@ export default function AccountStep({ form, errors, onField, onValue }: StepProp
           </>
         }
         name="org-phone"
-        value={form.accountPhone}
-        onValueChange={onValue("accountPhone")}
+        value={form.phone}
+        onValueChange={onValue("phone")}
         placeholder="(555) 000-0000"
-        error={errors.accountPhone}
+        error={errors.phone}
         variant="dark"
         labelClassName={SECTION_LABEL}
         inputClassName={INPUT}
