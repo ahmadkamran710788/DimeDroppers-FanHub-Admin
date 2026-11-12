@@ -18,7 +18,7 @@ import MarketBreakdown from "@/components/sponsor/campaign-planner/market-breakd
 import PlacementsTable, { ALL_MARKETS } from "@/components/sponsor/campaign-planner/placements-table";
 import PlanComposer, { type FieldErrors } from "@/components/sponsor/campaign-planner/plan-composer";
 import { summarizePlan, type PlanSummary } from "@/components/sponsor/campaign-planner/summarize-plan";
-import { PLAN_STAT_TINTS, fieldOfPath } from "@/components/sponsor/campaign-planner/data";
+import { PLAN_STAT_TINTS, fieldOfPath, type PlannerTier } from "@/components/sponsor/campaign-planner/data";
 import type { SponsorSearchFilters } from "@/utils/types/sponsor-packages";
 import type { SponsorPlan, SponsorPlanRequest } from "@/utils/types/sponsor-plan";
 
@@ -54,11 +54,16 @@ function planStats(summary: PlanSummary): Stat[] {
   ];
 }
 
-// Dime AI's Campaign Planner (national brands): the sponsor sets where, the budget, season, goal, sports and
-// genders, and POST /plans/recommend answers one plan across organizations (schools, clubs and leagues as a
-// whole; tournaments by their events near the locations). Lines can be unticked on screen; nothing is saved or
-// bought.
-export default function CampaignPlanner() {
+interface CampaignPlannerProps {
+  // The signed-in sponsor's brand type, shown on the pill.
+  tier: PlannerTier;
+}
+
+// Dime AI's Campaign Planner (national and regional brands): the sponsor sets where, the budget, season, goal,
+// sports and genders, and POST /plans/recommend answers one plan across organizations (schools, clubs and leagues
+// as a whole; tournaments by their events near the locations). Lines can be unticked on screen; nothing is saved
+// or bought.
+export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
   const stores = useSponsorStores();
   const [filters, setFilters] = useState<SponsorSearchFilters | null>(null);
   const [filtersFailed, setFiltersFailed] = useState(false);
@@ -130,7 +135,7 @@ export default function CampaignPlanner() {
           </p>
         </div>
         <span className="text-[13px] font-bold tracking-[1px] px-3 py-2 rounded-full bg-[#2a2148] text-[#d9ccff] border border-[#4a3f7a]">
-          NATIONAL BRANDS ONLY
+          {tier} BRANDS ONLY
         </span>
       </div>
 

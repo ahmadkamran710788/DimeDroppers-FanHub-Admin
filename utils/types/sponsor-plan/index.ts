@@ -1,6 +1,6 @@
 import type { PackageTier, SponsorOrganizationType } from "@/utils/types/sponsor-packages";
 
-// Campaign Planner (national brands): POST /fanhub/sponsor-packages/plans/recommend
+// Campaign Planner (national and regional brands): POST /fanhub/sponsor-packages/plans/recommend
 // (FANHUB_SPONSOR_PLAN_FRONTEND.md). Money is in cents, distances in miles.
 
 export type PlanGoal = "BRAND_AWARENESS" | "STORE_TRAFFIC" | "COMMUNITY_GOODWILL";

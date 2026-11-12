@@ -6,18 +6,21 @@ import Loader from "@/components/common/loader";
 import Tabs from "@/components/common/tabs";
 import CampaignPlanner from "@/components/sponsor/campaign-planner";
 import FindOrganizations from "@/components/sponsor/find-organizations";
+import type { PlannerTier } from "@/components/sponsor/campaign-planner/data";
+import type { SponsorTypeCode } from "@/utils/types/sponsor-profile";
 
 export type SponsorshipTab = "planner" | "find";
 
-// Both tabs are the Campaign Planner; the badge tells national from local apart.
+// Both tabs are the Campaign Planner; the badge tells national, regional and local apart.
 const TAB_LABELS: Record<SponsorshipTab, string> = {
   planner: "Campaign Planner",
   find: "Campaign Planner",
 };
 
-const TAB_BADGES: Record<SponsorshipTab, string> = {
-  planner: "NATIONAL",
-  find: "LOCAL",
+// The brand types that get Dime AI's planner; any other (a local business, or no brand yet) gets Find Organizations.
+const PLANNER_TIERS: Partial<Record<SponsorTypeCode, PlannerTier>> = {
+  NATIONAL_BRAND: "NATIONAL",
+  REGIONAL_BRAND: "REGIONAL",
 };
 
 interface SponsorshipsProps {
@@ -25,18 +28,20 @@ interface SponsorshipsProps {
   initialTab?: SponsorshipTab;
 }
 
-// The Sponsorships page: Dime AI's Campaign Planner (national) and Find Organizations (local) as tabs. The
-// national planner is only for sponsors whose brand is a national brand (as the API allows), and opens first
-// for them; it waits for the signed-in sponsor so the right tabs show from the start.
+// The Sponsorships page shows one tab, picked by the brand type chosen at sign-up (or changed on the Sponsor
+// Profile): Dime AI's Campaign Planner for a national or regional brand, Find Organizations for a local
+// business. It waits for the signed-in sponsor so the right tab shows from the start.
 export default function Sponsorships({ initialTab }: SponsorshipsProps) {
   const { sponsor, isLoading } = useAuth();
   if (isLoading) return <Loader />;
-  const national = sponsor?.brand?.sponsorType === "NATIONAL_BRAND";
+  const type = sponsor?.brand?.sponsorType;
+  const tier = (type && PLANNER_TIERS[type]) ?? null;
   // Keyed, so a brand type changed on the Sponsor Profile starts the tabs afresh.
   return (
     <SponsorshipTabs
-      key={national ? "national" : "local"}
-      tabs={national ? ["planner", "find"] : ["find"]}
+      key={tier ?? "local"}
+      tabs={tier ? ["planner"] : ["find"]}
+      tier={tier ?? "NATIONAL"}
       initialTab={initialTab}
     />
   );
@@ -44,15 +49,18 @@ export default function Sponsorships({ initialTab }: SponsorshipsProps) {
 
 interface SponsorshipTabsProps {
   tabs: SponsorshipTab[];
+  // The planner's badge; unused when the planner isn't one of the tabs.
+  tier: PlannerTier;
   initialTab?: SponsorshipTab;
 }
 
 // A tab's panel is mounted the first time it opens and then only hidden, so a search or a trimmed plan
 // survives switching back and forth.
-function SponsorshipTabs({ tabs, initialTab }: SponsorshipTabsProps) {
+function SponsorshipTabs({ tabs, tier, initialTab }: SponsorshipTabsProps) {
   const start = initialTab && tabs.includes(initialTab) ? initialTab : tabs[0];
   const [tab, setTab] = useState<SponsorshipTab>(start);
   const [opened, setOpened] = useState<ReadonlySet<SponsorshipTab>>(new Set([start]));
+  const badges: Record<SponsorshipTab, string> = { planner: tier, find: "LOCAL" };
 
   function open(next: SponsorshipTab) {
     setTab(next);
@@ -63,11 +71,11 @@ function SponsorshipTabs({ tabs, initialTab }: SponsorshipTabsProps) {
 
   return (
     <div className="flex flex-col gap-8">
-      <Tabs tabs={tabs} active={tab} onChange={open} labels={TAB_LABELS} badges={TAB_BADGES} className="flex-wrap" />
+      <Tabs tabs={tabs} active={tab} onChange={open} labels={TAB_LABELS} badges={badges} className="flex-wrap" />
       {tabs.map((t) =>
         opened.has(t) ? (
-          <div key={t} role="tabpanel" aria-label={`${TAB_LABELS[t]} (${TAB_BADGES[t].toLowerCase()})`} hidden={t !== tab}>
-            {t === "planner" ? <CampaignPlanner /> : <FindOrganizations />}
+          <div key={t} role="tabpanel" aria-label={`${TAB_LABELS[t]} (${badges[t].toLowerCase()})`} hidden={t !== tab}>
+            {t === "planner" ? <CampaignPlanner tier={tier} /> : <FindOrganizations />}
           </div>
         ) : null
       )}

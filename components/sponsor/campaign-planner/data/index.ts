@@ -1,9 +1,12 @@
 import { ALL, type MultiSelectValue } from "@/components/common/multi-select";
 import type { PlanGoal } from "@/utils/types/sponsor-plan";
 
-// Campaign Planner (national brands), on POST /fanhub/sponsor-packages/plans/recommend
+// Campaign Planner (national and regional brands), on POST /fanhub/sponsor-packages/plans/recommend
 // (FANHUB_SPONSOR_PLAN_FRONTEND.md). The seasons, sports and genders come from
 // GET /fanhub/sponsor-packages/filters, the brand's locations from GET /fanhub/sponsor-profile/locations.
+
+// The brands the planner is for (from the sponsor's brand type), shown on its tab and its pill.
+export type PlannerTier = "NATIONAL" | "REGIONAL";
 
 // The goals the API takes (GET /filters doesn't list them).
 export const GOAL_OPTIONS: { label: string; value: PlanGoal }[] = [
