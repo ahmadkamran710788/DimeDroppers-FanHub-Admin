@@ -328,6 +328,10 @@ export const routes = {
     sponsorCartActivate: "fanhub/sponsor-packages/activations/batch",
     // Campaign Planner (national brands): POST, one plan across organisations; not saved, nothing bought.
     sponsorPlanRecommend: "fanhub/sponsor-packages/plans/recommend",
+    // Purchased inventory (FANHUB_SPONSOR_PURCHASED_INVENTORY_FRONTEND.md). GET the slot chips with counts, and
+    // the organisations with their packages and slots (?category=&catalogKeys=&page=&limit=).
+    sponsorInventorySlots: "fanhub/sponsor-packages/inventory/slots",
+    sponsorInventory: "fanhub/sponsor-packages/inventory",
     // Fundable Needs, organisation side (FANHUB_FUNDABLE_NEEDS_FRONTEND.md §4). GET what the create form
     // offers, the teams (?eventId= for a tournament), a school's games, the stat cards and the cards (paged).
     orgNeedOptions: "fanhub/org/needs/options",
