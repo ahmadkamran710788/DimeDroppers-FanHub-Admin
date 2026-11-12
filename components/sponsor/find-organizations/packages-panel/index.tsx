@@ -11,6 +11,10 @@ import GamesBreakdown, { basisCount, priceBasisText } from "@/components/sponsor
 import PackageCard from "@/components/sponsor/find-organizations/package-card";
 import PhysicalAddOns from "@/components/sponsor/find-organizations/physical-add-ons";
 import StoreChecklist from "@/components/sponsor/store-checklist";
+import CheckoutPaymentModal from "@/components/sponsor/checkout/checkout-payment-modal";
+import PaymentChoice from "@/components/sponsor/checkout/payment-choice";
+import { toastOutcome, type CheckoutOutcome } from "@/components/sponsor/checkout/settle-checkout";
+import { useCheckout } from "@/components/sponsor/checkout/use-checkout";
 import { nearText, type EventFilters } from "@/components/sponsor/find-organizations/data";
 import {
   activeActivations,
@@ -25,7 +29,7 @@ import { routes } from "@/utils/routes";
 import type {
   ActivatePackageRequest,
   NearStores,
-  PackageActivation,
+  PackageActivationResult,
   SponsorCartKind,
   SponsorEventOption,
   SponsorNearLocation,
@@ -55,7 +59,7 @@ const STORE_TAKEN = /already has this package or physical asset active here/i;
 
 const NO_STORES: NearStores = { nearLocations: [], nearLocationCount: 0 };
 
-// What the sponsor is about to activate, with the idempotency key made when the confirm opened.
+// What the sponsor is about to activate (its payment and idempotency key are in useCheckout).
 interface Pending {
   label: string;
   totalCents: number;
@@ -67,7 +71,12 @@ interface Pending {
   picked: string[];
   // Near stores the API didn't list (it lists the nearest 10).
   moreStores: number;
-  key: string;
+}
+
+// An activation whose new payment method is being entered in Stripe's form.
+interface Paying {
+  name: string;
+  body: ActivatePackageRequest;
 }
 
 interface PackagesPanelProps {
@@ -85,8 +94,8 @@ interface PackagesPanelProps {
 
 // The selected organization's packages and physical assets, priced for it (teams) or for one of its
 // events (games). A tournament picks an event first. Each one is activated on its own or added to the
-// cart to activate with others, for the brand's stores near it (ticked in the confirm). Activating is
-// final: no payment yet.
+// cart to activate with others, for the brand's stores near it (ticked in the confirm). It is paid in the
+// confirm (a saved method, or a new one in Stripe's form) and goes live once paid.
 export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMiles, onActivated }: PackagesPanelProps) {
   const isTournament = org.organizationType === "TOURNAMENT";
   const cart = useSponsorCart();
@@ -97,6 +106,8 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
   // Bumped to refetch the packages (after a 409 or an activation).
   const [reloads, setReloads] = useState(0);
   const [pending, setPending] = useState<Pending | null>(null);
+  const pay = useCheckout();
+  const [paying, setPaying] = useState<Paying | null>(null);
   // What the sponsor already has active here (cart item key → its stores).
   const [activeLoaded, setActiveLoaded] = useState<{ key: string; active: ActiveActivations } | null>(null);
 
@@ -213,9 +224,9 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
       taken,
       picked: freeStores(choice).map((s) => s.id),
       moreStores: near.nearLocationCount - nearStores.length,
-      // One key per confirmation: a retry of the same click never makes a second activation.
-      key: crypto.randomUUID(),
     });
+    // Fresh saved methods and a new idempotency key: a retry of the same click never pays twice.
+    pay.start();
   };
 
   // The stores the open confirm is for: once the active list is reloaded (after a 409), a store that got
@@ -243,22 +254,45 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
     else toast.success(`${name} added to your cart`);
   };
 
+  // A $0 activation is live at once, with nothing to pay.
+  const pendingIsPaid = !!pending && pending.totalCents > 0;
+
+  // How the payment ended (not Stripe's form): tells the sponsor, and once it is live or clearing, takes its
+  // copy out of the cart (it would be activated a second time) and refreshes what's active. false keeps the
+  // confirm open, to pay another way.
+  const finish = (outcome: CheckoutOutcome, name: string, body: ActivatePackageRequest) => {
+    toastOutcome(outcome, `${name} activated for ${org.name ?? "the organization"}`);
+    if (outcome.kind === "failed") return false;
+    if (outcome.kind === "paid" || outcome.kind === "processing") cart.remove(cartItemKey(body));
+    setReloads((n) => n + 1);
+    onActivated?.();
+    return true;
+  };
+
   const activate = async () => {
     if (!pending || needsStore) return false;
+    if (pendingIsPaid && !pay.choice) return false;
     const body = target(pending.choice, pending.totalCents, pendingPicked);
-    const r = await sponsorRequest<PackageActivation>("POST", routes.api.sponsorActivations, {
-      body,
-      headers: { "Idempotency-Key": pending.key },
+    const r = await sponsorRequest<PackageActivationResult>("POST", routes.api.sponsorActivations, {
+      body: pendingIsPaid ? { ...body, ...pay.choice } : body,
+      headers: { "Idempotency-Key": pay.key },
     });
     if (r.view) {
-      toast.success(`${r.view.packageName} activated for ${org.name ?? "the organization"}`);
-      // A copy left in the cart would activate it a second time.
-      cart.remove(cartItemKey(body));
-      setReloads((n) => n + 1);
-      onActivated?.();
-      return true;
+      const outcome = await pay.settle(r.view.checkout);
+      if (outcome.kind === "needs-form") {
+        // The confirm closes; Stripe's form opens for the new method.
+        setPaying({ name: r.view.packageName, body });
+        return true;
+      }
+      return finish(outcome, r.view.packageName, body);
     }
     toast.error(r.message ?? "Couldn't activate, please try again.");
+    // A declined payment (Stripe's own sentence) or a method that can't pay: nothing was charged, and the
+    // confirm stays open to pay another way, with a new key (the same one would answer this failure again).
+    if (r.status === 400) {
+      pay.renewKey();
+      return false;
+    }
     if (r.status !== 409) return false;
     // A store that got it meanwhile: reload what's active, and keep the confirm open with that store taken.
     // Any other 409 is a price change: reload and close, so the new price shows before asking again.
@@ -377,15 +411,18 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
         isOpen={!!pending}
         onClose={() => setPending(null)}
         title="Activate"
+        className="max-h-[calc(100dvh-2rem)] overflow-y-auto"
         message={
-          pending
-            ? `Activate ${pending.label} with ${org.name ?? "this organization"} for ${formatCents(pending.totalCents, pending.currency)}? It starts right away; there's no payment step yet.`
-            : ""
+          !pending
+            ? ""
+            : pendingIsPaid
+              ? `Activate ${pending.label} with ${org.name ?? "this organization"} for ${formatCents(pending.totalCents, pending.currency)}? It goes live once paid.`
+              : `Activate ${pending.label} with ${org.name ?? "this organization"}? It's free and starts right away.`
         }
-        confirmLabel="Activate"
-        busyLabel="Activating…"
+        confirmLabel={pending && pendingIsPaid ? `Pay ${formatCents(pending.totalCents, pending.currency)}` : "Activate"}
+        busyLabel={pendingIsPaid ? "Paying…" : "Activating…"}
         onConfirm={activate}
-        confirmDisabled={needsStore}
+        confirmDisabled={needsStore || (pendingIsPaid && !pay.choice)}
       >
         {pending && pendingHasStores && radiusMiles !== null && (
           <StoreChecklist
@@ -398,7 +435,28 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
             onChange={(picked) => setPending((prev) => prev && { ...prev, picked })}
           />
         )}
+        {pendingIsPaid && <PaymentChoice checkout={pay} />}
       </ConfirmModal>
+
+      <CheckoutPaymentModal
+        checkout={pay.formCheckout}
+        summary={paying ? `${paying.name} with ${org.name ?? "this organization"}` : ""}
+        returnPath={routes.ui.sponsor.mySponsorshipsPaymentReturn}
+        closeLabel="Cancel payment"
+        onClose={() => {
+          setPaying(null);
+          pay.abandonForm().then(() => setReloads((n) => n + 1));
+        }}
+        onDone={(outcome) => {
+          pay.closeForm();
+          setPaying(null);
+          if (!paying) return;
+          // The form only reports once Stripe took the payment; a backend that still asks for it isn't done yet.
+          const settled: CheckoutOutcome =
+            outcome.kind === "needs-form" ? { kind: "pending", checkout: outcome.checkout } : outcome;
+          finish(settled, paying.name, paying.body);
+        }}
+      />
     </section>
   );
 }

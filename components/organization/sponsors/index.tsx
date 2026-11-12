@@ -34,6 +34,9 @@ const STATUS_COLOR: Record<PackageActivationStatus, string> = {
   ACTIVE: "bg-success",
   EXPIRED: "bg-white/30",
   CANCELLED: "bg-error/70",
+  // The API never lists unpaid activations to the organisation; here only to complete the type.
+  PENDING_PAYMENT: "bg-white/30",
+  PAYMENT_FAILED: "bg-error/70",
 };
 
 const SLICE_COLORS = ["#3030FF", "#638BFE", "#FF8D2A", "#65C162", "#FF34BF", "rgba(255,255,255,0.1)"];

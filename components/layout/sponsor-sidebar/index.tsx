@@ -4,7 +4,7 @@ import Image from "next/image";
 import { routes } from "@/utils/routes";
 import SidebarFrame, { type NavSection } from "@/components/layout/sidebar-frame";
 import { useSponsorAccount } from "@/components/sponsor/use-sponsor-account";
-import { Heart, Image as ImageIcon, Search } from "lucide-react";
+import { CreditCard, Heart, Image as ImageIcon, Search } from "lucide-react";
 
 // Pages without a route yet link to "#".
 const NAV_SECTIONS: NavSection[] = [
@@ -13,6 +13,11 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { icon: <ImageIcon className="size-6" strokeWidth={1.5} />, label: "Brand Assets", href: routes.ui.sponsor.brandAssets },
       { icon: "/icons/icon-user.svg", label: "Sponsor Profile", href: routes.ui.sponsor.profile },
+      {
+        icon: <CreditCard className="size-6" strokeWidth={1.5} />,
+        label: "Payment Methods",
+        href: routes.ui.sponsor.paymentMethods,
+      },
     ],
   },
   {

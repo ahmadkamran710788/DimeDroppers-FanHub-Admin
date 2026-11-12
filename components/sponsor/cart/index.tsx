@@ -9,6 +9,13 @@ import ConfirmModal from "@/components/common/confirm-modal";
 import Loader from "@/components/common/loader";
 import { CARD, OUTLINE_BUTTON, PRIMARY_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
 import CartLine from "@/components/sponsor/cart/cart-line";
+import CheckoutPaymentModal from "@/components/sponsor/checkout/checkout-payment-modal";
+import PaymentChoice from "@/components/sponsor/checkout/payment-choice";
+import { toastOutcome, type CheckoutOutcome } from "@/components/sponsor/checkout/settle-checkout";
+import { useCheckout } from "@/components/sponsor/checkout/use-checkout";
+import { usePaymentReturn } from "@/components/sponsor/checkout/use-payment-return";
+import type { ReturnedPayment } from "@/components/sponsor/checkout/returned-payment";
+import { BANK_CLEARING_TEXT } from "@/components/sponsor/payment-methods/data";
 import { activeActivations, formatCents, sponsorRequest, type ActiveActivations } from "@/components/sponsor/sponsor-api";
 import { useSponsorCart } from "@/context/sponsor-cart";
 import { routes } from "@/utils/routes";
@@ -18,20 +25,48 @@ const LINK_BUTTON = "inline-flex items-center justify-center h-12 px-[22px] roun
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+// A checkout that went through: live now ("paid") or a bank payment clearing ("processing"). The cart's
+// activations are known after Activate all, not after coming back from Stripe.
+interface Done {
+  kind: "paid" | "processing";
+  result?: SponsorCartActivation;
+  methodLabel: string | null;
+}
+
+interface SponsorCartProps {
+  // From ?payment=&payment_intent= (Stripe's return_url after a redirect-based method).
+  returnedPayment?: ReturnedPayment;
+}
+
 // The sponsor's cart: every package and physical asset picked on Find Organizations, priced now
-// (POST /activations/quote), and activated together (POST /activations/batch): either every item
-// starts, or none does. No payment yet.
-export default function SponsorCart() {
+// (POST /activations/quote), and activated together (POST /activations/batch) as one payment: either every
+// item starts once paid, or none does.
+export default function SponsorCart({ returnedPayment }: SponsorCartProps) {
   const cart = useSponsorCart();
   const { lines } = cart;
   const items = useMemo(() => lines.map((l) => l.item), [lines]);
   const [quoted, setQuoted] = useState<{ key: string; quote?: SponsorCartQuote; error?: string } | null>(null);
   // Bumped to price the cart again (Retry, or after a refused Activate all).
   const [requotes, setRequotes] = useState(0);
-  // The Idempotency-Key of the open Activate all confirm; a retry of it never activates twice.
-  const [checkoutKey, setCheckoutKey] = useState<string | null>(null);
+  // The Activate all confirm is open; its payment and idempotency key are in useCheckout.
+  const [confirming, setConfirming] = useState(false);
+  const pay = useCheckout();
+  // The batch answer while Stripe's form takes its payment.
+  const [paying, setPaying] = useState<SponsorCartActivation | null>(null);
   const [clearing, setClearing] = useState(false);
-  const [activated, setActivated] = useState<SponsorCartActivation | null>(null);
+  const [done, setDone] = useState<Done | null>(null);
+
+  // Paid or clearing: the cart is bought, so it empties. Otherwise it stays, to try again.
+  const finish = (outcome: CheckoutOutcome, result?: SponsorCartActivation) => {
+    const count = result?.activations.length;
+    toastOutcome(outcome, count ? `${plural(count, "sponsorship")} activated` : "Payment received");
+    if (outcome.kind !== "paid" && outcome.kind !== "processing") return false;
+    cart.clear();
+    setDone({ kind: outcome.kind, result, methodLabel: outcome.checkout?.methodLabel ?? null });
+    return true;
+  };
+
+  usePaymentReturn(returnedPayment, routes.ui.sponsor.cart, (outcome) => finish(outcome));
 
   const quoteKey = `${JSON.stringify(items)}|${requotes}`;
   useEffect(() => {
@@ -82,29 +117,39 @@ export default function SponsorCart() {
   const unavailableCount = quote?.items.filter((q) => !q.isAvailable).length ?? 0;
   const organizationCount = new Set(lines.map((l) => l.organization.id)).size;
 
+  // A $0 cart is live at once, with nothing to pay.
+  const isPaid = (quote?.totalCents ?? 0) > 0;
+
   const activateAll = async () => {
-    if (!checkoutKey) return false;
+    if (isPaid && !pay.choice) return false;
     const r = await sponsorRequest<SponsorCartActivation>("POST", routes.api.sponsorCartActivate, {
-      body: { items },
-      headers: { "Idempotency-Key": checkoutKey },
+      body: isPaid ? { items, ...pay.choice } : { items },
+      headers: { "Idempotency-Key": pay.key },
     });
     if (r.view) {
-      setActivated(r.view);
-      cart.clear();
-      toast.success(`${plural(r.view.activations.length, "sponsorship")} activated`);
-      return true;
+      const result = r.view;
+      const outcome = await pay.settle(result.checkout);
+      if (outcome.kind === "needs-form") {
+        // The confirm closes; Stripe's form opens for the new method.
+        setPaying(result);
+        return true;
+      }
+      // Declined after Stripe's check: the confirm stays open, to pay another way.
+      return finish(outcome, result) || outcome.kind !== "failed";
     }
     toast.error(r.message ?? "Couldn't activate your cart, please try again.");
-    // Refused (an item can't be activated, or a price changed): nothing was created; price the cart
-    // again so the lines show why. Anything else keeps the confirm open to retry with the same key.
+    // Refused (an item can't be activated, a price changed, or the payment was declined): nothing was
+    // charged; price the cart again so the lines show why, with a new key for the next attempt. Anything
+    // else keeps the confirm open to retry with the same key.
     if (r.status === 400 || r.status === 409) {
+      pay.renewKey();
       setRequotes((n) => n + 1);
       return true;
     }
     return false;
   };
 
-  if (activated) return <Activated result={activated} />;
+  if (done) return <Activated done={done} />;
 
   return (
     <div className="flex flex-col gap-10">
@@ -202,7 +247,11 @@ export default function SponsorCart() {
             )}
             <Button
               label="Activate all"
-              onClick={() => setCheckoutKey(crypto.randomUUID())}
+              onClick={() => {
+                // Fresh saved methods and a new idempotency key: a retry of this confirm never pays twice.
+                pay.start();
+                setConfirming(true);
+              }}
               disabled={quoting || !quote?.canActivate || alreadyActiveCount > 0 || needsStoreCount > 0}
               fullWidth
               className={cn(PRIMARY_BUTTON, "h-12 px-[22px] rounded-[10px] text-[15px]")}
@@ -218,17 +267,39 @@ export default function SponsorCart() {
       )}
 
       <ConfirmModal
-        isOpen={!!checkoutKey}
-        onClose={() => setCheckoutKey(null)}
+        isOpen={confirming}
+        onClose={() => setConfirming(false)}
         title="Activate all"
+        className="max-h-[calc(100dvh-2rem)] overflow-y-auto"
         message={
-          quote
-            ? `Activate ${plural(lines.length, "item")} with ${plural(organizationCount, "organization")} for ${formatCents(quote.totalCents, currency)}? They start right away; there's no payment step yet.`
-            : ""
+          !quote
+            ? ""
+            : isPaid
+              ? `Activate ${plural(lines.length, "item")} with ${plural(organizationCount, "organization")} for ${formatCents(quote.totalCents, currency)}, paid together? They go live once paid.`
+              : `Activate ${plural(lines.length, "item")} with ${plural(organizationCount, "organization")}? They're free and start right away.`
         }
-        confirmLabel="Activate all"
-        busyLabel="Activating…"
+        confirmLabel={quote && isPaid ? `Pay ${formatCents(quote.totalCents, currency)}` : "Activate all"}
+        busyLabel={isPaid ? "Paying…" : "Activating…"}
         onConfirm={activateAll}
+        confirmDisabled={isPaid && !pay.choice}
+      >
+        {isPaid && <PaymentChoice checkout={pay} />}
+      </ConfirmModal>
+      <CheckoutPaymentModal
+        checkout={pay.formCheckout}
+        summary={`${plural(lines.length, "item")} with ${plural(organizationCount, "organization")}`}
+        returnPath={routes.ui.sponsor.cartPaymentReturn}
+        closeLabel="Cancel payment"
+        onClose={() => {
+          setPaying(null);
+          pay.abandonForm().then(() => setRequotes((n) => n + 1));
+        }}
+        onDone={(outcome) => {
+          const result = paying ?? undefined;
+          pay.closeForm();
+          setPaying(null);
+          finish(outcome.kind === "needs-form" ? { kind: "pending", checkout: outcome.checkout } : outcome, result);
+        }}
       />
       <ConfirmModal
         isOpen={clearing}
@@ -247,21 +318,29 @@ export default function SponsorCart() {
   );
 }
 
-// After Activate all: what started, and the way back to more organizations.
-function Activated({ result }: { result: SponsorCartActivation }) {
+// After Activate all: what was bought and how it was paid, and the way back to more organizations.
+function Activated({ done }: { done: Done }) {
+  const { result, kind, methodLabel } = done;
+  const clearing = kind === "processing";
+  const summary = result
+    ? `${plural(result.activations.length, "sponsorship")} ${clearing ? "bought" : "started"} for ${formatCents(result.totalCents, result.currency)}${methodLabel ? `, paid with ${methodLabel}` : ""}.`
+    : `Your payment went through${methodLabel ? ` with ${methodLabel}` : ""}.`;
+
   return (
     <div className="flex flex-col gap-10">
       <div className="flex flex-col">
         <h2 className="font-display font-extrabold text-[32px] sm:text-[40px] lg:text-[56px] lg:leading-[68px] uppercase leading-none">
-          ACTIVATED
+          {clearing ? "PAYMENT ON ITS WAY" : "ACTIVATED"}
         </h2>
-        <p className="text-base leading-[26px] text-[#e5e5e5]">
-          {`${plural(result.activations.length, "sponsorship")} started for ${formatCents(result.totalCents, result.currency)}.`}
-        </p>
+        <p className="text-base leading-[26px] text-[#e5e5e5]">{summary}</p>
+        {clearing && <p className="text-base leading-[26px] text-[#f0c36a]">{BANK_CLEARING_TEXT}</p>}
       </div>
       <section aria-label="Activated sponsorships" className={cn(CARD, "rounded-[8px] p-4 lg:p-[26px] flex flex-col gap-3")}>
+        {!result && (
+          <p className="text-[15px] text-[#a8a8a8]">Your sponsorships and their status are in My Sponsorships.</p>
+        )}
         <ul className="flex flex-col gap-2">
-          {result.activations.map((a) => (
+          {result?.activations.map((a) => (
             <li
               key={a.id}
               className="rounded-[12px] border border-[#262626] bg-[#0b0b0b] p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3"

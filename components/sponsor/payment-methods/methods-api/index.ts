@@ -1,0 +1,41 @@
+import toast from "react-hot-toast";
+import { sponsorRequest } from "@/components/sponsor/sponsor-api";
+import { routes } from "@/utils/routes";
+import type { RemovedPaymentMethod, SponsorPaymentMethod } from "@/utils/types/sponsor-payments";
+
+// POST /payment-methods once Stripe confirmed the SetupIntent: the saved method, or null (toasted). A bank
+// account entered by hand comes back PENDING_VERIFICATION, waiting for Stripe's $0.01 deposit.
+export async function saveMethod(body: {
+  setupIntentId: string;
+  holderName?: string;
+  setDefault?: boolean;
+}): Promise<SponsorPaymentMethod | null> {
+  const r = await sponsorRequest<SponsorPaymentMethod>("POST", routes.api.sponsorPaymentMethods, { body });
+  if (!r.view) {
+    toast.error(r.message ?? "Couldn't save this payment method, please try again.");
+    return null;
+  }
+  if (r.view.status === "PENDING_VERIFICATION")
+    toast.success(
+      `${r.view.label} saved. Stripe sends it a $0.01 deposit with a code (like SM11AA) within 1–2 business days: enter it under Verify.`,
+      { duration: 8000 }
+    );
+  else toast.success(`${r.view.label} saved`);
+  return r.view;
+}
+
+// PATCH /payment-methods/:id/default: the other methods of its type lose their default.
+export async function makeDefault(method: SponsorPaymentMethod): Promise<boolean> {
+  const r = await sponsorRequest<SponsorPaymentMethod>("PATCH", routes.api.sponsorPaymentMethodDefault(method.id));
+  if (r.view) toast.success(`${method.label} is now your default ${method.typeLabel.toLowerCase()}`);
+  else toast.error(r.message ?? "Couldn't change the default, please try again.");
+  return !!r.view;
+}
+
+// DELETE /payment-methods/:id (detached in Stripe too). 409 while a payment with it is waiting or clearing.
+export async function removeMethod(method: SponsorPaymentMethod): Promise<boolean> {
+  const r = await sponsorRequest<RemovedPaymentMethod>("DELETE", routes.api.sponsorPaymentMethod(method.id));
+  if (r.view) toast.success(`${method.label} removed`);
+  else toast.error(r.message ?? "Couldn't remove it, please try again.");
+  return !!r.view;
+}

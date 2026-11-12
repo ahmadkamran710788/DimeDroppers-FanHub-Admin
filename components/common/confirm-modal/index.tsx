@@ -21,6 +21,8 @@ interface ConfirmModalProps {
   confirmDisabled?: boolean;
   // The close button's label ("Cancel" by default); change it when the action itself is a cancel.
   cancelLabel?: string;
+  // Extra utilities for the popup, e.g. a max height that scrolls when `children` is long.
+  className?: string;
 }
 
 // Yes/no popup for an action that needs a second look (remove, withdraw, delete…).
@@ -36,6 +38,7 @@ export default function ConfirmModal({
   children,
   confirmDisabled = false,
   cancelLabel = "Cancel",
+  className,
 }: ConfirmModalProps) {
   const [busy, setBusy] = useState(false);
 
@@ -47,7 +50,7 @@ export default function ConfirmModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title}>
+    <Modal isOpen={isOpen} onClose={onClose} title={title} className={className}>
       <div className="w-full flex flex-col gap-6">
         <p className="text-midnight-navy/80 text-base leading-6">{message}</p>
         {children}

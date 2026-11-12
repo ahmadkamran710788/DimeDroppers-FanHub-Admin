@@ -1,9 +1,13 @@
 // Sponsor packages: /fanhub/sponsor-packages/* (sponsor token). All money is in cents.
 
+import type { OrderPayment, PaymentChoice, SponsorCheckout } from "@/utils/types/sponsor-payments";
+
 export type PackageTier = "COMMUNITY_PARTNER" | "FAN_ENGAGEMENT_PARTNER" | "PRESENTING_PARTNER";
 export type SponsorOrganizationType = "SCHOOL" | "TOURNAMENT" | "CLUB_TEAM" | "LEAGUE";
 export type PriceBasis = "TEAMS" | "GAMES";
-export type PackageActivationStatus = "ACTIVE" | "CANCELLED" | "EXPIRED";
+// PENDING_PAYMENT: waiting for its payment (a bank payment clearing, or one still to finish); PAYMENT_FAILED:
+// its payment didn't go through. Only ACTIVE / EXPIRED / CANCELLED were bought.
+export type PackageActivationStatus = "ACTIVE" | "CANCELLED" | "EXPIRED" | "PENDING_PAYMENT" | "PAYMENT_FAILED";
 export type UnavailableReason =
   | "NO_SLOTS"
   | "NO_TEAMS"
@@ -245,12 +249,18 @@ export interface PackageActivation {
   currency: string;
   factors: PricingFactor[];
   lines: Omit<PackageSlot, "categoryLabel">[];
+  // Created at first; reset to when it was paid once its payment succeeds.
   activatedAt: string;
   endsAt: string | null;
   cancelledAt: string | null;
   cancelReason: string | null;
   expiredAt: string | null;
+  // How it was paid; absent from an older API.
+  payment?: OrderPayment;
 }
+
+// POST /activations: the activation and its payment (null for a $0 one, which is live at once).
+export type PackageActivationResult = PackageActivation & { checkout: SponsorCheckout | null };
 
 export interface PackageActivationsPage {
   items: PackageActivation[];
@@ -304,9 +314,14 @@ export interface SponsorCartQuote {
   currency: string;
 }
 
+// POST /activations/batch body: every item, paid together as one payment.
+export type SponsorCartActivateRequest = { items: SponsorCartItem[] } & PaymentChoice;
+
 // POST /activations/batch (201, or 200 for a repeated Idempotency-Key).
 export interface SponsorCartActivation {
   activations: PackageActivation[];
   totalCents: number;
   currency: string;
+  // The cart's one payment; null for a $0 cart (live at once).
+  checkout: SponsorCheckout | null;
 }

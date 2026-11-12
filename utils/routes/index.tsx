@@ -87,6 +87,16 @@ export const routes = {
       cart: "/sponsor/cart",
       mySponsorships: "/sponsor/my-sponsorships",
       profile: "/sponsor/profile",
+      // Saved payment methods and payment history, as tabs; ?tab= picks one.
+      paymentMethods: "/sponsor/payment-methods",
+      paymentMethodsTab: (tab: "methods" | "history") => `/sponsor/payment-methods?tab=${tab}`,
+      // Stripe's return_url after a redirect-based method (Cash App, some banks): the page saves the method
+      // (?setup=) or confirms the payment (?payment=) on load. Stripe appends its own parameters.
+      paymentMethodsSetupReturn: (setupIntentId: string) =>
+        `/sponsor/payment-methods?setup=${encodeURIComponent(setupIntentId)}`,
+      cartPaymentReturn: (paymentId: string) => `/sponsor/cart?payment=${encodeURIComponent(paymentId)}`,
+      mySponsorshipsPaymentReturn: (paymentId: string) =>
+        `/sponsor/my-sponsorships?payment=${encodeURIComponent(paymentId)}`,
     },
   },
 
@@ -328,6 +338,23 @@ export const routes = {
     // (FANHUB_SPONSOR_CART_GENDER_PHYSICAL_ASSETS_FRONTEND.md).
     sponsorCartQuote: "fanhub/sponsor-packages/activations/quote",
     sponsorCartActivate: "fanhub/sponsor-packages/activations/batch",
+    // Paying for activations with Stripe (FANHUB_SPONSOR_PAYMENTS_FRONTEND.md). Saved methods: GET the types
+    // with how many are saved and allowed; GET the list (directly in `data`) / POST one after Stripe confirmed
+    // its SetupIntent; POST setup-intent { type } starts Stripe's form for one type.
+    sponsorPaymentMethodOptions: "fanhub/sponsor-packages/payment-methods/options",
+    sponsorPaymentMethods: "fanhub/sponsor-packages/payment-methods",
+    sponsorPaymentMethodSetupIntent: "fanhub/sponsor-packages/payment-methods/setup-intent",
+    // DELETE one (also in Stripe); PATCH it as its type's default; POST { descriptorCode } | { amounts } for a
+    // bank account entered by hand.
+    sponsorPaymentMethod: (id: string) => `fanhub/sponsor-packages/payment-methods/${id}`,
+    sponsorPaymentMethodDefault: (id: string) => `fanhub/sponsor-packages/payment-methods/${id}/default`,
+    sponsorPaymentMethodVerify: (id: string) => `fanhub/sponsor-packages/payment-methods/${id}/verify-microdeposits`,
+    // Payments: GET the history (?status=&page=&limit=) and one (with its clientSecret while it waits); POST
+    // { paymentIntentId } once Stripe is done in the browser; POST cancel while it still waits.
+    sponsorPayments: "fanhub/sponsor-packages/payments",
+    sponsorPayment: (id: string) => `fanhub/sponsor-packages/payments/${id}`,
+    sponsorPaymentConfirm: (id: string) => `fanhub/sponsor-packages/payments/${id}/confirm`,
+    sponsorPaymentCancel: (id: string) => `fanhub/sponsor-packages/payments/${id}/cancel`,
     // Campaign Planner (national brands): POST, one plan across organisations; not saved, nothing bought.
     sponsorPlanRecommend: "fanhub/sponsor-packages/plans/recommend",
     // Purchased inventory (FANHUB_SPONSOR_PURCHASED_INVENTORY_FRONTEND.md). GET the slot chips with counts, and
