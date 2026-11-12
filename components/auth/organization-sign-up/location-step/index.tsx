@@ -9,7 +9,7 @@ import { SECTION_LABEL } from "@/components/sponsor/styles";
 import StepHeading from "@/components/auth/sign-up-shared/step-heading";
 import { GROUP_HEADING, INPUT, OPTIONAL_HINT, SELECT } from "@/components/auth/sign-up-shared/styles";
 import type { MapField, OrgSignUpForm, StepProps } from "@/components/auth/organization-sign-up/data";
-import { US_STATE_OPTIONS } from "@/components/organization/org-form/form";
+import type { OrgSignUpOptions } from "@/utils/types/auth";
 
 const HALF = "min-w-0 sm:col-span-3";
 const THIRD = "min-w-0 sm:col-span-2";
@@ -18,11 +18,13 @@ const optional = <span className={OPTIONAL_HINT}>· optional</span>;
 interface LocationStepProps extends StepProps {
   // Several location fields at once, from the map: a picked address fills them all, a moved pin only the pin.
   onLocation: (fields: Partial<Pick<OrgSignUpForm, MapField>>) => void;
+  // US states (sign-up options); the map gives the same two-letter codes.
+  states: OrgSignUpOptions["states"];
 }
 
 // Step 3: where the games happen (found on the map, which fills the address and the pin, as on the sponsor
 // sign-up and profile) and who fans and sponsors can reach. The contact starts as the person from step 1.
-export default function LocationStep({ form, errors, onField, onValue, onLocation }: LocationStepProps) {
+export default function LocationStep({ form, errors, onField, onValue, onLocation, states }: LocationStepProps) {
   return (
     <section aria-label="Location and contact" className="flex flex-col gap-5">
       <StepHeading
@@ -94,7 +96,7 @@ export default function LocationStep({ form, errors, onField, onValue, onLocatio
           name="org-state"
           value={form.state}
           onChange={onField("state")}
-          options={US_STATE_OPTIONS}
+          options={states.map((s) => ({ label: s.label, value: s.code }))}
           placeholder="Choose…"
           error={errors.state}
           variant="dark"
@@ -188,10 +190,10 @@ export default function LocationStep({ form, errors, onField, onValue, onLocatio
         <PhoneInput
           label="PHONE"
           name="org-contact-phone"
-          value={form.phone}
-          onValueChange={onValue("phone")}
+          value={form.contactPhone}
+          onValueChange={onValue("contactPhone")}
           placeholder="(418) 543-8090"
-          error={errors.phone}
+          error={errors.contactPhone}
           variant="dark"
           className={HALF}
           labelClassName={SECTION_LABEL}
@@ -201,11 +203,11 @@ export default function LocationStep({ form, errors, onField, onValue, onLocatio
           label="EMAIL"
           name="org-contact-email"
           type="email"
-          value={form.email}
-          onChange={onField("email")}
+          value={form.contactEmail}
+          onChange={onField("contactEmail")}
           placeholder="contact@yourorganization.com"
           autoComplete="email"
-          error={errors.email}
+          error={errors.contactEmail}
           variant="dark"
           className={HALF}
           labelClassName={SECTION_LABEL}

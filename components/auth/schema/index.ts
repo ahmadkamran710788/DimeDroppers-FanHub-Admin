@@ -13,8 +13,8 @@ export const signInSchema = yup.object({
   password: yup.string().required("Password is required"),
 });
 
-// Organisation sign-up, one schema per step. Messages follow the design (docs/ui/Signin&signup-html); the
-// API checks names, the email, the password length and the URLs again.
+// Organisation sign-up, one schema per step, on the API's field names (POST /fanhub/org-auth/signup). Messages
+// follow the design (docs/ui/Signin&signup-html); the API checks every field again.
 const REQUIRED = "This field is required.";
 const CHOOSE = "Choose an option.";
 const ORG_PASSWORD_RULE = "Use 8 or more characters with a number.";
@@ -33,7 +33,7 @@ const hexColor = yup.string().trim().matches(/^#[0-9a-fA-F]{6}$/, HEX_RULE);
 // Step 1: the person who manages the organisation's Fan Hub.
 export const orgAccountSchema = yup.object({
   fullName: yup.string().trim().required(REQUIRED).max(120, "Keep your name under 120 characters."),
-  accountEmail: yup
+  email: yup
     .string()
     .trim()
     .required(REQUIRED)
@@ -46,21 +46,22 @@ export const orgAccountSchema = yup.object({
     .max(128, "Keep the password under 128 characters.")
     .matches(/\d/, ORG_PASSWORD_RULE),
   // Optional: only checked once something is typed.
-  accountPhone: yup.string().test("us-phone", PHONE_RULE, (v) => !v || isValidPhoneNumber(v, "US")),
+  phone: yup.string().test("us-phone", PHONE_RULE, (v) => !v || isValidPhoneNumber(v, "US")),
 });
 
-// Step 2: the organisation, its team, sport and level.
-export const orgDetailsSchema = yup.object({
-  organizationName: yup.string().trim().required(REQUIRED).max(120, "Keep the name under 120 characters."),
-  organizationType: yup.string().required(CHOOSE),
-  // Only a school has a level ("school" is ORG_TYPE_OPTIONS' value).
-  level: yup.string().when("organizationType", {
-    is: "school",
-    then: (s) => s.required(CHOOSE),
-    otherwise: (s) => s.notRequired(),
-  }),
-  description: yup.string().max(250, "Keep the description under 250 characters."),
-});
+// Step 2: the organisation, its type and, for a type with a level (a school), the level. `levelTypes` are the
+// type codes the sign-up options mark `hasLevel`.
+export const orgDetailsSchema = (levelTypes: string[]) =>
+  yup.object({
+    organizationName: yup.string().trim().required(REQUIRED).max(120, "Keep the name under 120 characters."),
+    organizationType: yup.string().required(CHOOSE),
+    level: yup.string().when("organizationType", {
+      is: (type: string) => levelTypes.includes(type),
+      then: (s) => s.required(CHOOSE),
+      otherwise: (s) => s.notRequired(),
+    }),
+    description: yup.string().max(2000, "Keep the description under 2,000 characters."),
+  });
 
 // Step 3: where the games happen (the map pin, then the address) and who fans and sponsors can reach.
 export const orgLocationSchema = yup.object({
@@ -75,12 +76,19 @@ export const orgLocationSchema = yup.object({
   streetAddress: yup.string().trim().required(REQUIRED).max(300, "Keep the address under 300 characters."),
   city: yup.string().trim().required(REQUIRED).max(120, "Keep the city under 120 characters."),
   state: yup.string().required(CHOOSE),
-  zipCode: yup.string().trim().required(REQUIRED).matches(/^\d{5}$/, "Enter a 5-digit zip code."),
+  zipCode: yup
+    .string()
+    .trim()
+    .required(REQUIRED)
+    .matches(/^\d{5}(-\d{4})?$/, "Enter a 5-digit zip code (or ZIP+4, 32801-1234)."),
   conference: yup.string().trim().max(120, "Keep it under 120 characters."),
   contactName: yup.string().trim().required(REQUIRED).max(120, "Keep the name under 120 characters."),
   contactPosition: yup.string().trim().required(REQUIRED).max(120, "Keep the position under 120 characters."),
-  phone: yup.string().required(REQUIRED).test("us-phone", PHONE_RULE, (v) => !!v && isValidPhoneNumber(v, "US")),
-  email: yup.string().trim().required(REQUIRED).email("Enter a valid email address."),
+  contactPhone: yup
+    .string()
+    .required(REQUIRED)
+    .test("us-phone", PHONE_RULE, (v) => !!v && isValidPhoneNumber(v, "US")),
+  contactEmail: yup.string().trim().required(REQUIRED).email("Enter a valid email address."),
   website: optionalUrl,
 });
 
