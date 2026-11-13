@@ -12,7 +12,7 @@ import Button from "@/components/common/button";
 import Input from "@/components/common/input";
 import Select from "@/components/common/select";
 import StatusPill from "@/components/common/status-pill";
-import { checkLogo, isLogoFile } from "@/components/sponsor/data";
+import { CUSTOM_CATEGORY_MAX, OTHER_CATEGORY, categoryText, checkLogo, isLogoFile } from "@/components/sponsor/data";
 import { sponsorRequest } from "@/components/sponsor/sponsor-api";
 import { OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
 import { sponsorBrandSchema } from "@/components/auth/schema";
@@ -30,20 +30,29 @@ import type {
 
 interface DetailsForm {
   name: string;
+  // A category code, or OTHER_CATEGORY with the sponsor's own category in categoryOther.
   category: string;
+  categoryOther: string;
   sponsorType: SponsorTypeCode;
   logo: ProfileLogo | null;
   // A newly picked logo, sent as multipart on save.
   logoFile: File | null;
 }
 
-const formFromBrand = (brand: SponsorBrandProfile | null): DetailsForm => ({
-  name: brand?.name ?? "",
-  category: brand?.category ?? "",
-  sponsorType: brand?.sponsorType ?? "LOCAL_BUSINESS",
-  logo: brand?.logoUrl ? savedLogo(brand.logoUrl) : null,
-  logoFile: null,
-});
+// A saved category that isn't one of the codes (typed at sign-up, or Google's business type) opens as Other
+// with its text in the box. `codes` is null while the options load: the saved value stays as it is.
+const formFromBrand = (brand: SponsorBrandProfile | null, codes: string[] | null): DetailsForm => {
+  const saved = brand?.category ?? "";
+  const own = saved !== "" && codes !== null && !codes.includes(saved);
+  return {
+    name: brand?.name ?? "",
+    category: own ? OTHER_CATEGORY : saved,
+    categoryOther: own ? saved : "",
+    sponsorType: brand?.sponsorType ?? "LOCAL_BUSINESS",
+    logo: brand?.logoUrl ? savedLogo(brand.logoUrl) : null,
+    logoFile: null,
+  };
+};
 
 // The profile API's field names → the form's.
 const BRAND_FIELDS: Record<string, string> = { sponsorName: "name", category: "category", sponsorType: "sponsorType" };
@@ -61,7 +70,7 @@ interface SponsorDetailsProps {
 export default function SponsorDetails({ brand, options, onSaved }: SponsorDetailsProps) {
   const { refreshProfile } = useAuth();
   // The values being edited; null while viewing.
-  const [draft, setDraft] = useState<DetailsForm | null>(brand ? null : formFromBrand(null));
+  const [draft, setDraft] = useState<DetailsForm | null>(brand ? null : formFromBrand(null, null));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   // Object URLs of picked logos, revoked when the page closes.
@@ -75,9 +84,19 @@ export default function SponsorDetails({ brand, options, onSaved }: SponsorDetai
   const editing = draft !== null;
   const shownLogo = draft ? draft.logo : brand?.logoUrl ? savedLogo(brand.logoUrl) : null;
 
-  // Until the options load, the saved values are the only choices, so the fields still show them.
+  // Until the options load, the saved values are the only choices, so the fields still show them. A saved
+  // category of the sponsor's own stays a choice if editing began before the options loaded.
+  const codes = options ? options.categories.map((c) => c.code) : null;
+  const ownCategory =
+    draft && draft.category && draft.category !== OTHER_CATEGORY && codes && !codes.includes(draft.category)
+      ? [{ label: draft.category, value: draft.category }]
+      : [];
   const categoryOptions = options
-    ? options.categories.map((c) => ({ label: c.label, value: c.code }))
+    ? [
+        ...ownCategory,
+        ...options.categories.map((c) => ({ label: c.label, value: c.code })),
+        { label: "Other", value: OTHER_CATEGORY },
+      ]
     : brand?.category
       ? [{ label: brand.category, value: brand.category }]
       : [];
@@ -92,7 +111,8 @@ export default function SponsorDetails({ brand, options, onSaved }: SponsorDetai
   };
 
   const setField =
-    (field: "name" | "category" | "sponsorType") => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    (field: "name" | "category" | "categoryOther" | "sponsorType") =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { value } = e.target;
       setDraft((prev) => prev && { ...prev, [field]: value });
       clearError(field);
@@ -130,7 +150,8 @@ export default function SponsorDetails({ brand, options, onSaved }: SponsorDetai
     const changes: Pick<SponsorProfileUpdate, "sponsorName" | "category" | "sponsorType"> = {};
     const name = draft.name.trim();
     if (!brand || name !== brand.name) changes.sponsorName = name;
-    if (draft.category !== (brand?.category ?? "")) changes.category = draft.category;
+    const category = categoryText(draft.category, draft.categoryOther);
+    if (category !== (brand?.category ?? "")) changes.category = category;
     if (draft.sponsorType !== (brand?.sponsorType ?? "LOCAL_BUSINESS")) changes.sponsorType = draft.sponsorType;
     const removeLogo = !draft.logo && Boolean(brand?.logoUrl);
     if (Object.keys(changes).length === 0 && !draft.logoFile && !removeLogo) {
@@ -155,7 +176,9 @@ export default function SponsorDetails({ brand, options, onSaved }: SponsorDetai
     if (!r.view) {
       const fields: Record<string, string> = {};
       for (const err of r.errors ?? []) {
-        const field = BRAND_FIELDS[err.path];
+        // A refused typed category is shown under its text box.
+        const mapped = BRAND_FIELDS[err.path];
+        const field = mapped === "category" && draft.category === OTHER_CATEGORY ? "categoryOther" : mapped;
         if (field && !fields[field]) fields[field] = err.message;
       }
       // The logo checks come without a field.
@@ -197,7 +220,7 @@ export default function SponsorDetails({ brand, options, onSaved }: SponsorDetai
             <Button
               label="Edit details"
               icon={<Pencil className="size-4" strokeWidth={1.8} />}
-              onClick={() => setDraft(formFromBrand(brand))}
+              onClick={() => setDraft(formFromBrand(brand, codes))}
               className={cn(SMALL_BUTTON, "bg-transparent border border-[#8b6dff] text-white font-semibold")}
             />
           )}
@@ -257,19 +280,34 @@ export default function SponsorDetails({ brand, options, onSaved }: SponsorDetai
 
         <DetailRow label="SPONSOR CATEGORY" hideLabel={editing}>
           {draft ? (
-            <Select
-              label="Sponsor category"
-              name="profile-category"
-              value={draft.category}
-              onChange={setField("category")}
-              options={categoryOptions}
-              placeholder="Choose a category"
-              error={errors.category}
-              variant="dark"
-              className="max-w-[480px]"
-              labelClassName="sr-only"
-              selectClassName={SELECT}
-            />
+            <div className="flex flex-col gap-3 max-w-[480px]">
+              <Select
+                label="Sponsor category"
+                name="profile-category"
+                value={draft.category}
+                onChange={setField("category")}
+                options={categoryOptions}
+                placeholder="Choose a category"
+                error={errors.category}
+                variant="dark"
+                labelClassName="sr-only"
+                selectClassName={SELECT}
+              />
+              {draft.category === OTHER_CATEGORY && (
+                <Input
+                  label="Your category"
+                  name="profile-category-other"
+                  value={draft.categoryOther}
+                  onChange={setField("categoryOther")}
+                  placeholder="Your category, e.g. Pizza restaurant"
+                  maxLength={CUSTOM_CATEGORY_MAX}
+                  error={errors.categoryOther}
+                  variant="dark"
+                  labelClassName="sr-only"
+                  inputClassName={INPUT}
+                />
+              )}
+            </div>
           ) : brand?.category ? (
             <div className="text-lg font-semibold">{brand.category}</div>
           ) : (

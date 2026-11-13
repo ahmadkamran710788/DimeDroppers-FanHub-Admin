@@ -6,6 +6,13 @@ import { Search } from "lucide-react";
 import { config } from "@/config";
 import { cn } from "@/utils/cn";
 import FloatingPanel, { MENU_ITEM } from "@/components/common/floating-panel";
+import BusinessChoice from "@/components/common/location-picker/business-choice";
+import {
+  businessTypeOf,
+  businessesAt,
+  findBusinessByName,
+  type FoundBusiness,
+} from "@/components/common/location-picker/find-business";
 
 // The middle of the contiguous US, for a map with no pin yet.
 const US_CENTER = { lat: 39.5, lng: -98.35 };
@@ -15,6 +22,11 @@ const PIN_ZOOM = 16;
 // Suggestions are asked for once typing pauses this long, from this many characters.
 const SEARCH_DELAY_MS = 250;
 const SEARCH_MIN_CHARS = 3;
+// A picked place's details: the address and point (Place Details Essentials), plus, when the owner wants the
+// business type, whether it's a business and its type. primaryTypeDisplayName is a Pro field, so asking for
+// it bills the whole call as Pro.
+const ADDRESS_FIELDS = ["addressComponents", "location"];
+const BUSINESS_FIELDS = ["types", "primaryTypeDisplayName"];
 
 // A picked address, split the way the location forms hold it.
 export interface PickedPlace {
@@ -41,6 +53,13 @@ interface LocationPickerProps {
   error?: string;
   labelClassName?: string;
   inputClassName?: string;
+  // Google's type for the business at a picked place (e.g. "Department Store"), for a category. Set, it's
+  // called with null on every pick, then with the type once known: at once for a business picked from the
+  // search; for a plain address, from the business named `businessName` there, or the one picked from the
+  // businesses there. The lookups are Google Pro-priced searches.
+  onBusinessType?: (businessType: string | null) => void;
+  // The business's name as typed in the form, to find it at a picked address.
+  businessName?: string;
 }
 
 // The form's pin as a point, or null while it isn't a valid pair yet.
@@ -84,7 +103,18 @@ export default function LocationPicker(props: LocationPickerProps) {
   );
 }
 
-function PickerBody({ name, latitude, longitude, onPlace, onPin, error, labelClassName, inputClassName }: LocationPickerProps) {
+function PickerBody({
+  name,
+  latitude,
+  longitude,
+  onPlace,
+  onPin,
+  error,
+  labelClassName,
+  inputClassName,
+  onBusinessType,
+  businessName = "",
+}: LocationPickerProps) {
   const places = useMapsLibrary("places");
   const map = useMap(name);
   const [query, setQuery] = useState("");
@@ -92,6 +122,10 @@ function PickerBody({ name, latitude, longitude, onPlace, onPin, error, labelCla
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const [failed, setFailed] = useState("");
+  // The businesses at a picked address, offered when none was found by name.
+  const [businesses, setBusinesses] = useState<FoundBusiness[]>([]);
+  // Counts picks, so a slow business lookup for an earlier one is dropped.
+  const picks = useRef(0);
   // One billing session from the first keystroke to the picked place's details.
   const session = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   // The pin just moved on the map itself: the map stays where it is.
@@ -158,9 +192,11 @@ function PickerBody({ name, latitude, longitude, onPlace, onPin, error, labelCla
     if (!prediction) return;
     setOpen(false);
     setQuery(prediction.text.text);
+    setBusinesses([]);
+    const pickId = ++picks.current;
     const place = prediction.toPlace();
     try {
-      await place.fetchFields({ fields: ["addressComponents", "location"] });
+      await place.fetchFields({ fields: onBusinessType ? [...ADDRESS_FIELDS, ...BUSINESS_FIELDS] : ADDRESS_FIELDS });
     } catch {
       setFailed("Couldn’t load that address. Try again, or click the map where it is.");
       return;
@@ -168,16 +204,43 @@ function PickerBody({ name, latitude, longitude, onPlace, onPin, error, labelCla
       // The details end the session; the next search starts a new one.
       session.current = null;
     }
+    // Another place was picked meanwhile.
+    if (pickId !== picks.current) return;
     if (!place.location) {
       setFailed("That address has no point on the map. Click the map where it is.");
       return;
     }
     setFailed("");
-    onPlace({
-      ...addressOf(place.addressComponents ?? []),
-      latitude: place.location.lat(),
-      longitude: place.location.lng(),
-    });
+    const point = { lat: place.location.lat(), lng: place.location.lng() };
+    onPlace({ ...addressOf(place.addressComponents ?? []), latitude: point.lat, longitude: point.lng });
+    if (onBusinessType) void findBusinessType(pickId, place, prediction.text.text, point, onBusinessType);
+  }
+
+  // The business type for a picked place: its own for a business. For a plain address, the business by the
+  // form's name there, else the businesses there are offered. A failed lookup leaves the category to the list.
+  async function findBusinessType(
+    pickId: number,
+    place: google.maps.places.Place,
+    address: string,
+    point: google.maps.LatLngLiteral,
+    report: (businessType: string | null) => void
+  ) {
+    const own = businessTypeOf(place);
+    report(own);
+    if (own || !places) return;
+    try {
+      const name = businessName.trim();
+      const named = name ? await findBusinessByName(places, name, address, point) : null;
+      if (pickId !== picks.current) return;
+      if (named) {
+        report(named.type);
+        return;
+      }
+      const nearby = await businessesAt(places, point);
+      if (pickId === picks.current) setBusinesses(nearby);
+    } catch {
+      // Nothing found; the sponsor picks from the list.
+    }
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -219,6 +282,7 @@ function PickerBody({ name, latitude, longitude, onPlace, onPin, error, labelCla
           onChange={(e) => {
             setQuery(e.target.value);
             setOpen(true);
+            setBusinesses([]);
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
@@ -259,6 +323,16 @@ function PickerBody({ name, latitude, longitude, onPlace, onPin, error, labelCla
             })}
           </ul>
         </FloatingPanel>
+      )}
+      {onBusinessType && businesses.length > 0 && (
+        <BusinessChoice
+          businesses={businesses}
+          onPick={(business) => {
+            setBusinesses([]);
+            onBusinessType(business.type);
+          }}
+          onDismiss={() => setBusinesses([])}
+        />
       )}
 
       <Map

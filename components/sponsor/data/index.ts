@@ -33,6 +33,15 @@ export const SPONSOR_CATEGORY_OPTIONS = toOptions([
   "Government & Public Initiatives",
 ]);
 
+// "Other" in the category list (sign-up and profile): the sponsor types their own category, which is sent as
+// the category's text.
+export const OTHER_CATEGORY = "__other__";
+export const CUSTOM_CATEGORY_MAX = 60;
+
+// The category to send: the typed one for Other, else the picked option (a code, or Google's business type).
+export const categoryText = (category: string, other: string) =>
+  category === OTHER_CATEGORY ? other.trim() : category;
+
 // The sponsor's logo: SVG or PNG only (file picker filter, and the check for dropped files).
 export const LOGO_ACCEPT = ".svg,.png";
 export const isLogoFile = (file: File) => /\.(svg|png)$/i.test(file.name);

@@ -1,5 +1,6 @@
 import * as yup from "yup";
 import { isValidPhoneNumber } from "libphonenumber-js";
+import { CUSTOM_CATEGORY_MAX, OTHER_CATEGORY } from "@/components/sponsor/data";
 
 // A decimal degree no further from 0 than `max`, e.g. "-97.7516".
 const isDegree = (max: number) => (v: string | undefined) =>
@@ -140,6 +141,16 @@ export const sponsorBrandSchema = yup.object({
     .required("Sponsor name is required")
     .max(120, "Keep the sponsor name under 120 characters"),
   category: yup.string().required("Choose a category"),
+  // The sponsor's own category, typed when the category is Other.
+  categoryOther: yup.string().when("category", {
+    is: OTHER_CATEGORY,
+    then: (s) =>
+      s
+        .trim()
+        .required("Enter your category")
+        .max(CUSTOM_CATEGORY_MAX, `Keep the category under ${CUSTOM_CATEGORY_MAX} characters`),
+    otherwise: (s) => s.notRequired(),
+  }),
 });
 
 // Sponsor sign-up, step 2: the main location, which Fetch locations searches from. The pin comes from the map
