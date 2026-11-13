@@ -6,14 +6,13 @@ import Button from "@/components/common/button";
 import FilterChips from "@/components/common/filter-chips";
 import Loader from "@/components/common/loader";
 import Pagination from "@/components/common/pagination";
-import Tabs from "@/components/common/tabs";
 import { CARD, OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
 import { useSponsorAccount } from "@/components/sponsor/use-sponsor-account";
 import FanPreview from "@/components/sponsor/brand-placements/purchased-inventory/fan-preview";
 import OrgRow from "@/components/sponsor/brand-placements/purchased-inventory/org-row";
 import SlotEditor from "@/components/sponsor/brand-placements/purchased-inventory/slot-editor";
 import { usePurchasedInventory } from "@/components/sponsor/brand-placements/purchased-inventory/use-purchased-inventory";
-import { ALL_SLOTS, CATEGORY_TEXT, type CategoryTab } from "@/components/sponsor/brand-placements/purchased-inventory/data";
+import { CATEGORY_TEXT } from "@/components/sponsor/brand-placements/purchased-inventory/data";
 import { routes } from "@/utils/routes";
 
 const unique = (values: string[]) => [...new Set(values)];
@@ -33,44 +32,30 @@ function Problem({ message, onRetry }: ProblemProps) {
   );
 }
 
-// What the sponsor bought, by category and slot: the organizations with their packages and slots. Picking
-// one shows its slot setup (coming soon) and what fans see.
+// What the sponsor bought, by slot: the organizations with the picked slot, their packages and slots.
+// Picking one shows its slot setup (coming soon) and what fans see.
 export default function PurchasedInventory() {
   const s = usePurchasedInventory();
   const account = useSponsorAccount();
   const brand = { name: account?.brandName || account?.displayName || "Your brand", logoUrl: account?.logoUrl ?? null };
 
-  const tabLabels = Object.fromEntries([
-    ["ALL", "All"],
-    ...(s.summary?.categories.map((c) => [c.category, c.label]) ?? []),
-  ]) as Partial<Record<CategoryTab, string>>;
-  const tabCounts = Object.fromEntries([
-    ["ALL", s.summary?.slots ?? 0],
-    ...(s.summary?.categories.map((c) => [c.category, c.slots]) ?? []),
-  ]) as Partial<Record<CategoryTab, number>>;
-
-  const chipOptions = [
-    { value: ALL_SLOTS, label: "All slots", badge: String(s.tabOrganizations) },
-    ...s.chips.map((c) => ({
-      value: c.catalogKey,
-      label: c.name,
-      icon: (
-        <span className={cn("text-[10px] font-bold tracking-[0.5px]", CATEGORY_TEXT[c.category])}>
-          {c.categoryLabel.toUpperCase()}
-        </span>
-      ),
-      badge: String(c.organizations),
-    })),
-  ];
+  const chipOptions = s.chips.map((c) => ({
+    value: c.catalogKey,
+    label: c.name,
+    icon: (
+      <span className={cn("text-[10px] font-bold tracking-[0.5px]", CATEGORY_TEXT[c.category])}>
+        {c.categoryLabel.toUpperCase()}
+      </span>
+    ),
+    badge: String(c.organizations),
+  }));
 
   const selected = s.selected;
   const orgName = selected?.organization.name || "Unnamed organization";
   // Physical assets (a banner, a logo on shirts) have no fan screen to set up or preview.
-  const physical = s.category === "PHYSICAL_ASSET" || s.chip?.category === "PHYSICAL_ASSET";
-  // With a tab or chip, the packages of the matching slots only.
-  const packageNames = selected
-    ? unique(s.filtered ? selected.slots.map((slot) => slot.package.name) : selected.packages.map((p) => p.name))
-    : [];
+  const physical = s.chip?.category === "PHYSICAL_ASSET";
+  // The packages of the picked slot only.
+  const packageNames = selected ? unique(selected.slots.map((slot) => slot.package.name)) : [];
 
   function body() {
     if (s.chipsLoading) return <Loader />;
@@ -93,15 +78,7 @@ export default function PurchasedInventory() {
 
     return (
       <>
-        <Tabs
-          tabs={s.tabs}
-          active={s.category}
-          onChange={s.pickCategory}
-          labels={tabLabels}
-          counts={tabCounts}
-          className="flex-wrap gap-y-3"
-        />
-        <FilterChips variant="pill" ariaLabel="Slot" options={chipOptions} value={s.catalogKey} onChange={s.pickSlot} />
+        <FilterChips variant="pill" ariaLabel="Slot" options={chipOptions} value={s.catalogKey ?? ""} onChange={s.pickSlot} />
 
         {s.orgsLoading ? (
           <Loader />
@@ -117,7 +94,6 @@ export default function PurchasedInventory() {
                   <div role="listitem" key={item.organization.id}>
                     <OrgRow
                       item={item}
-                      filtered={s.filtered}
                       selected={item.organization.id === selected.organization.id}
                       onSelect={() => s.select(item.organization.id)}
                     />
