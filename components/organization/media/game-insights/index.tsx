@@ -7,6 +7,7 @@ import SegmentedControl from "@/components/common/segmented-control";
 import type { InsightPeriod, InsightPoint, MediaGame, TeamInsight } from "@/components/organization/media/data";
 import { useGameDetail } from "@/components/organization/media/use-game-detail";
 import { routes } from "@/utils/routes";
+import DetailEmpty from "@/components/organization/media/detail-empty";
 import type { GameInsightsDetail, InsightBullet, InsightScope } from "@/utils/types/game-detail";
 
 const PERIODS: readonly InsightPeriod[] = ["All", "H1", "H2"];
@@ -103,7 +104,7 @@ function ApiInsights({ gameId }: { gameId: string }) {
   const { data, error, loading } = useGameDetail<GameInsightsDetail>(routes.api.gameDetailInsights(gameId));
   if (loading) return <Loader className="m-10" />;
   if (!data?.insights) {
-    return <p className="py-10 text-center text-sm text-white/50">{error ?? "Insights will appear here after the game."}</p>;
+    return <DetailEmpty title="No insights yet" message={error ?? "Insights will appear here after the game."} />;
   }
   return (
     <div className="flex flex-col gap-6">
@@ -117,7 +118,7 @@ function ApiInsights({ gameId }: { gameId: string }) {
 export default function GameInsights({ game }: { game: MediaGame }) {
   if (game.fromApi) return <ApiInsights key={game.id} gameId={game.id} />;
   if (!game.insights) {
-    return <p className="py-10 text-center text-sm text-white/50">Insights will appear here after the game.</p>;
+    return <DetailEmpty title="No insights yet" message="Insights will appear here after the game." />;
   }
   return <InsightsView byPeriod={(p) => game.insights?.[p] ?? []} />;
 }
