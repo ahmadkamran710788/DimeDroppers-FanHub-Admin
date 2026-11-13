@@ -8,6 +8,7 @@ import { useGameDetail } from "@/components/organization/media/use-game-detail";
 import { routes } from "@/utils/routes";
 import type { GameRecapDetail } from "@/utils/types/game-detail";
 import type { MediaGame } from "@/components/organization/media/data";
+import DetailEmpty from "@/components/organization/media/detail-empty";
 import { fullDate } from "@/components/organization/media/format";
 import GameInsights from "@/components/organization/media/game-insights";
 import AddToStore from "@/components/organization/team-shop/add-to-store";
@@ -45,7 +46,7 @@ function ApiRecap({ gameId }: { gameId: string }) {
   const { data, error, loading } = useGameDetail<GameRecapDetail>(routes.api.gameDetailRecap(gameId));
   if (loading) return <Loader className="m-10" />;
   if (data?.recap) return <RecapArticle recap={data.recap} />;
-  return <p className="py-10 text-center text-sm text-white/50">{error ?? "The recap will appear here after the game."}</p>;
+  return <DetailEmpty title="No recap yet" message={error ?? "The recap will appear here after the game."} />;
 }
 
 // "Game Details" tab: recap, insights, highlight videos and game merch — videos and merch can be added to a team shop.
@@ -115,13 +116,13 @@ export default function GameDetails({ game }: { game: MediaGame }) {
       ) : section === "Recap" && game.recap ? (
         <RecapArticle recap={game.recap} />
       ) : (
-        <p className="py-10 text-center text-sm text-white/50">
-          {section === "Recap"
-            ? "The recap will appear here after the game."
+        <DetailEmpty
+          {...(section === "Recap"
+            ? { title: "No recap yet", message: "The recap will appear here after the game." }
             : section === "Videos"
-              ? "Videos will appear here after the game."
-              : "No shop items for this game yet."}
-        </p>
+              ? { title: "No videos yet", message: "Videos will appear here after the game." }
+              : { title: "No shop items yet", message: "Shop items for this game will appear here once they are added." })}
+        />
       )}
     </div>
   );
