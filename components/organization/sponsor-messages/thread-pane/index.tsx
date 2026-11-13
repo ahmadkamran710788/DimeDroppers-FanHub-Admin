@@ -75,7 +75,7 @@ export default function ThreadPane({ id, summary, onChanged }: ThreadPaneProps) 
 
   if (!shown) {
     return (
-      <section className="min-w-0 rounded-[8px] backdrop-blur-[48px] bg-surface-06 px-5 py-12 text-center text-sm text-white/60">
+      <section className="min-w-0 rounded-[8px] isolate bg-surface-06 px-5 py-12 text-center text-sm text-white/60">
         {loading ? (
           <Loader />
         ) : notSent ? (
@@ -114,7 +114,7 @@ export default function ThreadPane({ id, summary, onChanged }: ThreadPaneProps) 
   return (
     <section
       aria-label={`Conversation with ${business.name}`}
-      className="min-w-0 rounded-[8px] flex flex-col backdrop-blur-[48px] bg-surface-06"
+      className="min-w-0 rounded-[8px] flex flex-col isolate bg-surface-06"
     >
       <div className="flex flex-wrap items-start justify-between gap-4 px-5 py-4 border-b border-white/10">
         <div className="flex items-start gap-3 min-w-0">

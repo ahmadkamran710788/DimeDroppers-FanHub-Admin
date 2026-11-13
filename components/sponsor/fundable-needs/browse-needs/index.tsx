@@ -109,7 +109,10 @@ export default function BrowseNeeds({ refresh, onFunded }: BrowseNeedsProps) {
 
   const storesReady = stores !== null;
   const hasStores = !!stores?.length;
-  const area = hasStores ? (radius ?? DEFAULT_RADIUS) : ANYWHERE;
+  // Until the stores load, the usual case (the sponsor has some) is assumed, so the needs load alongside them
+  // instead of after; a sponsor without any loads again from anywhere once they arrive.
+  const nearStores = !storesReady || hasStores;
+  const area = nearStores ? (radius ?? DEFAULT_RADIUS) : ANYWHERE;
   // The picked store while it's still one of the sponsor's; otherwise all of them.
   const store = stores?.find((s) => s.id === storeId) ?? null;
   const locationIds = store?.id ?? ALL_STORES;
@@ -120,7 +123,6 @@ export default function BrowseNeeds({ refresh, onFunded }: BrowseNeedsProps) {
   const listKey = `${category}|${area}|${locationIds}|${sortInUse}|${page}|${reloads}|${refresh}`;
 
   useEffect(() => {
-    if (!storesReady) return;
     let cancelled = false;
     const near = area === ANYWHERE ? {} : { brandLocationIds: locationIds, radiusMiles: Number(area) };
     sponsorRequest<SponsorNeedsSummary>("GET", routes.api.sponsorNeedsSummary, { params: near }).then((r) => {
@@ -129,10 +131,9 @@ export default function BrowseNeeds({ refresh, onFunded }: BrowseNeedsProps) {
     return () => {
       cancelled = true;
     };
-  }, [storesReady, area, locationIds, summaryKey]);
+  }, [area, locationIds, summaryKey]);
 
   useEffect(() => {
-    if (!storesReady) return;
     let cancelled = false;
     const near = area === ANYWHERE ? {} : { brandLocationIds: locationIds, radiusMiles: Number(area) };
     sponsorRequest<Paged<SponsorNeedListItem>>("GET", routes.api.sponsorNeeds, {
@@ -149,10 +150,11 @@ export default function BrowseNeeds({ refresh, onFunded }: BrowseNeedsProps) {
     return () => {
       cancelled = true;
     };
-  }, [storesReady, category, area, locationIds, sortInUse, page, listKey]);
+  }, [category, area, locationIds, sortInUse, page, listKey]);
 
-  const currentSummary = summary?.key === summaryKey ? summary : null;
-  const current = list?.key === listKey ? list : null;
+  // Shown once the stores are in too: a sponsor without any never sees the answer for an area it doesn't have.
+  const currentSummary = storesReady && summary?.key === summaryKey ? summary : null;
+  const current = storesReady && list?.key === listKey ? list : null;
   const needs = current?.view?.items ?? [];
   // The picked need while it's on this page; otherwise the first one.
   const selected = needs.find((n) => n.id === selectedId) ?? needs[0] ?? null;
