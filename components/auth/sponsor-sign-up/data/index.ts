@@ -24,7 +24,12 @@ export interface SponsorSignUpForm {
   password: string;
   phone: string;
   name: string;
+  // A category code, Google's business type (googleCategory), or OTHER_CATEGORY with the text in categoryOther.
   category: string;
+  categoryOther: string;
+  // Google's business type for the place picked as the main location ("" for a plain address): the first
+  // choice for the category, offered above the list.
+  googleCategory: string;
   // The main location (headquarters or main branch), from the map picker or typed: Fetch locations searches
   // from it. The state is a two-letter code; the pin is text, e.g. "30.3058" and "-97.7516".
   street: string;
@@ -42,6 +47,8 @@ export const INITIAL_FORM: SponsorSignUpForm = {
   phone: "",
   name: "",
   category: "",
+  categoryOther: "",
+  googleCategory: "",
   street: "",
   city: "",
   state: "",

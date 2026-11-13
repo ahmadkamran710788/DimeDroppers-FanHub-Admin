@@ -10,6 +10,7 @@ import { setSponsorAccount } from "@/utils/auth/session";
 import { validateAndSetErrors } from "@/utils/validation";
 import Button from "@/components/common/button";
 import { OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
+import { OTHER_CATEGORY, categoryText } from "@/components/sponsor/data";
 import { sponsorAccountSchema, sponsorBrandSchema, sponsorMainLocationSchema } from "@/components/auth/schema";
 import BrandPanel from "@/components/auth/sign-up-shared/brand-panel";
 import SignUpSteps from "@/components/auth/sign-up-shared/sign-up-steps";
@@ -81,6 +82,18 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
     );
   };
 
+  // From the map picker: Google's business type for the picked place, null for a plain address. It's the
+  // first choice for the category, so it replaces the current one. Without one, the previous place's type
+  // goes, along with the category if it was that type; a category the sponsor picked stays.
+  const setBusinessType = (businessType: string | null) => {
+    setForm((prev) => {
+      if (businessType) return { ...prev, googleCategory: businessType, category: businessType };
+      const wasGoogle = prev.googleCategory !== "" && prev.category === prev.googleCategory;
+      return { ...prev, googleCategory: "", category: wasGoogle ? "" : prev.category };
+    });
+    if (businessType) clearError("category");
+  };
+
   const setPhone = (value: string) => {
     setForm((prev) => ({ ...prev, phone: value }));
     clearError("phone");
@@ -101,7 +114,7 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
     if (form.phone) body.append("phone", toE164Phone(form.phone));
     body.append("sponsorType", type);
     body.append("sponsorName", form.name.trim());
-    body.append("category", form.category);
+    body.append("category", categoryText(form.category, form.categoryOther));
     body.append("address", form.street.trim());
     body.append("city", form.city.trim());
     body.append("state", form.state);
@@ -121,8 +134,11 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
           toast.error(message);
           return;
         }
+        // A refused typed category is shown under its text box.
+        const { category, ...rest } = problem.errors;
+        const typed = category && form.category === OTHER_CATEGORY;
         setStep(problem.step);
-        setErrors(problem.errors);
+        setErrors(typed ? { ...rest, categoryOther: category } : problem.errors);
         return;
       }
       // For the sponsor header until /me answers in the sponsor panel.
@@ -190,6 +206,7 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
                   type={type}
                   onType={setType}
                   onLocation={setLocation}
+                  onBusinessType={setBusinessType}
                 />
               )}
               {step === 3 && (

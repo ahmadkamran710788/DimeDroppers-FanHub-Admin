@@ -9,6 +9,7 @@ import StepHeading from "@/components/auth/sign-up-shared/step-heading";
 import LegalModal from "@/components/auth/sign-up-shared/legal-modal";
 import type { SponsorSignUpForm } from "@/components/auth/sponsor-sign-up/data";
 import { formatAddress } from "@/components/sponsor/profile/data";
+import { categoryText } from "@/components/sponsor/data";
 import type { LegalDocument, SponsorSignupOptions, SponsorTypeCode } from "@/utils/types/sponsor-profile";
 
 const ROW = "flex flex-wrap gap-x-5 gap-y-2 items-center py-4";
@@ -45,7 +46,9 @@ export default function ReviewStep({
 }: ReviewStepProps) {
   const [reading, setReading] = useState<"terms" | "privacy" | null>(null);
   const typeName = options.sponsorTypes.find((t) => t.code === type)?.label;
-  const categoryName = options.categories.find((c) => c.code === form.category)?.label ?? form.category;
+  // A typed (Other) or Google category is shown as it is.
+  const category = categoryText(form.category, form.categoryOther);
+  const categoryName = options.categories.find((c) => c.code === category)?.label ?? category;
 
   return (
     <section aria-label="Review" className="flex flex-col gap-[18px]">
