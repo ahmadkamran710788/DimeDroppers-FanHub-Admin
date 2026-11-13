@@ -172,6 +172,8 @@ export interface ExposurePlayer {
   exposurePlayerId: number;
   firstName: string | null;
   lastName: string | null;
+  // Jersey number.
+  number?: string | null;
   email: string | null;
   phone: string | null;
   grade: string | null;

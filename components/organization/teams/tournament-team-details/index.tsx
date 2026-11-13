@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import type { Column } from "@/components/common/generic-table";
 import Loader from "@/components/common/loader";
 import StatusPill from "@/components/common/status-pill";
 import Tabs from "@/components/common/tabs";
-import PeopleList from "@/components/organization/teams/team-details/people-list";
-import PersonCell from "@/components/organization/teams/team-details/person-cell";
+import PlayersTab from "@/components/organization/teams/tournament-team-details/players-tab";
 import TeamRolesTab from "@/components/organization/teams/tournament-team-details/team-roles-tab";
 import { useTeamRoles } from "@/components/organization/teams/tournament-team-details/use-team-roles";
 import { useSetup } from "@/context/setup";
@@ -28,8 +26,6 @@ import type {
 const TABS = ["Players", "Parents", "Staff", "Followers", "Stats", "Schedule"] as const;
 type Tab = (typeof TABS)[number];
 
-const dash = (v: string | null | undefined) => (v && v.trim() ? v : "—");
-const fullName = (p: ExposurePlayer) => [p.firstName, p.lastName].filter(Boolean).join(" ") || "Unnamed player";
 // The API caps a page at 100; one team rarely plays more in an event.
 const GAMES_LIMIT = 100;
 
@@ -46,16 +42,6 @@ const startOf = (g: TournamentScheduleGame) => g.utcTime || g.start;
 
 const fmtWhen = (iso: string) =>
   new Date(iso).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
-
-const PLAYER_COLUMNS: Column<ExposurePlayer>[] = [
-  { header: "Player", cls: "flex-1 min-w-[200px] py-5", cell: (p) => <PersonCell name={fullName(p)} email={p.email ?? ""} /> },
-  { header: "Position", cls: "w-24 shrink-0 py-5", cell: (p) => dash(p.position) },
-  { header: "Grade", cls: "w-20 shrink-0 py-5", cell: (p) => dash(p.grade) },
-  { header: "Grad Yr", cls: "w-20 shrink-0 py-5", cell: (p) => dash(p.graduationYear) },
-  { header: "Height", cls: "w-20 shrink-0 py-5", cell: (p) => dash(p.height) },
-  { header: "School", cls: "w-44 shrink-0 py-5", cell: (p) => <span className="leading-5">{dash(p.playerSchool)}</span> },
-];
-const playerSearch = (p: ExposurePlayer) => [fullName(p), p.email ?? "", p.position ?? "", p.playerSchool ?? ""];
 
 interface TeamInfo {
   team: TreeTeam;
@@ -79,6 +65,13 @@ export default function TournamentTeamDetails({ eventId, teamId }: { eventId: st
   const [tab, setTab] = useState<Tab>("Players");
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const roles = useTeamRoles(teamId);
+
+  // After an invite or a withdrawal: load the roster again (the invite saves the email on the player).
+  const reloadPlayers = useCallback(() => {
+    apiCall<ExposureListResponse<ExposurePlayer>>({ endpoint: routes.api.exposureTeamPlayers(teamId), method: "GET" }).then((r) => {
+      if (r.success) setLoaded((prev) => (prev ? { ...prev, players: r.data?.data ?? [] } : prev));
+    });
+  }, [teamId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -183,13 +176,15 @@ export default function TournamentTeamDetails({ eventId, teamId }: { eventId: st
       <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px] bg-surface-07">
         <Tabs tabs={TABS} active={tab} onChange={setTab} counts={{ Players: loaded.players.length, Followers: team.followerCount, Schedule: games.length }} />
         {tab === "Players" ? (
-          <PeopleList
-            key={tab}
-            rows={loaded.players}
-            columns={PLAYER_COLUMNS}
-            getKey={(p) => p.id}
-            searchFields={playerSearch}
-            noun="players"
+          <PlayersTab
+            fanHubTeamId={teamId}
+            players={loaded.players}
+            members={roles.members}
+            loading={roles.loading}
+            onChanged={() => {
+              reloadPlayers();
+              roles.reload();
+            }}
           />
         ) : tab === "Parents" ? (
           <TeamRolesTab kind="parent" fanHubTeamId={teamId} players={loaded.players} {...roles} />
