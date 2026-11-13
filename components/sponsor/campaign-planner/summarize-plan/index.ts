@@ -35,9 +35,9 @@ function reachOf(lines: SponsorPlanLine[]) {
 
 const totalOf = (lines: SponsorPlanLine[]) => lines.reduce((sum, line) => sum + line.totalCents, 0);
 
-// The plan's numbers for the lines still ticked (`excluded` holds the unticked lines' indexes). With every line
-// in, they're the API's own; after an untick they're worked out again from the ticked lines, as the API does
-// (FANHUB_SPONSOR_PLAN_FRONTEND.md §3). Markets stay listed at $0 when all their lines are unticked.
+// The plan's numbers for the lines still in it (`excluded` holds the removed lines' indexes). With every line
+// in, they're the API's own; after a removal they're worked out again from the remaining lines, as the API does
+// (FANHUB_SPONSOR_PLAN_FRONTEND.md §3). Markets stay listed at $0 when all their lines are removed.
 export function summarizePlan(plan: SponsorPlan, excluded: ReadonlySet<number>): PlanSummary {
   if (excluded.size === 0) {
     const { totals } = plan;

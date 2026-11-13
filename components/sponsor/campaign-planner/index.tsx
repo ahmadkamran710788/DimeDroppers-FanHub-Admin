@@ -61,7 +61,7 @@ interface CampaignPlannerProps {
 
 // Dime AI's Campaign Planner (national and regional brands): the sponsor sets where, the budget, season, goal,
 // sports and genders, and POST /plans/recommend answers one plan across organizations (schools, clubs and leagues
-// as a whole; tournaments by their events near the locations). Lines can be unticked on screen; nothing is saved
+// as a whole; tournaments by their events near the locations). Lines can be removed on screen; nothing is saved
 // or bought.
 export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
   const stores = useSponsorStores();
@@ -73,7 +73,7 @@ export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
   // The last request's refusal that belongs to no field (no organisations found, rate limit…).
   const [problem, setProblem] = useState<string | null>(null);
   const [market, setMarket] = useState(ALL_MARKETS);
-  // Indexes of the lines the sponsor unticked.
+  // Indexes of the lines the sponsor removed.
   const [excluded, setExcluded] = useState<ReadonlySet<number>>(new Set());
 
   useEffect(() => {
@@ -111,12 +111,8 @@ export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
     return null;
   }
 
-  function toggle(index: number) {
-    setExcluded((prev) => {
-      const next = new Set(prev);
-      if (!next.delete(index)) next.add(index);
-      return next;
-    });
+  function remove(index: number) {
+    setExcluded((prev) => new Set(prev).add(index));
   }
 
   const summary = plan ? summarizePlan(plan, excluded) : null;
@@ -207,7 +203,8 @@ export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
             market={market}
             onMarketChange={setMarket}
             excluded={excluded}
-            onToggle={toggle}
+            onRemove={remove}
+            onRestore={() => setExcluded(new Set())}
           />
 
           <div className="flex flex-wrap gap-5">
