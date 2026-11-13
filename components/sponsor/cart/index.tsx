@@ -7,7 +7,8 @@ import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
 import ConfirmModal from "@/components/common/confirm-modal";
 import Loader from "@/components/common/loader";
-import { CARD, OUTLINE_BUTTON, PRIMARY_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
+import { CARD, LINK_BUTTON, OUTLINE_BUTTON, PRIMARY_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
+import ActivatedSummary, { type ActivatedDone } from "@/components/sponsor/checkout/activated-summary";
 import CartLine from "@/components/sponsor/cart/cart-line";
 import CheckoutPaymentModal from "@/components/sponsor/checkout/checkout-payment-modal";
 import PaymentChoice from "@/components/sponsor/checkout/payment-choice";
@@ -15,23 +16,12 @@ import { toastOutcome, type CheckoutOutcome } from "@/components/sponsor/checkou
 import { useCheckout } from "@/components/sponsor/checkout/use-checkout";
 import { usePaymentReturn } from "@/components/sponsor/checkout/use-payment-return";
 import type { ReturnedPayment } from "@/components/sponsor/checkout/returned-payment";
-import { BANK_CLEARING_TEXT } from "@/components/sponsor/payment-methods/data";
 import { activeActivations, formatCents, sponsorRequest, type ActiveActivations } from "@/components/sponsor/sponsor-api";
 import { useSponsorCart } from "@/context/sponsor-cart";
 import { routes } from "@/utils/routes";
 import type { SponsorCartActivation, SponsorCartQuote } from "@/utils/types/sponsor-packages";
 
-const LINK_BUTTON = "inline-flex items-center justify-center h-12 px-[22px] rounded-[10px] text-[15px]";
-
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-
-// A checkout that went through: live now ("paid") or a bank payment clearing ("processing"). The cart's
-// activations are known after Activate all, not after coming back from Stripe.
-interface Done {
-  kind: "paid" | "processing";
-  result?: SponsorCartActivation;
-  methodLabel: string | null;
-}
 
 interface SponsorCartProps {
   // From ?payment=&payment_intent= (Stripe's return_url after a redirect-based method).
@@ -54,7 +44,7 @@ export default function SponsorCart({ returnedPayment }: SponsorCartProps) {
   // The batch answer while Stripe's form takes its payment.
   const [paying, setPaying] = useState<SponsorCartActivation | null>(null);
   const [clearing, setClearing] = useState(false);
-  const [done, setDone] = useState<Done | null>(null);
+  const [done, setDone] = useState<ActivatedDone | null>(null);
 
   // Paid or clearing: the cart is bought, so it empties. Otherwise it stays, to try again.
   const finish = (outcome: CheckoutOutcome, result?: SponsorCartActivation) => {
@@ -149,7 +139,22 @@ export default function SponsorCart({ returnedPayment }: SponsorCartProps) {
     return false;
   };
 
-  if (done) return <Activated done={done} />;
+  if (done)
+    return (
+      <ActivatedSummary
+        done={done}
+        actions={
+          <>
+            <Link href={routes.ui.sponsor.findOrganizations} className={cn(PRIMARY_BUTTON, LINK_BUTTON)}>
+              Find more organizations
+            </Link>
+            <Link href={routes.ui.sponsor.mySponsorships} className={cn(OUTLINE_BUTTON, LINK_BUTTON)}>
+              View my sponsorships
+            </Link>
+          </>
+        }
+      />
+    );
 
   return (
     <div className="flex flex-col gap-10">
@@ -314,56 +319,6 @@ export default function SponsorCart({ returnedPayment }: SponsorCartProps) {
           return true;
         }}
       />
-    </div>
-  );
-}
-
-// After Activate all: what was bought and how it was paid, and the way back to more organizations.
-function Activated({ done }: { done: Done }) {
-  const { result, kind, methodLabel } = done;
-  const clearing = kind === "processing";
-  const summary = result
-    ? `${plural(result.activations.length, "sponsorship")} ${clearing ? "bought" : "started"} for ${formatCents(result.totalCents, result.currency)}${methodLabel ? `, paid with ${methodLabel}` : ""}.`
-    : `Your payment went through${methodLabel ? ` with ${methodLabel}` : ""}.`;
-
-  return (
-    <div className="flex flex-col gap-10">
-      <div className="flex flex-col">
-        <h2 className="font-display font-extrabold text-[32px] sm:text-[40px] lg:text-[56px] lg:leading-[68px] uppercase leading-none">
-          {clearing ? "PAYMENT ON ITS WAY" : "ACTIVATED"}
-        </h2>
-        <p className="text-base leading-[26px] text-[#e5e5e5]">{summary}</p>
-        {clearing && <p className="text-base leading-[26px] text-[#f0c36a]">{BANK_CLEARING_TEXT}</p>}
-      </div>
-      <section aria-label="Activated sponsorships" className={cn(CARD, "rounded-[8px] p-4 lg:p-[26px] flex flex-col gap-3")}>
-        {!result && (
-          <p className="text-[15px] text-[#a8a8a8]">Your sponsorships and their status are in My Sponsorships.</p>
-        )}
-        <ul className="flex flex-col gap-2">
-          {result?.activations.map((a) => (
-            <li
-              key={a.id}
-              className="rounded-[12px] border border-[#262626] bg-[#0b0b0b] p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3"
-            >
-              <span className="min-w-0">
-                <span className="block text-[15px] font-semibold break-words">{a.packageName}</span>
-                <span className="block text-[13px] text-[#a8a8a8] break-words">
-                  {[a.organization.name ?? "Unnamed organization", a.event?.name].filter(Boolean).join(" · ")}
-                </span>
-              </span>
-              <span className="text-[15px] font-bold whitespace-nowrap">{formatCents(a.totalCents, a.currency)}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="flex flex-wrap gap-3">
-          <Link href={routes.ui.sponsor.findOrganizations} className={cn(PRIMARY_BUTTON, LINK_BUTTON)}>
-            Find more organizations
-          </Link>
-          <Link href={routes.ui.sponsor.mySponsorships} className={cn(OUTLINE_BUTTON, LINK_BUTTON)}>
-            View my sponsorships
-          </Link>
-        </div>
-      </section>
     </div>
   );
 }

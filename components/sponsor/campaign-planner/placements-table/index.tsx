@@ -25,6 +25,8 @@ interface PlacementsTableProps {
   onRemove: (index: number) => void;
   // Puts every removed line back.
   onRestore: () => void;
+  // A warning under a line (line index → text): already active, can't be bought, or a new price.
+  notes?: ReadonlyMap<number, string>;
 }
 
 // The plan line by line; a line's ✕ removes it from the list and the totals (on screen only, nothing is sent).
@@ -36,6 +38,7 @@ export default function PlacementsTable({
   excluded,
   onRemove,
   onRestore,
+  notes,
 }: PlacementsTableProps) {
   const options = [
     { label: "All", value: ALL_MARKETS },
@@ -86,6 +89,7 @@ export default function PlacementsTable({
             <ul className="flex flex-col gap-2">
               {shown.map(({ line, index }) => {
                 const name = line.event?.name ? `${line.organization.name} · ${line.event.name}` : line.organization.name;
+                const note = notes?.get(index);
                 return (
                   <li
                     key={`${line.schoolId}|${line.eventId ?? ""}|${index}`}
@@ -102,6 +106,7 @@ export default function PlacementsTable({
                     <div className="min-w-0">
                       <div className="text-[15px] font-bold break-words">{name}</div>
                       <div className="text-[13px] text-[#a8a8a8] mt-[2px] leading-[1.4]">{line.reason}</div>
+                      {note && <div className="text-[13px] text-[#f0c36a] mt-1 leading-[1.4]">{note}</div>}
                     </div>
                     <div className="text-sm">{line.market.label}</div>
                     <div>
