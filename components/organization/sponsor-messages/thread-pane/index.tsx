@@ -10,6 +10,7 @@ import Textarea from "@/components/common/textarea";
 import ContactAvatar from "@/components/organization/messages/contact-avatar";
 import { formatBubbleTime } from "@/components/organization/messages/helpers";
 import { usePackagePdf } from "@/components/organization/sponsor-ai-agent/use-package-pdf";
+import CallCard from "@/components/organization/sponsor-messages/call-card";
 import MessageBubble from "@/components/organization/sponsor-messages/message-bubble";
 import {
   HANDLER_LABEL,
@@ -56,8 +57,12 @@ const writer = (m: ThreadMessage) =>
 // reply with its delivery status, and the package PDF the first email carried. The organisation can take
 // over from the agent, reply, hand it back, or stop it.
 export default function ThreadPane({ id, summary, onChanged }: ThreadPaneProps) {
-  // The agent can hand a conversation over without writing, so the handler reloads it as well.
-  const stamp = summary ? `${summary.lastActivityAt}|${summary.handler}` : undefined;
+  // The agent can hand a conversation over without writing, so the handler reloads it as well, and so
+  // does a call booked, rescheduled or cancelled, or its meeting link arriving.
+  const call = summary?.call;
+  const stamp = summary
+    ? [summary.lastActivityAt, summary.handler, call?.status, call?.startAt, call?.meetingUrl].join("|")
+    : undefined;
   const { thread, loading, notSent, error, stop, takeOver, handBack, reply } = useSponsorThread(id, stamp, onChanged);
   const pdf = usePackagePdf();
   const [confirmStop, setConfirmStop] = useState(false);
@@ -171,6 +176,7 @@ export default function ThreadPane({ id, summary, onChanged }: ThreadPaneProps) 
       </div>
 
       <div className="flex flex-col gap-5 px-5 py-5">
+        {shown.call && <CallCard call={shown.call} />}
         {!thread ? (
           loading ? <Loader /> : <p className="py-8 text-center text-sm text-white/60">{error ?? "Couldn’t load the conversation."}</p>
         ) : (

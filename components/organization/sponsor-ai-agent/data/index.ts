@@ -1,6 +1,7 @@
 import { CATEGORY_LABELS } from "@/components/sponsor/find-organizations/data";
 import { routes } from "@/utils/routes";
 import type {
+  CalendarProvider,
   DraftPackage,
   DraftSkipReason,
   DraftStatusFilter,
@@ -119,3 +120,22 @@ export function toSponsorPackage(p: DraftPackage): SponsorPackage {
     currency: p.currency,
   };
 }
+
+// Call booking (Settings tab): once Connect opens the sign-in tab, the calendar is checked this often for
+// as long as the sign-in link works, until it's connected with its booking page.
+export const CALENDAR_POLL_MS = 5000;
+export const CALENDAR_CONNECT_WINDOW_MS = 10 * 60 * 1000;
+
+export const CALENDAR_PROVIDER_LABEL: Record<CalendarProvider, string> = {
+  google: "Google",
+  microsoft: "Outlook",
+};
+
+// The Sponsor AI Agent page's tabs; ?tab= opens one.
+export type AgentTab = "agent" | "settings";
+export const AGENT_TABS: readonly AgentTab[] = ["agent", "settings"];
+export const AGENT_TAB_LABELS: Record<AgentTab, string> = {
+  agent: "Find Sponsors",
+  settings: "Settings",
+};
+export const isAgentTab = (value: unknown): value is AgentTab => value === "agent" || value === "settings";

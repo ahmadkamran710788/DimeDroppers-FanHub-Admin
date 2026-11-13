@@ -329,6 +329,10 @@ export const routes = {
     sponsorAiReplyThread: (id: string) => `fanhub/org/sponsor-ai/threads/${id}/reply`,
     // POST: the agent answers the replies again, including one still unanswered.
     sponsorAiHandBackThread: (id: string) => `fanhub/org/sponsor-ai/threads/${id}/hand-back`,
+    // Call booking (FANHUB_SPONSOR_AI_CALENDAR_FRONTEND.md): GET the organisation's calendar, DELETE disconnects it.
+    sponsorAiCalendar: "fanhub/org/sponsor-ai/calendar",
+    // POST { provider }: the Google / Microsoft sign-in link that connects the calendar (works 10 minutes).
+    sponsorAiCalendarConnect: "fanhub/org/sponsor-ai/calendar/connect",
     // Sponsor app (sponsor token): find organisations, their packages, and activate one
     // (FANHUB_SPONSOR_PACKAGES_FRONTEND.md, FANHUB_SPONSOR_APP_INTEGRATION.md).
     sponsorFilters: "fanhub/sponsor-packages/filters",
