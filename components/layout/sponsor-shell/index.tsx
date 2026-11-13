@@ -11,9 +11,10 @@ const PAGE_TITLES: Record<string, string> = {
   [routes.ui.sponsor.fundableNeeds]: "Sponsorship",
   [routes.ui.sponsor.sponsorships]: "Sponsorship",
   [routes.ui.sponsor.brandAssets]: "Brand",
+  [routes.ui.sponsor.brandPlacements]: "Sponsorship",
   [routes.ui.sponsor.cart]: "Sponsorship",
   [routes.ui.sponsor.profile]: "Profile",
-  [routes.ui.sponsor.paymentMethods]: "Billing",
+  [routes.ui.sponsor.billingInfo]: "Account",
 };
 
 // App shell for the sponsor pages: the shared sidebar, the sponsor header and the page area, on the

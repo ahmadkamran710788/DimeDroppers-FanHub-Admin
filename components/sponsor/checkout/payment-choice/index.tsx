@@ -128,8 +128,8 @@ export default function PaymentChoice({ checkout }: PaymentChoiceProps) {
           )}
         </div>
       )}
-      <Link href={routes.ui.sponsor.paymentMethods} className="self-start text-sm font-semibold text-[#6a4be6] underline">
-        Manage payment methods
+      <Link href={routes.ui.sponsor.billingInfo} className="self-start text-sm font-semibold text-[#6a4be6] underline">
+        Manage in Billing Info
       </Link>
     </div>
   );

@@ -1,10 +1,5 @@
 import * as yup from "yup";
 
-// Adding a payment method: the name is optional (Stripe's form has the numbers).
-export const addMethodSchema = yup.object({
-  holderName: yup.string().trim().max(100, "Use 100 characters or fewer"),
-});
-
 // Verifying a bank account entered by hand: the code on Stripe's $0.01 deposit…
 export const verifyCodeSchema = yup.object({
   descriptorCode: yup

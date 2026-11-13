@@ -4,7 +4,7 @@ import Image from "next/image";
 import { routes } from "@/utils/routes";
 import SidebarFrame, { type NavSection } from "@/components/layout/sidebar-frame";
 import { useSponsorAccount } from "@/components/sponsor/use-sponsor-account";
-import { CreditCard, Heart, Image as ImageIcon, Search } from "lucide-react";
+import { CreditCard, Heart, Image as ImageIcon, MonitorCheck, Search } from "lucide-react";
 
 // Pages without a route yet link to "#".
 const NAV_SECTIONS: NavSection[] = [
@@ -13,11 +13,6 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { icon: <ImageIcon className="size-6" strokeWidth={1.5} />, label: "Brand Assets", href: routes.ui.sponsor.brandAssets },
       { icon: "/icons/icon-user.svg", label: "Sponsor Profile", href: routes.ui.sponsor.profile },
-      {
-        icon: <CreditCard className="size-6" strokeWidth={1.5} />,
-        label: "Payment Methods",
-        href: routes.ui.sponsor.paymentMethods,
-      },
     ],
   },
   {
@@ -26,6 +21,18 @@ const NAV_SECTIONS: NavSection[] = [
       { icon: <Search className="size-6" strokeWidth={1.5} />, label: "Sponsorships", href: routes.ui.sponsor.sponsorships },
       { icon: <Heart className="size-6" strokeWidth={1.5} />, label: "Fundable Needs", href: routes.ui.sponsor.fundableNeeds },
       { icon: "/icons/icon-calendar.svg", label: "My Sponsorships", href: routes.ui.sponsor.mySponsorships },
+      {
+        icon: <MonitorCheck className="size-6" strokeWidth={1.5} />,
+        label: "Brand Placements",
+        href: routes.ui.sponsor.brandPlacements,
+        badge: "NEW",
+      },
+    ],
+  },
+  {
+    title: "Account",
+    items: [
+      { icon: <CreditCard className="size-6" strokeWidth={1.5} />, label: "Billing Info", href: routes.ui.sponsor.billingInfo },
     ],
   },
 ];

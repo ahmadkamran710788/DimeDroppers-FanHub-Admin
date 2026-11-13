@@ -1,22 +1,7 @@
 import type { PaymentChoice, PaymentMethodType, SponsorPaymentMethod } from "@/utils/types/sponsor-payments";
 
-// The types in the order the Payment Methods page lists them.
+// The types in the order Billing Info lists its saved methods.
 export const METHOD_TYPES: PaymentMethodType[] = ["CARD", "US_BANK_ACCOUNT", "CASHAPP", "LINK"];
-
-// Shown before the options load (the API's own labels win once they do).
-export const TYPE_LABELS: Record<PaymentMethodType, string> = {
-  CARD: "Card",
-  US_BANK_ACCOUNT: "US bank account",
-  CASHAPP: "Cash App Pay",
-  LINK: "Link",
-};
-
-export const TYPE_HINTS: Record<PaymentMethodType, string> = {
-  CARD: "Visa, Mastercard, American Express and more. Pays at once.",
-  US_BANK_ACCOUNT: "Pays from a US checking or savings account. A payment takes about 4 business days to clear.",
-  CASHAPP: "Pay from your Cash App balance. Pays at once.",
-  LINK: "Stripe's saved checkout, signed in with your email. Pays at once.",
-};
 
 export const BANK_CLEARING_TEXT =
   "Your bank payment is on its way. Your sponsorship goes live when it clears (about 4 business days).";

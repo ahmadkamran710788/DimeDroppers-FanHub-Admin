@@ -84,16 +84,19 @@ export const routes = {
       sponsorships: "/sponsor/sponsorships",
       findOrganizations: "/sponsor/sponsorships?tab=find",
       brandAssets: "/sponsor/brand-assets",
+      // Placement setup and performance, as tabs; ?tab= picks one.
+      brandPlacements: "/sponsor/brand-placements",
+      brandPlacementsTab: (tab: "setup" | "performance") => `/sponsor/brand-placements?tab=${tab}`,
       cart: "/sponsor/cart",
       mySponsorships: "/sponsor/my-sponsorships",
       profile: "/sponsor/profile",
-      // Saved payment methods and payment history, as tabs; ?tab= picks one.
-      paymentMethods: "/sponsor/payment-methods",
-      paymentMethodsTab: (tab: "methods" | "history") => `/sponsor/payment-methods?tab=${tab}`,
+      // Billing Info: adding and choosing payment methods, billing details and billing history, on one page.
+      // The old /sponsor/payment-methods redirects here (next.config.ts).
+      billingInfo: "/sponsor/billing-info",
       // Stripe's return_url after a redirect-based method (Cash App, some banks): the page saves the method
       // (?setup=) or confirms the payment (?payment=) on load. Stripe appends its own parameters.
-      paymentMethodsSetupReturn: (setupIntentId: string) =>
-        `/sponsor/payment-methods?setup=${encodeURIComponent(setupIntentId)}`,
+      billingInfoSetupReturn: (setupIntentId: string) =>
+        `/sponsor/billing-info?setup=${encodeURIComponent(setupIntentId)}`,
       cartPaymentReturn: (paymentId: string) => `/sponsor/cart?payment=${encodeURIComponent(paymentId)}`,
       mySponsorshipsPaymentReturn: (paymentId: string) =>
         `/sponsor/my-sponsorships?payment=${encodeURIComponent(paymentId)}`,
