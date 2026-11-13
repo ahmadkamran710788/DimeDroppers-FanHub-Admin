@@ -20,3 +20,9 @@ export const PRIMARY_BUTTON = "min-w-0 bg-[#6a4be6] text-white font-bold backdro
 
 // Outlined secondary button on a dark card ("Replace", "Browse files", "Save draft").
 export const OUTLINE_BUTTON = "min-w-0 bg-transparent border border-[#3a3a3a] text-white backdrop-blur-none";
+
+// A section title on a sponsor page ("LIBRARY", "PURCHASED INVENTORY").
+export const SECTION_TITLE = "font-display font-black text-xl lg:text-[28px] uppercase leading-tight";
+
+// Small caps eyebrow over a card or panel ("WHAT FANS SEE", "SELECTED SLOT").
+export const EYEBROW = "text-xs font-semibold tracking-[1px] text-[#a8a8a8]";

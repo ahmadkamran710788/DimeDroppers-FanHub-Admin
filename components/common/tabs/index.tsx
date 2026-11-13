@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { cn } from "@/utils/cn";
 
 interface TabsProps<T extends string> {
@@ -12,6 +13,8 @@ interface TabsProps<T extends string> {
   counts?: Partial<Record<T, number>>;
   // Optional pill beside a tab label (e.g. "NATIONAL").
   badges?: Partial<Record<T, string>>;
+  // Optional icon before a tab label.
+  icons?: Partial<Record<T, ReactNode>>;
   className?: string;
 }
 
@@ -23,6 +26,7 @@ export default function Tabs<T extends string>({
   labels,
   counts,
   badges,
+  icons,
   className,
 }: TabsProps<T>) {
   return (
@@ -43,6 +47,7 @@ export default function Tabs<T extends string>({
               isActive ? "text-white" : "text-white/60 hover:text-white"
             )}
           >
+            {icons?.[tab]}
             {labels?.[tab] ?? tab}
             {count !== undefined && (
               <span className="min-w-6 h-6 px-1.5 rounded-full bg-white/15 text-xs font-semibold flex items-center justify-center">

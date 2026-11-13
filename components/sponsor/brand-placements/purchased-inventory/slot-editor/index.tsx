@@ -3,8 +3,8 @@ import { Clock, Info } from "lucide-react";
 import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
 import { CARD, HINT, HINT_LINK, OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
-import LogoTile, { type SponsorBrand } from "@/components/sponsor/brand-assets/purchased-inventory/logo-tile";
-import { LOGO_VARIANTS, TEMPLATES } from "@/components/sponsor/brand-assets/purchased-inventory/data";
+import LogoTile, { type SponsorBrand } from "@/components/sponsor/brand-placements/purchased-inventory/logo-tile";
+import { LOGO_VARIANTS, TEMPLATES } from "@/components/sponsor/brand-placements/purchased-inventory/data";
 import { routes } from "@/utils/routes";
 import type { SlotChip } from "@/utils/types/sponsor-inventory";
 

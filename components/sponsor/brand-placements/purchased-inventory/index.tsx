@@ -9,11 +9,11 @@ import Pagination from "@/components/common/pagination";
 import Tabs from "@/components/common/tabs";
 import { CARD, OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
 import { useSponsorAccount } from "@/components/sponsor/use-sponsor-account";
-import FanPreview from "@/components/sponsor/brand-assets/purchased-inventory/fan-preview";
-import OrgRow from "@/components/sponsor/brand-assets/purchased-inventory/org-row";
-import SlotEditor from "@/components/sponsor/brand-assets/purchased-inventory/slot-editor";
-import { usePurchasedInventory } from "@/components/sponsor/brand-assets/purchased-inventory/use-purchased-inventory";
-import { ALL_SLOTS, CATEGORY_TEXT, type CategoryTab } from "@/components/sponsor/brand-assets/purchased-inventory/data";
+import FanPreview from "@/components/sponsor/brand-placements/purchased-inventory/fan-preview";
+import OrgRow from "@/components/sponsor/brand-placements/purchased-inventory/org-row";
+import SlotEditor from "@/components/sponsor/brand-placements/purchased-inventory/slot-editor";
+import { usePurchasedInventory } from "@/components/sponsor/brand-placements/purchased-inventory/use-purchased-inventory";
+import { ALL_SLOTS, CATEGORY_TEXT, type CategoryTab } from "@/components/sponsor/brand-placements/purchased-inventory/data";
 import { routes } from "@/utils/routes";
 
 const unique = (values: string[]) => [...new Set(values)];

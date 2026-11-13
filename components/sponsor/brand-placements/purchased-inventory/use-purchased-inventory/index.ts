@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { sponsorRequest } from "@/components/sponsor/sponsor-api";
 import { routes } from "@/utils/routes";
 import type { InventoryPage, SlotChipList } from "@/utils/types/sponsor-inventory";
-import { ALL_SLOTS, PAGE_SIZE, type CategoryTab } from "@/components/sponsor/brand-assets/purchased-inventory/data";
+import { ALL_SLOTS, PAGE_SIZE, type CategoryTab } from "@/components/sponsor/brand-placements/purchased-inventory/data";
 
 // A response with the request it answers, so an older one never shows for a newer request.
 interface Loaded<T> {

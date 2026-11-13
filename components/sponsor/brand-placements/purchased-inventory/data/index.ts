@@ -27,6 +27,8 @@ export interface PlacementTemplate {
   icon: LucideIcon;
 }
 
+export type TemplateId = PlacementTemplate["id"];
+
 export const TEMPLATES: PlacementTemplate[] = [
   { id: "SIMPLE_BPA", name: "Simple BPA", desc: "Default. Shows only your logo.", icon: SquareMinus },
   { id: "VISIT_WEBSITE", name: "Visit website", desc: "A button that sends fans to your site.", icon: ExternalLink },

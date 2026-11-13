@@ -84,6 +84,9 @@ export const routes = {
       sponsorships: "/sponsor/sponsorships",
       findOrganizations: "/sponsor/sponsorships?tab=find",
       brandAssets: "/sponsor/brand-assets",
+      // Placement setup and performance, as tabs; ?tab= picks one.
+      brandPlacements: "/sponsor/brand-placements",
+      brandPlacementsTab: (tab: "setup" | "performance") => `/sponsor/brand-placements?tab=${tab}`,
       cart: "/sponsor/cart",
       mySponsorships: "/sponsor/my-sponsorships",
       profile: "/sponsor/profile",

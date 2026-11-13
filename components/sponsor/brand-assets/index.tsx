@@ -12,7 +12,6 @@ import AssetCard from "@/components/sponsor/brand-assets/asset-card";
 import AssetDropzone from "@/components/sponsor/brand-assets/asset-dropzone";
 import BrandProfile from "@/components/sponsor/brand-assets/brand-profile";
 import PlacementSpecs from "@/components/sponsor/brand-assets/placement-specs";
-import PurchasedInventory from "@/components/sponsor/brand-assets/purchased-inventory";
 import { useAssetLibrary } from "@/components/sponsor/brand-assets/use-asset-library";
 import { ASSET_FILTER_OPTIONS, type AssetFilter, type BrandAsset } from "@/components/sponsor/brand-assets/data";
 
@@ -74,8 +73,6 @@ export default function BrandAssets() {
       </div>
 
       <PlacementSpecs />
-
-      <PurchasedInventory />
 
       <ConfirmModal
         isOpen={deleting !== null}

@@ -1,6 +1,6 @@
 import { cn } from "@/utils/cn";
-import LogoTile, { type SponsorBrand } from "@/components/sponsor/brand-assets/purchased-inventory/logo-tile";
-import { CATEGORY_TEXT, GENERIC_SAMPLE, PREVIEW_SAMPLES } from "@/components/sponsor/brand-assets/purchased-inventory/data";
+import LogoTile, { type SponsorBrand } from "@/components/sponsor/brand-placements/purchased-inventory/logo-tile";
+import { CATEGORY_TEXT, GENERIC_SAMPLE, PREVIEW_SAMPLES } from "@/components/sponsor/brand-placements/purchased-inventory/data";
 import type { SlotChip } from "@/utils/types/sponsor-inventory";
 
 interface FanPreviewProps {
