@@ -191,6 +191,10 @@ export const routes = {
     // Players for a team. The :teamId is the FanHubTeam id (e.g. team-uuid-001).
     // Note: this lives under exposure/teams/:teamId, NOT under events/:id.
     exposureTeamPlayers: (teamId: string) => `fanhub/org/exposure/teams/${teamId}/players`,
+    // Invite a tournament team's synced player by email (POST { email }) or withdraw it (DELETE);
+    // invite-only, the roster comes from Exposure (FANHUB_ORG_ROSTER_PLAYER_ADMIN.md, section 2).
+    rosterFanHubPlayerInvite: (fanHubTeamId: string, playerId: string) =>
+      `fanhub/org/roster/fanhub-teams/${fanHubTeamId}/players/${playerId}/invite`,
     // Tournament only: games filtered by ?eventId=&divisionId=&teamId=&status=&date=&search=&page=&limit= (teams by id).
     exposureSchedules: "fanhub/org/exposure/schedules",
     // Tournament only: one team's record, points, streak, standings row and game-by-game results.
