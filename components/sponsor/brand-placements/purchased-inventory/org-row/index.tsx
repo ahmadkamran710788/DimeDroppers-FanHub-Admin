@@ -6,14 +6,12 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 interface OrgRowProps {
   item: InventoryOrganizationItem;
-  // A tab or slot chip is picked, so `slots` holds only the matching ones.
-  filtered: boolean;
   selected: boolean;
   onSelect: () => void;
 }
 
 // An organization the sponsor bought at: its packages (one per event at a tournament) and slots.
-export default function OrgRow({ item, filtered, selected, onSelect }: OrgRowProps) {
+export default function OrgRow({ item, selected, onSelect }: OrgRowProps) {
   const { organization: org, packages, slotCount, slots } = item;
   const place = [org.city, org.state].filter(Boolean).join(", ");
   const meta = [org.organizationTypeLabel, place, org.sportsType].filter(Boolean).join(" · ");
@@ -43,7 +41,8 @@ export default function OrgRow({ item, filtered, selected, onSelect }: OrgRowPro
           </span>
         ))}
         <span className="text-[11px] font-semibold text-[#ddd6fe]">
-          {filtered ? `${slots.length} of ${plural(slotCount, "slot")}` : plural(slotCount, "slot")}
+          {/* `slots` holds only the picked slot's. */}
+          {`${slots.length} of ${plural(slotCount, "slot")}`}
         </span>
       </span>
     </button>

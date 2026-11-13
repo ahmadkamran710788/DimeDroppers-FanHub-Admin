@@ -4,12 +4,6 @@ import type { ActivationCategory } from "@/utils/types/activations";
 // Organizations per page of the list (the API allows up to 100).
 export const PAGE_SIZE = 20;
 
-// The category tabs: everything, or one category.
-export type CategoryTab = "ALL" | ActivationCategory;
-
-// The "All slots" chip; any other chip is a slot's catalogKey.
-export const ALL_SLOTS = "";
-
 // A category's color, on its chips and in the fan preview.
 export const CATEGORY_TEXT: Record<ActivationCategory, string> = {
   PRE_GAME: "text-[#93c5fd]",
