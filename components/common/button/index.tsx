@@ -65,7 +65,10 @@ export default function Button({
       style={variant === "cta" ? { background: "var(--gradient-cta)" } : undefined}
       className={cn(
         SIZE_CLASSES[size],
-        "backdrop-blur-[48px] disabled:opacity-50 disabled:cursor-not-allowed",
+        // `isolate`, not a backdrop blur: the button only ever sits over a flat card or the already-blurred page
+        // background, where a blur can't be seen, and dozens of blurred buttons made scrolling stutter. It keeps
+        // the stacking context the blur gave (e.g. for a badge in `children`).
+        "isolate disabled:opacity-50 disabled:cursor-not-allowed",
         variant !== "cta" && size !== "icon" && (size === "md" ? "w-auto min-w-[120px]" : "w-auto"),
         fullWidth && "w-full",
         variant === "primary" && "bg-steel-blue text-white",
@@ -73,7 +76,7 @@ export default function Button({
         variant === "secondary" && "bg-white text-midnight-navy border border-midnight-navy/20 hover:bg-gray-50",
         variant === "danger" && "bg-error text-white",
         variant === "outline" && "bg-transparent text-white border border-[#638BFE]/80 hover:bg-white/5",
-        variant === "text" && "h-auto px-0 bg-transparent backdrop-blur-none text-white/70 hover:text-white",
+        variant === "text" && "h-auto px-0 bg-transparent text-white/70 hover:text-white",
         className
       )}
     >

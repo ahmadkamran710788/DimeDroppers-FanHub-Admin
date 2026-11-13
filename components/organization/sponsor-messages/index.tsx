@@ -117,7 +117,7 @@ export default function SponsorMessagesPage({ threadId }: SponsorMessagesPagePro
         </SectionCard>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,340px)_minmax(0,1fr)] gap-6 items-start">
-          <section aria-label="Conversations" className="rounded-[8px] p-3 flex flex-col gap-2 backdrop-blur-[48px] bg-surface-06">
+          <section aria-label="Conversations" className="rounded-[8px] p-3 flex flex-col gap-2 isolate bg-surface-06">
             <h3 className="px-3 pt-2 pb-1 text-xs font-bold tracking-[1.2px] text-white/60">{`CONVERSATIONS · ${list.pagination.total}`}</h3>
             {items.map((t) => (
               <ThreadRow key={t.id} thread={t} selected={t.id === activeId} onSelect={() => setSelectedId(t.id)} />

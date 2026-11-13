@@ -56,7 +56,7 @@ export default function NeedTypes({ categories, failed, value, onChange }: NeedT
                 aria-pressed={on}
                 onClick={() => onChange(on ? "" : code)}
                 className={cn(
-                  "flex flex-col items-start gap-3 rounded-[8px] border p-4 text-left text-white backdrop-blur-[24px] transition-colors",
+                  "flex flex-col items-start gap-3 rounded-[8px] border p-4 text-left text-white isolate transition-colors",
                   on ? "bg-white/[0.12] border-[#638BFE]" : "bg-surface-06 border-transparent hover:bg-white/[0.09]"
                 )}
               >

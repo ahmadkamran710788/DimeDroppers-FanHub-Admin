@@ -161,7 +161,7 @@ export default function FundableNeeds() {
         onChange={(code) => filter(() => setCategory(code))}
       />
 
-      <section className="rounded-[8px] bg-surface-06 backdrop-blur-[24px] text-white">
+      <section className="rounded-[8px] bg-surface-06 isolate text-white">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 p-4 lg:px-6 lg:py-5">
           <div className="flex flex-col gap-1">
             <h3 className="font-display font-black text-xl lg:text-[28px] uppercase leading-tight">Existing needs</h3>

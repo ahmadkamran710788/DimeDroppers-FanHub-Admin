@@ -13,7 +13,9 @@ export default function SectionCard({ badge, title, description, children, class
   return (
     <div
       className={cn(
-        "rounded-[8px] p-4 lg:p-6 flex flex-col gap-6 backdrop-blur-[48px]",
+        // `isolate`, not a backdrop blur: behind the card is only the already-blurred page background, so a
+        // blur can't be seen but made scrolling stutter. It keeps the stacking context the blur gave.
+        "rounded-[8px] p-4 lg:p-6 flex flex-col gap-6 isolate",
         "bg-[rgba(255,255,255,0.06)]",
         className
       )}
