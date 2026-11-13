@@ -73,7 +73,7 @@ export interface ThreadPeriod {
 
 export interface ThreadItem {
   id: string;
-  kind: "phase" | "play" | "highlight" | "prediction" | "poll" | "challenge" | "donation";
+  kind: "phase" | "play" | "highlight" | "prediction" | "poll" | "sponsorOffer" | "challenge" | "donation";
   subKind: string;
   at: string;
   phase: ThreadPhase;
@@ -86,10 +86,14 @@ export interface ThreadItem {
 
 export interface GameThreadDetail extends GameDetailBase {
   presentedBy: { name: string } | null;
-  phase: ThreadPhase;
+  // The phase asked for; null when the whole thread (every phase) came back.
+  phase: ThreadPhase | null;
   currentPhase: ThreadPhase;
   boundaries: { periodFormat: "QUARTERS" | "HALVES"; currentPeriod: number | null; periods: ThreadPeriod[] };
-  sections: { key: string; label: string; count: number }[];
+  // Item counts per phase after `search` (for badges).
+  phaseCounts?: Record<ThreadPhase, number>;
+  // In feed order.
+  sections: { key: string; label: string; phase?: ThreadPhase; count: number }[];
   items: ThreadItem[];
   pagination: { page: number; limit: number; total: number; pages: number };
 }
