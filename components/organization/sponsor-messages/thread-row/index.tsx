@@ -63,6 +63,14 @@ export default function ThreadRow({ thread, selected, onSelect }: ThreadRowProps
               textClassName="text-[11px] font-semibold text-[#ffc999]"
             />
           )}
+          {thread.call?.status === "BOOKED" && (
+            <StatusPill
+              label="Call booked"
+              color="bg-[#1d3a1e]"
+              className="h-auto px-2 py-0.5"
+              textClassName="text-[11px] font-semibold text-[#a3e3a5]"
+            />
+          )}
           {thread.replyCount > 0 && (
             <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-white/80">
               {`${thread.replyCount} ${thread.replyCount === 1 ? "reply" : "replies"}`}

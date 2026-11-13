@@ -1,14 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Search, Settings } from "lucide-react";
 import Button from "@/components/common/button";
 import Loader from "@/components/common/loader";
 import StepIndicator from "@/components/common/step-indicator";
+import Tabs from "@/components/common/tabs";
+import CalendarCard from "@/components/organization/sponsor-ai-agent/calendar-card";
 import SearchStep from "@/components/organization/sponsor-ai-agent/search-step";
 import ReviewStep from "@/components/organization/sponsor-ai-agent/review-step";
-import { scopeKey, type AgentScope } from "@/components/organization/sponsor-ai-agent/data";
+import {
+  AGENT_TABS,
+  AGENT_TAB_LABELS,
+  scopeKey,
+  type AgentScope,
+  type AgentTab,
+} from "@/components/organization/sponsor-ai-agent/data";
 import { useSponsorAiSetup } from "@/components/organization/sponsor-ai-agent/use-sponsor-ai-setup";
 import { useSponsorAiRun } from "@/components/organization/sponsor-ai-agent/use-sponsor-ai-run";
 import { useSponsorDrafts } from "@/components/organization/sponsor-ai-agent/use-sponsor-drafts";
@@ -20,11 +28,25 @@ import type { DraftStatusFilter, SponsorAiRun } from "@/utils/types/sponsor-ai";
 
 type Step = "search" | "review";
 
-// Sponsor AI Agent (FANHUB_SPONSOR_AI_FRONTEND.md): pick the event (tournaments), business categories and
-// a radius; the agent finds local businesses and drafts an email to each, which the organiser edits or
-// rejects (approving comes with its API). A school searches around itself, a tournament per event.
-export default function SponsorAiAgentPage() {
+const TAB_ICONS: Record<AgentTab, ReactNode> = {
+  agent: <Search className="size-4" aria-hidden="true" />,
+  settings: <Settings className="size-4" aria-hidden="true" />,
+};
+
+interface SponsorAiAgentPageProps {
+  // From ?tab=.
+  initialTab?: AgentTab;
+}
+
+// Sponsor AI Agent (FANHUB_SPONSOR_AI_FRONTEND.md), in two tabs. Find Sponsors: pick the event
+// (tournaments), business categories and a radius; the agent finds local businesses and drafts an email to
+// each, which the organiser edits, rejects or approves. A school searches around itself, a tournament per
+// event. Settings: the calendar sponsors book calls in (FANHUB_SPONSOR_AI_CALENDAR_FRONTEND.md).
+export default function SponsorAiAgentPage({ initialTab = "agent" }: SponsorAiAgentPageProps) {
   const router = useRouter();
+  const [tab, setTab] = useState<AgentTab>(initialTab);
+  // Settings loads the first time it opens, then stays mounted (hidden) like Find Sponsors.
+  const [settingsOpened, setSettingsOpened] = useState(initialTab === "settings");
   const kind = orgKindOf(useAuth().org);
   const isTournament = kind === "tournament";
   const { event, setEvent } = useSelectedEvent();
@@ -78,6 +100,13 @@ export default function SponsorAiAgentPage() {
     if (result === 422) setup.reload();
   }
 
+  function openTab(next: AgentTab) {
+    setTab(next);
+    if (next === "settings") setSettingsOpened(true);
+    // Keeps the tab on a refresh or a copied link, without a navigation.
+    window.history.replaceState(null, "", `?tab=${next}`);
+  }
+
   const steps = [
     {
       title: "Choose event, category & radius",
@@ -113,46 +142,65 @@ export default function SponsorAiAgentPage() {
         </Button>
       </div>
 
-      <StepIndicator steps={steps} current={shown === "review" ? 1 : 0} />
+      <Tabs
+        tabs={AGENT_TABS}
+        active={tab}
+        onChange={openTab}
+        labels={AGENT_TAB_LABELS}
+        icons={TAB_ICONS}
+        className="-mb-4 flex-wrap"
+      />
 
-      {shown === null ? (
-        <Loader />
-      ) : shown === "search" ? (
-        <SearchStep
-          event={isTournament ? event : null}
-          onEventChange={
-            isTournament
-              ? (id, name) => {
-                  setEvent({ id, name });
-                  setPage(1);
-                }
-              : undefined
-          }
-          setup={setup}
-          search={search}
-          failure={failure && (failure.eventId ?? undefined) === scope?.eventId ? failure : null}
-          categories={categories}
-          onCategoriesChange={(next) => setPicked({ key, categories: next, radius })}
-          radius={radius}
-          onRadiusChange={(next) => setPicked({ key, categories, radius: next })}
-          pendingCount={pending}
-          onReview={() => setStep("review")}
-          onFind={find}
-        />
-      ) : (
-        <ReviewStep
-          drafts={drafts}
-          status={status}
-          onStatusChange={(next) => {
-            setStatus(next);
-            setPage(1);
-          }}
-          page={page}
-          onPageChange={setPage}
-          eventName={isTournament ? event?.name : undefined}
-          run={search.run}
-          onChangeSearch={() => setStep("search")}
-        />
+      <div role="tabpanel" aria-label={AGENT_TAB_LABELS.agent} hidden={tab !== "agent"}>
+        <div className="flex flex-col gap-10">
+          <StepIndicator steps={steps} current={shown === "review" ? 1 : 0} />
+
+          {shown === null ? (
+            <Loader />
+          ) : shown === "search" ? (
+            <SearchStep
+              event={isTournament ? event : null}
+              onEventChange={
+                isTournament
+                  ? (id, name) => {
+                      setEvent({ id, name });
+                      setPage(1);
+                    }
+                  : undefined
+              }
+              setup={setup}
+              search={search}
+              failure={failure && (failure.eventId ?? undefined) === scope?.eventId ? failure : null}
+              categories={categories}
+              onCategoriesChange={(next) => setPicked({ key, categories: next, radius })}
+              radius={radius}
+              onRadiusChange={(next) => setPicked({ key, categories, radius: next })}
+              pendingCount={pending}
+              onReview={() => setStep("review")}
+              onFind={find}
+            />
+          ) : (
+            <ReviewStep
+              drafts={drafts}
+              status={status}
+              onStatusChange={(next) => {
+                setStatus(next);
+                setPage(1);
+              }}
+              page={page}
+              onPageChange={setPage}
+              eventName={isTournament ? event?.name : undefined}
+              run={search.run}
+              onChangeSearch={() => setStep("search")}
+            />
+          )}
+        </div>
+      </div>
+
+      {settingsOpened && (
+        <div role="tabpanel" aria-label={AGENT_TAB_LABELS.settings} hidden={tab !== "settings"}>
+          <CalendarCard />
+        </div>
       )}
     </div>
   );

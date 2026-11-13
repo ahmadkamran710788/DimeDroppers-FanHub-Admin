@@ -85,3 +85,14 @@ export const messageTime = (m: ThreadMessage) => m.receivedAt ?? m.sentAt ?? m.c
 
 // "Nov 2": the day a follow-up is planned for.
 export const formatDay = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+// "Wed, Nov 12, 1:30 – 2:00 AM PST": a booked call, in the viewer's time zone.
+export const formatCallTime = (startIso: string, endIso: string) =>
+  new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  }).formatRange(new Date(startIso), new Date(endIso));

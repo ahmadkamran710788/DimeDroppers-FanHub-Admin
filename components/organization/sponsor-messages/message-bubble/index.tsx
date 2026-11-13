@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { Sparkles } from "lucide-react";
+import LinkedText from "@/components/common/linked-text";
 import { cn } from "@/utils/cn";
 
 interface MessageBubbleProps {
@@ -32,7 +33,8 @@ export default function MessageBubble({ side, who, time, text, status, children 
         )}
         style={side === "org" ? { background: "var(--gradient-cta)" } : undefined}
       >
-        {text}
+        {/* The agent's answer ends with the booking link, so links open from here. */}
+        <LinkedText text={text} />
       </div>
       {status && <span className="text-[11px] text-white/50">{status}</span>}
       {children}

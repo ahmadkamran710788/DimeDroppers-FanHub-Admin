@@ -215,6 +215,9 @@ export interface ThreadSummary {
   handler: ThreadHandler;
   // When the conversation moved to the organisation (take over, a reply from the panel, or the agent).
   handedOverAt: string | null;
+  // The latest call the sponsor booked from the agent's link; null when none. A booking hands the
+  // conversation to the organisation.
+  call: SponsorAiCall | null;
   subject: string;
   // Tournaments only.
   event: { id: string; name: string | null } | null;
@@ -287,4 +290,46 @@ export interface ThreadList {
 // A reply from the panel: 1–5,000 characters, sent exactly as written (the user types their own sign-off).
 export interface ThreadReplyBody {
   body: string;
+}
+
+// Call booking: /calendar, FANHUB_SPONSOR_AI_CALENDAR_FRONTEND.md. The organisation connects its calendar
+// once; the agent then answers a sponsor asking for a call with the booking page link.
+
+export type CalendarProvider = "google" | "microsoft";
+
+export interface SponsorAiCalendar {
+  connected: boolean;
+  provider: CalendarProvider | null;
+  // Masked, e.g. "a***@dimedroppers.com".
+  email: string | null;
+  // NEEDS_RECONNECT: the sign-in expired; connecting again fixes it.
+  status: "CONNECTED" | "NEEDS_RECONNECT" | null;
+  // null for a moment right after connecting.
+  bookingUrl: string | null;
+  connectedAt: string | null;
+}
+
+export interface CalendarConnectBody {
+  provider: CalendarProvider;
+}
+
+// The provider's sign-in page; works for 10 minutes.
+export interface CalendarConnectLink {
+  authUrl: string;
+}
+
+export interface SponsorAiCall {
+  id: string;
+  status: "BOOKED" | "CANCELLED";
+  startAt: string;
+  endAt: string;
+  // null for about a minute after a booking, while the calendar makes the Meet or Teams link.
+  meetingUrl: string | null;
+  guestName: string | null;
+  // Masked.
+  guestEmail: string;
+  bookedAt: string;
+  rescheduledAt: string | null;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
 }
