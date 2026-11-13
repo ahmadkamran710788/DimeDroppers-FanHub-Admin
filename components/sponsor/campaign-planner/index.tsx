@@ -1,22 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
 import { cn } from "@/utils/cn";
 import { plural } from "@/utils/helper";
 import { dollars } from "@/utils/needs";
 import { routes } from "@/utils/routes";
+import Button from "@/components/common/button";
 import Loader from "@/components/common/loader";
 import StatCard, { type Stat } from "@/components/common/stat-card";
-import { sponsorRequest } from "@/components/sponsor/sponsor-api";
-import { CARD, HINT } from "@/components/sponsor/styles";
+import ActivatedSummary, { type ActivatedDone } from "@/components/sponsor/checkout/activated-summary";
+import { activeActivations, sponsorRequest, type ActiveActivations } from "@/components/sponsor/sponsor-api";
+import { CARD, HINT, LINK_BUTTON, OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
+import { cartItemKey } from "@/context/sponsor-cart";
 import { useSponsorStores } from "@/components/sponsor/find-organizations/use-sponsor-stores";
 import InventoryMix from "@/components/sponsor/campaign-planner/inventory-mix";
 import LaunchPanel from "@/components/sponsor/campaign-planner/launch-panel";
 import MarketBreakdown from "@/components/sponsor/campaign-planner/market-breakdown";
 import PlacementsTable, { ALL_MARKETS } from "@/components/sponsor/campaign-planner/placements-table";
 import PlanComposer, { type FieldErrors } from "@/components/sponsor/campaign-planner/plan-composer";
+import { planEntries } from "@/components/sponsor/campaign-planner/plan-items";
 import { summarizePlan, type PlanSummary } from "@/components/sponsor/campaign-planner/summarize-plan";
 import { PLAN_STAT_TINTS, fieldOfPath, type PlannerTier } from "@/components/sponsor/campaign-planner/data";
 import type { SponsorSearchFilters } from "@/utils/types/sponsor-packages";
@@ -61,8 +66,8 @@ interface CampaignPlannerProps {
 
 // Dime AI's Campaign Planner (national and regional brands): the sponsor sets where, the budget, season, goal,
 // sports and genders, and POST /plans/recommend answers one plan across organizations (schools, clubs and leagues
-// as a whole; tournaments by their events near the locations). Lines can be removed on screen; nothing is saved
-// or bought.
+// as a whole; tournaments by their events near the locations). Lines can be removed on screen; the lines left
+// are bought together or put in the cart (the Launch panel). Nothing is saved.
 export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
   const stores = useSponsorStores();
   const [filters, setFilters] = useState<SponsorSearchFilters | null>(null);
@@ -75,6 +80,12 @@ export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
   const [market, setMarket] = useState(ALL_MARKETS);
   // Indexes of the lines the sponsor removed.
   const [excluded, setExcluded] = useState<ReadonlySet<number>>(new Set());
+  // What the sponsor already has active (cart item key → stores), checked once per plan.
+  const [active, setActive] = useState<{ plan: SponsorPlan; map: ActiveActivations } | null>(null);
+  // What the last price check found per line (line index → text).
+  const [problems, setProblems] = useState<ReadonlyMap<number, string>>(new Map());
+  // The plan was bought: its summary replaces the plan.
+  const [done, setDone] = useState<ActivatedDone | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,6 +100,18 @@ export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
     };
   }, [filterLoads]);
 
+  useEffect(() => {
+    if (!plan) return;
+    let cancelled = false;
+    activeActivations().then((map) => {
+      // If it can't be checked, buying isn't blocked (as in the cart).
+      if (!cancelled) setActive({ plan, map: map ?? new Map() });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [plan]);
+
   // One plan per press (the API allows 20 an hour, failed ones included), never retried by itself.
   async function build(request: SponsorPlanRequest): Promise<FieldErrors | null> {
     setBuilding(true);
@@ -99,6 +122,8 @@ export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
       setPlan(r.view);
       setExcluded(new Set());
       setMarket(ALL_MARKETS);
+      setProblems(new Map());
+      setDone(null);
       return null;
     }
     const fieldErrors: FieldErrors = {};
@@ -115,7 +140,32 @@ export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
     setExcluded((prev) => new Set(prev).add(index));
   }
 
+  // Back to an empty planner after a purchase; the composer keeps what was typed.
+  function startOver() {
+    setDone(null);
+    setPlan(null);
+    setProblems(new Map());
+  }
+
   const summary = plan ? summarizePlan(plan, excluded) : null;
+
+  // The cart items of the lines still in the plan (every market, not only the one shown).
+  const entries = plan
+    ? planEntries(
+        plan.lines.map((line, index) => ({ line, index })).filter(({ index }) => !excluded.has(index)),
+        plan.currency
+      )
+    : [];
+  const activeMap = active && active.plan === plan ? active.map : null;
+  // Lines with something the sponsor already has active: without stores it isn't bought twice.
+  const activeLines = new Set(
+    entries.filter((e) => activeMap?.has(cartItemKey(e.cartLine.item))).map((e) => e.lineIndex)
+  );
+  const notes = new Map(problems);
+  for (const index of activeLines) {
+    const owned = "You already have this active.";
+    notes.set(index, problems.has(index) ? `${owned} ${problems.get(index)}` : owned);
+  }
 
   return (
     // Spacing and title sizes follow the admin pages, as on Fundable Needs.
@@ -167,7 +217,25 @@ export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
         </section>
       )}
 
-      {!building && plan && summary && (
+      {!building && done && (
+        <ActivatedSummary
+          done={done}
+          actions={
+            <>
+              <Link href={routes.ui.sponsor.mySponsorships} className={cn(PRIMARY_BUTTON, LINK_BUTTON)}>
+                View my sponsorships
+              </Link>
+              <Button
+                label="Build another plan"
+                onClick={startOver}
+                className={cn(OUTLINE_BUTTON, "h-12 px-[22px] rounded-[10px] text-[15px] font-semibold")}
+              />
+            </>
+          }
+        />
+      )}
+
+      {!building && !done && plan && summary && (
         <section aria-label="Recommended package" className="flex flex-col gap-6">
           <div className="flex gap-[14px] items-start">
             <span className="size-11 shrink-0 rounded-[12px] bg-[#2a2148] border border-[#4a3f7a] flex items-center justify-center">
@@ -205,11 +273,24 @@ export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
             excluded={excluded}
             onRemove={remove}
             onRestore={() => setExcluded(new Set())}
+            notes={notes}
           />
 
           <div className="flex flex-wrap gap-5">
             <InventoryMix mix={summary.inventoryMix} count={summary.lineCount} />
-            <LaunchPanel count={summary.lineCount} totalCents={summary.totalCents} />
+            <LaunchPanel
+              entries={entries}
+              count={summary.lineCount}
+              totalCents={summary.totalCents}
+              checking={!activeMap}
+              blockedReason={
+                activeLines.size
+                  ? `Remove the ${plural(activeLines.size, "line")} you already have active (✕) to buy the plan.`
+                  : null
+              }
+              onProblems={setProblems}
+              onBought={setDone}
+            />
           </div>
         </section>
       )}

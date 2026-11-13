@@ -26,3 +26,6 @@ export const SECTION_TITLE = "font-display font-black text-xl lg:text-[28px] upp
 
 // Small caps eyebrow over a card or panel ("WHAT FANS SEE", "SELECTED SLOT").
 export const EYEBROW = "text-xs font-semibold tracking-[1px] text-[#a8a8a8]";
+
+// A Link that looks like a 48px button; callers add PRIMARY_BUTTON or OUTLINE_BUTTON ("View my sponsorships").
+export const LINK_BUTTON = "inline-flex items-center justify-center h-12 px-[22px] rounded-[10px] text-[15px]";
