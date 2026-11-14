@@ -21,7 +21,7 @@ export interface OrgSearch {
   genders: string[];
   // Physical asset category codes ("SPONSOR_TENT"…): organizations offering any of them.
   assetCategories: string[];
-  // As typed ("$60,000"); "" for any. Sent as budgetCents.
+  // Dollars as typed, the number only ("60000"); "" for any. Sent as budgetCents.
   budget: string;
   // A seasons code from GET /filters ("FALL"…); "" for any.
   season: string;

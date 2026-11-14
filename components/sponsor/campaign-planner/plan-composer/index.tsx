@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { cn } from "@/utils/cn";
-import { parseMoney } from "@/utils/helper";
+import { parseMoney, typedMoney } from "@/utils/helper";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
 import Button from "@/components/common/button";
@@ -132,16 +132,22 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
       </div>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 items-start">
+        {/* Dollars, the number only; the "$" is fixed in the field. */}
         <Input
           label="TOTAL BUDGET"
           name="plan-budget"
           value={form.budget}
-          onChange={(e) => update("budget", e.target.value)}
-          placeholder="e.g. $60,000"
+          onChange={(e) => {
+            const amount = typedMoney(e.target.value);
+            if (amount !== null) update("budget", amount);
+          }}
+          placeholder="60000"
+          inputMode="decimal"
+          icon={<span className="text-[16px] text-white/60">$</span>}
           error={errors.budget}
           className="min-w-0"
           labelClassName={SECTION_LABEL}
-          inputClassName={cn(CONTROL, "py-0 px-[14px] placeholder:text-[#757575]")}
+          inputClassName={cn(CONTROL, "py-0 px-[14px] pl-9 placeholder:text-[#757575]")}
         />
         {/* The seasons still open (GET /filters); none left means any season. */}
         {(filters?.seasons.length ?? 0) > 0 && (

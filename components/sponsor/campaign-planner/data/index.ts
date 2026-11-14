@@ -26,7 +26,7 @@ export interface PlanForm {
   stores: MultiSelectValue;
   // Whole miles around each location, as typed (digits only); the API takes 1 to 250.
   radius: string;
-  // As typed ("$60,000").
+  // Dollars as typed, the number only ("60000"); the field shows a fixed "$".
   budget: string;
   // A seasons code; "" until the filters load (the first season).
   season: string;
@@ -39,7 +39,7 @@ export const DEFAULT_FORM: PlanForm = {
   stores: ALL,
   // The API's default radius.
   radius: "25",
-  budget: "$60,000",
+  budget: "60000",
   season: "",
   goal: "BRAND_AWARENESS",
   sports: [],

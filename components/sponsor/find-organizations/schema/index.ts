@@ -26,7 +26,7 @@ export const orgSearchSchema = yup.object({
   budget: yup
     .string()
     .trim()
-    .test("is-amount", "Enter a budget like $60,000", (budget) => {
+    .test("is-amount", "Enter a budget like 60000", (budget) => {
       if (!budget) return true;
       const amount = parseMoney(budget);
       return Number.isFinite(amount) && amount >= 0.01;

@@ -22,7 +22,7 @@ export const campaignRequestSchema = yup.object({
   budget: yup
     .string()
     .required("Total budget is required")
-    .test("is-amount", "Enter a budget like $60,000", (b) => !b || Number.isFinite(parseMoney(b)))
+    .test("is-amount", "Enter a budget like 60000", (b) => !b || Number.isFinite(parseMoney(b)))
     .test("min-budget", "Enter a budget of at least $100", (b) => !Number.isFinite(parseMoney(b ?? "")) || centsOf(b) >= MIN_BUDGET_CENTS)
     .test("max-budget", "Enter a budget of $1,000,000,000 or less", (b) => !Number.isFinite(parseMoney(b ?? "")) || centsOf(b) <= MAX_BUDGET_CENTS),
 });
