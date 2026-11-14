@@ -1,7 +1,13 @@
 import * as yup from "yup";
 import { parseMoney } from "@/utils/helper";
 import { ALL } from "@/components/common/multi-select";
-import { MAX_BUDGET_CENTS, MAX_RADIUS_MILES, MIN_BUDGET_CENTS } from "@/components/sponsor/campaign-planner/data";
+import {
+  MAX_BUDGET_CENTS,
+  MAX_PROMPT_LENGTH,
+  MAX_RADIUS_MILES,
+  MIN_BUDGET_CENTS,
+  MIN_PROMPT_LENGTH,
+} from "@/components/sponsor/campaign-planner/data";
 
 const centsOf = (budget: string | undefined) => Math.round(parseMoney(budget ?? "") * 100);
 
@@ -22,7 +28,17 @@ export const campaignRequestSchema = yup.object({
   budget: yup
     .string()
     .required("Total budget is required")
-    .test("is-amount", "Enter a budget like $60,000", (b) => !b || Number.isFinite(parseMoney(b)))
+    .test("is-amount", "Enter a budget like 60000", (b) => !b || Number.isFinite(parseMoney(b)))
     .test("min-budget", "Enter a budget of at least $100", (b) => !Number.isFinite(parseMoney(b ?? "")) || centsOf(b) >= MIN_BUDGET_CENTS)
     .test("max-budget", "Enter a budget of $1,000,000,000 or less", (b) => !Number.isFinite(parseMoney(b ?? "")) || centsOf(b) <= MAX_BUDGET_CENTS),
+});
+
+// The brief, checked before POST /plans/prompt (the API's own limits and messages).
+export const campaignPromptSchema = yup.object({
+  prompt: yup
+    .string()
+    .trim()
+    .required("Describe your campaign in a few more words")
+    .min(MIN_PROMPT_LENGTH, "Describe your campaign in a few more words")
+    .max(MAX_PROMPT_LENGTH, `Keep the description under ${MAX_PROMPT_LENGTH} characters`),
 });

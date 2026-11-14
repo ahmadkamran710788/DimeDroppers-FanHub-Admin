@@ -65,9 +65,10 @@ interface CampaignPlannerProps {
 }
 
 // Dime AI's Campaign Planner (national and regional brands): the sponsor sets where, the budget, season, goal,
-// sports and genders, and POST /plans/recommend answers one plan across organizations (schools, clubs and leagues
-// as a whole; tournaments by their events near the locations). Lines can be removed on screen; the lines left
-// are bought together or put in the cart (the Launch panel). Nothing is saved.
+// sports and genders (or describes the campaign and POST /plans/prompt fills them in), and POST /plans/recommend
+// answers one plan across organizations (schools, clubs and leagues as a whole; tournaments by their events near
+// the locations). Lines can be removed on screen; the lines left are bought together or put in the cart (the
+// Launch panel). Nothing is saved.
 export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
   const stores = useSponsorStores();
   const [filters, setFilters] = useState<SponsorSearchFilters | null>(null);
@@ -176,8 +177,8 @@ export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
             CAMPAIGN PLANNER
           </h2>
           <p className="text-base leading-[26px] text-[#e5e5e5]">
-            Tell Dime AI where, how much and what for. It searches the organizations, packages and add-ons near your
-            locations and builds one plan within your budget.
+            Describe the campaign you want, or set it up yourself. Dime AI searches the organizations, packages and
+            add-ons near your locations and builds one plan within your budget.
           </p>
         </div>
         <span className="text-[13px] font-bold tracking-[1px] px-3 py-2 rounded-full bg-[#2a2148] text-[#d9ccff] border border-[#4a3f7a]">
@@ -212,7 +213,8 @@ export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
         <section aria-label="Your plan" className={cn(CARD, "rounded-[8px] p-6 flex flex-col items-start gap-2")}>
           <p className="text-[15px] text-white font-semibold">Your plan will appear here.</p>
           <p className="text-sm text-[#a8a8a8]">
-            Set your locations and budget above and press Build my plan. Nothing is bought until you choose to.
+            Describe your campaign or set your locations and budget above, then press Build my plan. Nothing is
+            bought until you choose to.
           </p>
         </section>
       )}

@@ -12,6 +12,8 @@ interface SelectOption {
 
 interface SelectProps {
   label: string;
+  // Shown on the label's row, after the label (e.g. a tag).
+  labelHint?: ReactNode;
   name: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
@@ -34,6 +36,7 @@ interface SelectProps {
 // one as the filter chip menus) instead of the browser's list, which can't be styled.
 export default function Select({
   label,
+  labelHint,
   name,
   value,
   onChange,
@@ -138,12 +141,23 @@ export default function Select({
     }
   }
 
+  const labelEl = (
+    <label htmlFor={name} className={cn("text-base font-medium text-midnight-navy", labelClassName)}>
+      {label}
+      {required && <span className="text-error"> *</span>}
+    </label>
+  );
+
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <label htmlFor={name} className={cn("text-base font-medium text-midnight-navy", labelClassName)}>
-        {label}
-        {required && <span className="text-error"> *</span>}
-      </label>
+      {labelHint ? (
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          {labelEl}
+          <span>{labelHint}</span>
+        </div>
+      ) : (
+        labelEl
+      )}
       <div className="relative flex items-center">
         {icon && (
           <span

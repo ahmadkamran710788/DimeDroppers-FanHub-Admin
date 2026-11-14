@@ -84,6 +84,13 @@ export const parseMoney = (text: string): number => {
   return digits ? Number(digits) : NaN;
 };
 
+// What a "$" field keeps of a keystroke or paste: digits with up to 2 decimals ("$60,000" → "60000"); null
+// when it isn't an amount, so the change is dropped.
+export const typedMoney = (text: string): string | null => {
+  const amount = text.replace(/[^\d.]/g, "");
+  return /^\d*(\.\d{0,2})?$/.test(amount) ? amount : null;
+};
+
 // A coordinate as a form shows it: 6 decimals (about 10 cm), so 45.66981699999999 reads 45.669817; "" for none.
 export const coordinateText = (n: number | null) => (n === null ? "" : String(Number(n.toFixed(6))));
 

@@ -6,7 +6,7 @@ export type SponsorTypeCode = "LOCAL_BUSINESS" | "REGIONAL_BRAND" | "NATIONAL_BR
 export type SponsorLocationSource = "MANUAL" | "AI";
 export type SponsorLocationFetchStatus = "PENDING" | "RUNNING" | "SAVING" | "COMPLETED" | "FAILED";
 // MAIN_CITY: a local business, searched in its main location's city (a button only). SELECTED_AREAS: a regional
-// or national brand, searched in the states and cities it picks.
+// or national brand, searched in the states, cities and ZIP codes it picks.
 export type SponsorLocationFetchMode = "MAIN_CITY" | "SELECTED_AREAS";
 
 export interface LogoRules {
@@ -100,17 +100,20 @@ export interface SponsorLocation {
   updatedAt: string;
 }
 
-// A state or city a fetch searched.
+// A state, city or ZIP code a fetch searched (FANHUB_SPONSOR_LOCATION_FETCH_ZIP_FRONTEND.md).
 export interface SponsorFetchArea {
-  // Stable id, e.g. "STATE:OK" or "CITY:TX:houston"; sent back as ?areaKey=.
+  // Stable id, e.g. "STATE:OK", "CITY:TX:houston" or "ZIP:33801"; sent back as ?areaKey=.
   key: string;
-  kind: "STATE" | "CITY";
-  // Two-letter code.
+  kind: "STATE" | "CITY" | "ZIP";
+  // Two-letter code. "" (and stateName "", city null) for a ZIP code until the fetch has placed it on the map,
+  // a second or two after it starts.
   state: string;
   stateName: string;
   // null for a state.
   city: string | null;
-  // Ready to show: "Oklahoma", "Houston, TX".
+  // The ZIP code of a ZIP area; null for a state or city (and on every area of fetches before 13 Nov 2026).
+  zipCode: string | null;
+  // Ready to show: "Oklahoma", "Houston, TX", "33801 (Lakeland, FL)" ("33801" until it is placed).
   label: string;
   // "Not found on the map" when Google couldn't place it; the other areas are still searched.
   error: string | null;
@@ -159,11 +162,13 @@ export interface SponsorLocationFetchResult extends SponsorLocationFetchRun {
   results: SponsorFetchAreaResult[];
 }
 
-// POST /locations/fetch for a regional or national brand: at least one state or city (a local business sends
-// nothing). States and cities' states as codes or names.
+// POST /locations/fetch for a regional or national brand: at least one state, city or ZIP code (a local
+// business sends nothing). States and cities' states as codes or names; ZIP codes as 5-digit strings (ZIP+4 is
+// cut to 5), no state needed.
 export interface StartLocationFetchBody {
   states?: string[];
   cities?: { city: string; state: string }[];
+  zipCodes?: string[];
 }
 
 // GET / PATCH /fanhub/sponsor-profile.

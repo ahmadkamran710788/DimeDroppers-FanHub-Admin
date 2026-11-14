@@ -97,3 +97,41 @@ export interface SponsorPlan {
   inventoryMix: { name: string; lineCount: number }[];
   currency: "USD";
 }
+
+// Prompt mode: POST /fanhub/sponsor-packages/plans/prompt reads a brief into the planner's form
+// (FANHUB_SPONSOR_PLAN_FRONTEND.md §6).
+export type PlanPromptField =
+  | "brandLocationIds"
+  | "budgetCents"
+  | "season"
+  | "goal"
+  | "sports"
+  | "genders"
+  | "radiusMiles";
+
+export interface SponsorPlanPromptResult {
+  // The body for POST /plans/recommend; null means the brief didn't give it.
+  form: {
+    // Up to 50 store ids; "ALL" when no place was named or the places cover every store; null when no store matched.
+    brandLocationIds: string[] | "ALL" | null;
+    radiusMiles: number;
+    eventIds: string[];
+    budgetCents: number | null;
+    // A seasons code (FALL_WINTER…).
+    season: string | null;
+    goal: PlanGoal;
+    // Codes ("FOOTBALL", "BOYS").
+    sports: string[];
+    genders: string[];
+  };
+  // Each state or city read from the brief, with how many of the sponsor's stores are in it.
+  areas: { label: string; state: string; city: string | null; locationCount: number }[];
+  // Stores used.
+  locationCount: number;
+  // The fields that came from the brief.
+  filled: PlanPromptField[];
+  // The fields the sponsor must fill before building.
+  missing: ("brandLocationIds" | "budgetCents")[];
+  // Lines to show the sponsor ("You have no locations in Texas").
+  notes: string[];
+}

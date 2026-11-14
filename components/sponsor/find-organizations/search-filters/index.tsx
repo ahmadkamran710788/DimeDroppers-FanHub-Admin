@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { cn } from "@/utils/cn";
+import { typedMoney } from "@/utils/helper";
 import { routes } from "@/utils/routes";
 import { validateAndSetErrors } from "@/utils/validation";
 import Button from "@/components/common/button";
@@ -256,12 +257,18 @@ export default function SearchFilters({
             label="SPONSOR BUDGET"
             name="org-budget"
             value={form.budget}
-            onChange={(e) => update("budget", e.target.value)}
-            placeholder="e.g. $60,000"
+            // Dollars, the number only; the "$" is fixed in the field.
+            onChange={(e) => {
+              const amount = typedMoney(e.target.value);
+              if (amount !== null) update("budget", amount);
+            }}
+            placeholder="60000"
+            inputMode="decimal"
+            icon={<span className="text-[16px] text-white/60">$</span>}
             error={errors.budget}
             className="min-w-0"
             labelClassName={SECTION_LABEL}
-            inputClassName={cn(CONTROL, "py-0 px-[14px] placeholder:text-[#757575]")}
+            inputClassName={cn(CONTROL, "py-0 px-[14px] pl-9 placeholder:text-[#757575]")}
           />
           <Select
             label="SEASON"

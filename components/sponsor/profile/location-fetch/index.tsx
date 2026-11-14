@@ -31,10 +31,10 @@ interface LocationFetchProps {
   timedOut: boolean;
 }
 
-// Finds the brand's other stores on request (FANHUB_SPONSOR_LOCATION_FETCH_FRONTEND.md). A local business is
-// searched in its main location's city; a regional or national brand in the states and cities it picks. The
-// profile is followed while the fetch runs; then its results show per area, and earlier fetches from the
-// history.
+// Finds the brand's other stores on request (FANHUB_SPONSOR_LOCATION_FETCH_FRONTEND.md and its ZIP code note).
+// A local business is searched in its main location's city; a regional or national brand in the states, cities
+// and ZIP codes it picks. The profile is followed while the fetch runs; then its results show per area, and
+// earlier fetches from the history.
 export default function LocationFetch({ profile, onChange, reload, timedOut }: LocationFetchProps) {
   const lookup = profile.locationsFetch;
   const main = profile.mainLocation;
@@ -72,7 +72,7 @@ export default function LocationFetch({ profile, onChange, reload, timedOut }: L
   const hint = !main
     ? "Add your main location first: the first location you add below becomes your main one."
     : byArea
-      ? "Pick the states and cities to search for your stores. The ones found are added to your locations."
+      ? "Pick the states, cities and ZIP codes to search for your stores. The ones found are added to your locations."
       : mainCityMissing
         ? "Add a city and state to your main location first."
         : `Finds your other stores in ${main.city}, ${main.state}.`;
@@ -110,15 +110,21 @@ export default function LocationFetch({ profile, onChange, reload, timedOut }: L
       reload();
       return null;
     }
-    // A state or city the API refused is marked in the picker ("states.0" under the states).
+    // A state, city or ZIP code the API refused is marked in the picker: "states.0" under the states,
+    // "cities.2.city" and "zipCodes.1" under their rows (the picker finds the row).
     if (body && r.status === 400) {
       const fields: Record<string, string> = {};
       for (const e of r.errors ?? []) {
-        const key = e.path.startsWith("states") ? "states" : e.path.startsWith("cities.") ? e.path : "";
+        const key = e.path.startsWith("states")
+          ? "states"
+          : e.path.startsWith("cities") || e.path.startsWith("zipCodes")
+            ? e.path
+            : "";
         if (key && !fields[key]) fields[key] = e.message;
       }
       if (Object.keys(fields).length) return fields;
-      if (/state or city/i.test(message)) return { states: message };
+      // "Choose at least one state, city or ZIP code".
+      if (/at least one/i.test(message)) return { states: message };
     }
     toast.error(message);
     // "Add your main location first": the profile is out of date.
