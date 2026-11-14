@@ -1,6 +1,6 @@
 import * as yup from "yup";
 import { isValidPhoneNumber } from "libphonenumber-js";
-import { MAX_FETCH_CITIES, MAX_FETCH_STATES } from "@/components/sponsor/profile/data";
+import { MAX_FETCH_CITIES, MAX_FETCH_STATES, MAX_FETCH_ZIPS, ZIP_CODE } from "@/components/sponsor/profile/data";
 
 // Limits and messages follow the sponsor profile API, which checks the same again.
 
@@ -55,23 +55,33 @@ export const locationSchema = yup
     );
   });
 
-// Fetch locations for a regional or national brand: any states and cities, at least one of them. Errors on a
-// city are keyed "cities.2.city" / "cities.2.state", as the API reports them.
+// Fetch locations for a regional or national brand, as the picker holds it: whole states, rows of a state with
+// some of its cities, and ZIP codes; at least one of them. Errors come keyed "cityGroups[2].cities" and
+// "zipCodes[1]"; the picker puts them under the right row. Empty rows are left out before this runs.
 export const locationFetchSchema = yup
   .object({
     states: yup.array(yup.string().required()).max(MAX_FETCH_STATES, `Choose at most ${MAX_FETCH_STATES} states`),
-    cities: yup
+    cityGroups: yup
       .array(
         yup.object({
-          city: yup.string().trim().required("City is required").max(120, "Keep the city under 120 characters"),
           state: yup.string().required("Choose a US state"),
+          cities: yup
+            .array(yup.string().trim().required().max(120, "Keep the city under 120 characters"))
+            .min(1, "Pick at least one city"),
         })
       )
-      .max(MAX_FETCH_CITIES, `Add at most ${MAX_FETCH_CITIES} cities`),
+      .test(
+        "most-cities",
+        `Pick at most ${MAX_FETCH_CITIES} cities`,
+        (groups) => (groups ?? []).reduce((sum, g) => sum + (g.cities?.length ?? 0), 0) <= MAX_FETCH_CITIES
+      ),
+    zipCodes: yup
+      .array(yup.string().trim().required().matches(ZIP_CODE, "Enter a 5-digit US ZIP code"))
+      .max(MAX_FETCH_ZIPS, `Add at most ${MAX_FETCH_ZIPS} ZIP codes`),
   })
   .test("some", function (v) {
     return (
-      (v.states?.length ?? 0) + (v.cities?.length ?? 0) > 0 ||
-      this.createError({ path: "states", message: "Choose at least one state or city" })
+      (v.states?.length ?? 0) + (v.cityGroups?.length ?? 0) + (v.zipCodes?.length ?? 0) > 0 ||
+      this.createError({ path: "states", message: "Choose at least one state, city or ZIP code" })
     );
   });

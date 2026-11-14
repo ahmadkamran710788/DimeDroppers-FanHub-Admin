@@ -418,6 +418,10 @@ export const routes = {
     sponsorLocationsFetch: "fanhub/sponsor-profile/locations/fetch",
     sponsorLocationFetches: "fanhub/sponsor-profile/locations/fetches",
     sponsorLocationFetch: (runId: string) => `fanhub/sponsor-profile/locations/fetches/${runId}`,
+    // Our own Next routes (plain fetch, no token) for the Fetch locations picker: every city of a US state
+    // (built at build time), and the city and state of a ZIP code. Served from the `zipcodes` package.
+    usPlacesCities: (state: string) => `/api/us-places/cities/${state}`,
+    usPlacesZip: (zip: string) => `/api/us-places/zip/${zip}`,
     // The organisation's own view (organiser token): its packages as sponsors see them (?eventId= for a
     // tournament), its events, and who activated what.
     orgSponsorPackages: "fanhub/org/sponsor-packages/packages",

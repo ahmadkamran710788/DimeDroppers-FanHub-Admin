@@ -16,9 +16,13 @@ export const isLookupActive = (status: SponsorLocationFetchStatus | null | undef
 // each area of a fetch's results).
 export const PAGE_SIZE = 10;
 
-// The most states / cities one fetch takes.
+// The most states / cities / ZIP codes one fetch takes (cities counted across all the picker's state rows).
 export const MAX_FETCH_STATES = 60;
 export const MAX_FETCH_CITIES = 500;
+export const MAX_FETCH_ZIPS = 500;
+
+// A US ZIP code as the fetch takes it: 5 digits, or ZIP+4 (cut to 5 by the API).
+export const ZIP_CODE = /^\d{5}(-\d{4})?$/;
 
 // "Nov 2, 4:05 PM": when a fetch ran, in the fetch history.
 export const fetchTime = (iso: string) =>

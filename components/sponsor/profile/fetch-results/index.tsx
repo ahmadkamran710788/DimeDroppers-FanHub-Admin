@@ -55,7 +55,7 @@ export default function FetchResults({ result }: FetchResultsProps) {
       />
       <p className="text-sm text-[#a8a8a8]">
         {area.error
-          ? `${area.error}. Check the spelling and fetch again.`
+          ? `${area.error}. ${area.kind === "ZIP" ? "Check the ZIP code" : "Check the spelling"} and fetch again.`
           : `${area.label}: ${locationCount === 1 ? "1 location" : `${locationCount} locations`} (${newCount} new)`}
       </p>
       {loadingArea === area.key ? (

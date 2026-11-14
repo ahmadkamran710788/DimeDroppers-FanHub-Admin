@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/utils/cn";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import Checkbox from "@/components/common/checkbox";
 import FloatingPanel, { MENU_ITEM } from "@/components/common/floating-panel";
@@ -42,6 +42,13 @@ interface MultiSelectProps {
   disabled?: boolean;
   // "light" (default): light-grey field. "dark": translucent field with white text on dark cards.
   variant?: "light" | "dark";
+  // Lists only the first this many matches (e.g. a state's 1,500 cities); the rest show as the search narrows.
+  maxShown?: number;
+  // Set: a search that matches no option exactly offers it as a new pick (e.g. a town missing from a list),
+  // passed here; the caller adds it to `value` and to `options` (the field shows labels from `options`).
+  onCreate?: (text: string) => void;
+  // That row's text; `Add "text"` by default.
+  createLabel?: (text: string) => string;
 }
 
 // A filter box appears above lists longer than this.
@@ -68,6 +75,9 @@ export default function MultiSelect({
   selectClassName,
   disabled,
   variant = "light",
+  maxShown,
+  onCreate,
+  createLabel = (text) => `Add "${text}"`,
 }: MultiSelectProps) {
   const dark = variant === "dark";
   const [open, setOpen] = useState(false);
@@ -89,13 +99,19 @@ export default function MultiSelect({
 
   const all = value === ALL;
   const picked = new Set(all ? [] : value);
-  const filterable = options.length > FILTER_FROM;
+  // A list that takes new picks always has the box: typing is how they're added.
+  const filterable = options.length > FILTER_FROM || Boolean(onCreate);
   const needle = query.trim().toLowerCase();
-  const shown = needle
+  const matches = needle
     ? options.filter((o) => `${o.label} ${o.hint ?? ""}`.toLowerCase().includes(needle))
     : options;
+  const shown = maxShown !== undefined ? matches.slice(0, maxShown) : matches;
+  const hiddenCount = matches.length - shown.length;
   const withAll = Boolean(allLabel) && !needle;
-  const rowCount = shown.length + (withAll ? 1 : 0);
+  // The "Add …" row, after the options, when the search names none of them exactly.
+  const creatable = Boolean(onCreate) && Boolean(needle) && !options.some((o) => o.label.toLowerCase() === needle);
+  const createRow = shown.length + (withAll ? 1 : 0);
+  const rowCount = createRow + (creatable ? 1 : 0);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -139,8 +155,20 @@ export default function MultiSelect({
     onChange([...picked, option.value]);
   }
 
+  function create() {
+    if (max !== undefined && picked.size >= max) {
+      setNotice(`Select up to ${max}${allLabel ? `, or ${allLabel}` : ""}`);
+      return;
+    }
+    setNotice("");
+    onCreate?.(query.trim());
+    setQuery("");
+    setActive(0);
+  }
+
   function pickRow(row: number) {
     if (withAll && row === 0) toggleAll();
+    else if (creatable && row === createRow) create();
     else {
       const option = shown[row - (withAll ? 1 : 0)];
       if (option) toggle(option);
@@ -300,8 +328,32 @@ export default function MultiSelect({
             {shown.map((o, i) =>
               row(`option-${o.value}`, i + (withAll ? 1 : 0), picked.has(o.value), o.label, () => toggle(o), o.hint)
             )}
-            {shown.length === 0 && <li className={cn(MENU_ITEM, "text-white/60")}>No matches</li>}
+            {creatable && (
+              <li
+                key="create"
+                id={rowId(createRow)}
+                role="option"
+                aria-selected={false}
+                onMouseDown={(e) => e.preventDefault()}
+                onMouseEnter={() => setActive(createRow)}
+                onClick={create}
+                className={cn(
+                  MENU_ITEM,
+                  "flex items-center gap-3 cursor-pointer whitespace-normal text-[#c9b8ff]",
+                  createRow === active && "bg-white/10"
+                )}
+              >
+                <Plus className="size-4 shrink-0" strokeWidth={2.4} aria-hidden />
+                <span className="min-w-0 break-words">{createLabel(query.trim())}</span>
+              </li>
+            )}
+            {shown.length === 0 && !creatable && <li className={cn(MENU_ITEM, "text-white/60")}>No matches</li>}
           </ul>
+          {hiddenCount > 0 && (
+            <p className="px-4 py-2 text-xs text-white/60 border-t border-white/10">
+              {`Keep typing to see ${hiddenCount.toLocaleString("en-US")} more`}
+            </p>
+          )}
           {notice && (
             <p role="status" className="px-4 py-2 text-xs text-[#f0c36a] border-t border-white/10">
               {notice}
