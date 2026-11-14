@@ -368,6 +368,8 @@ export const routes = {
     sponsorPaymentCancel: (id: string) => `fanhub/sponsor-packages/payments/${id}/cancel`,
     // Campaign Planner (national and regional brands): POST, one plan across organisations; not saved, nothing bought.
     sponsorPlanRecommend: "fanhub/sponsor-packages/plans/recommend",
+    // POST { prompt }: reads a campaign brief (any language) into the planner's form; nothing is saved.
+    sponsorPlanPrompt: "fanhub/sponsor-packages/plans/prompt",
     // Purchased inventory (FANHUB_SPONSOR_PURCHASED_INVENTORY_FRONTEND.md). GET the slot chips with counts, and
     // the organisations with their packages and slots (?category=&catalogKeys=&page=&limit=).
     sponsorInventorySlots: "fanhub/sponsor-packages/inventory/slots",
