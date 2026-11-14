@@ -1,8 +1,7 @@
 import { cn } from "@/utils/cn";
 import OrgMonogram from "@/components/sponsor/find-organizations/org-monogram";
+import TemplateChip from "@/components/sponsor/brand-placements/performance/template-chip";
 import type { InventoryOrganizationItem } from "@/utils/types/sponsor-inventory";
-
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 interface OrgRowProps {
   item: InventoryOrganizationItem;
@@ -10,9 +9,10 @@ interface OrgRowProps {
   onSelect: () => void;
 }
 
-// An organization the sponsor bought at: its packages (one per event at a tournament) and slots.
+// An organization the sponsor bought the picked slot at: its packages (one per event at a tournament) and
+// the slot's template.
 export default function OrgRow({ item, selected, onSelect }: OrgRowProps) {
-  const { organization: org, packages, slotCount, slots } = item;
+  const { organization: org, packages } = item;
   const place = [org.city, org.state].filter(Boolean).join(", ");
   const meta = [org.organizationTypeLabel, place, org.sportsType].filter(Boolean).join(" · ");
 
@@ -40,10 +40,8 @@ export default function OrgRow({ item, selected, onSelect }: OrgRowProps) {
             {p.event?.name ? `${p.name} · ${p.event.name}` : p.name}
           </span>
         ))}
-        <span className="text-[11px] font-semibold text-[#ddd6fe]">
-          {/* `slots` holds only the picked slot's. */}
-          {`${slots.length} of ${plural(slotCount, "slot")}`}
-        </span>
+        {/* Slot setup is coming soon, so every slot runs the default. */}
+        <TemplateChip template="SIMPLE_BPA" />
       </span>
     </button>
   );

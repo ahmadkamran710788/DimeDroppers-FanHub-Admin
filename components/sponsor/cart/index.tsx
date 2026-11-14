@@ -28,7 +28,7 @@ interface SponsorCartProps {
   returnedPayment?: ReturnedPayment;
 }
 
-// The sponsor's cart: every package and physical asset picked on Find Organizations, priced now
+// The sponsor's cart: every package and physical asset picked on Sponsorships, priced now
 // (POST /activations/quote), and activated together (POST /activations/batch) as one payment: either every
 // item starts once paid, or none does.
 export default function SponsorCart({ returnedPayment }: SponsorCartProps) {
@@ -146,7 +146,7 @@ export default function SponsorCart({ returnedPayment }: SponsorCartProps) {
         actions={
           <>
             <Link href={routes.ui.sponsor.findOrganizations} className={cn(PRIMARY_BUTTON, LINK_BUTTON)}>
-              Find more organizations
+              Find more sponsorships
             </Link>
             <Link href={routes.ui.sponsor.mySponsorships} className={cn(OUTLINE_BUTTON, LINK_BUTTON)}>
               View my sponsorships
@@ -171,10 +171,10 @@ export default function SponsorCart({ returnedPayment }: SponsorCartProps) {
       {lines.length === 0 ? (
         <div className={cn(CARD, "rounded-[8px] p-6 flex flex-col items-start gap-4")}>
           <p className="text-[15px] text-[#a8a8a8]">
-            Your cart is empty. Add packages and physical assets from Find Organizations.
+            Your cart is empty. Add packages and physical assets from Sponsorships.
           </p>
           <Link href={routes.ui.sponsor.findOrganizations} className={cn(PRIMARY_BUTTON, LINK_BUTTON)}>
-            Find organizations
+            Find sponsorships
           </Link>
         </div>
       ) : (
