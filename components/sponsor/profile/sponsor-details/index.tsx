@@ -12,7 +12,14 @@ import Button from "@/components/common/button";
 import Input from "@/components/common/input";
 import Select from "@/components/common/select";
 import StatusPill from "@/components/common/status-pill";
-import { CUSTOM_CATEGORY_MAX, OTHER_CATEGORY, categoryText, checkLogo, isLogoFile } from "@/components/sponsor/data";
+import {
+  CUSTOM_CATEGORY_MAX,
+  OTHER_CATEGORY,
+  categoryOptionsAZ,
+  categoryText,
+  checkLogo,
+  isLogoFile,
+} from "@/components/sponsor/data";
 import { sponsorRequest } from "@/components/sponsor/sponsor-api";
 import { OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
 import { sponsorBrandSchema } from "@/components/auth/schema";
@@ -94,7 +101,7 @@ export default function SponsorDetails({ brand, options, onSaved }: SponsorDetai
   const categoryOptions = options
     ? [
         ...ownCategory,
-        ...options.categories.map((c) => ({ label: c.label, value: c.code })),
+        ...categoryOptionsAZ(options.categories),
         { label: "Other", value: OTHER_CATEGORY },
       ]
     : brand?.category

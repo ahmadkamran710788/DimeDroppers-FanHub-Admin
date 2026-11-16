@@ -9,29 +9,35 @@ export const SPONSOR_PROFILE = {
   initials: "NP",
 };
 
-// A sponsor's category, picked at sign-up and changed on Sponsor Profile and Brand Assets.
+// A sponsor's category, picked at sign-up and changed on Sponsor Profile and Brand Assets. A-Z.
 export const SPONSOR_CATEGORY_OPTIONS = toOptions([
-  "Sports & Athletic Apparel",
-  "Food, Beverage & Nutrition",
-  "Technology & Consumer Electronics",
-  "Entertainment & Media",
-  "Banking, Finance & Payments",
-  "Fitness, Health & Recovery",
   "Automotive & Transportation",
-  "Fashion & Lifestyle",
-  "Education & Career Development",
-  "Local Businesses & Community Partners",
-  "Insurance & Professional Services",
-  "Sports Collectibles & Merchandise",
-  "Youth Sports & Family Brands",
-  "Sports Technology & Analytics",
+  "Banking, Finance & Payments",
   "Community Development & Nonprofits",
-  "Travel, Hotels & Hospitality",
-  "Telecommunications & Internet",
-  "Home, Retail & Consumer Goods",
+  "Education & Career Development",
+  "Entertainment & Media",
+  "Fashion & Lifestyle",
+  "Fitness, Health & Recovery",
+  "Food, Beverage & Nutrition",
   "Gaming & Esports",
   "Government & Public Initiatives",
+  "Home, Retail & Consumer Goods",
+  "Insurance & Professional Services",
+  "Local Businesses & Community Partners",
+  "Sports & Athletic Apparel",
+  "Sports Collectibles & Merchandise",
+  "Sports Technology & Analytics",
+  "Technology & Consumer Electronics",
+  "Telecommunications & Internet",
+  "Travel, Hotels & Hospitality",
+  "Youth Sports & Family Brands",
 ]);
+
+// The API's sponsor categories (sign-up and profile) as dropdown options, A-Z by label.
+export const categoryOptionsAZ = (categories: { code: string; label: string }[]) =>
+  categories
+    .map((c) => ({ label: c.label, value: c.code }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 
 // "Other" in the category list (sign-up and profile): the sponsor types their own category, which is sent as
 // the category's text.
