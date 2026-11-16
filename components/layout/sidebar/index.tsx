@@ -128,6 +128,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       sections={sectionsFor(kind === "tournament")}
       profileName={savedSchool?.name ?? org?.name ?? "Organization"}
       profileRole="Admin"
+      profileImage={savedSchool?.logoUrl}
       open={open}
       onClose={onClose}
     />

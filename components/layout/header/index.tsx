@@ -4,12 +4,14 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { LogOut, Menu, MessagesSquare, User } from "lucide-react";
+import { LogOut, Menu, MessagesSquare } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { clearFanhubSession } from "@/utils/auth/session";
 import { useAuth } from "@/context/auth";
 import Button from "@/components/common/button";
+import ProfileAvatar from "@/components/common/profile-avatar";
+import { useSetup } from "@/context/setup";
 import MessagesPopover from "@/components/organization/messages/messages-popover";
 import { useOrgChatContext } from "@/context/org-chat";
 
@@ -21,6 +23,8 @@ interface HeaderProps {
 
 export default function Header({ className, title = "Setup Wizard", onMenuClick }: HeaderProps) {
   const { org, clearAuth } = useAuth();
+  // The organisation's logo on the avatar (the user icon until it loads, or when it has none).
+  const { savedSchool } = useSetup();
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const [messagesOpen, setMessagesOpen] = useState(false);
@@ -159,10 +163,9 @@ export default function Header({ className, title = "Setup Wizard", onMenuClick 
               aria-haspopup="menu"
               aria-expanded={open}
               onClick={() => setOpen((v) => !v)}
-              className="w-12 h-12 rounded-full overflow-hidden shrink-0 focus:outline-none flex items-center justify-center bg-white/10"
-              style={{ border: "2px solid rgba(255,255,255,0.5)", backdropFilter: "blur(24px)" }}
+              className="rounded-full shrink-0 focus:outline-none"
             >
-              <User className="w-6 h-6 text-white/60" aria-hidden />
+              <ProfileAvatar logoUrl={savedSchool?.logoUrl} />
             </button>
           </div>
         </div>
