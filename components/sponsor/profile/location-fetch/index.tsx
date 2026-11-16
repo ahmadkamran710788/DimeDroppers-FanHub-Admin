@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { Search } from "lucide-react";
 import { cn } from "@/utils/cn";
@@ -12,8 +12,9 @@ import FetchAreasForm from "@/components/sponsor/profile/fetch-areas-form";
 import FetchHistory from "@/components/sponsor/profile/fetch-history";
 import FetchResults from "@/components/sponsor/profile/fetch-results";
 import FetchStatus from "@/components/sponsor/profile/fetch-status";
-import { PAGE_SIZE, fetchTime, isLookupActive } from "@/components/sponsor/profile/data";
+import { PAGE_SIZE, fetchTime, isLookupActive, retryBody } from "@/components/sponsor/profile/data";
 import { CARD_TITLE, PROFILE_CARD, SMALL_BUTTON } from "@/components/sponsor/profile/styles";
+import { useLocationFetchWatch } from "@/context/sponsor-location-fetch";
 import type {
   SponsorLocationFetchResult,
   SponsorLocationFetchRun,
@@ -33,7 +34,8 @@ interface LocationFetchProps {
 
 // Finds the brand's other stores on request (FANHUB_SPONSOR_LOCATION_FETCH_FRONTEND.md and its ZIP code note).
 // A local business is searched in its main location's city; a regional or national brand in the states, cities
-// and ZIP codes it picks. The profile is followed while the fetch runs; then its results show per area, and
+// and ZIP codes it picks. The profile is followed while the fetch runs (its steps and areas show as it goes), and
+// the fetch itself on every sponsor page, which says when it's done; then its results show per area, and
 // earlier fetches from the history.
 export default function LocationFetch({ profile, onChange, reload, timedOut }: LocationFetchProps) {
   const lookup = profile.locationsFetch;
@@ -47,6 +49,9 @@ export default function LocationFetch({ profile, onChange, reload, timedOut }: L
   const [loaded, setLoaded] = useState<{ key: string; view?: SponsorLocationFetchResult; error?: string } | null>(
     null
   );
+  const { run: followed, follow, revealRunId, clearReveal } = useLocationFetchWatch();
+  // The latest fetch's status and results, scrolled to from the "done" toast.
+  const latestRef = useRef<HTMLDivElement>(null);
 
   // The latest fetch's results wait for it to finish, and load again when it does.
   const viewRunId = shownRunId ?? (active ? null : lookup.runId);
@@ -67,6 +72,28 @@ export default function LocationFetch({ profile, onChange, reload, timedOut }: L
 
   const result = loaded?.key === resultKey ? loaded : null;
 
+  // A running fetch (also one started in another tab, or before a reload) is followed on every sponsor page.
+  const latestRunId = lookup.runId;
+  useEffect(() => {
+    if (active && latestRunId) follow(latestRunId);
+  }, [active, latestRunId, follow]);
+  const live = followed?.id === latestRunId ? followed : null;
+
+  // "View" in the toast: the latest fetch is shown (not one from the history), and once its results have
+  // loaded they're scrolled to.
+  const revealing = !!revealRunId && revealRunId === latestRunId;
+  const [seenReveal, setSeenReveal] = useState(revealRunId);
+  if (revealRunId !== seenReveal) {
+    setSeenReveal(revealRunId);
+    if (revealing) setShownRunId(null);
+  }
+  const latestLoaded = !shownRunId && !!result;
+  useEffect(() => {
+    if (!revealing || !latestLoaded) return;
+    latestRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    clearReveal();
+  }, [revealing, latestLoaded, clearReveal]);
+
   // A local business's main location needs a city and state to be searched.
   const mainCityMissing = !byArea && !!main && !(main.city && main.state);
   const hint = !main
@@ -84,7 +111,7 @@ export default function LocationFetch({ profile, onChange, reload, timedOut }: L
     setStarting(false);
     if (r.view) {
       const run = r.view;
-      // The profile follows it from here (it's polled while the fetch runs).
+      // The profile follows it from here (it's polled while the fetch runs), and so does every sponsor page.
       onChange((p) => ({
         ...p,
         locationsFetch: {
@@ -98,6 +125,7 @@ export default function LocationFetch({ profile, onChange, reload, timedOut }: L
           error: run.error,
         },
       }));
+      follow(run.id, run);
       setShownRunId(null);
       setPicking(false);
       return null;
@@ -132,6 +160,14 @@ export default function LocationFetch({ profile, onChange, reload, timedOut }: L
     return null;
   }
 
+  // Try again after a failed fetch: the same areas (a local business: its main city again). There's no picker
+  // open to mark a refused area in, so the first problem is shown as a toast.
+  async function retry() {
+    const problems = await start(byArea ? retryBody(lookup.areas) : undefined);
+    const first = problems && Object.values(problems)[0];
+    if (first) toast.error(first);
+  }
+
   return (
     <section aria-label="Find your locations" className={cn(PROFILE_CARD, "flex flex-col gap-4")}>
       <div className="flex justify-between items-center gap-3 flex-wrap">
@@ -150,29 +186,40 @@ export default function LocationFetch({ profile, onChange, reload, timedOut }: L
 
       {picking && <FetchAreasForm onSubmit={start} onCancel={() => setPicking(false)} />}
 
-      {shownRunId ? (
-        <div className="flex items-center gap-3 flex-wrap text-sm text-[#a8a8a8]">
-          {result?.view ? `The fetch from ${fetchTime(result.view.createdAt)}.` : "An earlier fetch."}
-          <Button
-            variant="text"
-            size="sm"
-            label="Show the latest fetch"
-            onClick={() => setShownRunId(null)}
-            className="h-11 text-sm font-semibold text-[#c9b8ff] hover:text-white"
-          />
-        </div>
-      ) : (
-        <FetchStatus lookup={lookup} timedOut={timedOut} run={result?.view ?? null} />
-      )}
+      {lookup.runId && (
+        <div ref={latestRef} className="flex flex-col gap-4 scroll-mt-4">
+          {shownRunId ? (
+            <div className="flex items-center gap-3 flex-wrap text-sm text-[#a8a8a8]">
+              {result?.view ? `The fetch from ${fetchTime(result.view.createdAt)}.` : "An earlier fetch."}
+              <Button
+                variant="text"
+                size="sm"
+                label="Show the latest fetch"
+                onClick={() => setShownRunId(null)}
+                className="h-11 text-sm font-semibold text-[#c9b8ff] hover:text-white"
+              />
+            </div>
+          ) : (
+            <FetchStatus
+              lookup={lookup}
+              timedOut={timedOut}
+              live={live}
+              result={result?.view ?? null}
+              onRetry={() => void retry()}
+              retrying={starting}
+            />
+          )}
 
-      {viewRunId &&
-        (!result ? (
-          <Loader />
-        ) : result.view ? (
-          <FetchResults key={resultKey} result={result.view} />
-        ) : (
-          <p className="text-sm text-[#a8a8a8]">{result.error ?? "Couldn't load the results of this fetch."}</p>
-        ))}
+          {viewRunId &&
+            (!result ? (
+              <Loader />
+            ) : result.view ? (
+              <FetchResults key={resultKey} result={result.view} brandName={profile.brand?.name} />
+            ) : (
+              <p className="text-sm text-[#a8a8a8]">{result.error ?? "Couldn't load the results of this fetch."}</p>
+            ))}
+        </div>
+      )}
 
       {lookup.runId && (
         <FetchHistory
