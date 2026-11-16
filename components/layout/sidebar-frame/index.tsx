@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/utils/cn";
-import { User } from "lucide-react";
+import ProfileAvatar from "@/components/common/profile-avatar";
 import Link from "next/link";
 import { type ReactNode } from "react";
 import { usePathname } from "next/navigation";
@@ -107,21 +107,7 @@ export default function SidebarFrame({
       {/* Profile */}
       <div className="px-4 py-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]">
         <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              "w-12 h-12 rounded-full overflow-hidden shrink-0 flex items-center justify-center",
-              // A logo sits on white: most are made for it, and a dark one would vanish on the dark sidebar.
-              profileImage ? "bg-white" : "bg-white/10"
-            )}
-            style={{ border: "2px solid rgba(255,255,255,0.5)", backdropFilter: "blur(24px)" }}
-          >
-            {profileImage ? (
-              // eslint-disable-next-line @next/next/no-img-element -- signed S3 link
-              <img src={profileImage} alt="" className="size-full object-contain p-1.5" />
-            ) : (
-              <User className="w-6 h-6 text-white/60" aria-hidden />
-            )}
-          </div>
+          <ProfileAvatar logoUrl={profileImage} />
           <div className="flex flex-col gap-1">
             <span className="text-base font-medium text-white leading-tight">{profileName}</span>
             <span className="text-xs font-medium text-white/60">{profileRole}</span>

@@ -24,7 +24,8 @@ interface TournamentTeamsProps {
   onTotals: (totals: TournamentTotals) => void;
   // The picked event and its open division; null until the event has loaded.
   focus: TournamentFocus | null;
-  onFocus: (focus: TournamentFocus | null) => void;
+  // `loadedEventId`: sent once the event has loaded, so the page knows the focus is settled for it.
+  onFocus: (focus: TournamentFocus | null, loadedEventId?: string) => void;
 }
 
 // The event's divisions in order, then its teams without a division as "No Division".
@@ -60,7 +61,7 @@ export default function TournamentTeams({ eventId, onTotals, focus, onFocus }: T
       setLoaded({ eventId, event });
       // The first division opens with the event, so the cards narrow to it.
       const first = event ? divisionsOf(event)[0] : undefined;
-      onFocus(event ? { event, division: first ? { id: first.id, teamCount: first.teamCount } : null } : null);
+      onFocus(event ? { event, division: first ? { id: first.id, teamCount: first.teamCount } : null } : null, eventId);
     });
     return () => {
       cancelled = true;

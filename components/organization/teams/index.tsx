@@ -8,6 +8,7 @@ import BadgeStatCard, {
   type BadgeStat,
 } from "@/components/common/badge-stat-card";
 import Button from "@/components/common/button";
+import Loader from "@/components/common/loader";
 import EditTeamModal from "@/components/organization/teams/edit-team-modal";
 import SportModal from "@/components/organization/teams/sport-modal";
 import SportsList from "@/components/organization/teams/sports-list";
@@ -34,17 +35,33 @@ export default function TeamsPage() {
   const router = useRouter();
   const { savedSchool } = useSetup();
   const { org } = useAuth();
-  const isTournament = orgKindOf(org) === "tournament";
+  const kind = orgKindOf(org);
+  const isTournament = kind === "tournament";
+  // Until the account loads (e.g. on a reload) it isn't known whether this is a school or a tournament,
+  // so neither layout shows yet.
+  const kindUnknown = !kind;
   // Tournament stat cards: organisation-wide totals from the division-teams API (TournamentTeams),
   // narrowed to the open event and then to its open division.
   const [totals, setTotals] = useState<TournamentTotals | null>(null);
   const [focus, setFocus] = useState<TournamentFocus | null>(null);
   // The tournament event picked in the header (the newest at first).
   // Shared with every page's event picker.
-  const { event: pickedEvent, setEvent: setPickedEvent } = useSelectedEvent();
+  const { event: pickedEvent, setEvent: setPickedEvent, noEvents } = useSelectedEvent();
+  // The event the focus was last settled for: until it matches the picked event, the cards wait.
+  const [focusedEventId, setFocusedEventId] = useState<string | null>(null);
   // In a transition, so the cards that leave or move animate (the ViewTransitions below).
   // Stable, since TournamentTeams refetches when it changes.
-  const changeFocus = useCallback((next: TournamentFocus | null) => startTransition(() => setFocus(next)), []);
+  const changeFocus = useCallback(
+    (next: TournamentFocus | null, loadedEventId?: string) =>
+      startTransition(() => {
+        setFocus(next);
+        if (loadedEventId !== undefined) setFocusedEventId(loadedEventId);
+      }),
+    []
+  );
+  // While the picked event loads, its first division opens with it, so the cards already show that
+  // layout (one Teams card) instead of the all-events cards that would vanish a moment later.
+  const focusLoading = !noEvents && (!pickedEvent || focusedEventId !== pickedEvent.id);
   const { departments, teams, loading, reload } = useOrgTeams();
   const [sportEditing, setSportEditing] = useState<SportEditing>(null);
   const [teamEditing, setTeamEditing] = useState<{
@@ -69,7 +86,9 @@ export default function TeamsPage() {
     tint: STAT_TINTS.purple,
   });
   // An open event leaves its Divisions and Teams; an open division leaves just its Teams.
-  const tournamentStats: BadgeStat[] = focus?.division
+  const tournamentStats: BadgeStat[] = focusLoading
+    ? [teamsCard("—", "In this division")]
+    : focus?.division
     ? [teamsCard(fmt(focus.division.teamCount), "In this division")]
     : focus
       ? [
@@ -92,7 +111,9 @@ export default function TeamsPage() {
             tint: STAT_TINTS.brown,
           },
         ];
-  const stats: BadgeStat[] = isTournament
+  const stats: BadgeStat[] = kindUnknown
+    ? []
+    : isTournament
     ? tournamentStats
     : [
         {
@@ -144,7 +165,7 @@ export default function TeamsPage() {
             selectedName={pickedEvent?.name}
           />
         )}
-        {!isTournament && (
+        {!isTournament && !kindUnknown && (
           <div className="flex flex-wrap gap-3 shrink-0">
             <Button
               label="Add Activity"
@@ -173,7 +194,9 @@ export default function TeamsPage() {
 
       {/* Sports and their teams */}
       <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px] bg-surface-07">
-        {isTournament ? (
+        {kindUnknown ? (
+          <Loader className="m-10" />
+        ) : isTournament ? (
           <TournamentTeams key={pickedEvent?.id ?? "none"} eventId={pickedEvent?.id ?? ""} onTotals={setTotals} focus={focus} onFocus={changeFocus} />
         ) : (
           <SportsList
