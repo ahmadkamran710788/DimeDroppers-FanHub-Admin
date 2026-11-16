@@ -46,7 +46,7 @@ export default function CommandCenterPage() {
   // The stat cards, readiness, hero and live games follow the picked event; a tournament (or an org
   // not known yet) waits for it rather than loading the whole organisation first.
   const waiting = kind !== "school" && !eventId && !noEvents;
-  const { overview, loading } = useCommandCenterOverview(eventId, !waiting);
+  const { overview, loading, reload } = useCommandCenterOverview(eventId, !waiting);
 
   return (
     <div className="flex flex-col gap-10">
@@ -68,7 +68,7 @@ export default function CommandCenterPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4 lg:gap-10">
-        <EventHero overview={overview} />
+        <EventHero overview={overview} loading={loading} onRetry={reload} />
         <ReadinessCard
           readiness={overview?.readiness ?? null}
           loading={loading}
