@@ -55,7 +55,7 @@ export default function CancelModal({ target, onClose, onDone }: CancelModalProp
         <p className="text-midnight-navy/80 text-base leading-6">
           Cancel <span className="font-semibold">{name}</span> with <span className="font-semibold">{org}</span>
           {target?.event?.name ? ` for ${target.event.name}` : ""}? It stops right away. You can activate it again
-          later from Find Organizations.
+          later from Sponsorships.
         </p>
         <Textarea
           variant="onLight"

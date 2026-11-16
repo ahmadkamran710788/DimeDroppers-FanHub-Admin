@@ -168,7 +168,7 @@ export default function MySponsorships({ returnedPayment }: MySponsorshipsProps)
             <p className="text-[15px] text-[#a8a8a8]">{EMPTY_TEXT[tab]}</p>
             {(tab === "Active" || tab === "All") && (
               <Link href={routes.ui.sponsor.findOrganizations} className={cn(PRIMARY_BUTTON, LINK_BUTTON)}>
-                Find organizations
+                Find sponsorships
               </Link>
             )}
           </div>

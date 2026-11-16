@@ -70,7 +70,7 @@ export default function PurchasedInventory() {
             href={routes.ui.sponsor.findOrganizations}
             className={cn(PRIMARY_BUTTON, "inline-flex items-center justify-center h-12 px-[22px] rounded-[10px] text-[15px]")}
           >
-            Find organizations
+            Find sponsorships
           </Link>
         </div>
       );

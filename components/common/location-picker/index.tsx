@@ -217,7 +217,8 @@ function PickerBody({
   }
 
   // The business type for a picked place: its own for a business. For a plain address, the business by the
-  // form's name there, else the businesses there are offered. A failed lookup leaves the category to the list.
+  // form's name there, else the ones by that name nearby and the businesses there are offered. A failed lookup
+  // leaves the category to the list.
   async function findBusinessType(
     pickId: number,
     place: google.maps.places.Place,
@@ -232,12 +233,15 @@ function PickerBody({
       const name = businessName.trim();
       const named = name ? await findBusinessByName(places, name, address, point) : null;
       if (pickId !== picks.current) return;
-      if (named) {
-        report(named.type);
+      if (named?.match) {
+        report(named.match.type);
         return;
       }
-      const nearby = await businessesAt(places, point);
-      if (pickId === picks.current) setBusinesses(nearby);
+      const nearby = await businessesAt(places, point).catch(() => []);
+      if (pickId !== picks.current) return;
+      // The ones by the sponsor's name first; one can be in both lists.
+      const offered = [...(named?.near ?? []), ...nearby];
+      setBusinesses(offered.filter((b, i) => offered.findIndex((o) => o.id === b.id) === i));
     } catch {
       // Nothing found; the sponsor picks from the list.
     }

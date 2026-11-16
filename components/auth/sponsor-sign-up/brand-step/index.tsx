@@ -7,7 +7,7 @@ import LocationPicker from "@/components/common/location-picker";
 import Select from "@/components/common/select";
 import { US_STATE_OPTIONS } from "@/components/organization/org-form/form";
 import { SECTION_LABEL } from "@/components/sponsor/styles";
-import { CUSTOM_CATEGORY_MAX, OTHER_CATEGORY } from "@/components/sponsor/data";
+import { CUSTOM_CATEGORY_MAX, OTHER_CATEGORY, categoryOptionsAZ } from "@/components/sponsor/data";
 import StepHeading from "@/components/auth/sign-up-shared/step-heading";
 import SponsorTypePicker from "@/components/auth/sponsor-sign-up/sponsor-type-picker";
 import type { MainLocationField, SponsorSignUpForm } from "@/components/auth/sponsor-sign-up/data";
@@ -48,7 +48,7 @@ export default function BrandStep({
       : [];
   const categoryOptions = [
     ...fromGoogle,
-    ...options.categories.map((c) => ({ label: c.label, value: c.code })),
+    ...categoryOptionsAZ(options.categories),
     { label: "Other", value: OTHER_CATEGORY },
   ];
   // Without a Maps key there's no search to fill it from.

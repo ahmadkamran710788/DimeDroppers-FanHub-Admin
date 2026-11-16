@@ -1,7 +1,8 @@
 // Finding the business behind a picked place, for its type (the sponsor's category). Google returns a plain
 // address ("406 S Walton Blvd", type Building) as an address even when a business is there, and one building
 // can hold several (a Walmart with a bank, a salon and a pizza place inside). So for an address, the business
-// is looked up by the sponsor's name at that address, and otherwise the businesses there are offered to pick.
+// is looked up by the sponsor's name at that address, and otherwise the ones by that name a little farther
+// away (a big campus) and the businesses there are offered to pick.
 // Both searches ask for Pro fields (displayName, primaryTypeDisplayName): Text Search Pro / Nearby Search Pro.
 
 export interface FoundBusiness {
@@ -11,8 +12,11 @@ export interface FoundBusiness {
   type: string;
 }
 
-// A business found by name has to be at the picked address, not a branch elsewhere.
+// A business found by name at the picked address fills the category by itself (not a branch elsewhere).
 const MATCH_RADIUS_M = 100;
+// One a little farther is offered to pick instead: on a big campus (a corporate HQ) Google's point for the
+// office can be a few hundred metres from the address's.
+const OFFER_RADIUS_M = 500;
 // The businesses offered for an address: in or right by its building, most visited first.
 const NEARBY_RADIUS_M = 50;
 const NEARBY_MAX = 5;
@@ -81,27 +85,35 @@ function metresBetween(a: google.maps.LatLngLiteral, b: google.maps.LatLngLitera
   return 2 * 6371000 * Math.asin(Math.sqrt(h));
 }
 
-// The business named `name` at the address, or null when Google has none by that name right there.
+export interface NamedBusinesses {
+  // The business named `name` right at the address, or null when Google has none there.
+  match: FoundBusiness | null;
+  // Without a match, the ones by that name a little farther away (within OFFER_RADIUS_M), to offer.
+  near: FoundBusiness[];
+}
+
+// The business named `name` at the address, or the ones by that name near it.
 export async function findBusinessByName(
   places: google.maps.PlacesLibrary,
   name: string,
   address: string,
   point: google.maps.LatLngLiteral
-): Promise<FoundBusiness | null> {
+): Promise<NamedBusinesses> {
   const { places: found } = await places.Place.searchByText({
     textQuery: `${name} ${address}`,
     fields: SEARCH_FIELDS,
-    locationBias: { center: point, radius: MATCH_RADIUS_M * 2 },
+    locationBias: { center: point, radius: OFFER_RADIUS_M },
     maxResultCount: 3,
   });
+  const near: FoundBusiness[] = [];
   for (const place of found) {
     const business = businessOf(place);
-    const at = place.location ? { lat: place.location.lat(), lng: place.location.lng() } : null;
-    if (business && at && metresBetween(point, at) <= MATCH_RADIUS_M && sameBusiness(name, business.name)) {
-      return business;
-    }
+    if (!business || !place.location || !sameBusiness(name, business.name)) continue;
+    const metres = metresBetween(point, { lat: place.location.lat(), lng: place.location.lng() });
+    if (metres <= MATCH_RADIUS_M) return { match: business, near: [] };
+    if (metres <= OFFER_RADIUS_M) near.push(business);
   }
-  return null;
+  return { match: null, near };
 }
 
 // The businesses at the address, most visited first.
