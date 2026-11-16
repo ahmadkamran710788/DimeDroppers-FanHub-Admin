@@ -66,13 +66,13 @@ const toMediaGame = (g: ScheduleItem, school: MediaTeam, now: number): MediaGame
   };
 };
 
-const toTournamentTeam = (side: TournamentScheduleSide): MediaTeam => {
+// A team without a logo shows the organisation's logo (or, without one, an initials avatar).
+const toTournamentTeam = (side: TournamentScheduleSide, orgLogo: string): MediaTeam => {
   const name = side.teamName || "TBD";
-  // Tournament teams have no logos: an initials avatar stands in.
-  return { name, shortName: name, logo: "" };
+  return { name, shortName: name, logo: side.logoUrl || orgLogo };
 };
 
-const toTournamentGame = (g: TournamentScheduleGame): MediaGame => {
+const toTournamentGame = (g: TournamentScheduleGame, orgLogo: string): MediaGame => {
   const status = g.matchStatus === "final" || g.finalScore ? "final" : g.matchStatus === "live" || g.liveScore ? "live" : "upcoming";
   const score = status === "final" ? g.finalScore : status === "live" ? g.liveScore : null;
   return {
@@ -80,8 +80,8 @@ const toTournamentGame = (g: TournamentScheduleGame): MediaGame => {
     id: g.id,
     start: g.utcTime || g.start,
     teamIds: [g.home.teamId, g.away.teamId].filter((id): id is string => !!id),
-    home: toTournamentTeam(g.home),
-    away: toTournamentTeam(g.away),
+    home: toTournamentTeam(g.home, orgLogo),
+    away: toTournamentTeam(g.away, orgLogo),
     status,
     homeScore: score?.home,
     awayScore: score?.away,
@@ -163,13 +163,13 @@ export function useOrgGames({ teamNames = false }: { teamNames?: boolean } = {})
       data: { eventId, page: 1, limit: GAMES_LIMIT },
     }).then((result) => {
       if (cancelled) return;
-      const games = (result.success ? (result.data?.data?.[0]?.items ?? []) : []).map(toTournamentGame);
+      const games = (result.success ? (result.data?.data?.[0]?.items ?? []) : []).map((g) => toTournamentGame(g, schoolLogo || ""));
       setEventGames({ eventId, games: games.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()) });
     });
     return () => {
       cancelled = true;
     };
-  }, [eventId]);
+  }, [eventId, schoolLogo]);
 
   const namedSchoolGames = useMemo(
     () =>
