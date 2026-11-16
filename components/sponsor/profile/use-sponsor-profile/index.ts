@@ -8,7 +8,8 @@ import { POLL_LIMIT_MS, POLL_MS, isLookupActive, logoPath } from "@/components/s
 import { routes } from "@/utils/routes";
 import type { SponsorProfileView, SponsorSignupOptions } from "@/utils/types/sponsor-profile";
 
-const profileQueryKey = ["sponsor", "profile"] as const;
+// Also reloaded by the location fetch watcher when a fetch it follows finishes.
+export const profileQueryKey = ["sponsor", "profile"] as const;
 
 async function fetchProfile(): Promise<SponsorProfileView> {
   const r = await sponsorRequest<SponsorProfileView>("GET", routes.api.sponsorProfile);

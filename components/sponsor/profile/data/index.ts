@@ -1,6 +1,11 @@
 import { US_STATE_OPTIONS } from "@/components/organization/org-form/form";
 import { coordinateText } from "@/utils/helper";
-import type { SponsorLocation, SponsorLocationFetchStatus } from "@/utils/types/sponsor-profile";
+import type {
+  SponsorFetchArea,
+  SponsorLocation,
+  SponsorLocationFetchStatus,
+  StartLocationFetchBody,
+} from "@/utils/types/sponsor-profile";
 
 // Sponsor Profile: GET /fanhub/sponsor-profile, reloaded while a location fetch runs.
 
@@ -11,6 +16,27 @@ export const POLL_LIMIT_MS = 5 * 60_000;
 
 export const isLookupActive = (status: SponsorLocationFetchStatus | null | undefined) =>
   status === "PENDING" || status === "RUNNING" || status === "SAVING";
+
+// The steps a location fetch goes through, as its progress shows them, and how far along the bar each one is.
+// Done is reached when it completes.
+export const FETCH_STEPS: { status: SponsorLocationFetchStatus; label: string; percent: number }[] = [
+  { status: "PENDING", label: "Getting ready", percent: 10 },
+  { status: "RUNNING", label: "Searching Google Maps", percent: 40 },
+  { status: "SAVING", label: "Saving", percent: 75 },
+  { status: "COMPLETED", label: "Done", percent: 100 },
+];
+
+// A fetch's areas as the body of a new one, so Try again searches the same states, cities and ZIP codes.
+export const retryBody = (areas: SponsorFetchArea[]): StartLocationFetchBody => {
+  const states = areas.filter((a) => a.kind === "STATE").map((a) => a.state);
+  const cities = areas.flatMap((a) => (a.kind === "CITY" && a.city ? [{ city: a.city, state: a.state }] : []));
+  const zipCodes = areas.flatMap((a) => (a.kind === "ZIP" && a.zipCode ? [a.zipCode] : []));
+  return {
+    ...(states.length > 0 && { states }),
+    ...(cities.length > 0 && { cities }),
+    ...(zipCodes.length > 0 && { zipCodes }),
+  };
+};
 
 // A national brand can have hundreds of locations: they're shown this many a page, as on My Sponsorships (also
 // each area of a fetch's results).

@@ -6,6 +6,7 @@ import { routes } from "@/utils/routes";
 import SponsorSidebar from "@/components/layout/sponsor-sidebar";
 import SponsorHeader from "@/components/layout/sponsor-header";
 import { SponsorCartProvider } from "@/context/sponsor-cart";
+import { SponsorLocationFetchProvider } from "@/context/sponsor-location-fetch";
 
 const PAGE_TITLES: Record<string, string> = {
   [routes.ui.sponsor.fundableNeeds]: "Sponsorship",
@@ -18,7 +19,8 @@ const PAGE_TITLES: Record<string, string> = {
 };
 
 // App shell for the sponsor pages: the shared sidebar, the sponsor header and the page area, on the
-// admin panel's fonts and base styles. The cart is shared by the header's cart link and every page.
+// admin panel's fonts and base styles. The cart is shared by the header's cart link and every page; a location
+// fetch started on the profile is followed on every page, so the sponsor is told when it's done.
 export default function SponsorShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
@@ -29,16 +31,18 @@ export default function SponsorShell({ children }: { children: React.ReactNode }
 
   return (
     <SponsorCartProvider>
-      <div className="flex h-screen bg-black overflow-hidden">
-        <SponsorSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-          <SponsorHeader title={title} onMenuClick={() => setSidebarOpen(true)} />
-          {/* Same page padding as the admin pages. `relative`, as there: an absolutely positioned child (an
-              sr-only label) is then placed in this scroll area, instead of the page, which it would stretch
-              and scroll. */}
-          <main className="relative flex-1 overflow-y-auto px-4 py-4 lg:px-10 lg:py-8">{children}</main>
+      <SponsorLocationFetchProvider>
+        <div className="flex h-screen bg-black overflow-hidden">
+          <SponsorSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+            <SponsorHeader title={title} onMenuClick={() => setSidebarOpen(true)} />
+            {/* Same page padding as the admin pages. `relative`, as there: an absolutely positioned child (an
+                sr-only label) is then placed in this scroll area, instead of the page, which it would stretch
+                and scroll. */}
+            <main className="relative flex-1 overflow-y-auto px-4 py-4 lg:px-10 lg:py-8">{children}</main>
+          </div>
         </div>
-      </div>
+      </SponsorLocationFetchProvider>
     </SponsorCartProvider>
   );
 }
