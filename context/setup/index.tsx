@@ -10,12 +10,14 @@ import {
 } from "react";
 import { useAuth } from "@/context/auth";
 import { setFanhubSchoolId, SCHOOL_ID_KEY } from "@/utils/auth/session";
-import { getSavedSchool } from "@/utils/fanhub/get-saved-school";
+import { loadSavedSchool } from "@/utils/fanhub/get-saved-school";
 import type { SavedSchool } from "@/utils/types/school";
 
 interface SetupContextValue {
   savedSchool: SavedSchool | null;
   isLoading: boolean;
+  // Why the school couldn't be read (null when it loaded, or there is none yet).
+  error: string | null;
   // Call after Step 1 saves/updates the school so subsequent steps see fresh data.
   refreshSchool: () => Promise<void>;
 }
@@ -25,11 +27,14 @@ const SetupContext = createContext<SetupContextValue | null>(null);
 export function SetupProvider({ children }: { children: ReactNode }) {
   const [savedSchool, setSavedSchool] = useState<SavedSchool | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchSchool = useCallback(async () => {
     setIsLoading(true);
-    const school = await getSavedSchool();
-    setSavedSchool(school);
+    const { school, error } = await loadSavedSchool();
+    // A failed refresh keeps the school already on screen.
+    setSavedSchool((prev) => school ?? (error ? prev : null));
+    setError(error);
     setIsLoading(false);
   }, []);
 
@@ -44,9 +49,10 @@ export function SetupProvider({ children }: { children: ReactNode }) {
     if (authLoading) return;
     if (orgId && !sessionStorage.getItem(SCHOOL_ID_KEY)) setFanhubSchoolId(orgId);
     let cancelled = false;
-    getSavedSchool().then((school) => {
+    loadSavedSchool().then(({ school, error }) => {
       if (cancelled) return;
       setSavedSchool(school);
+      setError(error);
       setIsLoading(false);
     });
     return () => {
@@ -56,7 +62,7 @@ export function SetupProvider({ children }: { children: ReactNode }) {
 
   return (
     <SetupContext.Provider
-      value={{ savedSchool, isLoading, refreshSchool: fetchSchool }}
+      value={{ savedSchool, isLoading, error, refreshSchool: fetchSchool }}
     >
       {children}
     </SetupContext.Provider>
@@ -66,6 +72,7 @@ export function SetupProvider({ children }: { children: ReactNode }) {
 const SETUP_FALLBACK: SetupContextValue = {
   savedSchool: null,
   isLoading: false,
+  error: null,
   refreshSchool: async () => {},
 };
 

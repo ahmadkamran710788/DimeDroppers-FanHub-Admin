@@ -5,6 +5,8 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import { Building2, CircleCheck, Eye, FileText, MapPin, Palette, Phone, Share2, Trophy } from "lucide-react";
 import Button from "@/components/common/button";
+import Loader from "@/components/common/loader";
+import DetailEmpty from "@/components/organization/media/detail-empty";
 import EditSectionModal from "@/components/organization/profile/edit-section-modal";
 import DetailRows from "@/components/organization/profile/detail-rows";
 import ProfileSection from "@/components/organization/profile/profile-section";
@@ -27,6 +29,7 @@ import {
 } from "@/components/organization/org-form/form";
 import PreviewCard from "@/components/organization/org-form/preview-card";
 import { useOrganizationForm } from "@/components/organization/org-form/use-organization-form";
+import { useSetup } from "@/context/setup";
 import { getResumeStep, isSetupComplete } from "@/utils/fanhub/get-resume-step";
 
 type SectionKey = "orgTeam" | "sportLevel" | "location" | "description" | "contact" | "social" | "branding";
@@ -74,6 +77,9 @@ const formatPhone = (digits: string) =>
 export default function ProfilePage() {
   const org = useOrganizationForm();
   const { form, logoUrl, saving, savedSchool } = org;
+  // Until the saved organisation loads, a loader; if it can't be read, the reason and a retry —
+  // never the empty form. (A refresh after saving keeps the profile on screen.)
+  const { isLoading, error, refreshSchool } = useSetup();
   const [editing, setEditing] = useState<SectionKey | null>(null);
   const complete = isSetupComplete(savedSchool);
 
@@ -213,47 +219,56 @@ export default function ProfilePage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-6 lg:gap-8 items-start">
-        <div className="flex flex-col gap-4">
-          {SECTION_ORDER.map((key) => (
-            <ProfileSection key={key} icon={SECTIONS[key].icon} title={SECTIONS[key].title} onEdit={() => setEditing(key)}>
-              {content[key]}
-            </ProfileSection>
-          ))}
+      {isLoading && !savedSchool ? (
+        <Loader className="m-10" />
+      ) : error && !savedSchool ? (
+        <div className="flex flex-col items-start gap-6 rounded-xl border border-white/10 bg-white/5 p-6">
+          <DetailEmpty title="Couldn't load your profile" message={error} />
+          <Button variant="outline" label="Try again" onClick={() => void refreshSchool()} />
         </div>
+      ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-6 lg:gap-8 items-start">
+          <div className="flex flex-col gap-4">
+            {SECTION_ORDER.map((key) => (
+              <ProfileSection key={key} icon={SECTIONS[key].icon} title={SECTIONS[key].title} onEdit={() => setEditing(key)}>
+                {content[key]}
+              </ProfileSection>
+            ))}
+          </div>
 
-        <div className="flex flex-col gap-4 xl:sticky xl:top-0">
-          <PreviewCard
-            form={form}
-            logoUrl={logoUrl}
-            title="Preview (Your Fan Hub)"
-            subtitle="This is how your organization will look to fans."
-          />
-          {complete ? (
-            <div className="rounded-[8px] p-4 flex items-start gap-3 border border-success/50 bg-success/10">
-              <CircleCheck className="size-7 shrink-0 fill-success text-[#0E2A12]" strokeWidth={2.5} />
-              <div className="flex flex-col gap-1">
-                <span className="text-base font-semibold text-success">Profile Complete!</span>
-                <span className="text-sm text-white/80">
-                  Your organization profile is ready and will be shown to fans on your Fan Hub.
-                </span>
+          <div className="flex flex-col gap-4 xl:sticky xl:top-0">
+            <PreviewCard
+              form={form}
+              logoUrl={logoUrl}
+              title="Preview (Your Fan Hub)"
+              subtitle="This is how your organization will look to fans."
+            />
+            {complete ? (
+              <div className="rounded-[8px] p-4 flex items-start gap-3 border border-success/50 bg-success/10">
+                <CircleCheck className="size-7 shrink-0 fill-success text-[#0E2A12]" strokeWidth={2.5} />
+                <div className="flex flex-col gap-1">
+                  <span className="text-base font-semibold text-success">Profile Complete!</span>
+                  <span className="text-sm text-white/80">
+                    Your organization profile is ready and will be shown to fans on your Fan Hub.
+                  </span>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="rounded-[8px] p-4 flex flex-col gap-3 border border-white/20 bg-white/5">
-              <span className="text-base font-semibold text-white">Finish setting up your Fan Hub</span>
-              <span className="text-sm text-white/70">A few setup steps are still open.</span>
-              <Link
-                href={getResumeStep()}
-                className="self-start h-10 px-4 rounded-[8px] flex items-center text-sm font-medium text-white"
-                style={{ background: "var(--gradient-cta)" }}
-              >
-                Continue setup
-              </Link>
-            </div>
-          )}
+            ) : (
+              <div className="rounded-[8px] p-4 flex flex-col gap-3 border border-white/20 bg-white/5">
+                <span className="text-base font-semibold text-white">Finish setting up your Fan Hub</span>
+                <span className="text-sm text-white/70">A few setup steps are still open.</span>
+                <Link
+                  href={getResumeStep()}
+                  className="self-start h-10 px-4 rounded-[8px] flex items-center text-sm font-medium text-white"
+                  style={{ background: "var(--gradient-cta)" }}
+                >
+                  Continue setup
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {editing && (
         <EditSectionModal
