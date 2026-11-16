@@ -84,6 +84,20 @@ export interface ThreadItem {
   data: { teamSide?: "HOME" | "AWAY"; score?: string | null; clock?: string | null } & Record<string, unknown>;
 }
 
+// One choice in a filter menu; `value` goes back as the param (`period` values are numbers for quarters).
+export interface ThreadFilterOption {
+  value: string | number;
+  label: string;
+  count: number;
+  key?: string;
+}
+
+// Per phase, only the filter options the game actually has (count > 0). Not narrowed by the picked filters.
+export type ThreadAvailableFilters = Record<
+  ThreadPhase,
+  { engagement: ThreadFilterOption[]; periods: ThreadFilterOption[]; plays: ThreadFilterOption[] }
+>;
+
 export interface GameThreadDetail extends GameDetailBase {
   presentedBy: { name: string } | null;
   // The phase asked for; null when the whole thread (every phase) came back.
@@ -92,6 +106,7 @@ export interface GameThreadDetail extends GameDetailBase {
   boundaries: { periodFormat: "QUARTERS" | "HALVES"; currentPeriod: number | null; periods: ThreadPeriod[] };
   // Item counts per phase after `search` (for badges).
   phaseCounts?: Record<ThreadPhase, number>;
+  availableFilters?: ThreadAvailableFilters;
   // In feed order.
   sections: { key: string; label: string; phase?: ThreadPhase; count: number }[];
   items: ThreadItem[];

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Image from "next/image";
-import { ChevronDown, Clock3, Trophy, Zap } from "lucide-react";
+import { Activity, ChevronDown, Clock3, Trophy, Zap } from "lucide-react";
 import Loader from "@/components/common/loader";
 import RowActionsMenu from "@/components/common/row-actions-menu";
 import SegmentedControl from "@/components/common/segmented-control";
@@ -10,7 +10,13 @@ import type { GamePhase, MediaGame, PlayEvent, Quarter } from "@/components/orga
 import { useGameDetail } from "@/components/organization/media/use-game-detail";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
-import type { GameThreadDetail, ThreadItem, ThreadPhase } from "@/utils/types/game-detail";
+import type {
+  GameThreadDetail,
+  ThreadAvailableFilters,
+  ThreadFilterOption,
+  ThreadItem,
+  ThreadPhase,
+} from "@/utils/types/game-detail";
 
 const PHASES: readonly GamePhase[] = ["Pre-Game", "Live Game", "Final"];
 const QUARTERS: readonly Quarter[] = ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
@@ -66,20 +72,45 @@ const TYPE_LABELS: Record<string, string> = {
 // Items fans answer (a card with their choices), not timeline rows.
 const ENGAGEMENT_KINDS: readonly ThreadItem["kind"][] = ["prediction", "poll", "sponsorOffer", "challenge", "donation"];
 
-// The Engagement menu's choices (the API's `engagement` param); "" = all.
-const ENGAGEMENT_OPTIONS = [
-  { value: "", label: "All Engagement" },
-  { value: "highlight", label: "Highlights" },
-  { value: "prediction", label: "Predictions" },
-  { value: "poll", label: "Polls" },
-  { value: "sponsorOffer", label: "Sponsor Offers" },
-  { value: "challenge", label: "Challenges" },
-  { value: "donation", label: "Donations" },
-  { value: "none", label: "No Engagement" },
-];
-
 // "1-st Quarter" → "1st Quarter".
 const cleanLabel = (label: string) => label.replace(/(\d)-(st|nd|rd|th)\b/gi, "$1$2");
+
+// A filter menu (Quarters / Engagement / Plays) listing only the options this game has in the tab, each
+// with its count; "" = all. The caller hides it when there are no options.
+function FilterMenu({
+  name,
+  allLabel,
+  icon,
+  options,
+  value,
+  onChange,
+}: {
+  name: string;
+  allLabel: string;
+  icon: ReactNode;
+  options: ThreadFilterOption[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const picked = options.find((o) => String(o.value) === value);
+  return (
+    <RowActionsMenu
+      ariaLabel={`Choose ${name.toLowerCase()}`}
+      className={MENU_TRIGGER}
+      trigger={
+        <>
+          {icon}
+          {picked ? cleanLabel(picked.label) : name}
+          <ChevronDown className="size-5" strokeWidth={2} />
+        </>
+      }
+      items={[
+        { label: allLabel, onSelect: () => onChange("") },
+        ...options.map((o) => ({ label: `${cleanLabel(o.label)} (${o.count})`, onSelect: () => onChange(String(o.value)) })),
+      ]}
+    />
+  );
+}
 
 // "Oct 29 at 6:00 PM".
 const atLabel = (iso: string) => {
@@ -204,31 +235,37 @@ function ThreadItemView({ item, detail }: { item: ThreadItem; detail: GameThread
 
 // A game's thread from GET /game-detail/games/{id}/thread: the whole thread comes in one list and the
 // Pre-Game / Live-Game / Post-Game tabs show one phase of it (opening on the game's current one).
-// The live phase is under its quarters' headers and can be narrowed to one; Engagement narrows the
-// kinds of fan items.
+// The live phase is under its quarters' headers. Each tab's Quarters / Engagement / Plays menus list only
+// what this game has in that phase (`availableFilters`).
 function ApiThread({ gameId }: { gameId: string }) {
   // null: the game's current phase.
   const [tab, setTab] = useState<ThreadTab | null>(null);
   const [period, setPeriod] = useState("");
   const [engagement, setEngagement] = useState("");
+  const [plays, setPlays] = useState("");
   const { data, error, loading } = useGameDetail<GameThreadDetail>(routes.api.gameDetailThread(gameId), {
     ...(period && { period }),
     ...(engagement && { engagement }),
+    ...(plays && { plays }),
     page: 1,
     limit: THREAD_LIMIT,
   });
 
+  // The menus' options describe the whole game whatever is picked, so the last ones are kept while a
+  // filtered call loads (the menus don't blink away).
+  const [available, setAvailable] = useState<ThreadAvailableFilters | null>(null);
+  if (data?.availableFilters && data.availableFilters !== available) setAvailable(data.availableFilters);
+
   const activeTab = tab ?? (data ? PHASE_TAB[data.currentPhase] : "Pre-Game");
   const phase = TAB_PHASE[activeTab];
   const items = (data?.items ?? []).filter((i) => i.phase === phase);
-
-  const periodOptions = [
-    { value: "", label: "All Quarters" },
-    ...(data?.boundaries.periods ?? []).map((p) => ({ value: String(p.period), label: cleanLabel(p.label) })),
-    { value: "halftime", label: "Halftime" },
-  ];
-  const periodLabel = periodOptions.find((p) => p.value === period)?.label;
-  const engagementLabel = ENGAGEMENT_OPTIONS.find((o) => o.value === engagement)?.label;
+  const tabOptions = available?.[phase];
+  const options = {
+    // A single section (Pre-Game, Final) is the whole tab, so there's nothing to narrow.
+    periods: tabOptions && tabOptions.periods.length > 1 ? tabOptions.periods : [],
+    engagement: tabOptions?.engagement ?? [],
+    plays: tabOptions?.plays ?? [],
+  };
 
   // Live items in feed order, cut where the quarter changes.
   const groups: { key: string; label: string; items: ThreadItem[] }[] = [];
@@ -241,7 +278,8 @@ function ApiThread({ gameId }: { gameId: string }) {
     }
   }
 
-  const filtered = !!(period || engagement);
+  const filtered = !!(period || engagement || plays);
+  const hasMenus = options.periods.length + options.engagement.length + options.plays.length > 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -251,40 +289,46 @@ function ApiThread({ gameId }: { gameId: string }) {
         onChange={(t) => {
           setTab(t);
           setPeriod("");
+          setEngagement("");
+          setPlays("");
         }}
         ariaLabel="Game phase"
         variant="light"
         fullWidth
       />
 
-      {(items.length > 0 || filtered) && (
+      {hasMenus && (
         <div className="flex flex-wrap gap-3">
-          {phase === "live" && (
-            <RowActionsMenu
-              ariaLabel="Choose quarter"
-              className={MENU_TRIGGER}
-              trigger={
-                <>
-                  <Clock3 className="size-5" strokeWidth={1.5} />
-                  {period ? periodLabel : "Quarters"}
-                  <ChevronDown className="size-5" strokeWidth={2} />
-                </>
-              }
-              items={periodOptions.map((p) => ({ label: p.label, onSelect: () => setPeriod(p.value) }))}
+          {options.periods.length > 0 && (
+            <FilterMenu
+              name={data?.boundaries.periodFormat === "HALVES" ? "Halves" : "Quarters"}
+              allLabel={data?.boundaries.periodFormat === "HALVES" ? "All Halves" : "All Quarters"}
+              icon={<Clock3 className="size-5" strokeWidth={1.5} />}
+              options={options.periods}
+              value={period}
+              onChange={setPeriod}
             />
           )}
-          <RowActionsMenu
-            ariaLabel="Choose engagement"
-            className={MENU_TRIGGER}
-            trigger={
-              <>
-                <Zap className="size-5" strokeWidth={1.5} />
-                {engagement ? engagementLabel : "Engagement"}
-                <ChevronDown className="size-5" strokeWidth={2} />
-              </>
-            }
-            items={ENGAGEMENT_OPTIONS.map((o) => ({ label: o.label, onSelect: () => setEngagement(o.value) }))}
-          />
+          {options.engagement.length > 0 && (
+            <FilterMenu
+              name="Engagement"
+              allLabel="All Engagement"
+              icon={<Zap className="size-5" strokeWidth={1.5} />}
+              options={options.engagement}
+              value={engagement}
+              onChange={setEngagement}
+            />
+          )}
+          {options.plays.length > 0 && (
+            <FilterMenu
+              name="Plays"
+              allLabel="All Plays"
+              icon={<Activity className="size-5" strokeWidth={1.5} />}
+              options={options.plays}
+              value={plays}
+              onChange={setPlays}
+            />
+          )}
         </div>
       )}
 
