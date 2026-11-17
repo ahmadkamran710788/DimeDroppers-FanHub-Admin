@@ -311,6 +311,8 @@ export const routes = {
     activationEvents: "fanhub/org/activations/events",
     // Sponsor AI Agent: finds local businesses and drafts an email to each (FANHUB_SPONSOR_AI_FRONTEND.md).
     // GET ?eventId= (tournaments): what's missing before a search can start.
+    // The sponsors shown on the organisation, with where each logo goes: GET ?status=ACTIVE&eventId=.
+    orgSponsors: "fanhub/org/sponsor-packages/sponsors",
     sponsorAiReadiness: "fanhub/org/sponsor-ai/readiness",
     // GET ?eventId=: the 12 categories scored for the org, plus the radius options.
     sponsorAiCategories: "fanhub/org/sponsor-ai/categories",

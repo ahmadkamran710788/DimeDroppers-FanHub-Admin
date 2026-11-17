@@ -12,7 +12,7 @@ import type { GameInsightsDetail, InsightBullet, InsightScope } from "@/utils/ty
 
 const PERIODS: readonly InsightPeriod[] = ["All", "H1", "H2"];
 const SCOPE_OF: Record<InsightPeriod, "all" | "h1" | "h2"> = { All: "all", H1: "h1", H2: "h2" };
-const FALLBACK_LOGO = "/images/preview-crest.png";
+const FALLBACK_LOGO = "/images/placeholder-crest.svg";
 
 // AI insights come as { label, text }; the rule-based ones as plain lines.
 const toPoints = (items: InsightBullet[] | undefined, lines: string[]): InsightPoint[] =>

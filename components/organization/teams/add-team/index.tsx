@@ -86,7 +86,7 @@ export default function AddTeamPage() {
   const sportOptions = departments.map((d) => ({ label: d.name, value: d.name }));
 
   const summaryTitle = savedSchool?.name || form.teamName || "Your Team";
-  const crest = savedSchool?.logoUrl || "/images/preview-crest.png";
+  const crest = savedSchool?.logoUrl || "/images/placeholder-crest.svg";
 
   return (
     <div className="flex flex-col gap-10 pb-24">

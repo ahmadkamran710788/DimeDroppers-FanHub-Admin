@@ -69,7 +69,7 @@ export default function TeamsTable({
   const from = filtered.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const to = Math.min(currentPage * PAGE_SIZE, filtered.length);
 
-  const crest = savedSchool?.logoUrl || "/images/preview-crest.png";
+  const crest = savedSchool?.logoUrl || "/images/placeholder-crest.svg";
 
   const columns: Column<Team>[] = [
     {

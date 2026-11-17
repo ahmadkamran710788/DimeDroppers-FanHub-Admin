@@ -5,7 +5,7 @@ import { useGameDetail } from "@/components/organization/media/use-game-detail";
 import { routes } from "@/utils/routes";
 import type { GameDetailTeamSide, GameThreadDetail } from "@/utils/types/game-detail";
 
-const FALLBACK_LOGO = "/images/preview-crest.png";
+const FALLBACK_LOGO = "/images/placeholder-crest.svg";
 
 const withSide = (team: MediaTeam, side: GameDetailTeamSide): MediaTeam => ({
   ...team,

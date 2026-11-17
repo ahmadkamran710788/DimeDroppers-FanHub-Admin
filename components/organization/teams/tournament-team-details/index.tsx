@@ -130,7 +130,7 @@ export default function TournamentTeamDetails({ eventId, teamId }: { eventId: st
   }
 
   const { team, eventName, divisionName } = loaded.info;
-  const crest = savedSchool?.logoUrl || "/images/preview-crest.png";
+  const crest = savedSchool?.logoUrl || "/images/placeholder-crest.svg";
 
   const games = loaded.games;
 

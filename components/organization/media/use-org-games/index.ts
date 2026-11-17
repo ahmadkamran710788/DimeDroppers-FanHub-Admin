@@ -10,7 +10,7 @@ import { routes } from "@/utils/routes";
 import type { TournamentScheduleGame, TournamentScheduleResponse, TournamentScheduleSide } from "@/utils/types/exposure-event";
 import type { ScheduleGamesResponse, ScheduleItem, ScheduleListResponse } from "@/utils/types/schedule";
 
-const FALLBACK_LOGO = "/images/preview-crest.png";
+const FALLBACK_LOGO = "/images/placeholder-crest.svg";
 // A game is taken as over this long after its start (the school list carries no live status).
 const GAME_LENGTH_MS = 3 * 60 * 60 * 1000;
 // The schedules API caps a page at 100.

@@ -69,7 +69,7 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
     );
   }
 
-  const crest = savedSchool?.logoUrl || "/images/preview-crest.png";
+  const crest = savedSchool?.logoUrl || "/images/placeholder-crest.svg";
 
   return (
     <div className="flex flex-col gap-8">

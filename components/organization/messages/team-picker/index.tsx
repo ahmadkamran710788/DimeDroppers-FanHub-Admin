@@ -40,7 +40,7 @@ function Row({ onClick, avatar, title, subtitle }: { onClick: () => void; avatar
 function SchoolTeams({ onPick }: TeamPickerProps) {
   const { savedSchool } = useSetup();
   const { teams, loading } = useOrgTeams();
-  const crest = savedSchool?.logoUrl || "/images/preview-crest.png";
+  const crest = savedSchool?.logoUrl || "/images/placeholder-crest.svg";
 
   if (loading) return <Loader />;
   if (teams.length === 0) return <p className="py-12 text-center text-sm text-white/50">No teams yet. Add a team to message its people.</p>;

@@ -202,7 +202,7 @@ export default function TeamsPage() {
           <SportsList
             departments={departments}
             loading={loading}
-            crest={savedSchool?.logoUrl || "/images/preview-crest.png"}
+            crest={savedSchool?.logoUrl || "/images/placeholder-crest.svg"}
             onRenameSport={(sport) => setSportEditing({ sport })}
             onEditTeam={(team, sport) => setTeamEditing({ team, sport })}
           />
