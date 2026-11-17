@@ -6,18 +6,17 @@ import type { TemplateId } from "@/components/sponsor/brand-placements/purchased
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 interface StatsStripProps {
-  // Logo variants uploaded, out of `logoTotal`.
-  logosUploaded: number;
-  logoTotal: number;
+  // The logo kinds in use and missing (GET /brand-assets); null while loading.
+  logoSummary: { ready: number; missing: number; total: number } | null;
 }
 
-// The slots bought and how they're set up (sample slots), and the logo versions uploaded.
-export default function StatsStrip({ logosUploaded, logoTotal }: StatsStripProps) {
+// The slots bought and how they're set up (sample slots), and the logo versions in use (live).
+export default function StatsStrip({ logoSummary }: StatsStripProps) {
   const count = (t: TemplateId) => SAMPLE_SLOTS.filter((s) => s.template === t).length;
   const orgs = new Set(SAMPLE_SLOTS.map((s) => s.orgId)).size;
   const surveys = count("SURVEY");
   const offers = count("OFFER_PROMO_CODE");
-  const missing = logoTotal - logosUploaded;
+  const missing = logoSummary?.missing ?? 0;
 
   const stats = [
     { label: "INVENTORY SLOTS", value: String(SAMPLE_SLOTS.length), sub: `bought across ${plural(orgs, "organization")}` },
@@ -26,8 +25,8 @@ export default function StatsStrip({ logosUploaded, logoTotal }: StatsStripProps
     { label: "SURVEY & OFFER", value: String(surveys + offers), sub: `${plural(surveys, "survey")} · ${plural(offers, "offer")}` },
     {
       label: "LOGO VARIANTS",
-      value: `${logosUploaded} / ${logoTotal}`,
-      sub: missing ? `${missing} still needed for your slots` : "every screen covered",
+      value: logoSummary ? `${logoSummary.ready} / ${logoSummary.total}` : "–",
+      sub: !logoSummary ? "loading your logos" : missing ? `${missing} still needed for your slots` : "every screen covered",
     },
   ];
 

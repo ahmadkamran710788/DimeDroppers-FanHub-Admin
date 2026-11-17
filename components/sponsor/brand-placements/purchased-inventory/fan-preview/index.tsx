@@ -1,17 +1,21 @@
 import { cn } from "@/utils/cn";
-import LogoTile, { type SponsorBrand } from "@/components/sponsor/brand-placements/purchased-inventory/logo-tile";
+import LogoPreview from "@/components/sponsor/logo-preview";
 import { CATEGORY_TEXT, GENERIC_SAMPLE, PREVIEW_SAMPLES } from "@/components/sponsor/brand-placements/purchased-inventory/data";
+import type { LogoVariant } from "@/utils/types/sponsor-brand-assets";
 import type { SlotChip } from "@/utils/types/sponsor-inventory";
 
 interface FanPreviewProps {
   // The picked slot; null on "All slots".
   chip: SlotChip | null;
   orgName: string;
-  brand: SponsorBrand;
+  // The logo the slot's screen shows first (with the picks not saved yet); null when it shows none.
+  logo: { url: string | null; variant: LogoVariant } | null;
+  brandName: string;
 }
 
-// The slot as fans see it in the Fan Hub: Simple BPA (the sponsor's logo) until slot setup ships.
-export default function FanPreview({ chip, orgName, brand }: FanPreviewProps) {
+// The slot as fans see it in the Fan Hub: Simple BPA, the sponsor's logo on its kind's background (the brand
+// name while there's no logo).
+export default function FanPreview({ chip, orgName, logo, brandName }: FanPreviewProps) {
   const sample = chip ? (PREVIEW_SAMPLES[chip.catalogKey] ?? { title: chip.name, choices: [] }) : GENERIC_SAMPLE;
 
   return (
@@ -43,7 +47,14 @@ export default function FanPreview({ chip, orgName, brand }: FanPreviewProps) {
 
           <div className="border-t border-[#262b35] pt-3 flex flex-col gap-[10px]">
             <span className="text-[11px] tracking-[0.5px] text-[#a8a8a8]">PRESENTED BY</span>
-            <LogoTile brand={brand} size="large" />
+            <LogoPreview
+              url={logo?.url ?? null}
+              variant={logo?.variant ?? "FULL_COLOR"}
+              brandName={brandName}
+              alt={`${brandName} logo`}
+              className="h-[72px] w-full rounded-[12px] text-2xl"
+              imageClassName="p-2"
+            />
           </div>
         </div>
       </div>

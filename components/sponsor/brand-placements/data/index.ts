@@ -1,8 +1,8 @@
 import type { ActivationCategory } from "@/utils/types/activations";
 import type { TemplateId } from "@/components/sponsor/brand-placements/purchased-inventory/data";
 
-// Mock data for Brand Placements until the placements and performance APIs exist. Only Purchased
-// Inventory is live.
+// Mock data for Brand Placements until the placements and performance APIs exist. The logos and Purchased
+// Inventory are live.
 
 export const PLACEMENTS_TABS = ["setup", "performance"] as const;
 export type PlacementsTab = (typeof PLACEMENTS_TABS)[number];
@@ -11,17 +11,6 @@ export const PLACEMENTS_TAB_LABELS: Record<PlacementsTab, string> = {
   setup: "Set up placements",
   performance: "Performance",
 };
-
-// The logo versions a slot's screen calls for: the spec and the sample slots that use each one.
-export const LOGO_VARIANT_DETAILS = {
-  FULL_COLOR: { spec: "Horizontal · for light screens · SVG or PNG, at least 600×200", usedOn: ["Schedule"] },
-  WHITE: { spec: "White on transparent · for dark screens · SVG or PNG", usedOn: ["Live Vote", "Scoreboard"] },
-  ICON: { spec: "Square · for small spots · PNG, at least 512×512", usedOn: ["Predictions", "Challenges & Quests"] },
-} as const;
-
-// Logo variant uploads: PNG or SVG.
-export const LOGO_ACCEPT = ".png,.svg";
-export const LOGO_EXTENSIONS = ["png", "svg"];
 
 // A template's chip (setup history, org rows) and its color in the weekly chart and legend.
 export const TEMPLATE_CHIP: Record<TemplateId, string> = {

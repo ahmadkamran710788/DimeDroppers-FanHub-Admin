@@ -383,6 +383,11 @@ export const routes = {
     // the organisations with their packages and slots (?category=&catalogKeys=&page=&limit=).
     sponsorInventorySlots: "fanhub/sponsor-packages/inventory/slots",
     sponsorInventory: "fanhub/sponsor-packages/inventory",
+    // The logo a slot shows (FANHUB_SPONSOR_BRAND_ASSETS_FRONTEND.md §5). PUT { catalogKey, assetId }: that logo
+    // on the slot at every organisation; PUT { assetId } on one order line: that slot at one organisation.
+    // { assetId: null, variant } removes the choice.
+    sponsorInventoryLogos: "fanhub/sponsor-packages/inventory/logos",
+    sponsorInventoryLineLogo: (lineId: string) => `fanhub/sponsor-packages/inventory/lines/${lineId}/logo`,
     // Fundable Needs, organisation side (FANHUB_FUNDABLE_NEEDS_FRONTEND.md §4). GET what the create form
     // offers, the teams (?eventId= for a tournament), a school's games, the stat cards and the cards (paged).
     orgNeedOptions: "fanhub/org/needs/options",
@@ -422,6 +427,16 @@ export const routes = {
     // GET the locations, POST one; PATCH / DELETE one by id.
     sponsorLocations: "fanhub/sponsor-profile/locations",
     sponsorLocation: (id: string) => `fanhub/sponsor-profile/locations/${id}`,
+    // The sponsor's logos (FANHUB_SPONSOR_BRAND_ASSETS_FRONTEND.md §4). GET the rules per kind and the slot →
+    // kind map; GET the logos with a state per kind, POST one (multipart: file, variant, name?, isDefault?).
+    sponsorBrandAssetOptions: "fanhub/sponsor-profile/brand-assets/options",
+    sponsorBrandAssets: "fanhub/sponsor-profile/brand-assets",
+    // PATCH { name?, isDefault?: true }; DELETE.
+    sponsorBrandAsset: (id: string) => `fanhub/sponsor-profile/brand-assets/${id}`,
+    // PUT multipart { file }: a new image, same id.
+    sponsorBrandAssetFile: (id: string) => `fanhub/sponsor-profile/brand-assets/${id}/file`,
+    // POST, no body: makes the white logo and icon again from a full-color logo; answers the list.
+    sponsorBrandAssetGenerate: (id: string) => `fanhub/sponsor-profile/brand-assets/${id}/generate`,
     // Finding the brand's other stores on request (FANHUB_SPONSOR_LOCATION_FETCH_FRONTEND.md): POST starts one
     // (202), the list is the 20 latest (directly in `data`), and one fetch comes with its locations per area.
     sponsorLocationsFetch: "fanhub/sponsor-profile/locations/fetch",

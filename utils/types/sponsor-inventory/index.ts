@@ -2,6 +2,7 @@
 // FANHUB_SPONSOR_PURCHASED_INVENTORY_FRONTEND.md.
 
 import type { ActivationCategory } from "@/utils/types/activations";
+import type { SlotLogo, SlotTypeLogo } from "@/utils/types/sponsor-brand-assets";
 import type { PackageActivationStatus, PackageTier, SponsorOrganizationType } from "@/utils/types/sponsor-packages";
 
 // How the activation was paid.
@@ -76,6 +77,8 @@ export interface InventorySlot {
   status: PackageActivationStatus;
   activatedAt: string;
   endsAt: string | null;
+  // One entry per logo kind the slot's screen shows; empty for a physical asset.
+  logos: SlotLogo[];
 }
 
 export interface InventoryOrganizationItem {
@@ -104,6 +107,8 @@ export interface SlotChip {
   packages: string[];
   organizations: number;
   slots: number;
+  // One entry per logo kind the slot shows, as it applies at every organisation; empty for a physical asset.
+  logos: SlotTypeLogo[];
 }
 
 // GET /inventory/slots: ordered Pre Game → Live → Post Game → Add-ons → Physical Assets, then by name.

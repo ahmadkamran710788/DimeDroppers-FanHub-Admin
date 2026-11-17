@@ -1,8 +1,9 @@
 import { SPONSOR_PROFILE } from "@/components/sponsor/data";
 
-// Mock data for the Brand Assets page until the sponsor API is integrated.
+// Mock data for the Brand Assets page until the sponsor API is integrated. Logos are live (the Logos section,
+// GET /brand-assets), so they aren't part of this mock library.
 
-export const ASSET_FILTERS = ["All", "Logos", "Video", "Banners", "Social"] as const;
+export const ASSET_FILTERS = ["All", "Video", "Banners", "Social"] as const;
 export type AssetFilter = (typeof ASSET_FILTERS)[number];
 export type AssetType = Exclude<AssetFilter, "All">;
 export const ASSET_FILTER_OPTIONS = ASSET_FILTERS.map((f) => ({ label: f, value: f }));
@@ -34,9 +35,6 @@ export interface BrandAsset {
 export const BRAND_LOGO = { wordmark: "NORTHPEAK", bg: "#0f3d3e", markFill: "#f26b1d", wordColor: "#f4efe6" };
 
 export const ASSETS: BrandAsset[] = [
-  { id: "primary-logo", type: "Logos", name: "Primary logo", spec: "SVG · full color", usage: "Used in 3 placements", status: "Approved", bg: "#0f3d3e", markFill: "#f26b1d", wordColor: "#f4efe6" },
-  { id: "wordmark-white", type: "Logos", name: "Wordmark · white", spec: "PNG · 2400×600 · transparent", usage: "Used in 2 placements", status: "Approved", bg: "#1b1b1b", wordColor: "#ffffff" },
-  { id: "logo-mark", type: "Logos", name: "Logo mark", spec: "PNG · 1024×1024", usage: "Not in use yet", status: "Approved", bg: "#f26b1d", markFill: "#0f3d3e" },
   { id: "home-team-spot", type: "Video", name: "Home team spot", spec: "MP4 · 1920×1080 · 15 sec", usage: "Used in 4 livestreams", status: "Approved", bg: "#123536", markFill: "#f26b1d", wordColor: "#f4efe6", duration: "0:15" },
   { id: "scoreboard-banner", type: "Banners", name: "Scoreboard banner", spec: "PNG · 1200×300", usage: "Used at Twin Lakes Academy", status: "In review", bg: "#0b0b0b", markFill: "#f26b1d", wordColor: "#f26b1d" },
   { id: "game-day-post", type: "Social", name: "Game-day post", spec: "PNG · 1080×1080", usage: "Not in use yet", status: "Draft", bg: "#f4efe6", markFill: "#f26b1d", wordColor: "#0f3d3e" },

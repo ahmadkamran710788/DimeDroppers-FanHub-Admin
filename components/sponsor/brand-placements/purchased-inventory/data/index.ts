@@ -13,7 +13,7 @@ export const CATEGORY_TEXT: Record<ActivationCategory, string> = {
   PHYSICAL_ASSET: "text-[#86efac]",
 };
 
-// Slot setup is coming soon: the templates and logo versions are shown, not picked yet.
+// Slot templates are coming soon: they're shown, not picked yet (every slot is Simple BPA).
 export interface PlacementTemplate {
   id: "SIMPLE_BPA" | "VISIT_WEBSITE" | "SURVEY" | "OFFER_PROMO_CODE";
   name: string;
@@ -29,12 +29,6 @@ export const TEMPLATES: PlacementTemplate[] = [
   { id: "SURVEY", name: "Survey", desc: "Ask fans a question and collect answers.", icon: List },
   { id: "OFFER_PROMO_CODE", name: "Offer / promo code", desc: "Give fans a discount code to redeem.", icon: Tag },
 ];
-
-export const LOGO_VARIANTS = [
-  { id: "FULL_COLOR", name: "Full-color logo" },
-  { id: "WHITE", name: "White logo" },
-  { id: "ICON", name: "Icon / mark" },
-] as const;
 
 export interface PreviewSample {
   // What the fan card shows above the sponsor ("Who wins tonight?").

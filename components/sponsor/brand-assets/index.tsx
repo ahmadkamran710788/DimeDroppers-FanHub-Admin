@@ -11,12 +11,13 @@ import { PRIMARY_BUTTON } from "@/components/sponsor/styles";
 import AssetCard from "@/components/sponsor/brand-assets/asset-card";
 import AssetDropzone from "@/components/sponsor/brand-assets/asset-dropzone";
 import BrandProfile from "@/components/sponsor/brand-assets/brand-profile";
+import LogoLibrary from "@/components/sponsor/brand-assets/logo-library";
 import PlacementSpecs from "@/components/sponsor/brand-assets/placement-specs";
 import { useAssetLibrary } from "@/components/sponsor/brand-assets/use-asset-library";
 import { ASSET_FILTER_OPTIONS, type AssetFilter, type BrandAsset } from "@/components/sponsor/brand-assets/data";
 
-// The sponsor's brand kit, which organizations pull from when they place the brand: the brand
-// profile, the asset library and the placement specs organizations ask for.
+// The sponsor's brand kit, which organizations pull from when they place the brand: the logos (live), the brand
+// profile, the creative library and the placement specs organizations ask for (mock until their APIs exist).
 export default function BrandAssets() {
   const [filter, setFilter] = useState<AssetFilter>("All");
   const [deleting, setDeleting] = useState<BrandAsset | null>(null);
@@ -45,6 +46,8 @@ export default function BrandAssets() {
           className={cn(PRIMARY_BUTTON, "h-[52px] px-[22px] gap-[10px] rounded-[12px] text-base")}
         />
       </div>
+
+      <LogoLibrary />
 
       <div className="flex flex-wrap gap-6 items-start">
         <BrandProfile />

@@ -2,42 +2,33 @@
 
 import Link from "next/link";
 import { cn } from "@/utils/cn";
-import Button from "@/components/common/button";
 import FilterChips from "@/components/common/filter-chips";
 import Loader from "@/components/common/loader";
 import Pagination from "@/components/common/pagination";
-import { CARD, OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
-import { useSponsorAccount } from "@/components/sponsor/use-sponsor-account";
-import FanPreview from "@/components/sponsor/brand-placements/purchased-inventory/fan-preview";
+import LoadProblem from "@/components/sponsor/load-problem";
+import { CARD, PRIMARY_BUTTON } from "@/components/sponsor/styles";
+import type { BrandLogos } from "@/components/sponsor/use-brand-logos";
 import OrgRow from "@/components/sponsor/brand-placements/purchased-inventory/org-row";
-import SlotEditor from "@/components/sponsor/brand-placements/purchased-inventory/slot-editor";
+import SlotSetup from "@/components/sponsor/brand-placements/purchased-inventory/slot-setup";
 import { usePurchasedInventory } from "@/components/sponsor/brand-placements/purchased-inventory/use-purchased-inventory";
 import { CATEGORY_TEXT } from "@/components/sponsor/brand-placements/purchased-inventory/data";
 import { routes } from "@/utils/routes";
 
 const unique = (values: string[]) => [...new Set(values)];
 
-interface ProblemProps {
-  message: string;
-  onRetry: () => void;
-}
-
-// A failed load, with Retry.
-function Problem({ message, onRetry }: ProblemProps) {
-  return (
-    <div role="alert" className={cn(CARD, "rounded-[8px] p-4 flex flex-wrap items-center justify-between gap-3")}>
-      <p className="text-sm text-[#f0c36a]">{`Couldn't load your purchased inventory: ${message}`}</p>
-      <Button label="Retry" onClick={onRetry} className={cn(OUTLINE_BUTTON, "h-10 px-4 rounded-[10px] text-sm")} />
-    </div>
-  );
+interface PurchasedInventoryProps {
+  // The sponsor's logos, for the slot's logo picker; a change to them loads the slots again.
+  logos: BrandLogos;
+  brandName: string;
 }
 
 // What the sponsor bought, by slot: the organizations with the picked slot, their packages and slots.
-// Picking one shows its slot setup (coming soon) and what fans see.
-export default function PurchasedInventory() {
-  const s = usePurchasedInventory();
-  const account = useSponsorAccount();
-  const brand = { name: account?.brandName || account?.displayName || "Your brand", logoUrl: account?.logoUrl ?? null };
+// Picking one shows its setup (the logo it shows; templates coming soon) and what fans see.
+export default function PurchasedInventory({ logos, brandName }: PurchasedInventoryProps) {
+  const s = usePurchasedInventory(logos.version);
+  const problem = (message?: string) => (
+    <LoadProblem message={`Couldn't load your purchased inventory: ${message}`} onRetry={s.retry} />
+  );
 
   const chipOptions = s.chips.map((c) => ({
     value: c.catalogKey,
@@ -56,10 +47,12 @@ export default function PurchasedInventory() {
   const physical = s.chip?.category === "PHYSICAL_ASSET";
   // The packages of the picked slot only.
   const packageNames = selected ? unique(selected.slots.map((slot) => slot.package.name)) : [];
+  // The picked slot's order lines at the selected organization.
+  const lines = selected && s.chip ? selected.slots.filter((slot) => slot.catalogKey === s.chip?.catalogKey) : [];
 
   function body() {
     if (s.chipsLoading) return <Loader />;
-    if (s.chipsError) return <Problem message={s.chipsError} onRetry={s.retry} />;
+    if (s.chipsError) return problem(s.chipsError);
     if (!s.summary?.slots) {
       return (
         <div className={cn(CARD, "rounded-[8px] p-6 flex flex-col items-start gap-4")}>
@@ -83,7 +76,7 @@ export default function PurchasedInventory() {
         {s.orgsLoading ? (
           <Loader />
         ) : s.orgsError ? (
-          <Problem message={s.orgsError} onRetry={s.retry} />
+          problem(s.orgsError)
         ) : !selected ? (
           <p className="text-[15px] text-[#a8a8a8]">No organization has this slot.</p>
         ) : (
@@ -108,16 +101,20 @@ export default function PurchasedInventory() {
                 Physical assets are placed at the venue, like a banner or a logo on shirts. There&apos;s no screen to set
                 up for them.
               </p>
-            ) : (
+            ) : !s.chip || lines.length === 0 ? null : (
               <div className="flex-[3_1_560px] min-w-0 flex flex-wrap gap-5 items-start">
-                <SlotEditor
+                <SlotSetup
+                  // New picks start over for another organization or slot.
+                  key={`${selected.organization.id}:${s.chip.catalogKey}`}
                   orgName={orgName}
                   chip={s.chip}
+                  lines={lines}
                   packageNames={packageNames}
                   orgCount={s.pagination?.total ?? s.items.length}
-                  brand={brand}
+                  logos={logos}
+                  brandName={brandName}
+                  onSaved={s.refresh}
                 />
-                <FanPreview chip={s.chip} orgName={orgName} brand={brand} />
               </div>
             )}
           </div>

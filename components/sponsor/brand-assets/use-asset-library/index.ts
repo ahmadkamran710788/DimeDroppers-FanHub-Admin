@@ -62,13 +62,13 @@ export function useAssetLibrary() {
   }
 
   // Adds the files as new assets awaiting review. MP4s go to Video; other files to the selected
-  // type, or Logos when no single type is selected.
+  // type, or Banners when no single type is selected (logos have their own section).
   function addFiles(files: File[], filter: AssetFilter) {
     const added: BrandAsset[] = [];
     for (const f of files) {
       const upload = toUpload(f);
       if (!upload) continue;
-      const type: AssetType = upload.file.kind === "video" ? "Video" : filter === "All" || filter === "Video" ? "Logos" : filter;
+      const type: AssetType = upload.file.kind === "video" ? "Video" : filter === "All" || filter === "Video" ? "Banners" : filter;
       added.push({
         id: `upload-${nextId.current++}`,
         type,

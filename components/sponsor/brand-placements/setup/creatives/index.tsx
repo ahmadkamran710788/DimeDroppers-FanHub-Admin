@@ -3,7 +3,7 @@ import { CARD, SECTION_TITLE } from "@/components/sponsor/styles";
 import AssetPreview from "@/components/sponsor/brand-assets/asset-preview";
 import type { AssetType, BrandAsset } from "@/components/sponsor/brand-assets/data";
 
-const KIND: Record<AssetType, string> = { Logos: "Logo", Video: "Video", Banners: "Banner", Social: "Social" };
+const KIND: Record<AssetType, string> = { Video: "Video", Banners: "Banner", Social: "Social" };
 
 interface CreativesProps {
   assets: BrandAsset[];

@@ -1,4 +1,5 @@
 import { toOptions } from "@/utils/helper";
+import type { VariantSpec } from "@/utils/types/sponsor-brand-assets";
 import type { LogoRules } from "@/utils/types/sponsor-profile";
 
 // The signed-in sponsor, shown in the sponsor header and sidebar. Mock data until sponsor
@@ -60,11 +61,58 @@ export async function checkLogo(file: File, rules: LogoRules): Promise<string | 
     return `Logo must be ${Number((rules.maxBytes / (1024 * 1024)).toFixed(1))} MB or smaller`;
   }
   if (file.type === "image/png") {
-    const image = await createImageBitmap(file).catch(() => null);
-    if (!image) return "Logo must be an SVG or PNG image";
-    const tooSmall = image.width < rules.minWidth || image.height < rules.minHeight;
-    image.close();
-    if (tooSmall) return `Logo must be at least ${rules.minWidth}×${rules.minHeight} px`;
+    const size = await imageSize(file);
+    if (!size) return "Logo must be an SVG or PNG image";
+    if (size.width < rules.minWidth || size.height < rules.minHeight) {
+      return `Logo must be at least ${rules.minWidth}×${rules.minHeight} px`;
+    }
+  }
+  return null;
+}
+
+// A PNG or JPG's size in pixels; null when the browser can't read it as an image.
+async function imageSize(file: File): Promise<{ width: number; height: number } | null> {
+  const image = await createImageBitmap(file).catch(() => null);
+  if (!image) return null;
+  const size = { width: image.width, height: image.height };
+  image.close();
+  return size;
+}
+
+const MIME_EXTENSIONS: Record<string, string> = {
+  "image/svg+xml": ".svg",
+  "image/png": ".png",
+  "image/jpeg": ".jpg,.jpeg",
+};
+
+// The file picker filter for one logo kind (".svg,.png,.jpg,.jpeg").
+export const logoAccept = (spec: VariantSpec) =>
+  spec.mimeTypes.map((type) => MIME_EXTENSIONS[type] ?? type).join(",");
+
+// "SVG, PNG or JPG".
+const joinOr = (items: string[]) =>
+  items.length > 1 ? `${items.slice(0, -1).join(", ")} or ${items[items.length - 1]}` : (items[0] ?? "");
+
+// A Brand Assets logo against its kind's rules from GET /brand-assets/options: the problem to show, or null when
+// it's fine. Size and shape are checked for a PNG or JPG; an SVG's, and a white PNG's transparency, are left
+// to the backend, which checks everything again.
+export async function checkBrandLogo(file: File, spec: VariantSpec, maxBytes: number): Promise<string | null> {
+  // Some systems give no type; the backend reads the file itself.
+  if (file.type && !spec.mimeTypes.includes(file.type)) return `${spec.label} must be ${joinOr(spec.formats)}`;
+  if (file.size > maxBytes) return `Logo must be ${Number((maxBytes / (1024 * 1024)).toFixed(1))} MB or smaller`;
+  if (file.type !== "image/png" && file.type !== "image/jpeg") return null;
+
+  const size = await imageSize(file);
+  if (!size) return "The file could not be read as an image";
+  const recommended = `${spec.recommended.width}×${spec.recommended.height} px`;
+  if (size.width < spec.minWidth || size.height < spec.minHeight) {
+    return `${spec.label} must be at least ${spec.minWidth}×${spec.minHeight} px (recommended ${recommended})`;
+  }
+  const ratio = size.width / size.height;
+  if (ratio < spec.minRatio || ratio > spec.maxRatio) {
+    return spec.maxRatio < 1.5
+      ? `${spec.label} must be square (recommended ${recommended})`
+      : `${spec.label} is too tall or too wide. Use a wide wordmark (recommended ${recommended})`;
   }
   return null;
 }

@@ -13,14 +13,23 @@ interface Loaded<T> {
   error?: string;
 }
 
+// The answer to the load `key`. A reload in place (after a logo change) keeps what's shown when it fails.
+function settle<T>(key: string, view: T | undefined, message: string | undefined) {
+  return (prev: Loaded<T> | null): Loaded<T> =>
+    view ? { key, view } : prev?.key === key && prev.view ? prev : { key, error: message };
+}
+
 // What the sponsor bought: the slot chips (GET /inventory/slots, once) and the organizations with their
-// packages and slots (GET /inventory) for the picked slot chip. Active purchases only.
-export function usePurchasedInventory() {
+// packages and slots (GET /inventory) for the picked slot chip. Active purchases only. Both load again in place
+// when `logosVersion` changes (a logo was uploaded, replaced or deleted) or a slot's logo is picked.
+export function usePurchasedInventory(logosVersion = 0) {
   // The picked slot's catalogKey; the first chip until one is picked.
   const [pickedKey, setPickedKey] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   // Bumped by Retry to load both again.
   const [reloads, setReloads] = useState(0);
+  // Bumped after a slot's logo is picked, to load both again without a loader.
+  const [refreshes, setRefreshes] = useState(0);
   const [chipList, setChipList] = useState<Loaded<SlotChipList> | null>(null);
   const [orgList, setOrgList] = useState<Loaded<InventoryPage> | null>(null);
   // The organization the setup panel and preview are for; the first on the page until one is picked.
@@ -30,12 +39,12 @@ export function usePurchasedInventory() {
   useEffect(() => {
     let cancelled = false;
     sponsorRequest<SlotChipList>("GET", routes.api.sponsorInventorySlots).then((r) => {
-      if (!cancelled) setChipList({ key: chipsKey, view: r.view, error: r.view ? undefined : r.message });
+      if (!cancelled) setChipList(settle(chipsKey, r.view, r.message));
     });
     return () => {
       cancelled = true;
     };
-  }, [chipsKey]);
+  }, [chipsKey, refreshes, logosVersion]);
 
   // null while loading.
   const chips = chipList?.key === chipsKey ? chipList : null;
@@ -54,12 +63,12 @@ export function usePurchasedInventory() {
         limit: PAGE_SIZE,
       },
     }).then((r) => {
-      if (!cancelled) setOrgList({ key: orgsKey, view: r.view, error: r.view ? undefined : r.message });
+      if (!cancelled) setOrgList(settle(orgsKey, r.view, r.message));
     });
     return () => {
       cancelled = true;
     };
-  }, [orgsKey, catalogKey, page]);
+  }, [orgsKey, catalogKey, page, refreshes, logosVersion]);
 
   // null while loading.
   const orgs = orgList?.key === orgsKey ? orgList : null;
@@ -87,5 +96,7 @@ export function usePurchasedInventory() {
     setPage,
     select: setSelectedId,
     retry: () => setReloads((n) => n + 1),
+    // After a slot's logo is picked: both load again in place.
+    refresh: () => setRefreshes((n) => n + 1),
   };
 }

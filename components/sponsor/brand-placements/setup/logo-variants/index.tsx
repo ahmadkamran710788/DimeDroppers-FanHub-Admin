@@ -1,32 +1,55 @@
 "use client";
 
-import { useRef, useState } from "react";
-import Image from "next/image";
+import { useRef } from "react";
+import Link from "next/link";
 import { Upload } from "lucide-react";
 import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
 import HiddenFileInput from "@/components/common/hidden-file-input";
-import { CARD, OUTLINE_BUTTON, PRIMARY_BUTTON, SECTION_TITLE } from "@/components/sponsor/styles";
-import { LOGO_ACCEPT, LOGO_VARIANT_DETAILS } from "@/components/sponsor/brand-placements/data";
-import type { LogoVariant, LogoVariantId } from "@/components/sponsor/brand-placements/setup/logo-variants/use-logo-variants";
+import Loader from "@/components/common/loader";
+import LoadProblem from "@/components/sponsor/load-problem";
+import LogoPreview from "@/components/sponsor/logo-preview";
+import { logoAccept } from "@/components/sponsor/data";
+import { CARD, HINT_LINK, OUTLINE_BUTTON, PRIMARY_BUTTON, SECTION_TITLE } from "@/components/sponsor/styles";
+import type { BrandLogos } from "@/components/sponsor/use-brand-logos";
+import { routes } from "@/utils/routes";
+import type { VariantState, VariantStatus } from "@/utils/types/sponsor-brand-assets";
 
-// The tile each version sits on: light screens, dark screens, a small square spot.
-const TILE: Record<LogoVariantId, string> = {
-  FULL_COLOR: "bg-white text-black border border-[#d4d4d8]",
-  WHITE: "bg-black text-white border border-[#3a3f4b]",
-  ICON: "bg-white text-black",
+const BADGE: Record<VariantState, { label: string; style: string }> = {
+  READY: { label: "Uploaded", style: "bg-[#052e16] text-[#86efac]" },
+  MISSING: { label: "Missing", style: "bg-[#2b1d05] text-[#fcd34d]" },
+  NOT_NEEDED: { label: "Not needed yet", style: "bg-[#1e222a] text-[#d4d4d8]" },
 };
 
 interface LogoVariantsProps {
-  variants: LogoVariant[];
-  uploaded: number;
+  logos: BrandLogos;
   brandName: string;
-  onUpload: (id: LogoVariantId, file: File) => void;
 }
 
-// The logo versions different screens call for, with Upload / Replace for each.
-export default function LogoVariants({ variants, uploaded, brandName, onUpload }: LogoVariantsProps) {
-  const missing = variants.length - uploaded;
+// The logo kinds the sponsor's slots call for, each with what's in use and Upload / Replace. The full list
+// (several logos per kind, default, rename, delete) is on Brand Assets.
+export default function LogoVariants({ logos, brandName }: LogoVariantsProps) {
+  const { list } = logos;
+
+  function summary() {
+    if (!list) return null;
+    const { ready, missing, total } = list.summary;
+    if (missing) return { text: `${ready} of ${total} uploaded · ${missing} missing`, style: "text-[#fcd34d]" };
+    return { text: ready === total ? `All ${total} uploaded` : `${ready} of ${total} uploaded · every slot covered`, style: "text-[#86efac]" };
+  }
+  const line = summary();
+
+  function body() {
+    if (logos.loading) return <Loader />;
+    if (!list) return <LoadProblem message={`Couldn't load your logos: ${logos.error}`} onRetry={logos.retry} />;
+    return (
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-3">
+        {list.variants.map((v) => (
+          <VariantCard key={v.variant} status={v} logos={logos} brandName={brandName} />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <section aria-labelledby="logo-variants-title" className="flex flex-col gap-3">
@@ -34,92 +57,89 @@ export default function LogoVariants({ variants, uploaded, brandName, onUpload }
         <h3 id="logo-variants-title" className={SECTION_TITLE}>
           Logo Variants
         </h3>
-        <span className={cn("text-[13px]", missing ? "text-[#fcd34d]" : "text-[#86efac]")}>
-          {missing ? `${uploaded} of ${variants.length} uploaded · ${missing} missing` : `All ${variants.length} uploaded`}
-        </span>
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          {line && <span className={cn("text-[13px]", line.style)}>{line.text}</span>}
+          <Link href={routes.ui.sponsor.brandAssets} className={cn(HINT_LINK, "text-[13px]")}>
+            Manage logos
+          </Link>
+        </div>
       </div>
       <p className="max-w-[760px] text-sm leading-normal text-[#a8a8a8]">
-        Different screens need different versions of your logo. Each slot below uses the version its screen calls for.
+        Different screens need different versions of your logo. Upload your full-color logo and we make the white logo
+        and icon from it; upload your own to replace them.
       </p>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-3">
-        {variants.map((v) => (
-          <VariantCard key={v.id} variant={v} brandName={brandName} onUpload={(file) => onUpload(v.id, file)} />
-        ))}
-      </div>
+      {body()}
     </section>
   );
 }
 
 interface VariantCardProps {
-  variant: LogoVariant;
+  status: VariantStatus;
+  logos: BrandLogos;
   brandName: string;
-  onUpload: (file: File) => void;
 }
 
-function VariantCard({ variant, brandName, onUpload }: VariantCardProps) {
+function VariantCard({ status, logos, brandName }: VariantCardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const details = LOGO_VARIANT_DETAILS[variant.id];
-  const has = variant.file !== null;
-  const action = has ? "Replace" : "Upload";
+  const spec = logos.specOf(status.variant);
+  const items = logos.list?.items ?? [];
+  const current = items.find((a) => a.id === status.defaultAssetId) ?? null;
+  const fromProfile = status.inUse.source === "PROFILE";
+  const has = status.state === "READY";
+  const badge = BADGE[status.state];
+  // A full-color default keeps its id when replaced (every slot on it updates, the versions are made again);
+  // any other upload becomes the default of its kind, taking over from a made one.
+  const replacing = status.variant === "FULL_COLOR" && current ? current : null;
+  const busy = logos.busy === `upload:${status.variant}` || (replacing !== null && logos.busy === replacing.id);
+  const action = has && !fromProfile ? "Replace" : "Upload";
+
+  function fileLine() {
+    if (fromProfile) return "From your Sponsor Profile";
+    if (current) return status.inUse.generated ? `${current.name} · Auto-made` : current.name;
+    return "Not uploaded";
+  }
+
+  function pick(file: File) {
+    if (replacing) logos.replace(replacing, file);
+    else logos.upload(status.variant, file, { isDefault: true });
+  }
 
   return (
-    <div className={cn(CARD, "rounded-[12px] p-[14px] flex flex-col gap-3", !has && "border-[#854d0e]")}>
-      <VariantTile variant={variant} brandName={brandName} />
+    <div className={cn(CARD, "rounded-[12px] p-[14px] flex flex-col gap-3", status.state === "MISSING" && "border-[#854d0e]")}>
+      <LogoPreview
+        url={status.inUse.url}
+        variant={status.variant}
+        brandName={brandName}
+        alt={status.label}
+        className={cn("h-[84px] rounded-[10px]", status.variant === "ICON" ? "text-[34px]" : "text-[26px]")}
+      />
       <div className="flex flex-col gap-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[15px] font-semibold">{variant.name}</span>
-          <span
-            className={cn(
-              "text-[11px] font-bold rounded-full px-2 py-0.5",
-              has ? "bg-[#052e16] text-[#86efac]" : "bg-[#2b1d05] text-[#fcd34d]"
-            )}
-          >
-            {has ? "Uploaded" : "Missing"}
-          </span>
+          <span className="text-[15px] font-semibold">{status.label}</span>
+          <span className={cn("text-[11px] font-bold rounded-full px-2 py-0.5 whitespace-nowrap", badge.style)}>{badge.label}</span>
         </div>
-        <span className="text-xs text-[#a8a8a8]">{details.spec}</span>
-        <span className="text-xs text-[#d4d4d8]">Used on: {details.usedOn.join(", ")}</span>
-        <span className="text-xs text-[#a8a8a8] truncate">{variant.file?.name ?? "Not uploaded"}</span>
+        {spec && <span className="text-xs text-[#a8a8a8]">{spec.description}</span>}
+        {spec && <span className="text-xs text-[#d4d4d8]">Used on: {spec.usedOn.join(", ")}</span>}
+        <span className="text-xs text-[#a8a8a8]">
+          {status.neededBySlots
+            ? `${status.neededBySlots} of your slot${status.neededBySlots === 1 ? "" : "s"} show${status.neededBySlots === 1 ? "s" : ""} it`
+            : "None of your slots show it yet"}
+        </span>
+        <span className="text-xs text-[#a8a8a8] truncate">{fileLine()}</span>
+        {status.needsUpload && <span className="text-xs leading-normal text-[#fcd34d]">{status.needsUpload}</span>}
       </div>
       <Button
-        label={action}
+        label={busy ? "Uploading…" : action}
         icon={<Upload className="size-[15px]" strokeWidth={2} />}
-        aria-label={`${action} ${variant.name.toLowerCase()}`}
+        aria-label={`${action} ${status.label.toLowerCase()}`}
+        disabled={busy || !spec}
         onClick={() => inputRef.current?.click()}
         className={cn(
           has ? OUTLINE_BUTTON : PRIMARY_BUTTON,
-          "self-start h-10 px-[14px] gap-1.5 rounded-[8px] text-[13px] font-semibold"
+          "self-start mt-auto h-10 px-[14px] gap-1.5 rounded-[8px] text-[13px] font-semibold"
         )}
       />
-      <HiddenFileInput ref={inputRef} accept={LOGO_ACCEPT} onFiles={(files) => onUpload(files[0])} />
-    </div>
-  );
-}
-
-// The logo on its screen's background; the brand name, faded, while it's missing or fails to load.
-function VariantTile({ variant, brandName }: { variant: LogoVariant; brandName: string }) {
-  // The logo URL that failed to load (an expired signed link); a new one is tried again.
-  const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  const url = variant.file?.url;
-  const icon = variant.id === "ICON";
-
-  return (
-    <div
-      className={cn(
-        "relative h-[84px] rounded-[10px] overflow-hidden flex items-center justify-center",
-        "font-display font-black tracking-[0.5px]",
-        icon ? "text-[34px]" : "text-[26px]",
-        TILE[variant.id]
-      )}
-    >
-      {url && url !== failedUrl ? (
-        // A local blob: preview or the profile's signed link, so skip the image optimizer.
-        <Image src={url} alt={variant.name} fill unoptimized onError={() => setFailedUrl(url)} className="object-contain p-3" />
-      ) : (
-        <span aria-hidden="true" className="opacity-35 truncate px-3">
-          {icon ? brandName.charAt(0).toLowerCase() : brandName.toLowerCase()}
-        </span>
-      )}
+      {spec && <HiddenFileInput ref={inputRef} accept={logoAccept(spec)} onFiles={(files) => pick(files[0])} />}
     </div>
   );
 }

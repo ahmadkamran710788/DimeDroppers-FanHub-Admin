@@ -24,3 +24,9 @@ export const brandColorSchema = (existing: string[]) =>
         !existing.some((c) => c.toLowerCase() === color?.toLowerCase())
       ),
   });
+
+// Renaming a logo; `max` is the API's name limit (GET /brand-assets/options `limits.nameMax`).
+export const logoNameSchema = (max: number) =>
+  yup.object({
+    name: yup.string().trim().required("Give the logo a name").max(max, `Keep the name under ${max} characters`),
+  });
