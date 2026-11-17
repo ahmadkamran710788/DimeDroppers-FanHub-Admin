@@ -3,43 +3,26 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Plus } from "lucide-react";
-import toast from "react-hot-toast";
-import Button from "@/components/common/button";
+import { ArrowLeft } from "lucide-react";
 import type { Column } from "@/components/common/generic-table";
 import StatusPill from "@/components/common/status-pill";
 import Tabs from "@/components/common/tabs";
 import { sportIcon } from "@/components/organization/teams/data";
-import { invitationColor } from "@/components/organization/teams/team-details/invitation-status";
 import ParentsTab from "@/components/organization/teams/team-details/parents-tab";
 import PeopleList from "@/components/organization/teams/team-details/people-list";
 import PersonCell from "@/components/organization/teams/team-details/person-cell";
+import PlayersTab from "@/components/organization/teams/team-details/players-tab";
 import StaffTab from "@/components/organization/teams/team-details/staff-tab";
 import { useTeamFollowers, type TeamFollower } from "@/components/organization/teams/team-details/use-team-followers";
-import { useTeamPlayers, type RosterPlayer } from "@/components/organization/teams/team-details/use-team-players";
+import { useTeamPlayers } from "@/components/organization/teams/team-details/use-team-players";
 import { useTeamStaff } from "@/components/organization/teams/team-details/use-team-staff";
 import { useOrgTeams } from "@/components/organization/teams/use-org-teams";
 import { useSetup } from "@/context/setup";
 import { routes } from "@/utils/routes";
 
 const TABS = ["Players", "Parents", "Staff", "Followers"] as const;
-// Add Player is not wired to the API yet.
-const comingSoon = () => toast("Coming soon.");
 
 type Tab = (typeof TABS)[number];
-
-const PLAYER_COLUMNS: Column<RosterPlayer>[] = [
-  { header: "Player", cls: "flex-1 min-w-[200px] py-5", cell: (p) => <PersonCell name={p.name} email={p.email} /> },
-  { header: "Jersey #", cls: "w-20 shrink-0 py-5 whitespace-nowrap", cell: (p) => p.number || "—" },
-  { header: "Position", cls: "w-28 shrink-0 py-5", cell: (p) => <span className="leading-5">{p.position || "—"}</span> },
-  { header: "Parents", cls: "w-20 shrink-0 py-5", cell: (p) => p.parentCount },
-  {
-    header: "Status",
-    cls: "w-28 shrink-0 py-5",
-    cell: (p) => <StatusPill label={p.status} color={invitationColor(p.status)} className="whitespace-nowrap" />,
-  },
-];
-const playerSearch = (p: RosterPlayer) => [p.name, p.email, p.position, p.number];
 
 const FOLLOWER_COLUMNS: Column<TeamFollower>[] = [
   { header: "Name", cls: "flex-1 min-w-[200px] py-5", cell: (f) => <PersonCell name={f.name} email={f.email} /> },
@@ -54,13 +37,13 @@ const FOLLOWER_COLUMNS: Column<TeamFollower>[] = [
 const followerSearch = (f: TeamFollower) => [f.name, f.email, f.type];
 
 // Team details: header plus Players / Parents / Staff / Followers lists. The team and its staff
-// come from the API (players, parents and followers read-only).
+// come from the API; players and staff are managed here (parents and followers are read-only).
 export default function TeamDetailsPage({ teamId }: { teamId: string }) {
   const { savedSchool } = useSetup();
   const [tab, setTab] = useState<Tab>("Players");
   const { teams, loading: teamsLoading } = useOrgTeams();
   const { staff, loading: staffLoading, reload: reloadStaff } = useTeamStaff(teamId);
-  const { players, parents, loading: rosterLoading } = useTeamPlayers(teamId);
+  const { players, parents, loading: rosterLoading, reload: reloadRoster } = useTeamPlayers(teamId);
   const { followers, loading: followersLoading } = useTeamFollowers(teamId);
   const team = teams.find((t) => t.id === teamId);
   const headCoach = staff.find((s) => s.role === "Head Coach")?.name ?? "—";
@@ -132,24 +115,7 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
           counts={{ Players: players.length, Parents: parents.length, Staff: staff.length, Followers: followers.length }}
         />
         {tab === "Players" ? (
-          <PeopleList
-            key={tab}
-            rows={players}
-            loading={rosterLoading}
-            columns={PLAYER_COLUMNS}
-            getKey={(a) => a.id}
-            searchFields={playerSearch}
-            noun="players"
-            action={
-              <Button
-              variant="cta"
-              label="Add Player"
-              icon={<Plus className="size-5" strokeWidth={2} />}
-              className="shrink-0"
-              onClick={comingSoon}
-            />
-            }
-          />
+          <PlayersTab teamId={team.id} players={players} loading={rosterLoading} reload={reloadRoster} />
         ) : tab === "Parents" ? (
           <ParentsTab rows={parents} loading={rosterLoading} />
         ) : tab === "Staff" ? (

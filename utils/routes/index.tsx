@@ -291,6 +291,13 @@ export const routes = {
     rosterStaffInvite: (staffId: string) => `fanhub/org/roster/staff/${staffId}/invite`,
     // A team's roster, read-only (players with their parents): GET ?schoolTeamId=. The coach adds them in the app.
     rosterPlayers: "fanhub/org/roster/players",
+    // Add a player to a school team's roster: POST { firstName, lastName?, number? } (email comes at invite time).
+    rosterSchoolTeamPlayers: (schoolTeamId: string) => `fanhub/org/roster/teams/${schoolTeamId}/players`,
+    // One of them: PATCH { firstName?, lastName?, number?, position?, email?, phone? } edits, DELETE removes.
+    rosterSchoolPlayer: (schoolTeamId: string, playerId: string) => `fanhub/org/roster/teams/${schoolTeamId}/players/${playerId}`,
+    // Invite that player by email (POST { email }) or withdraw the pending invitation (DELETE).
+    rosterSchoolPlayerInvite: (schoolTeamId: string, playerId: string) =>
+      `fanhub/org/roster/teams/${schoolTeamId}/players/${playerId}/invite`,
     // Fans following a team, each tagged PLAYER / PARENT / STAFF / FAN: GET ?schoolTeamId=&page=&limit=.
     rosterFollowers: "fanhub/org/roster/followers",
     // Activations — the sponsor slots the org sells (FANHUB_ACTIVATIONS_FRONTEND.md).

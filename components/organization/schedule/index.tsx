@@ -179,6 +179,9 @@ interface GameRowProps {
 function GameRow({ game, onEdit, onDelete }: GameRowProps) {
   const { day, month, weekday } = parseGameDate(game.start);
   const { time, tz } = formatTime(game.start, game.isAllDay);
+  // An opponent without its own logo shows the organisation's.
+  const { savedSchool } = useSetup();
+  const opponentLogo = game.opponentLogoUrl || savedSchool?.logoUrl;
 
   const statusColor = game.status === "cancelled" ? "bg-red-400" : game.status === "tentative" ? "bg-yellow-400" : "bg-green-400";
   const statusText = game.status === "cancelled" ? "Cancelled" : game.status === "tentative" ? "Tentative" : "Scheduled";
@@ -212,9 +215,9 @@ function GameRow({ game, onEdit, onDelete }: GameRowProps) {
         {/* OPPONENT */}
         <div className="w-52 px-2 py-4 bg-white/5 flex items-center overflow-hidden">
           <div className="flex items-center gap-2 min-w-0 w-full">
-            {game.opponentLogoUrl ? (
+            {opponentLogo ? (
               <Image
-                src={game.opponentLogoUrl}
+                src={opponentLogo}
                 alt=""
                 width={40}
                 height={40}
@@ -456,7 +459,8 @@ function NextGameCard({ game }: { game: ScheduleItem | null }) {
           <div className="text-white/60 text-xs font-medium uppercase whitespace-nowrap">{dateLabel}</div>
           <div className="text-white text-2xl font-extrabold font-display whitespace-nowrap">{time}</div>
         </div>
-        <TeamSide name={game.opponent ?? "TBD"} logoUrl={game.opponentLogoUrl} />
+        {/* An opponent without its own logo shows the organisation's. */}
+        <TeamSide name={game.opponent ?? "TBD"} logoUrl={game.opponentLogoUrl || savedSchool?.logoUrl} />
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ import { invitationColor } from "@/components/organization/teams/team-details/in
 import PeopleList from "@/components/organization/teams/team-details/people-list";
 import PersonCell from "@/components/organization/teams/team-details/person-cell";
 import { playerName } from "@/components/organization/teams/tournament-team-details/invite-role-modal";
-import InvitePlayerModal from "@/components/organization/teams/tournament-team-details/invite-player-modal";
+import InvitePlayerModal from "@/components/organization/teams/invite-player-modal";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type { ExposurePlayer } from "@/utils/types/exposure-event";
@@ -112,7 +112,13 @@ export default function PlayersTab({ fanHubTeamId, players, members, loading, on
 
       {/* Mounted per open so each invite starts from its player. */}
       {inviting && (
-        <InvitePlayerModal onClose={() => setInviting(null)} fanHubTeamId={fanHubTeamId} player={inviting} onSent={onChanged} />
+        <InvitePlayerModal
+          onClose={() => setInviting(null)}
+          name={playerName(inviting)}
+          endpoint={routes.api.rosterFanHubPlayerInvite(fanHubTeamId, inviting.id)}
+          defaultEmail={inviting.email}
+          onSent={onChanged}
+        />
       )}
 
       <ConfirmModal
