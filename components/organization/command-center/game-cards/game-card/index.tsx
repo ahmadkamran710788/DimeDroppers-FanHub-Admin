@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight, CirclePlay } from "lucide-react";
 import { parseGameDate } from "@/components/organization/schedule/game-date";
 import TeamSide from "@/components/organization/schedule/team-side";
+import { useSetup } from "@/context/setup";
 import { routes } from "@/utils/routes";
 import type { LiveGame } from "@/utils/types/command-center";
 
@@ -11,6 +12,9 @@ export default function GameCard({ game }: { game: LiveGame }) {
   // The real instant (`start` is the venue's wall-clock time with a "Z"), so the day is the viewer's.
   const { day, month, weekday } = parseGameDate(game.utcTime || game.start);
   const ended = game.matchStatus === "final" || !!game.live.endedAt;
+  // A team without its own logo shows the organisation's (or, without one either, the placeholder).
+  const { savedSchool } = useSetup();
+  const logoOf = (side: LiveGame["home"]) => side?.logoUrl || savedSchool?.logoUrl;
 
   return (
     <Link
@@ -25,7 +29,7 @@ export default function GameCard({ game }: { game: LiveGame }) {
 
       {/* Both sides share the width and line up at the top (a name on two lines doesn't push its crest down). */}
       <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
-        <TeamSide name={game.home?.name ?? "TBD"} logoUrl={game.home?.logoUrl} size="lg" className="w-auto flex-1 basis-0 shrink" />
+        <TeamSide name={game.home?.name ?? "TBD"} logoUrl={logoOf(game.home)} size="lg" className="w-auto flex-1 basis-0 shrink" />
 
         <div className="shrink-0 self-center flex flex-col items-center gap-2 text-center">
           {ended ? (
@@ -44,7 +48,7 @@ export default function GameCard({ game }: { game: LiveGame }) {
           </span>
         </div>
 
-        <TeamSide name={game.away?.name ?? "TBD"} logoUrl={game.away?.logoUrl} size="lg" className="w-auto flex-1 basis-0 shrink" />
+        <TeamSide name={game.away?.name ?? "TBD"} logoUrl={logoOf(game.away)} size="lg" className="w-auto flex-1 basis-0 shrink" />
       </div>
 
       <ChevronRight className="size-5 shrink-0 text-white/70" strokeWidth={1.5} />
