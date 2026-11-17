@@ -89,7 +89,11 @@ export default function ReviewStep({ drafts, status, onStatusChange, page, onPag
         </div>
       </div>
 
-      {run?.status === "COMPLETED" && <AgentNotice tone="warning" items={run.warnings} />}
+      {/* A failed news lookup (WEB_CHECK_UNAVAILABLE) only leaves news out of some fit scores, with
+          nothing for the organisation to do about it, so it isn't shown. */}
+      {run?.status === "COMPLETED" && (
+        <AgentNotice tone="warning" items={run.warnings.filter((w) => w.code !== "WEB_CHECK_UNAVAILABLE")} />
+      )}
 
       {!list ? (
         drafts.loading ? <Loader /> : <p className="py-8 text-center text-sm text-white/60">Couldn’t load the drafts.</p>
