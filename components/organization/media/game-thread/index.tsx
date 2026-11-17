@@ -3,7 +3,7 @@
 import { FALLBACK_CREST } from "@/utils/constants/fallback-crest";
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
-import { Activity, ChevronDown, Clock3, Trophy, Zap } from "lucide-react";
+import { ChevronDown, Clock3, Trophy, Zap } from "lucide-react";
 import Loader from "@/components/common/loader";
 import RowActionsMenu from "@/components/common/row-actions-menu";
 import SegmentedControl from "@/components/common/segmented-control";
@@ -75,7 +75,7 @@ const ENGAGEMENT_KINDS: readonly ThreadItem["kind"][] = ["prediction", "poll", "
 // "1-st Quarter" → "1st Quarter".
 const cleanLabel = (label: string) => label.replace(/(\d)-(st|nd|rd|th)\b/gi, "$1$2");
 
-// A filter menu (Quarters / Engagement / Plays) listing only the options this game has in the tab, each
+// A filter menu (Quarters / Engagement) listing only the options this game has in the tab, each
 // with its count; "" = all. The caller hides it when there are no options.
 function FilterMenu({
   name,
@@ -241,19 +241,18 @@ function ThreadItemView({ item, detail }: { item: ThreadItem; detail: GameThread
 
 // A game's thread from GET /game-detail/games/{id}/thread: the whole thread comes in one list and the
 // Pre-Game / Live-Game / Post-Game tabs show one phase of it (opening on the game's current one).
-// The live phase is under its quarters' headers. Each tab's Quarters / Engagement / Plays menus list only
+// The live phase is under its quarters' headers. Each tab's Quarters / Engagement menus list only
 // what this game has in that phase (`availableFilters`).
 function ApiThread({ gameId }: { gameId: string }) {
   // null: the game's current phase.
   const [tab, setTab] = useState<ThreadTab | null>(null);
   const [period, setPeriod] = useState("");
   const [engagement, setEngagement] = useState("");
-  const [plays, setPlays] = useState("");
   const { sponsors } = useOrgSponsors();
   const { data, error, loading } = useGameDetail<GameThreadDetail>(routes.api.gameDetailThread(gameId), {
     ...(period && { period }),
-    ...(engagement && { engagement }),
-    ...(plays && { plays }),
+    // The API only narrows the engagement items and keeps the plays, so picking one hides the plays too.
+    ...(engagement && { engagement, plays: "none" }),
     page: 1,
     limit: THREAD_LIMIT,
   });
@@ -265,14 +264,14 @@ function ApiThread({ gameId }: { gameId: string }) {
 
   const activeTab = tab ?? (data ? PHASE_TAB[data.currentPhase] : "Pre-Game");
   const phase = TAB_PHASE[activeTab];
-  const items = (data?.items ?? []).filter((i) => i.phase === phase);
+  // Quarter start / end markers stay in the API's answer; with an engagement picked only that kind is shown.
+  const items = (data?.items ?? []).filter((i) => i.phase === phase && (!engagement || i.kind === engagement));
   const sponsor = sponsors ? sponsorFor(sponsors, phase) : undefined;
   const tabOptions = available?.[phase];
   const options = {
     // A single section (Pre-Game, Final) is the whole tab, so there's nothing to narrow.
     periods: tabOptions && tabOptions.periods.length > 1 ? tabOptions.periods : [],
     engagement: tabOptions?.engagement ?? [],
-    plays: tabOptions?.plays ?? [],
   };
 
   // Live items in feed order, cut where the quarter changes.
@@ -286,8 +285,8 @@ function ApiThread({ gameId }: { gameId: string }) {
     }
   }
 
-  const filtered = !!(period || engagement || plays);
-  const hasMenus = options.periods.length + options.engagement.length + options.plays.length > 0;
+  const filtered = !!(period || engagement);
+  const hasMenus = options.periods.length + options.engagement.length > 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -298,7 +297,6 @@ function ApiThread({ gameId }: { gameId: string }) {
           setTab(t);
           setPeriod("");
           setEngagement("");
-          setPlays("");
         }}
         ariaLabel="Game phase"
         variant="light"
@@ -325,16 +323,6 @@ function ApiThread({ gameId }: { gameId: string }) {
               options={options.engagement}
               value={engagement}
               onChange={setEngagement}
-            />
-          )}
-          {options.plays.length > 0 && (
-            <FilterMenu
-              name="Plays"
-              allLabel="All Plays"
-              icon={<Activity className="size-5" strokeWidth={1.5} />}
-              options={options.plays}
-              value={plays}
-              onChange={setPlays}
             />
           )}
         </div>
