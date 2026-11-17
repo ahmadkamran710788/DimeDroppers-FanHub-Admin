@@ -110,7 +110,7 @@ export default function BrandStep({
           onPin={(latitude, longitude) =>
             onLocation({ latitude: coordinateText(latitude), longitude: coordinateText(longitude) })
           }
-          error={errors.latitude}
+          error={errors.latitude || errors.longitude}
           labelClassName={SECTION_LABEL}
           inputClassName={INPUT}
         />
@@ -166,33 +166,37 @@ export default function BrandStep({
             labelClassName={SECTION_LABEL}
             inputClassName={INPUT}
           />
-          {/* Filled from the map; typed only when the map isn't available. */}
-          <Input
-            label="LATITUDE"
-            name="main-latitude"
-            value={form.latitude}
-            onChange={onField("latitude")}
-            placeholder="e.g. 30.3058"
-            inputMode="decimal"
-            variant="dark"
-            className="min-w-0 sm:col-span-3"
-            labelClassName={SECTION_LABEL}
-            inputClassName={INPUT}
-          />
-          <Input
-            label="LONGITUDE"
-            name="main-longitude"
-            value={form.longitude}
-            onChange={onField("longitude")}
-            placeholder="e.g. -97.7516"
-            inputMode="decimal"
-            // A missing pin is said once, under the map.
-            error={errors.latitude ? undefined : errors.longitude}
-            variant="dark"
-            className="min-w-0 sm:col-span-3"
-            labelClassName={SECTION_LABEL}
-            inputClassName={INPUT}
-          />
+          {/* The map fills the pin; the fields are typed only when the map isn't available. */}
+          {!config.googleMapsApiKey && (
+            <>
+              <Input
+                label="LATITUDE"
+                name="main-latitude"
+                value={form.latitude}
+                onChange={onField("latitude")}
+                placeholder="e.g. 30.3058"
+                inputMode="decimal"
+                variant="dark"
+                className="min-w-0 sm:col-span-3"
+                labelClassName={SECTION_LABEL}
+                inputClassName={INPUT}
+              />
+              <Input
+                label="LONGITUDE"
+                name="main-longitude"
+                value={form.longitude}
+                onChange={onField("longitude")}
+                placeholder="e.g. -97.7516"
+                inputMode="decimal"
+                // A missing pin is said once, under the map.
+                error={errors.latitude ? undefined : errors.longitude}
+                variant="dark"
+                className="min-w-0 sm:col-span-3"
+                labelClassName={SECTION_LABEL}
+                inputClassName={INPUT}
+              />
+            </>
+          )}
         </div>
       </div>
 
