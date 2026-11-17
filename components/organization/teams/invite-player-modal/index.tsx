@@ -5,25 +5,25 @@ import * as yup from "yup";
 import Button from "@/components/common/button";
 import Input from "@/components/common/input";
 import Modal from "@/components/common/modal";
-import { playerName } from "@/components/organization/teams/tournament-team-details/invite-role-modal";
 import apiCall from "@/utils/api-call";
-import { routes } from "@/utils/routes";
-import type { ExposurePlayer } from "@/utils/types/exposure-event";
 import { validateAndSetErrors } from "@/utils/validation";
 
 const schema = yup.object({ email: yup.string().trim().required("Email is required").email("Enter a valid email address") });
 
 interface InvitePlayerModalProps {
   onClose: () => void;
-  fanHubTeamId: string;
-  player: ExposurePlayer;
+  // The player's name, for the title.
+  name: string;
+  // The invite endpoint (POST { email }): a school team's player or a tournament team's synced player.
+  endpoint: string;
+  // Prefills the email (the player's saved one).
+  defaultEmail?: string | null;
   onSent: () => void;
 }
 
-// Popup that emails a tournament team's synced player an invitation to the team
-// (POST /roster/fanhub-teams/{id}/players/{playerId}/invite). The email is saved on the player.
-export default function InvitePlayerModal({ onClose, fanHubTeamId, player, onSent }: InvitePlayerModalProps) {
-  const [form, setForm] = useState({ email: player.email ?? "" });
+// Popup that emails a roster player an invitation to the team. The email is saved on the player.
+export default function InvitePlayerModal({ onClose, name, endpoint, defaultEmail, onSent }: InvitePlayerModalProps) {
+  const [form, setForm] = useState({ email: defaultEmail ?? "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
 
@@ -32,7 +32,7 @@ export default function InvitePlayerModal({ onClose, fanHubTeamId, player, onSen
     setSending(true);
     // apiCall toasts the API's errors (e.g. 409 already invited, or the email holds another role).
     const result = await apiCall({
-      endpoint: routes.api.rosterFanHubPlayerInvite(fanHubTeamId, player.id),
+      endpoint,
       method: "POST",
       data: { email: form.email.trim() },
       showSuccessToast: true,
@@ -45,7 +45,7 @@ export default function InvitePlayerModal({ onClose, fanHubTeamId, player, onSen
   };
 
   return (
-    <Modal isOpen onClose={onClose} title={`Invite ${playerName(player)}`} className="max-w-[min(520px,calc(100vw-2rem))] items-stretch">
+    <Modal isOpen onClose={onClose} title={`Invite ${name}`} className="max-w-[min(520px,calc(100vw-2rem))] items-stretch">
       <div className="w-full flex flex-col gap-5">
         <Input
           label="Email"

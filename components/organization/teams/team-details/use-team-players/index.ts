@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { INVITATION_LABEL, type InvitationStatus } from "@/components/organization/teams/team-details/invitation-status";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
@@ -24,6 +24,7 @@ interface PlayerEntry {
   position: string | null;
   photoUrl: string | null;
   email: string | null;
+  phone: string | null;
   onRoster: boolean;
   invitationStatus: InvitationStatus;
   parents: ParentEntry[];
@@ -32,12 +33,16 @@ interface PlayerEntry {
 export interface RosterPlayer {
   id: string;
   name: string;
+  firstName: string;
+  lastName: string;
   email: string;
+  phone: string;
   photoUrl: string | null;
   number: string;
   position: string;
   parentCount: number;
   status: string;
+  invitationStatus: InvitationStatus;
 }
 
 export interface RosterParent {
@@ -52,11 +57,12 @@ export interface RosterParent {
 
 const fullName = (first: string, last: string | null) => [first, last].filter(Boolean).join(" ");
 
-// A team's read-only roster: players and their parents. The coach adds and invites them from the app.
+// A team's roster: players and their parents. `reload` reads it again (e.g. after adding a player).
 export function useTeamPlayers(schoolTeamId: string) {
   const [players, setPlayers] = useState<RosterPlayer[]>([]);
   const [parents, setParents] = useState<RosterParent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,12 +77,16 @@ export function useTeamPlayers(schoolTeamId: string) {
         entries.map((p) => ({
           id: p.id,
           name: fullName(p.firstName, p.lastName),
+          firstName: p.firstName,
+          lastName: p.lastName ?? "",
           email: p.email ?? "",
+          phone: p.phone ?? "",
           photoUrl: p.photoUrl,
           number: p.number ?? "",
           position: p.position ?? "",
           parentCount: p.parents.length,
           status: INVITATION_LABEL[p.invitationStatus] ?? p.invitationStatus,
+          invitationStatus: p.invitationStatus,
         })),
       );
       setParents(
@@ -96,7 +106,8 @@ export function useTeamPlayers(schoolTeamId: string) {
     return () => {
       cancelled = true;
     };
-  }, [schoolTeamId]);
+  }, [schoolTeamId, version]);
 
-  return { players, parents, loading };
+  const reload = useCallback(() => setVersion((v) => v + 1), []);
+  return { players, parents, loading, reload };
 }
