@@ -37,15 +37,22 @@ function isFresh(token: string): boolean {
 
 async function load(request: Promise<Response>): Promise<string | null> {
   const res = await request;
-  const json = res.ok ? await res.json().catch(() => null) : null;
+  if (res.status === 401) {
+    accessToken = null;
+    return null;
+  }
+  // Any other failure (a rate limit, a server error) says nothing about the session: reject, as a
+  // network failure does, so callers don't sign the user out for it.
+  if (!res.ok) throw new Error(`Couldn't get an access token (${res.status}).`);
+  const json = await res.json().catch(() => null);
   accessToken = json?.accessToken ?? null;
   return accessToken;
 }
 
 /**
- * Resolves to a usable access token, or null when there is no session.
+ * Resolves to a usable access token, or null when there is no session (401).
  * `force` renews it even if it looks fresh — use it after the API rejects the token (401).
- * Rejects on a network failure.
+ * Rejects when the session couldn't be checked: a network failure, a rate limit or a server error.
  */
 export function getAccessToken({ force = false } = {}): Promise<string | null> {
   if (force) {

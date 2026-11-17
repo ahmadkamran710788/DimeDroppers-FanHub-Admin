@@ -52,11 +52,12 @@ export async function POST() {
           { headers: { "Cache-Control": "no-store" } }
         );
       }
-      await clearAuthCookies();
       return Response.json({ message: "Upstream returned no tokens." }, { status: 502 });
     }
 
-    await clearAuthCookies();
+    // Only a refused refresh token (401) ends the session. A rate limit (429) or a server error is
+    // passing: its status goes back as it is and the browser keeps the session (utils/auth/client-token).
+    if (upstream.status === 401) await clearAuthCookies();
     return Response.json(body, { status: upstream.status });
   } catch (error) {
     const message =
