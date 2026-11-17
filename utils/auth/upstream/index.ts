@@ -79,16 +79,15 @@ export async function refreshAccessToken(): Promise<string | null> {
   }
 
   if (!upstream.ok) {
-    await clearAuthCookies();
+    // Only a refused refresh token (401) ends the session. A rate limit (429) or a server error is
+    // passing, like a network blip: clearing the cookies for it signed people out.
+    if (upstream.status === 401) await clearAuthCookies();
     return null;
   }
 
   const body = await upstream.json().catch(() => null);
   const tokens = body?.data?.[0] as AuthTokens | undefined;
-  if (!tokens?.accessToken || !tokens?.refreshToken) {
-    await clearAuthCookies();
-    return null;
-  }
+  if (!tokens?.accessToken || !tokens?.refreshToken) return null;
 
   await setAuthCookies(tokens.accessToken, tokens.refreshToken);
   return tokens.accessToken;

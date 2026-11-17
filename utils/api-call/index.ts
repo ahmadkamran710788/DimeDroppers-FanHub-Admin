@@ -79,7 +79,9 @@ export async function backendFetch(endpoint: string, init: RequestInit = {}): Pr
   const response = await send(await getAccessToken());
   if (response.status !== 401) return response;
 
-  const refreshed = await getAccessToken({ force: true }).catch(() => null);
+  // Rejects, like a network failure, when the refresh couldn't be done (rather than refused), so the
+  // caller doesn't take the 401 for a dead session.
+  const refreshed = await getAccessToken({ force: true });
   return refreshed ? send(refreshed) : response;
 }
 
@@ -155,11 +157,24 @@ export default async function apiCall<T = unknown>({
           // `_isRetry` bounds this to exactly one attempt: the retry already carries
           // a freshly refreshed token, so a second 401 means the session is dead
           // rather than stale. Concurrent 401s share one refresh (client-token).
-          const refreshed =
-            !_isRetry && (await getAccessToken({ force: true }).catch(() => null));
+          let refreshed: string | null = null;
+          let refreshFailed = false;
+          if (!_isRetry) {
+            try {
+              refreshed = await getAccessToken({ force: true });
+            } catch {
+              refreshFailed = true;
+            }
+          }
           if (refreshed) {
             // Retry once with the fresh token.
             return apiCall({ endpoint, method, data, headers, showSuccessToast, successMessage, _isRetry: true });
+          }
+          // The refresh couldn't be done (network, rate limit, server error), not refused: the
+          // session may be fine, so the user stays signed in.
+          if (refreshFailed) {
+            errorMessage = "Couldn't reach the server. Please try again.";
+            break;
           }
           // Genuine expiry: refresh really failed. Sign the user out gracefully
           // instead of leaving them stuck on a toast with stale UI.

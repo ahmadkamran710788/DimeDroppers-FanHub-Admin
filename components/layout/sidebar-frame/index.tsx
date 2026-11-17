@@ -80,7 +80,9 @@ export default function SidebarFrame({
     <aside
       className={cn(
         "flex flex-col w-[256px] shrink-0 h-screen overflow-y-auto",
-        "bg-[rgba(11,28,45,0.01)] backdrop-blur-[48px]",
+        // The blur is the mobile drawer's backdrop over the page. Inline on desktop the sidebar sits on the
+        // layout's plain black, where it changed nothing you could see but made every hover repaint redo it.
+        "bg-[rgba(11,28,45,0.01)] backdrop-blur-[48px] lg:backdrop-blur-none",
         "shadow-[inset_-1px_0_0_0_rgba(0,0,0,0.2)]"
       )}
     >

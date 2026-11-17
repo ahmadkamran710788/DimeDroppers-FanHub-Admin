@@ -85,19 +85,20 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
       : EMPTY_FORM
   );
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  // The picked logo's preview, made once per file. Made during render, every keystroke gave the
+  // image a new URL to load and decode again (and never freed the old ones).
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const previewUrl = logoFile
-    ? URL.createObjectURL(logoFile)
-    : (editGame?.opponentLogoUrl ?? null);
+  const previewUrl = logoUrl ?? editGame?.opponentLogoUrl ?? null;
 
-  useEffect(() => {
-    if (!logoFile) return;
-    const url = URL.createObjectURL(logoFile);
-    return () => URL.revokeObjectURL(url);
-  }, [logoFile]);
+  const chooseLogo = (file: File | null) => {
+    if (logoUrl) URL.revokeObjectURL(logoUrl);
+    setLogoFile(file);
+    setLogoUrl(file ? URL.createObjectURL(file) : null);
+  };
 
   // Sync form whenever editGame changes (e.g. opening edit for a different game)
   useEffect(() => {
@@ -121,7 +122,9 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
       : EMPTY_FORM;
     Promise.resolve().then(() => {
       setForm(next);
+      // Closing already freed a picked logo's preview (handleClose).
       setLogoFile(null);
+      setLogoUrl(null);
       setErrors({});
     });
   }, [editGame, isOpen]);
@@ -144,7 +147,7 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
           level: editGame.level ?? "",
         }
       : EMPTY_FORM);
-    setLogoFile(null);
+    chooseLogo(null);
     setErrors({});
     onClose();
   };
@@ -345,7 +348,7 @@ export default function AddGameModal({ isOpen, onClose, onSaved, editGame }: Add
             type="file"
             accept="image/png, image/jpeg"
             className="hidden"
-            onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+            onChange={(e) => chooseLogo(e.target.files?.[0] ?? null)}
           />
           <div className="flex items-center gap-3">
             {previewUrl ? (

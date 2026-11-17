@@ -61,7 +61,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const me = json?.data?.[0] as
           | { role?: AccountRole; organization?: OrganizationProfile; sponsor?: SponsorProfile }
           | undefined;
-        const onSponsorPanel = window.location.pathname.startsWith(SPONSOR_PANEL);
+        // The panel is /sponsor and what's under it, as in proxy.ts. A bare prefix check also took the
+        // organiser's /sponsors, /sponsor-ai-agent and /sponsor-messages for it, so reloading one signed out.
+        const { pathname } = window.location;
+        const onSponsorPanel = pathname === SPONSOR_PANEL || pathname.startsWith(`${SPONSOR_PANEL}/`);
         if (me?.role === "SPONSOR") {
           if (!onSponsorPanel || !me.sponsor) return forceSignOut();
           setSponsor(me.sponsor);

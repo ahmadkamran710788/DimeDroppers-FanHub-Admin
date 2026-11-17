@@ -1,5 +1,6 @@
 "use client";
 
+import { config } from "@/config";
 import { coordinateText } from "@/utils/helper";
 import Input from "@/components/common/input";
 import LocationPicker from "@/components/common/location-picker";
@@ -57,7 +58,7 @@ export default function LocationStep({ form, errors, onField, onValue, onLocatio
           onPin={(latitude, longitude) =>
             onLocation({ latitude: coordinateText(latitude), longitude: coordinateText(longitude) })
           }
-          error={errors.latitude}
+          error={errors.latitude || errors.longitude}
           // "Search address" in capitals, like the other labels.
           labelClassName={`${SECTION_LABEL} uppercase`}
           inputClassName={INPUT}
@@ -118,33 +119,37 @@ export default function LocationStep({ form, errors, onField, onValue, onLocatio
           labelClassName={SECTION_LABEL}
           inputClassName={INPUT}
         />
-        {/* Filled from the map; typed only when the map isn't available. */}
-        <Input
-          label="LATITUDE"
-          name="org-latitude"
-          value={form.latitude}
-          onChange={onField("latitude")}
-          placeholder="e.g. 28.538336"
-          inputMode="decimal"
-          variant="dark"
-          className={HALF}
-          labelClassName={SECTION_LABEL}
-          inputClassName={INPUT}
-        />
-        <Input
-          label="LONGITUDE"
-          name="org-longitude"
-          value={form.longitude}
-          onChange={onField("longitude")}
-          placeholder="e.g. -81.379234"
-          inputMode="decimal"
-          // A missing pin is said once, under the map.
-          error={errors.latitude ? undefined : errors.longitude}
-          variant="dark"
-          className={HALF}
-          labelClassName={SECTION_LABEL}
-          inputClassName={INPUT}
-        />
+        {/* The map fills the pin; the fields are typed only when the map isn't available. */}
+        {!config.googleMapsApiKey && (
+          <>
+            <Input
+              label="LATITUDE"
+              name="org-latitude"
+              value={form.latitude}
+              onChange={onField("latitude")}
+              placeholder="e.g. 28.538336"
+              inputMode="decimal"
+              variant="dark"
+              className={HALF}
+              labelClassName={SECTION_LABEL}
+              inputClassName={INPUT}
+            />
+            <Input
+              label="LONGITUDE"
+              name="org-longitude"
+              value={form.longitude}
+              onChange={onField("longitude")}
+              placeholder="e.g. -81.379234"
+              inputMode="decimal"
+              // A missing pin is said once, under the map.
+              error={errors.latitude ? undefined : errors.longitude}
+              variant="dark"
+              className={HALF}
+              labelClassName={SECTION_LABEL}
+              inputClassName={INPUT}
+            />
+          </>
+        )}
         <Input
           label="CONFERENCE / DIVISION"
           labelHint={optional}
