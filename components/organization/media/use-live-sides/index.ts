@@ -1,16 +1,16 @@
 "use client";
 
+import { FALLBACK_CREST } from "@/utils/constants/fallback-crest";
 import type { MediaGame, MediaTeam } from "@/components/organization/media/data";
 import { useGameDetail } from "@/components/organization/media/use-game-detail";
 import { routes } from "@/utils/routes";
 import type { GameDetailTeamSide, GameThreadDetail } from "@/utils/types/game-detail";
 
-const FALLBACK_LOGO = "/images/preview-crest.png";
 
 const withSide = (team: MediaTeam, side: GameDetailTeamSide): MediaTeam => ({
   ...team,
   name: side.Team || team.name,
-  logo: team.logo && team.logo !== FALLBACK_LOGO ? team.logo : side.Logo || team.logo,
+  logo: team.logo && team.logo !== FALLBACK_CREST ? team.logo : side.Logo || team.logo,
 });
 
 // A game's scorekeeper score, logos and phase. The schedule list only has a score when its

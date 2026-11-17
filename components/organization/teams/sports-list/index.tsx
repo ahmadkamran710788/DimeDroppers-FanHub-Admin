@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
+import OrgCrest from "@/components/common/org-crest";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Pencil } from "lucide-react";
@@ -19,15 +20,13 @@ const ALL = "All Activities";
 interface SportsListProps {
   departments: Department[];
   loading: boolean;
-  // Fallback crest when a team has no logo URL.
-  crest: string;
   onRenameSport: (sport: Department) => void;
   onEditTeam: (team: DepartmentTeam, sport: Department) => void;
 }
 
 // Teams grouped by sport, like the fan app's Team Info screen: a search, an Activity filter, then one
 // section per sport with its teams. A sport with no teams still shows.
-export default function SportsList({ departments, loading, crest, onRenameSport, onEditTeam }: SportsListProps) {
+export default function SportsList({ departments, loading, onRenameSport, onEditTeam }: SportsListProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [activity, setActivity] = useState(ALL);
@@ -90,21 +89,11 @@ export default function SportsList({ departments, loading, crest, onRenameSport,
             ) : (
               <ul className="flex flex-col gap-3">
                 {sport.teams.map((team) => {
-                  const logo = team.logoUrl || crest;
                   return (
                     <li key={team.id} className="flex items-center gap-4 rounded-[8px] p-4 bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
                       {/* Clickable row (not an action button): opens the team's details. */}
                       <Link href={routes.ui.teamDetails(team.id)} className="flex-1 min-w-0 flex items-center gap-4">
-                        <Image
-                          src={logo}
-                          alt=""
-                          width={48}
-                          height={48}
-                          // The org logo is a remote (presigned) URL with no configured image host.
-                          unoptimized={logo.startsWith("http")}
-                          className="size-12 shrink-0 rounded-full object-cover bg-black/40 p-0.5 border-2"
-                          style={{ borderColor: sportRing(sport.name) }}
-                        />
+                        <OrgCrest size={48} logoUrl={team.logoUrl} className="p-0.5" style={{ borderColor: sportRing(sport.name) }} />
                         <div className="flex flex-col gap-1 min-w-0">
                           <span className="text-base font-semibold text-white break-words">{team.name}</span>
                           {team.gender && <span className="text-xs text-white/50">{team.gender}</span>}

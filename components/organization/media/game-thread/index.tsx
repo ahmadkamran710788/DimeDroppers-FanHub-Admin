@@ -1,5 +1,6 @@
 "use client";
 
+import { FALLBACK_CREST } from "@/utils/constants/fallback-crest";
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
 import { Activity, ChevronDown, Clock3, Trophy, Zap } from "lucide-react";
@@ -8,6 +9,7 @@ import RowActionsMenu from "@/components/common/row-actions-menu";
 import SegmentedControl from "@/components/common/segmented-control";
 import type { GamePhase, MediaGame, PlayEvent, Quarter } from "@/components/organization/media/data";
 import { useGameDetail } from "@/components/organization/media/use-game-detail";
+import { useOrgSponsors } from "@/components/organization/media/use-org-sponsors";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import type {
@@ -17,6 +19,7 @@ import type {
   ThreadItem,
   ThreadPhase,
 } from "@/utils/types/game-detail";
+import type { OrgSponsor, SponsorPlacement } from "@/utils/types/org-sponsors";
 
 const PHASES: readonly GamePhase[] = ["Pre-Game", "Live Game", "Final"];
 const QUARTERS: readonly Quarter[] = ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
@@ -57,10 +60,7 @@ const EMPTY_TEXT: Record<ThreadPhase, string> = {
   final: "No post-game recap yet. It will appear here once the game ends.",
 };
 
-const FALLBACK_LOGO = "/images/preview-crest.png";
 const THREAD_LIMIT = 200;
-// The thread's sponsor until the API sends one.
-const DEFAULT_SPONSOR = "Subway";
 
 // Small label above a play, e.g. "2PT Made".
 const TYPE_LABELS: Record<string, string> = {
@@ -140,23 +140,29 @@ const optionsOf = (data: ThreadItem["data"]): ChoiceOption[] => {
     .filter((o) => o.label);
 };
 
-function SponsorBanner({ name }: { name: string }) {
+// "Presented by" and the sponsor's logo, or its brand name when it has no logo.
+function SponsorBanner({ name, logoUrl }: { name: string; logoUrl: string | null }) {
   return (
     <div className="flex items-center justify-center gap-3 rounded-[10px] bg-white px-5 py-3">
       <span className="text-base text-black">Presented by</span>
-      <span className="font-display text-[28px] font-extrabold uppercase italic leading-none tracking-tight">
-        {name.toLowerCase() === "subway" ? (
-          <>
-            <span className="text-[#FFC20D]">Sub</span>
-            <span className="text-[#008C15]">way</span>
-          </>
-        ) : (
-          <span className="text-black">{name}</span>
-        )}
-      </span>
+      {logoUrl ? (
+        // A signed link to the sponsor's logo (any host), so it skips the image optimizer.
+        <Image src={logoUrl} alt={name} width={140} height={36} unoptimized className="h-9 w-auto max-w-45 object-contain" />
+      ) : (
+        <span className="font-display text-[28px] font-extrabold uppercase italic leading-none tracking-tight text-black">
+          {name}
+        </span>
+      )}
     </div>
   );
 }
+
+// The sponsor a tab's banner presents: the one bought for that phase's game screens, else the
+// Presenting Partner (HEADER). The list comes in the API's order, so the first match wins.
+const PHASE_PLACEMENT: Record<ThreadPhase, SponsorPlacement> = { pre: "GAME_PRE", live: "GAME_LIVE", final: "GAME_POST" };
+const sponsorFor = (sponsors: OrgSponsor[], phase: ThreadPhase) =>
+  sponsors.find((s) => s.placements.includes(PHASE_PLACEMENT[phase])) ??
+  sponsors.find((s) => s.placements.includes("HEADER"));
 
 // A phase change, or anything else that isn't a play: clock, "Phase" and when, then the text.
 function PhaseCard({ item }: { item: ThreadItem }) {
@@ -184,7 +190,7 @@ const playOf = (item: ThreadItem, detail: GameThreadDetail): PlayEvent => {
     time: new Date(item.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
     type: TYPE_LABELS[item.subKind] ?? "Play",
     text: item.body ? `${item.title} ${item.body}` : item.title,
-    teamLogo: side ? side.Logo || FALLBACK_LOGO : undefined,
+    teamLogo: side ? side.Logo || FALLBACK_CREST : undefined,
     score: item.data.score ?? undefined,
   };
 };
@@ -243,6 +249,7 @@ function ApiThread({ gameId }: { gameId: string }) {
   const [period, setPeriod] = useState("");
   const [engagement, setEngagement] = useState("");
   const [plays, setPlays] = useState("");
+  const { sponsors } = useOrgSponsors();
   const { data, error, loading } = useGameDetail<GameThreadDetail>(routes.api.gameDetailThread(gameId), {
     ...(period && { period }),
     ...(engagement && { engagement }),
@@ -259,6 +266,7 @@ function ApiThread({ gameId }: { gameId: string }) {
   const activeTab = tab ?? (data ? PHASE_TAB[data.currentPhase] : "Pre-Game");
   const phase = TAB_PHASE[activeTab];
   const items = (data?.items ?? []).filter((i) => i.phase === phase);
+  const sponsor = sponsors ? sponsorFor(sponsors, phase) : undefined;
   const tabOptions = available?.[phase];
   const options = {
     // A single section (Pre-Game, Final) is the whole tab, so there's nothing to narrow.
@@ -332,7 +340,8 @@ function ApiThread({ gameId }: { gameId: string }) {
         </div>
       )}
 
-      <SponsorBanner name={data?.presentedBy?.name || DEFAULT_SPONSOR} />
+      {/* Nothing until the sponsors load, and no banner when the organisation has none. */}
+      {sponsor && <SponsorBanner name={sponsor.name} logoUrl={sponsor.logoUrl} />}
 
       {loading ? (
         <Loader className="m-10" />

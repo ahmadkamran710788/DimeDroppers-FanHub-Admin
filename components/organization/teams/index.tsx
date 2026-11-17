@@ -22,7 +22,6 @@ import {
   type DepartmentTeam,
 } from "@/components/organization/teams/use-org-teams";
 import { orgKindOf, useAuth } from "@/context/auth";
-import { useSetup } from "@/context/setup";
 import { routes } from "@/utils/routes";
 
 // The sport modal: a new sport, or the sport being renamed.
@@ -33,7 +32,6 @@ type SportEditing = { sport: Department | null } | null;
 // its synced events and adds nothing.
 export default function TeamsPage() {
   const router = useRouter();
-  const { savedSchool } = useSetup();
   const { org } = useAuth();
   const kind = orgKindOf(org);
   const isTournament = kind === "tournament";
@@ -202,7 +200,6 @@ export default function TeamsPage() {
           <SportsList
             departments={departments}
             loading={loading}
-            crest={savedSchool?.logoUrl || "/images/preview-crest.png"}
             onRenameSport={(sport) => setSportEditing({ sport })}
             onEditTeam={(team, sport) => setTeamEditing({ team, sport })}
           />
