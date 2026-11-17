@@ -1,5 +1,6 @@
 "use client";
 
+import { FALLBACK_CREST } from "@/utils/constants/fallback-crest";
 import { useEffect, useMemo, useState } from "react";
 import { orgKindOf, useAuth } from "@/context/auth";
 import type { MediaGame, MediaTeam } from "@/components/organization/media/data";
@@ -10,13 +11,12 @@ import { routes } from "@/utils/routes";
 import type { TournamentScheduleGame, TournamentScheduleResponse, TournamentScheduleSide } from "@/utils/types/exposure-event";
 import type { ScheduleGamesResponse, ScheduleItem, ScheduleListResponse } from "@/utils/types/schedule";
 
-const FALLBACK_LOGO = "/images/placeholder-crest.svg";
 // A game is taken as over this long after its start (the school list carries no live status).
 const GAME_LENGTH_MS = 3 * 60 * 60 * 1000;
 // The schedules API caps a page at 100.
 const GAMES_LIMIT = 100;
 
-const team = (name: string, logo: string | null | undefined): MediaTeam => ({ name, shortName: name, logo: logo || FALLBACK_LOGO });
+const team = (name: string, logo: string | null | undefined): MediaTeam => ({ name, shortName: name, logo: logo || FALLBACK_CREST });
 
 // The score in a result: "56-30" is home-away; "W 56-30" / "L 7-37" put the school's score first.
 const parseResult = (result: string | null, schoolIsAway: boolean) => {

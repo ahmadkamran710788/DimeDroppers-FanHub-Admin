@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
+import OrgCrest from "@/components/common/org-crest";
 import { ChevronRight } from "lucide-react";
 import Loader from "@/components/common/loader";
 import SearchInput from "@/components/common/search-input";
@@ -11,7 +11,6 @@ import type { ChatTeam } from "@/components/organization/messages/types";
 import { useOrgTeams } from "@/components/organization/teams/use-org-teams";
 import { orgKindOf, useAuth } from "@/context/auth";
 import { useSelectedEvent } from "@/context/selected-event";
-import { useSetup } from "@/context/setup";
 import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type { DivisionTeamsTreeResponse, TreeEvent } from "@/utils/types/exposure-event";
@@ -38,9 +37,7 @@ function Row({ onClick, avatar, title, subtitle }: { onClick: () => void; avatar
 
 // A school's own teams (its sport departments).
 function SchoolTeams({ onPick }: TeamPickerProps) {
-  const { savedSchool } = useSetup();
   const { teams, loading } = useOrgTeams();
-  const crest = savedSchool?.logoUrl || "/images/placeholder-crest.svg";
 
   if (loading) return <Loader />;
   if (teams.length === 0) return <p className="py-12 text-center text-sm text-white/50">No teams yet. Add a team to message its people.</p>;
@@ -51,16 +48,7 @@ function SchoolTeams({ onPick }: TeamPickerProps) {
           key={t.id}
           onClick={() => onPick({ id: t.id, name: t.name, kind: "SCHOOL_TEAM" })}
           avatar={
-            <Image
-              src={crest}
-              alt=""
-              width={40}
-              height={40}
-              // The school logo may be an uploaded remote URL with no configured image host.
-              unoptimized={crest.startsWith("http")}
-              className="size-10 shrink-0 rounded-full object-cover bg-black/40 p-0.5 border-2"
-              style={{ borderColor: t.ring }}
-            />
+            <OrgCrest size={40} className="p-0.5" style={{ borderColor: t.ring }} />
           }
           title={t.name}
           subtitle={`${t.sport} · ${t.level}`}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import OrgCrest from "@/components/common/org-crest";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Info, Mars } from "lucide-react";
@@ -86,7 +87,6 @@ export default function AddTeamPage() {
   const sportOptions = departments.map((d) => ({ label: d.name, value: d.name }));
 
   const summaryTitle = savedSchool?.name || form.teamName || "Your Team";
-  const crest = savedSchool?.logoUrl || "/images/placeholder-crest.svg";
 
   return (
     <div className="flex flex-col gap-10 pb-24">
@@ -173,15 +173,7 @@ export default function AddTeamPage() {
               sizes="(max-width: 1024px) 100vw, 33vw"
               className="object-cover opacity-30 mix-blend-luminosity"
             />
-            <Image
-              src={crest}
-              alt=""
-              width={64}
-              height={64}
-              // The school logo may be an uploaded remote URL with no configured image host.
-              unoptimized={crest.startsWith("http")}
-              className="relative size-16 rounded-full object-cover bg-black/40 border-2 border-white/60"
-            />
+            <OrgCrest size={64} className="relative border-white/60" />
             <p className="relative font-display font-black text-[32px] lg:text-[40px] uppercase text-white leading-[1.05]">
               {summaryTitle}
             </p>

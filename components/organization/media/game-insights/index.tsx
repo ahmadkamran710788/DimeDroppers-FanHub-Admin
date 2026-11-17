@@ -1,5 +1,6 @@
 "use client";
 
+import { FALLBACK_CREST } from "@/utils/constants/fallback-crest";
 import { useState } from "react";
 import Image from "next/image";
 import Loader from "@/components/common/loader";
@@ -12,7 +13,6 @@ import type { GameInsightsDetail, InsightBullet, InsightScope } from "@/utils/ty
 
 const PERIODS: readonly InsightPeriod[] = ["All", "H1", "H2"];
 const SCOPE_OF: Record<InsightPeriod, "all" | "h1" | "h2"> = { All: "all", H1: "h1", H2: "h2" };
-const FALLBACK_LOGO = "/images/placeholder-crest.svg";
 
 // AI insights come as { label, text }; the rule-based ones as plain lines.
 const toPoints = (items: InsightBullet[] | undefined, lines: string[]): InsightPoint[] =>
@@ -24,7 +24,7 @@ function toTeamInsights(detail: GameInsightsDetail, period: InsightPeriod): Team
     const side = t.teamSide === "HOME" ? detail.Home : detail.Away;
     const scope: InsightScope | undefined = t.scopes[SCOPE_OF[period]];
     return {
-      team: { name: t.teamName, shortName: t.teamName, logo: side.Logo || FALLBACK_LOGO },
+      team: { name: t.teamName, shortName: t.teamName, logo: side.Logo || FALLBACK_CREST },
       points: scope?.points ?? t.points,
       season: t.season,
       location: t.location,

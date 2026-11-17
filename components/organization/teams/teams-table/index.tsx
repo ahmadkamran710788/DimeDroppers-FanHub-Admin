@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import Image from "next/image";
+import OrgCrest from "@/components/common/org-crest";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Filter } from "lucide-react";
 import toast from "react-hot-toast";
@@ -13,7 +14,6 @@ import SearchInput from "@/components/common/search-input";
 import StatusPill from "@/components/common/status-pill";
 import CampaignsTable from "@/components/organization/fundraising/campaigns-table";
 import type { Campaign } from "@/utils/types/campaign";
-import { useSetup } from "@/context/setup";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
 import { sportIcon, TEAMS, type Team } from "@/components/organization/teams/data";
@@ -49,7 +49,6 @@ export default function TeamsTable({
   loading = false,
 }: TeamsTableProps) {
   const router = useRouter();
-  const { savedSchool } = useSetup();
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [collapsed, setCollapsed] = useState(false);
@@ -69,24 +68,13 @@ export default function TeamsTable({
   const from = filtered.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const to = Math.min(currentPage * PAGE_SIZE, filtered.length);
 
-  const crest = savedSchool?.logoUrl || "/images/placeholder-crest.svg";
-
   const columns: Column<Team>[] = [
     {
       header: "Team",
       cls: "flex-1 min-w-[240px] py-5",
       cell: (t) => (
         <div className="flex items-center gap-3 min-w-0">
-          <Image
-            src={crest}
-            alt=""
-            width={40}
-            height={40}
-            // The school logo may be an uploaded remote URL with no configured image host.
-            unoptimized={crest.startsWith("http")}
-            className="size-10 shrink-0 rounded-full object-cover bg-black/40 p-0.5 border-2"
-            style={{ borderColor: t.ring }}
-          />
+          <OrgCrest size={40} className="p-0.5" style={{ borderColor: t.ring }} />
           <div className="flex flex-col gap-1 min-w-0">
             <span className="text-sm font-semibold text-white truncate">{t.name}</span>
             {t.schoolName && <span className="text-xs text-white/40 truncate">{t.schoolName}</span>}

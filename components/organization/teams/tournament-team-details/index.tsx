@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Image from "next/image";
+import OrgCrest from "@/components/common/org-crest";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import Loader from "@/components/common/loader";
@@ -10,7 +10,6 @@ import Tabs from "@/components/common/tabs";
 import PlayersTab from "@/components/organization/teams/tournament-team-details/players-tab";
 import TeamRolesTab from "@/components/organization/teams/tournament-team-details/team-roles-tab";
 import { useTeamRoles } from "@/components/organization/teams/tournament-team-details/use-team-roles";
-import { useSetup } from "@/context/setup";
 import apiCall from "@/utils/api-call";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
@@ -61,7 +60,6 @@ interface Loaded {
 // /exposure/schedules?eventId&teamId). Staff and Parents are the team-roles invitations and members. The followers list and
 // stats have no tournament API yet.
 export default function TournamentTeamDetails({ eventId, teamId }: { eventId: string; teamId: string }) {
-  const { savedSchool } = useSetup();
   const [tab, setTab] = useState<Tab>("Players");
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const roles = useTeamRoles(teamId);
@@ -130,7 +128,6 @@ export default function TournamentTeamDetails({ eventId, teamId }: { eventId: st
   }
 
   const { team, eventName, divisionName } = loaded.info;
-  const crest = savedSchool?.logoUrl || "/images/placeholder-crest.svg";
 
   const games = loaded.games;
 
@@ -148,14 +145,7 @@ export default function TournamentTeamDetails({ eventId, teamId }: { eventId: st
 
       {/* Team header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-        <Image
-          src={crest}
-          alt=""
-          width={80}
-          height={80}
-          unoptimized={crest.startsWith("http")}
-          className="size-20 shrink-0 rounded-full object-cover bg-black/40 p-1 border-2 border-white/60"
-        />
+        <OrgCrest size={80} className="p-1 border-white/60" />
         <div className="flex flex-col gap-2 min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="font-display font-black text-[32px] sm:text-[40px] uppercase text-white leading-none">{team.name}</h2>

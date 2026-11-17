@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import type { Column } from "@/components/common/generic-table";
+import OrgCrest from "@/components/common/org-crest";
 import StatusPill from "@/components/common/status-pill";
 import Tabs from "@/components/common/tabs";
 import { sportIcon } from "@/components/organization/teams/data";
@@ -17,7 +18,6 @@ import { useTeamFollowers, type TeamFollower } from "@/components/organization/t
 import { useTeamPlayers } from "@/components/organization/teams/team-details/use-team-players";
 import { useTeamStaff } from "@/components/organization/teams/team-details/use-team-staff";
 import { useOrgTeams } from "@/components/organization/teams/use-org-teams";
-import { useSetup } from "@/context/setup";
 import { routes } from "@/utils/routes";
 
 const TABS = ["Players", "Parents", "Staff", "Followers"] as const;
@@ -39,7 +39,6 @@ const followerSearch = (f: TeamFollower) => [f.name, f.email, f.type];
 // Team details: header plus Players / Parents / Staff / Followers lists. The team and its staff
 // come from the API; players and staff are managed here (parents and followers are read-only).
 export default function TeamDetailsPage({ teamId }: { teamId: string }) {
-  const { savedSchool } = useSetup();
   const [tab, setTab] = useState<Tab>("Players");
   const { teams, loading: teamsLoading } = useOrgTeams();
   const { staff, loading: staffLoading, reload: reloadStaff } = useTeamStaff(teamId);
@@ -69,24 +68,13 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
     );
   }
 
-  const crest = savedSchool?.logoUrl || "/images/placeholder-crest.svg";
-
   return (
     <div className="flex flex-col gap-8">
       {back}
 
       {/* Team header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-        <Image
-          src={crest}
-          alt=""
-          width={80}
-          height={80}
-          // The school logo may be an uploaded remote URL with no configured image host.
-          unoptimized={crest.startsWith("http")}
-          className="size-20 shrink-0 rounded-full object-cover bg-black/40 p-1 border-2"
-          style={{ borderColor: team.ring }}
-        />
+        <OrgCrest size={80} className="p-1" style={{ borderColor: team.ring }} />
         <div className="flex flex-col gap-2 min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="font-display font-black text-[32px] sm:text-[40px] uppercase text-white leading-none">

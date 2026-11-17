@@ -1,5 +1,6 @@
 "use client";
 
+import { FALLBACK_CREST } from "@/utils/constants/fallback-crest";
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
 import { Activity, ChevronDown, Clock3, Trophy, Zap } from "lucide-react";
@@ -59,7 +60,6 @@ const EMPTY_TEXT: Record<ThreadPhase, string> = {
   final: "No post-game recap yet. It will appear here once the game ends.",
 };
 
-const FALLBACK_LOGO = "/images/placeholder-crest.svg";
 const THREAD_LIMIT = 200;
 
 // Small label above a play, e.g. "2PT Made".
@@ -190,7 +190,7 @@ const playOf = (item: ThreadItem, detail: GameThreadDetail): PlayEvent => {
     time: new Date(item.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
     type: TYPE_LABELS[item.subKind] ?? "Play",
     text: item.body ? `${item.title} ${item.body}` : item.title,
-    teamLogo: side ? side.Logo || FALLBACK_LOGO : undefined,
+    teamLogo: side ? side.Logo || FALLBACK_CREST : undefined,
     score: item.data.score ?? undefined,
   };
 };
