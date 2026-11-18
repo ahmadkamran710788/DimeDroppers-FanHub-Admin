@@ -9,7 +9,7 @@ import type { OrgSponsor, OrgSponsors } from "@/utils/types/org-sponsors";
 
 // The sponsors fans see on the organisation right now (paid, running orders), in the API's order.
 // A tournament asks for the event picked in the shared picker (its sponsors plus organisation-wide ones).
-// Fetched on every mount, since the logo links expire after an hour. `sponsors` is null while loading.
+// Fetched on every mount. `sponsors` is null while loading.
 export function useOrgSponsors() {
   const { org } = useAuth();
   const isTournament = orgKindOf(org) === "tournament";
