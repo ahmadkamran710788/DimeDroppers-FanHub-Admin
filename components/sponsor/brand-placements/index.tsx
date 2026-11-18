@@ -31,7 +31,7 @@ interface BrandPlacementsProps {
 export default function BrandPlacements({ initialTab = "setup" }: BrandPlacementsProps) {
   const [tab, setTab] = useState<PlacementsTab>(initialTab);
   const uploadRef = useRef<HTMLInputElement>(null);
-  // The creatives: the Brand Assets library (mock until the assets API exists).
+  // The creatives (mock until the assets API exists).
   const { assets, addFiles } = useAssetLibrary();
 
   function pickTab(next: PlacementsTab) {

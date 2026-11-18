@@ -29,8 +29,8 @@ function rejectReason(file: File): string | null {
   return null;
 }
 
-// The Brand Assets library. Uploads, replacements and deletes live in memory until the sponsor
-// API is integrated.
+// The mock creatives on Brand Placements (video, banners, social). Uploads, replacements and deletes live in
+// memory until the sponsor API is integrated.
 export function useAssetLibrary() {
   const [assets, setAssets] = useState<BrandAsset[]>(ASSETS);
   const nextId = useRef(0);

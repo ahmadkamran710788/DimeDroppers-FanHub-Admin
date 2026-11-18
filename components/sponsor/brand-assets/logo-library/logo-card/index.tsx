@@ -17,9 +17,10 @@ const BADGE = "text-[11px] font-bold rounded-full px-2 py-0.5 whitespace-nowrap"
 
 const FORMATS: Record<string, string> = { "image/svg+xml": "SVG", "image/png": "PNG", "image/jpeg": "JPG" };
 
-// "PNG · 1000×200 · 18 KB".
+// "Full-color logo · PNG · 1000×200 · 18 KB": every kind shares the library grid, so the kind leads.
 const fileLine = (asset: BrandAsset) =>
   [
+    asset.variantLabel,
     FORMATS[asset.mimeType] ?? asset.mimeType,
     asset.width && asset.height ? `${asset.width}×${asset.height}` : null,
     formatFileSize(asset.sizeBytes),
@@ -49,7 +50,7 @@ interface LogoCardProps {
   onDelete: () => void;
 }
 
-// One logo in the Brand Assets list: on its kind's background, with Default / Auto-made, where it's used and,
+// One logo in the Brand Assets library: on its kind's background, with Default / Auto-made, where it's used and,
 // on a full-color logo, the versions that couldn't be made from it.
 export default function LogoCard({
   asset,

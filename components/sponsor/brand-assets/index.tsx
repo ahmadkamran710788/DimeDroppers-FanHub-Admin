@@ -1,31 +1,22 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { Upload } from "lucide-react";
-import toast from "react-hot-toast";
 import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
-import ConfirmModal from "@/components/common/confirm-modal";
-import FilterChips from "@/components/common/filter-chips";
 import { PRIMARY_BUTTON } from "@/components/sponsor/styles";
-import AssetCard from "@/components/sponsor/brand-assets/asset-card";
-import AssetDropzone from "@/components/sponsor/brand-assets/asset-dropzone";
+import { useBrandLogos } from "@/components/sponsor/use-brand-logos";
 import BrandProfile from "@/components/sponsor/brand-assets/brand-profile";
 import LogoLibrary from "@/components/sponsor/brand-assets/logo-library";
 import PlacementSpecs from "@/components/sponsor/brand-assets/placement-specs";
-import { useAssetLibrary } from "@/components/sponsor/brand-assets/use-asset-library";
-import { ASSET_FILTER_OPTIONS, type AssetFilter, type BrandAsset } from "@/components/sponsor/brand-assets/data";
 
-// The sponsor's brand kit, which organizations pull from when they place the brand: the logos (live), the brand
-// profile, the creative library and the placement specs organizations ask for (mock until their APIs exist).
+// The sponsor's brand kit, which organizations pull from when they place the brand: the library of logos
+// (live), the brand profile and the placement specs organizations ask for (mock until their APIs exist).
 export default function BrandAssets() {
-  const [filter, setFilter] = useState<AssetFilter>("All");
-  const [deleting, setDeleting] = useState<BrandAsset | null>(null);
-  // The drop zone's file input; "Upload assets" opens it too.
+  // The library's file input; "Upload assets" opens it too.
   const uploadRef = useRef<HTMLInputElement>(null);
-  const { assets, addFiles, replaceFile, removeAsset } = useAssetLibrary();
-
-  const shown = assets.filter((a) => filter === "All" || a.type === filter);
+  const logos = useBrandLogos();
+  const uploading = logos.busy?.startsWith("upload:") ?? false;
 
   return (
     // Spacing and title sizes follow the admin pages, as on Fundable Needs.
@@ -40,59 +31,20 @@ export default function BrandAssets() {
           </p>
         </div>
         <Button
-          label="Upload assets"
+          label={uploading ? "Uploading…" : "Upload assets"}
           icon={<Upload className="size-5" strokeWidth={2} />}
+          disabled={uploading}
           onClick={() => uploadRef.current?.click()}
           className={cn(PRIMARY_BUTTON, "h-[52px] px-[22px] gap-[10px] rounded-[12px] text-base")}
         />
       </div>
 
-      <LogoLibrary />
-
       <div className="flex flex-wrap gap-6 items-start">
         <BrandProfile />
-
-        <section aria-label="Asset library" className="flex-[2_1_520px] min-w-0 flex flex-col gap-[18px]">
-          <AssetDropzone inputRef={uploadRef} onFiles={(files) => addFiles(files, filter)} />
-          <div className="flex flex-wrap gap-3 items-center justify-between">
-            <h3 className="font-display font-black text-xl lg:text-[28px] uppercase leading-tight">Library</h3>
-            <FilterChips variant="pill" ariaLabel="Asset type" options={ASSET_FILTER_OPTIONS} value={filter} onChange={setFilter} />
-          </div>
-          {shown.length > 0 ? (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-4">
-              {shown.map((asset) => (
-                <AssetCard
-                  key={asset.id}
-                  asset={asset}
-                  onReplace={(file) => replaceFile(asset.id, file)}
-                  onDelete={() => setDeleting(asset)}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-base text-[#a8a8a8]">Nothing under {filter} yet. Drop files above to add some.</p>
-          )}
-        </section>
+        <LogoLibrary logos={logos} inputRef={uploadRef} />
       </div>
 
       <PlacementSpecs />
-
-      <ConfirmModal
-        isOpen={deleting !== null}
-        onClose={() => setDeleting(null)}
-        title="Delete asset"
-        message={`Delete “${deleting?.name}”? Organizations using it will need another asset.`}
-        confirmLabel="Delete"
-        busyLabel="Deleting…"
-        destructive
-        onConfirm={async () => {
-          if (deleting) {
-            removeAsset(deleting.id);
-            toast.success(`${deleting.name} deleted`);
-          }
-          return true;
-        }}
-      />
     </div>
   );
 }
