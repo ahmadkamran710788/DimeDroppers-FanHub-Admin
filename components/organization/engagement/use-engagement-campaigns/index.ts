@@ -33,10 +33,12 @@ interface LoadedPage {
   version: number;
 }
 
-// Narrows the list: a search on the title, and one campaign status (e.g. ACTIVE, RESOLVED).
+// Narrows the list: a search (title, and team names on newer APIs), one campaign status (e.g. ACTIVE, OPEN,
+// RESOLVED) and a game phase.
 export interface CampaignFilters {
   search?: string;
   status?: string;
+  phase?: string;
 }
 
 // One tab's cards and one page of its campaigns, paged by the API. Pages already seen come back
@@ -46,15 +48,15 @@ export function useEngagementCampaigns(tab: EngagementTab, page: number, filters
   const [stats, setStats] = useState<TabStats | null>(null);
   const [loaded, setLoaded] = useState<LoadedPage | null>(null);
   const [reloads, setReloads] = useState(0);
-  const { search = "", status = "" } = filters;
-  const key = `${tab}:${page}:${search}:${status}`;
+  const { search = "", status = "", phase = "" } = filters;
+  const key = `${tab}:${page}:${search}:${status}:${phase}`;
 
   useEffect(() => {
     let cancelled = false;
     apiCall<{ data: EngagementTabPage<TabStats, TabCampaign>[] }>({
       endpoint: ENDPOINT[tab],
       method: "GET",
-      data: { page, limit: ENGAGEMENT_PAGE_SIZE, ...(search && { search }), ...(status && { status }) },
+      data: { page, limit: ENGAGEMENT_PAGE_SIZE, sort: "newest", ...(search && { search }), ...(status && { status }), ...(phase && { phase }) },
     }).then((result) => {
       if (cancelled) return;
       const data = result.success ? result.data?.data?.[0] : undefined;
@@ -69,7 +71,7 @@ export function useEngagementCampaigns(tab: EngagementTab, page: number, filters
     return () => {
       cancelled = true;
     };
-  }, [tab, page, search, status, key, reloads]);
+  }, [tab, page, search, status, phase, key, reloads]);
 
   const reload = useCallback(() => setReloads((n) => n + 1), []);
 

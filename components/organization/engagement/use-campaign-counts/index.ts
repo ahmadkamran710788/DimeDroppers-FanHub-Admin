@@ -16,12 +16,14 @@ const ENDPOINT: Record<GameTab, string> = {
 };
 
 // How many predictions or polls each status chip holds (for the search typed), read from the list's
-// totals: one small page per status. null until known.
-export function useCampaignCounts(tab: GameTab, search: string): Counts {
+// totals: one small page per status. null until known. For APIs that don't send `stats.counts` yet; off
+// (no calls) when `enabled` is false.
+export function useCampaignCounts(tab: GameTab, search: string, enabled: boolean): Counts {
   const key = `${tab}:${search}`;
   const [loaded, setLoaded] = useState<{ key: string; counts: Counts } | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     const totalFor = (status: string) =>
       apiCall<{ data: EngagementTabPage<unknown, unknown>[] }>({
@@ -35,7 +37,7 @@ export function useCampaignCounts(tab: GameTab, search: string): Counts {
     return () => {
       cancelled = true;
     };
-  }, [tab, search, key]);
+  }, [tab, search, key, enabled]);
 
   return loaded?.key === key ? loaded.counts : EMPTY;
 }

@@ -91,6 +91,22 @@ interface GameCampaignFields {
   // Entries lock at this time.
   endsAt: string;
   resolvedAt: string | null;
+  // The newer API's fields; optional until it is deployed everywhere.
+  phase?: GamePhase;
+  // The game: null when there is none (or it was deleted).
+  match?: CampaignMatch | null;
+  generatedBy?: { kind: "ADMIN" | "AUTO"; name: string | null };
+}
+
+export type GamePhase = "PRE_GAME" | "LIVE" | "POST_GAME";
+
+export interface CampaignMatch {
+  home: { name: string; logoUrl: string | null };
+  away: { name: string; logoUrl: string | null };
+  // Null for a date-only game.
+  startsAt: string | null;
+  venue: string | null;
+  court: string | null;
 }
 
 export interface PredictionCampaign extends EngagementCampaignBase, GameCampaignFields {
@@ -130,14 +146,26 @@ interface TabStatsBase {
   participants: number;
 }
 
-export interface PredictionStats extends TabStatsBase {
+// Predictions' and votes' newer stats (optional until the API is deployed everywhere).
+interface GameCampaignStats {
+  // RESOLVED: results sent to fans.
+  finalized?: number;
+  // Generated during a live game.
+  liveGame?: number;
+  // Open ones that lock in the next 24 hours.
+  lockingIn24h?: number;
+  // The status chips' numbers for the current search and phase.
+  counts?: { all: number; active: number; finalized: number };
+}
+
+export interface PredictionStats extends TabStatsBase, GameCampaignStats {
   totalEntries: EngagementMetric;
   avgEntriesPerActive: number;
   followers: number;
   engagementRatePercent: number;
 }
 
-export interface VotingStats extends TabStatsBase {
+export interface VotingStats extends TabStatsBase, GameCampaignStats {
   totalVotes: EngagementMetric;
   avgVotesPerActive: number;
   followers: number;
@@ -148,6 +176,9 @@ export interface ChallengeStats extends TabStatsBase {
   totalCompletions: EngagementMetric;
   avgCompletionsPerFan: number;
   completionRatePercent: number;
+  // Dimes paid out across the challenges (base + multiplier bonuses), from the ledger.
+  dimesPaidOut?: number;
+  counts?: { all: number; active: number; ended: number };
 }
 
 // GET /predictions, /voting or /challenges (data[0]).

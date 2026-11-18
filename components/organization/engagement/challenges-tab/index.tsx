@@ -93,8 +93,10 @@ export default function ChallengesTab() {
   const pageCount = Math.max(1, Math.ceil(shown.length / ENGAGEMENT_PAGE_SIZE));
   const current = Math.min(page, pageCount);
   const visible = shown.slice((current - 1) * ENGAGEMENT_PAGE_SIZE, current * ENGAGEMENT_PAGE_SIZE);
-  // Hidden completion numbers count as none.
-  const dimesPaid = loading ? null : challenges.reduce((sum, c) => sum + (c.completedCount ?? 0) * c.baseDimeReward, 0);
+  // From the API (the Dimes ledger, multiplier bonuses and hidden-number challenges included) when it sends it;
+  // else completions × Dimes added up here, which skips challenges whose numbers are hidden.
+  const dimesPaid =
+    stats?.dimesPaidOut ?? (loading ? null : challenges.reduce((sum, c) => sum + (c.completedCount ?? 0) * c.baseDimeReward, 0));
 
   const columns: Column<ChallengeCampaign>[] = [
     {
