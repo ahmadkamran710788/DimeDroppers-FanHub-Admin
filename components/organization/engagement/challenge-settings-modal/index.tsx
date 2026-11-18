@@ -18,7 +18,8 @@ interface ChallengeSettingsModalProps {
   onSaved: () => void;
 }
 
-// The gear on a challenge row: switch it on or off, allow Dime multipliers, and show fans its progress.
+// The gear on a challenge row: allow Dime multipliers and show fans its progress (the on / off switch is
+// hidden for now).
 // Each switch saves on its own.
 export default function ChallengeSettingsModal({ challenge, onClose, onSaved }: ChallengeSettingsModalProps) {
   const row = campaignRow("challenges", challenge);
@@ -37,12 +38,13 @@ export default function ChallengeSettingsModal({ challenge, onClose, onSaved }: 
   return (
     <Modal isOpen onClose={onClose} title={challenge.title} className="max-w-[min(480px,calc(100vw-2rem))] items-stretch">
       <div className="w-full flex flex-col gap-5">
+        {/* The Active switch is hidden for now; to bring it back:
         <Toggle
           {...ROW}
           label={row.statusLocked ? "Active (an ended challenge can't be turned back on)" : "Active"}
           checked={values.active}
           onChange={(v) => !saving && !row.statusLocked && void change("active", v)}
-        />
+        /> */}
         <Toggle {...ROW} label="Allow Dime multipliers" checked={values.multiplier} onChange={(v) => !saving && void change("multiplier", v)} />
         <Toggle
           {...ROW}
