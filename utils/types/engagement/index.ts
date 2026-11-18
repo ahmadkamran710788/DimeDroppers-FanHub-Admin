@@ -80,15 +80,26 @@ interface EngagementCampaignBase {
   displayStatusLabel: string;
 }
 
-export interface PredictionCampaign extends EngagementCampaignBase {
+// What predictions and votes share: made off a game, with a sponsor and a window fans can enter in.
+interface GameCampaignFields {
   status: "ACTIVE" | "ENDED" | "RESOLVED" | "CANCELLED";
+  // "Presented by …"; null when no sponsor.
+  sponsorName: string | null;
+  // The game it was made from (null if that game was deleted).
+  scheduleEventId: string | null;
+  startsAt: string;
+  // Entries lock at this time.
+  endsAt: string;
+  resolvedAt: string | null;
+}
+
+export interface PredictionCampaign extends EngagementCampaignBase, GameCampaignFields {
   minParticipationThreshold: number | null;
   entriesCount: number;
   boostedEntriesCount: number;
 }
 
-export interface VotingCampaign extends EngagementCampaignBase {
-  status: "ACTIVE" | "ENDED" | "RESOLVED" | "CANCELLED";
+export interface VotingCampaign extends EngagementCampaignBase, GameCampaignFields {
   minParticipationThreshold: number | null;
   votesCount: number;
   boostedVotesCount: number;
@@ -96,6 +107,18 @@ export interface VotingCampaign extends EngagementCampaignBase {
 
 export interface ChallengeCampaign extends EngagementCampaignBase {
   status: "ACTIVE" | "INACTIVE" | "ENDED";
+  // What fans do to make progress.
+  category: "DONATION" | "VOTING" | "PREDICTION" | "SCAN_BOOTH";
+  criteriaType: "COUNT" | "COUNT_PER_DAY" | "COUNT_DISTINCT_TARGET" | "STREAK_DAYS" | "COUNT_SUCCESSFUL";
+  // How many of those actions complete it.
+  targetCount: number;
+  // Dimes each fan who completes it gets.
+  baseDimeReward: number;
+  startDate: string | null;
+  endDate: string | null;
+  // "Presented by …", when the API sends one.
+  sponsorName?: string | null;
+  // Fans who checked in (started it).
   startedCount: number;
   // Null while the numbers are hidden.
   completedCount: number | null;

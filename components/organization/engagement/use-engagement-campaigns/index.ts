@@ -33,27 +33,34 @@ interface LoadedPage {
   version: number;
 }
 
+// Narrows the list: a search on the title, and one campaign status (e.g. ACTIVE, RESOLVED).
+export interface CampaignFilters {
+  search?: string;
+  status?: string;
+}
+
 // One tab's cards and one page of its campaigns, paged by the API. Pages already seen come back
 // from apiCall's cache; the cards stay on screen while another page loads. `reload` refetches the
 // current page in place (e.g. for the API's new displayStatus after a status change).
-export function useEngagementCampaigns(tab: EngagementTab, page: number) {
+export function useEngagementCampaigns(tab: EngagementTab, page: number, filters: CampaignFilters = {}) {
   const [stats, setStats] = useState<TabStats | null>(null);
   const [loaded, setLoaded] = useState<LoadedPage | null>(null);
   const [reloads, setReloads] = useState(0);
-  const key = `${tab}:${page}`;
+  const { search = "", status = "" } = filters;
+  const key = `${tab}:${page}:${search}:${status}`;
 
   useEffect(() => {
     let cancelled = false;
     apiCall<{ data: EngagementTabPage<TabStats, TabCampaign>[] }>({
       endpoint: ENDPOINT[tab],
       method: "GET",
-      data: { page, limit: ENGAGEMENT_PAGE_SIZE },
+      data: { page, limit: ENGAGEMENT_PAGE_SIZE, ...(search && { search }), ...(status && { status }) },
     }).then((result) => {
       if (cancelled) return;
       const data = result.success ? result.data?.data?.[0] : undefined;
       if (data) setStats(data.stats);
       setLoaded((prev) => ({
-        key: `${tab}:${page}`,
+        key,
         campaigns: data?.items ?? [],
         total: data?.pagination.total ?? 0,
         version: (prev?.version ?? 0) + 1,
@@ -62,7 +69,7 @@ export function useEngagementCampaigns(tab: EngagementTab, page: number) {
     return () => {
       cancelled = true;
     };
-  }, [tab, page, reloads]);
+  }, [tab, page, search, status, key, reloads]);
 
   const reload = useCallback(() => setReloads((n) => n + 1), []);
 

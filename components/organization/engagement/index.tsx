@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Tabs from "@/components/common/tabs";
-import CampaignTab from "@/components/organization/engagement/campaign-tab";
+import ChallengesTab from "@/components/organization/engagement/challenges-tab";
 import { ARCADE_GAMES, ARCADE_STATS, QUEST_STATS, QUESTS } from "@/components/organization/engagement/data";
 import OverviewTab from "@/components/organization/engagement/overview-tab";
+import GameCampaignTab from "@/components/organization/engagement/game-campaign-tab";
 import SettingsTable from "@/components/organization/engagement/settings-table";
 import TabBody from "@/components/organization/engagement/tab-body";
 
@@ -32,11 +33,11 @@ export default function EngagementPage() {
       {tab === "Overview" ? (
         <OverviewTab />
       ) : tab === "Predictions" ? (
-        <CampaignTab key="predictions" tab="predictions" />
+        <GameCampaignTab key="predictions" tab="predictions" />
       ) : tab === "Voting" ? (
-        <CampaignTab key="voting" tab="voting" />
+        <GameCampaignTab key="voting" tab="voting" />
       ) : tab === "Challenges" ? (
-        <CampaignTab key="challenges" tab="challenges" />
+        <ChallengesTab />
       ) : tab === "Quests" ? (
         <TabBody stats={QUEST_STATS} title="Available Quests">
           <SettingsTable key="quests" rows={QUESTS} liveLabel="Activated" />

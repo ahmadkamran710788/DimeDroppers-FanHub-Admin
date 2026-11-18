@@ -4,7 +4,6 @@ import apiCall from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type {
   ChallengeCampaign,
-  ChallengeStats,
   EngagementCampaignPatch,
   EngagementMetric,
   EngagementOverview,
@@ -13,9 +12,7 @@ import type {
   EngagementTypeRow,
   EngagementDisplayStatus,
   PredictionCampaign,
-  PredictionStats,
   VotingCampaign,
-  VotingStats,
 } from "@/utils/types/engagement";
 
 // The three tabs backed by the API.
@@ -74,46 +71,6 @@ export function overviewStats(o: EngagementOverview | null): Stat[] {
       tint: TINTS[4],
       caption: `of ${multiplierUsage.totalTypes} campaign types · ${count(multiplierUsage.value)} paid boosts`,
     },
-  ];
-}
-
-// A tab's five cards.
-export function tabStats(tab: EngagementTab, stats: PredictionStats | VotingStats | ChallengeStats | null): Stat[] {
-  const labels: Record<EngagementTab, string[]> = {
-    predictions: ["Available Predictions", "Active", "Total Entries", "Avg. Entries", "Engagement Rate"],
-    voting: ["Available Polls", "Active", "Total Votes", "Avg. Votes", "Participation Rate"],
-    challenges: ["Available Challenges", "Active", "Total Completions", "Avg. Per Fan", "Completion Rate"],
-  };
-  const [available, active, total, avg, rate] = labels[tab];
-  if (!stats) return labels[tab].map((label, i) => ({ label, value: "—", tint: TINTS[i], caption: "" }));
-  const common: Stat[] = [
-    { label: available, value: count(stats.available), tint: TINTS[0], caption: tab === "challenges" ? "All but inactive" : "All but cancelled" },
-    { label: active, value: count(stats.active), tint: TINTS[1], caption: `of ${count(stats.available)} available, open now` },
-  ];
-  if (tab === "predictions") {
-    const s = stats as PredictionStats;
-    return [
-      ...common,
-      metricCard(total, s.totalEntries, TINTS[2]),
-      { label: avg, value: count(s.avgEntriesPerActive), tint: TINTS[3], caption: "Per active prediction" },
-      { label: rate, value: `${s.engagementRatePercent}%`, tint: TINTS[4], caption: `${count(s.participants)} fans took part` },
-    ];
-  }
-  if (tab === "voting") {
-    const s = stats as VotingStats;
-    return [
-      ...common,
-      metricCard(total, s.totalVotes, TINTS[2]),
-      { label: avg, value: count(s.avgVotesPerActive), tint: TINTS[3], caption: "Per active poll" },
-      { label: rate, value: `${s.participationRatePercent}%`, tint: TINTS[4], caption: `${count(s.participants)} fans took part` },
-    ];
-  }
-  const s = stats as ChallengeStats;
-  return [
-    ...common,
-    metricCard(total, s.totalCompletions, TINTS[2]),
-    { label: avg, value: count(s.avgCompletionsPerFan), tint: TINTS[3], caption: "Per participating fan" },
-    { label: rate, value: `${s.completionRatePercent}%`, tint: TINTS[4], caption: "of fans who entered" },
   ];
 }
 
