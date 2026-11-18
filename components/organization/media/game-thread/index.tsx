@@ -19,7 +19,7 @@ import type {
   ThreadItem,
   ThreadPhase,
 } from "@/utils/types/game-detail";
-import type { OrgSponsor, SponsorPlacement } from "@/utils/types/org-sponsors";
+import type { OrgSponsor, SponsorLogos, SponsorPlacement } from "@/utils/types/org-sponsors";
 
 const PHASES: readonly GamePhase[] = ["Pre-Game", "Live Game", "Final"];
 const QUARTERS: readonly Quarter[] = ["1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"];
@@ -140,13 +140,15 @@ const optionsOf = (data: ThreadItem["data"]): ChoiceOption[] => {
     .filter((o) => o.label);
 };
 
-// "Presented by" and the sponsor's logo, or its brand name when it has no logo.
-function SponsorBanner({ name, logoUrl }: { name: string; logoUrl: string | null }) {
+// The sponsor's label ("Presented by") and logo, or its brand name when it has no logo.
+function SponsorBanner({ sponsor }: { sponsor: OrgSponsor }) {
+  const { name } = sponsor;
+  const logoUrl = sponsor.logos?.logoUrl ?? sponsor.logoUrl;
   return (
     <div className="flex items-center justify-center gap-3 rounded-[10px] bg-white px-5 py-3">
-      <span className="text-base text-black">Presented by</span>
+      <span className="text-base text-black">{sponsor.logos?.label || "Presented by"}</span>
       {logoUrl ? (
-        // A signed link to the sponsor's logo (any host), so it skips the image optimizer.
+        // The sponsor's logo from the API (any host), so it skips the image optimizer.
         <Image src={logoUrl} alt={name} width={140} height={36} unoptimized className="h-9 w-auto max-w-45 object-contain" />
       ) : (
         <span className="font-display text-[28px] font-extrabold uppercase italic leading-none tracking-tight text-black">
@@ -163,6 +165,51 @@ const PHASE_PLACEMENT: Record<ThreadPhase, SponsorPlacement> = { pre: "GAME_PRE"
 const sponsorFor = (sponsors: OrgSponsor[], phase: ThreadPhase) =>
   sponsors.find((s) => s.placements.includes(PHASE_PLACEMENT[phase])) ??
   sponsors.find((s) => s.placements.includes("HEADER"));
+
+// The sponsor slot behind each engagement card, by phase (the backend's activation catalog keys).
+const SLOT_KEYS: Partial<Record<ThreadItem["kind"], Partial<Record<ThreadPhase, string[]>>>> = {
+  prediction: { pre: ["PREDICTIONS"], live: ["LIVE_PREDICTIONS", "PREDICTIONS"], final: ["PREDICTIONS"] },
+  poll: { pre: ["LIVE_VOTE"], live: ["LIVE_VOTE"], final: ["POST_GAME_VOTE", "LIVE_VOTE"] },
+  challenge: { pre: ["CHALLENGES_QUESTS"], live: ["CHALLENGES_QUESTS"], final: ["CHALLENGES_QUESTS"] },
+  sponsorOffer: { pre: ["PARTNER_OFFERS"], live: ["PARTNER_OFFERS"], final: ["PARTNER_OFFERS"] },
+  donation: { pre: ["CAMPAIGNS"], live: ["CAMPAIGNS"], final: ["CAMPAIGNS"] },
+};
+
+type SlotSponsor = { name: string; logos: SponsorLogos };
+
+// The sponsor that bought this card's slot in a running package, with the slot's own logos (else the
+// sponsor's). The list is in the API's order (Presenting Partner first), so the first match wins.
+const slotSponsorFor = (sponsors: OrgSponsor[], item: ThreadItem): SlotSponsor | undefined => {
+  const keys = SLOT_KEYS[item.kind]?.[item.phase] ?? [];
+  for (const key of keys) {
+    for (const s of sponsors) {
+      const slot = (s.packages ?? [])
+        .filter((p) => p.status === "ACTIVE" && p.visibleToFans)
+        .flatMap((p) => p.slots)
+        .find((sl) => sl.catalogKey === key);
+      const logos = slot && (slot.logos ?? s.logos);
+      if (logos) return { name: s.name, logos };
+    }
+  }
+};
+
+// "Presented by" and the slot sponsor's logo (or name), under an engagement card.
+function CardSponsor({ sponsor }: { sponsor: SlotSponsor }) {
+  const logoUrl = sponsor.logos.logoUrl;
+  return (
+    <div className="flex items-center gap-2 border-t border-white/10 pt-3 text-sm text-white/60">
+      <span>{sponsor.logos.label || "Presented by"}</span>
+      {logoUrl ? (
+        // The sponsor's logo from the API (any host), so it skips the image optimizer.
+        <span className="rounded-md bg-white px-2 py-1">
+          <Image src={logoUrl} alt={sponsor.name} width={80} height={20} unoptimized className="h-5 w-auto max-w-24 object-contain" />
+        </span>
+      ) : (
+        <span className="font-semibold text-white">{sponsor.name}</span>
+      )}
+    </div>
+  );
+}
 
 // A phase change, or anything else that isn't a play: clock, "Phase" and when, then the text.
 function PhaseCard({ item }: { item: ThreadItem }) {
@@ -197,7 +244,7 @@ const playOf = (item: ThreadItem, detail: GameThreadDetail): PlayEvent => {
 
 // A prediction, poll, offer, …: read-only here (fans answer it in the app). Once it is resolved, the
 // winning choice is outlined in green with a trophy and the others are dimmed.
-function EngagementCard({ item }: { item: ThreadItem }) {
+function EngagementCard({ item, sponsor }: { item: ThreadItem; sponsor?: SlotSponsor }) {
   const options = optionsOf(item.data);
   const winners = Array.isArray(item.data.winningOptionIds) ? (item.data.winningOptionIds as string[]) : [];
   return (
@@ -229,12 +276,14 @@ function EngagementCard({ item }: { item: ThreadItem }) {
           })}
         </ul>
       )}
+      {sponsor && <CardSponsor sponsor={sponsor} />}
     </li>
   );
 }
 
-function ThreadItemView({ item, detail }: { item: ThreadItem; detail: GameThreadDetail }) {
-  if (ENGAGEMENT_KINDS.includes(item.kind) && item.subKind !== "resolved") return <EngagementCard item={item} />;
+function ThreadItemView({ item, detail, sponsors }: { item: ThreadItem; detail: GameThreadDetail; sponsors: OrgSponsor[] }) {
+  if (ENGAGEMENT_KINDS.includes(item.kind) && item.subKind !== "resolved")
+    return <EngagementCard item={item} sponsor={slotSponsorFor(sponsors, item)} />;
   if (item.kind === "play") return <EventRow event={playOf(item, detail)} />;
   return <PhaseCard item={item} />;
 }
@@ -329,7 +378,7 @@ function ApiThread({ gameId }: { gameId: string }) {
       )}
 
       {/* Nothing until the sponsors load, and no banner when the organisation has none. */}
-      {sponsor && <SponsorBanner name={sponsor.name} logoUrl={sponsor.logoUrl} />}
+      {sponsor && <SponsorBanner sponsor={sponsor} />}
 
       {loading ? (
         <Loader className="m-10" />
@@ -340,7 +389,7 @@ function ApiThread({ gameId }: { gameId: string }) {
               <h3 className="font-display font-extrabold text-[32px] uppercase leading-none text-white">{g.label}</h3>
               <ul className="flex flex-col gap-3">
                 {g.items.map((item) => (
-                  <ThreadItemView key={item.id} item={item} detail={data} />
+                  <ThreadItemView key={item.id} item={item} detail={data} sponsors={sponsors ?? []} />
                 ))}
               </ul>
             </section>
@@ -348,7 +397,7 @@ function ApiThread({ gameId }: { gameId: string }) {
         ) : (
           <ul className="flex flex-col gap-3">
             {items.map((item) => (
-              <ThreadItemView key={item.id} item={item} detail={data} />
+              <ThreadItemView key={item.id} item={item} detail={data} sponsors={sponsors ?? []} />
             ))}
           </ul>
         )
