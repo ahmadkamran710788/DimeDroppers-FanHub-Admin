@@ -9,8 +9,11 @@ import GameCampaignTab from "@/components/organization/engagement/game-campaign-
 import SettingsTable from "@/components/organization/engagement/settings-table";
 import TabBody from "@/components/organization/engagement/tab-body";
 
-const TABS = ["Overview", "Predictions", "Voting", "Challenges", "Quests", "Arcade", "Settings"] as const;
-type Tab = (typeof TABS)[number];
+const ALL_TABS = ["Overview", "Predictions", "Voting", "Challenges", "Quests", "Arcade", "Settings"] as const;
+type Tab = (typeof ALL_TABS)[number];
+// Hidden for now; take a tab out of this list to show it again.
+const HIDDEN_TABS: readonly Tab[] = ["Arcade", "Settings"];
+const TABS = ALL_TABS.filter((t) => !HIDDEN_TABS.includes(t));
 
 // Overview, Predictions, Voting and Challenges come from the engagement API; Quests and Arcade
 // are still sample data (no endpoint yet).
