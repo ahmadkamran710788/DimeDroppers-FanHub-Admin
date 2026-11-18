@@ -1,0 +1,264 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import type { Column } from "@/components/common/generic-table";
+import GenericTable from "@/components/common/generic-table";
+import Pagination from "@/components/common/pagination";
+import SearchInput from "@/components/common/search-input";
+import StatCard, { type Stat } from "@/components/common/stat-card";
+import { ENGAGEMENT_PAGE_SIZE } from "@/components/organization/engagement/settings-table";
+import { useCampaignCounts } from "@/components/organization/engagement/use-campaign-counts";
+import { useEngagementCampaigns } from "@/components/organization/engagement/use-engagement-campaigns";
+import { cn } from "@/utils/cn";
+import type { PredictionCampaign, PredictionStats, VotingCampaign, VotingStats } from "@/utils/types/engagement";
+
+export type GameTab = "predictions" | "voting";
+type Row = PredictionCampaign | VotingCampaign;
+
+// What differs between the two tabs: names, and where the entry counts live.
+const COPY: Record<
+  GameTab,
+  { title: string; column: string; plural: string; entries: string; rowEntries: (r: Row) => number; total: (s: PredictionStats | VotingStats) => number }
+> = {
+  predictions: {
+    title: "Predictions",
+    column: "Prediction Campaign",
+    plural: "predictions",
+    entries: "Entries",
+    rowEntries: (r) => (r as PredictionCampaign).entriesCount,
+    total: (s) => (s as PredictionStats).totalEntries.value,
+  },
+  voting: {
+    title: "Voting",
+    column: "Voting Campaign",
+    plural: "polls",
+    entries: "Votes",
+    rowEntries: (r) => (r as VotingCampaign).votesCount,
+    total: (s) => (s as VotingStats).totalVotes.value,
+  },
+};
+
+// The status chips and the API status each one asks for ("" = all).
+const STATUS_CHIPS = [
+  { label: "All", status: "" },
+  { label: "Active", status: "ACTIVE" },
+  { label: "Finalized", status: "RESOLVED" },
+] as const;
+type StatusChip = (typeof STATUS_CHIPS)[number]["label"];
+
+// The game phase chips. The list API doesn't say a campaign's phase yet, so only "All phases" works.
+const PHASE_CHIPS = [
+  { label: "All phases", dot: "bg-white/50" },
+  { label: "Pre-game", dot: "bg-[#638BFE]" },
+  { label: "Live game", dot: "bg-[#FF6B6B]" },
+  { label: "Post-game", dot: "bg-[#B18CFF]" },
+] as const;
+
+// A campaign is Active while it's switched on and its entries haven't locked; otherwise Ended.
+const isActive = (r: Row, now: number) => r.status === "ACTIVE" && new Date(r.endsAt).getTime() > now;
+
+const count = (n: number) => n.toLocaleString("en-US");
+const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const time = (iso: string) => new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+const lockLabel = (iso: string) =>
+  new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+
+// "0d 0h 12m 01s" until the entries lock; null once they have.
+function timeLeft(endsAt: string, now: number) {
+  const ms = new Date(endsAt).getTime() - now;
+  if (ms <= 0) return null;
+  const s = Math.floor(ms / 1000);
+  const [d, h, m, sec] = [Math.floor(s / 86400), Math.floor((s % 86400) / 3600), Math.floor((s % 3600) / 60), s % 60];
+  return { text: `${d}d ${h}h ${m}m ${String(sec).padStart(2, "0")}s`, soon: ms < 3600_000 };
+}
+
+// The five cards. Finalized comes from its own count; Live Game needs the API to say where a campaign
+// was generated, so it shows "—" for now.
+function cards(tab: GameTab, stats: PredictionStats | VotingStats | null, finalized: number | null): Stat[] {
+  const { title, plural, entries, total } = COPY[tab];
+  const v = (n: number | null | undefined) => (n == null ? "—" : count(n));
+  return [
+    { label: `Available ${title}`, value: v(stats?.available), tint: "#3E7B3B", caption: "All generated, not cancelled" },
+    { label: "Active", value: v(stats?.active), tint: "#3B4C9B", caption: `Open for ${entries.toLowerCase()} now` },
+    { label: "Finalized", value: v(finalized), tint: "#4A5263", caption: "Results sent to fans" },
+    { label: `Total ${entries}`, value: v(stats && total(stats)), tint: "#5B3A7E", caption: `Across all ${plural}` },
+    { label: "Live Game", value: "—", tint: "#8B1E1E", caption: "Generated during games" },
+  ];
+}
+
+// Engagement → Predictions or Voting: five cards, then the campaigns with search, status and phase chips,
+// the game, when each was generated and how long until it locks.
+export default function GameCampaignTab({ tab }: { tab: GameTab }) {
+  const copy = COPY[tab];
+  const [chip, setChip] = useState<StatusChip>("All");
+  const [query, setQuery] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [now, setNow] = useState(() => Date.now());
+  const status = STATUS_CHIPS.find((c) => c.label === chip)?.status ?? "";
+  const { stats, campaigns, total, loading } = useEngagementCampaigns(tab, page, { search, status });
+  const counts = useCampaignCounts(tab, search);
+
+  // Waits for a pause in typing before asking the API.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setSearch(query.trim());
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(id);
+  }, [query]);
+
+  // The countdowns tick every second.
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const rows = campaigns as Row[];
+  const pageCount = Math.max(1, Math.ceil(total / ENGAGEMENT_PAGE_SIZE));
+
+  const columns: Column<Row>[] = [
+    {
+      header: copy.column,
+      cls: "flex-1 min-w-[220px] py-5 px-4",
+      cell: (r) => (
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="text-base font-semibold leading-6 text-white">{r.title}</span>
+          <span className="text-sm text-white/60">{r.sponsorName ? `Presented by ${r.sponsorName}` : "No sponsor"}</span>
+        </div>
+      ),
+    },
+    // The list API gives only the game's id, not its teams, time or court.
+    { header: "Associated Match", cls: "w-[320px] shrink-0 py-5 px-4", cell: () => <span className="text-sm text-white/40">—</span> },
+    { header: "Game Phase", cls: "w-[140px] shrink-0 py-5 px-4", cell: () => <span className="text-sm text-white/40">—</span> },
+    {
+      header: "Generated",
+      cls: "w-[150px] shrink-0 py-5 px-4",
+      cell: (r) => (
+        <div className="flex flex-col gap-0.5">
+          <span className="text-base leading-6 text-white">{day(r.createdAt)}</span>
+          <span className="text-sm text-white/60">{time(r.createdAt)}</span>
+        </div>
+      ),
+    },
+    {
+      header: "Time Left",
+      cls: "w-[180px] shrink-0 py-5 px-4",
+      cell: (r) => {
+        const left = timeLeft(r.endsAt, now);
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className={cn("text-base font-semibold leading-6", !left ? "text-white/40" : left.soon ? "text-[#FF6B6B]" : "text-white")}>
+              {left ? left.text : "Locked"}
+            </span>
+            <span className="text-sm text-white/60">{left ? `Locks ${lockLabel(r.endsAt)}` : lockLabel(r.endsAt)}</span>
+          </div>
+        );
+      },
+    },
+    {
+      header: "Status",
+      cls: "w-[120px] shrink-0 py-5 px-4",
+      cell: (r) => (
+        <span
+          className={cn(
+            "rounded-md px-2 py-1 text-sm font-semibold whitespace-nowrap",
+            isActive(r, now) ? "bg-success/20 text-success" : "bg-white/10 text-white/70"
+          )}
+        >
+          {isActive(r, now) ? "Active" : "Ended"}
+        </span>
+      ),
+    },
+    {
+      header: copy.entries,
+      cls: "w-[100px] shrink-0 py-5 px-4",
+      cell: (r) => <span className="text-base text-white">{count(copy.rowEntries(r))}</span>,
+    },
+  ];
+
+  return (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-4 lg:gap-6">
+        {cards(tab, stats as PredictionStats | VotingStats | null, counts.finalized).map((stat) => (
+          <StatCard key={stat.label} {...stat} twoLineTitle />
+        ))}
+      </div>
+
+      <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[24px] bg-surface-06">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <h3 className="font-display font-extrabold text-[28px] uppercase text-white leading-none">{copy.title}</h3>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <SearchInput
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search campaign or team"
+              className="sm:w-[300px]"
+            />
+            {/* The API lists the newest first; it has no other order yet. */}
+            <span className="h-12 rounded-[8px] bg-white px-4 flex items-center text-base text-midnight-navy whitespace-nowrap">
+              Newest generated
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4">
+          <div role="group" aria-label="Status" className="inline-flex gap-1 rounded-full border border-white/15 p-1">
+            {STATUS_CHIPS.map((c) => {
+              const n = c.status === "" ? counts.all : c.status === "ACTIVE" ? counts.active : counts.finalized;
+              const on = chip === c.label;
+              return (
+                <button
+                  key={c.label}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => {
+                    setChip(c.label);
+                    setPage(1);
+                  }}
+                  className={cn(
+                    "cursor-pointer rounded-full px-4 py-2 text-base transition-colors",
+                    on ? "bg-white text-midnight-navy" : "text-white hover:bg-white/10"
+                  )}
+                >
+                  {c.label} {n != null && <span className={on ? "text-midnight-navy/60" : "text-white/50"}>{n}</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          <div role="group" aria-label="Game phase" className="flex flex-wrap gap-2">
+            {PHASE_CHIPS.map((c, i) => (
+              <button
+                key={c.label}
+                type="button"
+                aria-pressed={i === 0}
+                // Needs the API to say each campaign's phase.
+                disabled={i > 0}
+                title={i > 0 ? "Coming soon" : undefined}
+                className={cn(
+                  "flex items-center gap-2 rounded-full border px-4 py-2 text-base text-white",
+                  i === 0 ? "border-[#638BFE] bg-[#638BFE]/15" : "border-white/15 cursor-not-allowed"
+                )}
+              >
+                <span className={cn("size-2 rounded-full", c.dot)} />
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <GenericTable
+          columns={columns}
+          rows={rows}
+          getKey={(r) => r.id}
+          loading={loading}
+          empty={search || status ? `No ${copy.plural} match these filters.` : `No ${copy.plural} yet.`}
+          className="rounded-[8px] border border-white/10"
+        />
+
+        {pageCount > 1 && <Pagination page={page} pageCount={pageCount} onChange={setPage} className="self-end" />}
+      </div>
+    </>
+  );
+}
