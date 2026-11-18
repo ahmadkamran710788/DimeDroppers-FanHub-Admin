@@ -6,23 +6,28 @@ import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
 import HiddenFileInput from "@/components/common/hidden-file-input";
 import { OUTLINE_BUTTON } from "@/components/sponsor/styles";
-import { UPLOAD_ACCEPT, UPLOAD_LIMITS } from "@/components/sponsor/brand-assets/data";
 
 interface AssetDropzoneProps {
   // The picker's input, shared with the page's "Upload assets" button.
   inputRef: RefObject<HTMLInputElement | null>;
+  // The file picker filter, e.g. ".svg,.png,.jpg,.jpeg".
+  accept: string;
+  // What can be uploaded, under the title.
+  hint: string;
+  // An upload is running: Browse files waits and drops are ignored.
+  busy?: boolean;
   onFiles: (files: File[]) => void;
 }
 
 // Dashed drop target above the library; Browse files opens the same picker.
-export default function AssetDropzone({ inputRef, onFiles }: AssetDropzoneProps) {
+export default function AssetDropzone({ inputRef, accept, hint, busy = false, onFiles }: AssetDropzoneProps) {
   const [dragging, setDragging] = useState(false);
 
   return (
     <div
       onDragOver={(e) => {
         e.preventDefault();
-        setDragging(true);
+        if (!busy) setDragging(true);
       }}
       onDragLeave={(e) => {
         // Moving onto a child also fires dragleave; only leaving the zone itself counts.
@@ -31,7 +36,7 @@ export default function AssetDropzone({ inputRef, onFiles }: AssetDropzoneProps)
       onDrop={(e) => {
         e.preventDefault();
         setDragging(false);
-        onFiles(Array.from(e.dataTransfer.files));
+        if (!busy) onFiles(Array.from(e.dataTransfer.files));
       }}
       className={cn(
         "relative rounded-[8px] border-[1.5px] border-dashed p-6 flex flex-wrap gap-[18px] items-center justify-between transition-colors",
@@ -44,15 +49,16 @@ export default function AssetDropzone({ inputRef, onFiles }: AssetDropzoneProps)
         </div>
         <div>
           <div className="text-[17px] font-bold">Drop files here to add them</div>
-          <div className="text-sm text-[#bdbdbd] mt-[2px]">{UPLOAD_LIMITS.hint}</div>
+          <div className="text-sm text-[#bdbdbd] mt-[2px]">{hint}</div>
         </div>
       </div>
       <Button
-        label="Browse files"
+        label={busy ? "Uploading…" : "Browse files"}
+        disabled={busy}
         onClick={() => inputRef.current?.click()}
         className={cn(OUTLINE_BUTTON, "h-11 px-[18px] rounded-[10px] text-[15px] font-semibold")}
       />
-      <HiddenFileInput ref={inputRef} accept={UPLOAD_ACCEPT.all} multiple onFiles={onFiles} />
+      <HiddenFileInput ref={inputRef} accept={accept} multiple onFiles={onFiles} />
     </div>
   );
 }

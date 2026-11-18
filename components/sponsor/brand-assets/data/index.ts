@@ -1,12 +1,12 @@
 import { SPONSOR_PROFILE } from "@/components/sponsor/data";
 
-// Mock data for the Brand Assets page until the sponsor API is integrated. Logos are live (the Logos section,
-// GET /brand-assets), so they aren't part of this mock library.
+// Mock data until the sponsor API is integrated: the brand profile and placement specs on Brand Assets, and the
+// creatives on Brand Placements. The Brand Assets library is live (logos, GET /brand-assets), so it doesn't
+// use the mock assets here.
 
 export const ASSET_FILTERS = ["All", "Video", "Banners", "Social"] as const;
 export type AssetFilter = (typeof ASSET_FILTERS)[number];
 export type AssetType = Exclude<AssetFilter, "All">;
-export const ASSET_FILTER_OPTIONS = ASSET_FILTERS.map((f) => ({ label: f, value: f }));
 
 export type AssetStatus = "Approved" | "In review" | "Draft";
 export type AssetFileKind = "image" | "video" | "document";
