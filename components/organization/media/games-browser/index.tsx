@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import Button from "@/components/common/button";
 import SegmentedControl from "@/components/common/segmented-control";
 import Loader from "@/components/common/loader";
 import Tabs from "@/components/common/tabs";
@@ -24,6 +25,8 @@ interface GamesBrowserProps<T extends string> {
   headerAction?: ReactNode;
   // Shown when there are no games; "No games here yet." without it.
   emptyText?: string;
+  // A "Load more" button under the list while there are more games to read.
+  loadMore?: { hasMore: boolean; loading: boolean; onLoad: () => void };
 }
 
 // Games list on the left; the selected game's score hero and tabbed content on the right.
@@ -37,6 +40,7 @@ export default function GamesBrowser<T extends string>({
   loading = false,
   headerAction,
   emptyText = "No games here yet.",
+  loadMore,
 }: GamesBrowserProps<T>) {
   const [listTab, setListTab] = useState<ListTab>("All Games");
   const [selectedId, setSelectedId] = useState("");
@@ -51,6 +55,15 @@ export default function GamesBrowser<T extends string>({
   );
   const selected = allGames.find((g) => g.id === selectedId) ?? games[0] ?? allGames[0];
 
+  // The tabs sort the games read so far. A tab with none yet keeps reading the next page (behind the loader)
+  // until it finds one or the games run out; "Load more" only shows under a tab that has games.
+  const searching = !loading && games.length === 0 && !!loadMore?.hasMore;
+  const busy = loadMore?.loading ?? false;
+  const onLoad = loadMore?.onLoad;
+  useEffect(() => {
+    if (searching && !busy) onLoad?.();
+  }, [searching, busy, onLoad]);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -62,18 +75,28 @@ export default function GamesBrowser<T extends string>({
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,480px)_minmax(0,1fr)] gap-4 items-start">
-        {/* Games list */}
-        <div className="flex flex-col gap-4">
+        {/* Games list. On wide screens it scrolls on its own and stays in view while the page scrolls the
+            selected game's content, so picking another game never means scrolling back up. */}
+        <div className="flex flex-col gap-4 xl:sticky xl:top-4">
           <Tabs tabs={LIST_TABS} active={listTab} onChange={setListTab} className="mt-6" />
-          <div className="flex flex-col gap-3">
-            {loading ? (
+          <div className="flex flex-col gap-3 xl:max-h-[calc(100dvh-200px)] xl:overflow-y-auto xl:pr-2 xl:pb-2">
+            {loading || searching ? (
               <Loader className="m-6" />
             ) : (
               games.map((g) => (
                 <GameCard key={g.id} game={g} selected={g.id === selected?.id} onSelect={() => setSelectedId(g.id)} />
               ))
             )}
-            {!loading && games.length === 0 && <p className="py-10 text-center text-sm text-white/50">{emptyText}</p>}
+            {!loading && !searching && games.length === 0 && <p className="py-10 text-center text-sm text-white/50">{emptyText}</p>}
+            {!loading && games.length > 0 && loadMore?.hasMore && (
+              <Button
+                label={loadMore.loading ? "Loading…" : "Load more"}
+                variant="secondary"
+                onClick={loadMore.onLoad}
+                disabled={loadMore.loading}
+                className="self-center"
+              />
+            )}
           </div>
         </div>
 

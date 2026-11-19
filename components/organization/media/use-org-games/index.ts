@@ -16,6 +16,20 @@ const GAME_LENGTH_MS = 3 * 60 * 60 * 1000;
 // The schedules API caps a page at 100.
 const GAMES_LIMIT = 100;
 
+// The pages of one list read so far (`key` says which list), and whether the API has more.
+interface Paged {
+  key: string;
+  pages: MediaGame[][];
+  isLast: boolean;
+}
+
+// Adds the next page to a list, or starts it over when the list changed.
+const addPage = (prev: Paged | null, key: string, games: MediaGame[], isLast: boolean): Paged => ({
+  key,
+  pages: [...(prev?.key === key ? prev.pages : []), games],
+  isLast,
+});
+
 const team = (name: string, logo: string | null | undefined): MediaTeam => ({ name, shortName: name, logo: logo || FALLBACK_CREST });
 
 // The score in a result: "56-30" is home-away; "W 56-30" / "L 7-37" put the school's score first.
@@ -95,42 +109,55 @@ const toTournamentGame = (g: TournamentScheduleGame, orgLogo: string): MediaGame
 //   by start time.
 // `games` is undefined for any other organisation kind (the page then shows its sample games).
 // `teamNames`: a school game also carries its two teams' names (`teamNames`, from GET /schedules/games).
-export function useOrgGames({ teamNames = false }: { teamNames?: boolean } = {}) {
-  const { org } = useAuth();
+// `pageSize`: read the games that many at a time; `loadMore` asks for the next page while `hasMore`. Without
+// it, one page of up to 100 games is read.
+export function useOrgGames({ teamNames = false, pageSize = GAMES_LIMIT }: { teamNames?: boolean; pageSize?: number } = {}) {
+  const { org, isLoading: authLoading } = useAuth();
   const orgKind = orgKindOf(org);
   const isSchool = orgKind === "school";
   const isTournament = orgKind === "tournament";
-  const [schoolGames, setSchoolGames] = useState<MediaGame[] | null>(null);
   // Shared with every page's event picker.
   const { event, setEvent, noEvents } = useSelectedEvent();
-  const [eventGames, setEventGames] = useState<{ eventId: string; games: MediaGame[] } | null>(null);
   const eventId = event?.id ?? "";
 
-  const { savedSchool } = useSetup();
+  // The school's name and logo go on its games, so they're read first (no "My Team" before the real name).
+  const { savedSchool, isLoading: schoolLoading } = useSetup();
   const schoolName = savedSchool?.name || "My Team";
   const schoolLogo = savedSchool?.logoUrl;
+
+  // The pages read so far for one list (the school's, or one event's), and how many pages are wanted.
+  const schoolKey = `school:${schoolName}:${schoolLogo ?? ""}`;
+  const eventKey = `event:${eventId}:${schoolLogo ?? ""}`;
+  const listKey = isSchool ? schoolKey : eventKey;
+  const [schoolPages, setSchoolPages] = useState<Paged | null>(null);
+  const [eventPages, setEventPages] = useState<Paged | null>(null);
+  const [wanted, setWanted] = useState({ key: "", pages: 1 });
+  const wantedPages = wanted.key === listKey ? wanted.pages : 1;
+  const schoolHave = schoolPages?.key === schoolKey ? schoolPages.pages.length : 0;
+  const eventHave = eventPages?.key === eventKey ? eventPages.pages.length : 0;
+
   useEffect(() => {
-    if (!isSchool) return;
+    if (!isSchool || schoolLoading || schoolHave >= wantedPages) return;
     let cancelled = false;
     apiCall<ScheduleListResponse>({
       endpoint: routes.api.listSchedules,
       method: "GET",
-      data: { page: 1, limit: GAMES_LIMIT, sortOrder: "desc" },
+      data: { page: schoolHave + 1, limit: pageSize, sortOrder: "desc" },
     }).then((result) => {
       if (cancelled) return;
       const now = Date.now();
       const school = team(schoolName, schoolLogo);
-      setSchoolGames(
-        (result.success ? (result.data?.data?.[0]?.items ?? []) : [])
-          // Games only (no practices).
-          .filter((g) => g.activityType !== "PRACTICE")
-          .map((g) => toMediaGame(g, school, now))
-      );
+      const body = result.success ? result.data?.data?.[0] : undefined;
+      const games = (body?.items ?? [])
+        // Games only (no practices).
+        .filter((g) => g.activityType !== "PRACTICE")
+        .map((g) => toMediaGame(g, school, now));
+      setSchoolPages((prev) => addPage(prev, schoolKey, games, body?.pagination.isLast ?? true));
     });
     return () => {
       cancelled = true;
     };
-  }, [isSchool, schoolName, schoolLogo]);
+  }, [isSchool, schoolLoading, schoolKey, schoolName, schoolLogo, schoolHave, wantedPages, pageSize]);
 
   // Team names of the school's games by schedule id, read from GET /schedules/games (GET /schedules has none).
   // A side without a teamName (often the opponent) keeps its school name.
@@ -155,21 +182,34 @@ export function useOrgGames({ teamNames = false }: { teamNames?: boolean } = {})
   }, [isSchool, teamNames]);
 
   useEffect(() => {
-    if (!eventId) return;
+    if (!eventId || schoolLoading || eventHave >= wantedPages) return;
     let cancelled = false;
     apiCall<TournamentScheduleResponse>({
       endpoint: routes.api.exposureSchedules,
       method: "GET",
-      data: { eventId, page: 1, limit: GAMES_LIMIT },
+      data: { eventId, page: eventHave + 1, limit: pageSize },
     }).then((result) => {
       if (cancelled) return;
-      const games = (result.success ? (result.data?.data?.[0]?.items ?? []) : []).map((g) => toTournamentGame(g, schoolLogo || ""));
-      setEventGames({ eventId, games: games.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()) });
+      const body = result.success ? result.data?.data?.[0] : undefined;
+      const games = (body?.items ?? []).map((g) => toTournamentGame(g, schoolLogo || ""));
+      setEventPages((prev) => addPage(prev, eventKey, games, body?.pagination.isLast ?? true));
     });
     return () => {
       cancelled = true;
     };
-  }, [eventId, schoolLogo]);
+  }, [eventId, schoolLoading, eventKey, schoolLogo, eventHave, wantedPages, pageSize]);
+
+  const schoolGames = useMemo(
+    () => (schoolPages?.key === schoolKey ? schoolPages.pages.flat() : null),
+    [schoolPages, schoolKey]
+  );
+  const eventGames = useMemo(
+    () =>
+      eventPages?.key === eventKey
+        ? eventPages.pages.flat().sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+        : null,
+    [eventPages, eventKey]
+  );
 
   const namedSchoolGames = useMemo(
     () =>
@@ -180,14 +220,19 @@ export function useOrgGames({ teamNames = false }: { teamNames?: boolean } = {})
     [schoolGames, sideNames]
   );
 
-  const games = isSchool
-    ? namedSchoolGames
+  const games = isSchool ? namedSchoolGames : isTournament ? (eventGames ?? []) : undefined;
+  // Loading too while the sign-in is still read (the organisation's kind isn't known yet), so no page shows
+  // anything before its own games.
+  const loading = isSchool
+    ? schoolGames === null || (teamNames && sideNames === null)
     : isTournament
-      ? eventGames?.eventId === eventId
-        ? eventGames.games
-        : []
-      : undefined;
-  const loading = isSchool ? schoolGames === null || (teamNames && sideNames === null) : isTournament && !noEvents && (!eventId || eventGames?.eventId !== eventId);
+      ? !noEvents && (!eventId || eventGames === null)
+      : authLoading;
 
-  return { games, loading, isTournament, event, setEvent, noEvents };
+  const current = isSchool ? (schoolPages?.key === schoolKey ? schoolPages : null) : eventPages?.key === eventKey ? eventPages : null;
+  const hasMore = !!current && !current.isLast;
+  const loadingMore = !!current && current.pages.length < wantedPages;
+  const loadMore = () => setWanted({ key: listKey, pages: (current?.pages.length ?? 0) + 1 });
+
+  return { games, loading, isTournament, event, setEvent, noEvents, hasMore, loadingMore, loadMore };
 }

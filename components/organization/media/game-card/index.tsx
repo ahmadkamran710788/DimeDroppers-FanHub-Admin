@@ -41,8 +41,9 @@ function StatusPill({ game }: { game: MediaGame }) {
 
 // One game in the Media list: date, both teams, status and score.
 export default function GameCard({ game: listed, selected, onSelect }: GameCardProps) {
-  // A game's score comes from its scorekeeping when the list has none.
-  const game = useLiveSides(listed);
+  // A game's score comes from its scorekeeping when the list has none: the selected card shares the hero's
+  // read, the others make one small read each.
+  const game = useLiveSides(listed, selected);
   const hasScore = game.homeScore !== undefined && game.awayScore !== undefined;
   return (
     <button
