@@ -7,6 +7,8 @@ interface FramedLogoProps {
   // The saved file's size; only its shape is used here.
   frame: Size;
   view: LogoView;
+  // A colour filled around the logo, as in the saved file (a full-color logo's own flat background).
+  fill?: string | null;
   // The box's size, background, radius and border; its other side follows the frame's shape.
   className?: string;
   // Drawn over the logo, e.g. the icon's safe-zone guide.
@@ -14,11 +16,14 @@ interface FramedLogoProps {
 }
 
 // The logo inside its frame exactly as the saved file will have it (the same `logoRect` as the canvas export).
-export default function FramedLogo({ image, frame, view, className, children }: FramedLogoProps) {
+export default function FramedLogo({ image, frame, view, fill, className, children }: FramedLogoProps) {
   const r = logoRect(image, frame, view);
 
   return (
-    <div className={cn("relative overflow-hidden", className)} style={{ aspectRatio: `${frame.width} / ${frame.height}` }}>
+    <div
+      className={cn("relative overflow-hidden", className)}
+      style={{ aspectRatio: `${frame.width} / ${frame.height}`, backgroundColor: fill ?? undefined }}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element -- a local preview of the picked file, placed at computed percentages */}
       <img
         src={image.url}
