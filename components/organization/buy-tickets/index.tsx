@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { CalendarDays, ChevronDown, Plus } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
 import toast from "react-hot-toast";
 import BadgeStatCard, { STAT_TINTS, type BadgeStat } from "@/components/common/badge-stat-card";
 import Button from "@/components/common/button";
 import ConfirmModal from "@/components/common/confirm-modal";
+import OrgCrest from "@/components/common/org-crest";
 import FilterChips, { type FilterChipOption } from "@/components/common/filter-chips";
 import GenericTable, { type Column } from "@/components/common/generic-table";
 import Pagination from "@/components/common/pagination";
@@ -209,14 +210,8 @@ export default function BuyTicketsPage() {
       cls: "flex-1 min-w-[220px] py-5",
       cell: (g) => (
         <div className="flex items-center gap-3 min-w-0">
-          {g.opponentLogoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={g.opponentLogoUrl} alt="" className="size-10 shrink-0 rounded-full object-cover border border-white/30" />
-          ) : (
-            <span className="size-10 shrink-0 rounded-full bg-white/20 border border-white/30 flex items-center justify-center">
-              <CalendarDays className="size-5 text-white/60" strokeWidth={1.5} />
-            </span>
-          )}
+          {/* The opponent's logo, else the organisation's (as on the other pages), else the neutral crest. */}
+          <OrgCrest size={40} logoUrl={g.opponentLogoUrl} className="border border-white/30" />
           <div className="flex flex-col gap-1 min-w-0">
             <span className="text-sm font-semibold text-white truncate">{gameName(g)}</span>
             <span className="text-xs text-white/40 truncate">{[g.sports, g.level, knownGender(g.gender)].filter(Boolean).join(" · ") || g.title}</span>
