@@ -28,6 +28,8 @@ interface TextareaProps {
   // Hide the character counter (the limit still applies).
   showCounter?: boolean;
   disabled?: boolean;
+  // E.g. Enter to send in a chat composer.
+  onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
 }
 
 export default function Textarea({
@@ -48,6 +50,7 @@ export default function Textarea({
   fieldClassName,
   showCounter = true,
   disabled,
+  onKeyDown,
 }: TextareaProps) {
   const onLight = variant === "onLight";
   const counter = (
@@ -72,6 +75,7 @@ export default function Textarea({
         name={name}
         value={value}
         onChange={onChange}
+        onKeyDown={onKeyDown}
         placeholder={placeholder}
         maxLength={maxLength}
         rows={rows}

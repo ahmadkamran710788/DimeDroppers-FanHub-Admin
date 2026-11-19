@@ -33,6 +33,8 @@ export const routes = {
     inbox: "/inbox",
     inboxChat: (conversationId: string) => `/inbox?chat=${conversationId}`,
     fanhubAi: "/fanhub-ai",
+    // The organiser agent with one of its threads open.
+    fanhubAiThread: (threadId: string) => `/fanhub-ai?thread=${threadId}`,
     commandCenter: "/command-center",
     // Tournament: one event's divisions, venues, standings and brackets (event picked at the top).
     divisions: "/divisions",
@@ -342,6 +344,17 @@ export const routes = {
     sponsorAiReplyThread: (id: string) => `fanhub/org/sponsor-ai/threads/${id}/reply`,
     // POST: the agent answers the replies again, including one still unanswered.
     sponsorAiHandBackThread: (id: string) => `fanhub/org/sponsor-ai/threads/${id}/hand-back`,
+    // Organiser agent (FANHUB_ORGANISER_AGENT_FRONTEND.md): the org's own AI agent on the FanHub AI page.
+    // GET the on / off switch and the areas; PUT { enabled, disabledFamilies }.
+    organiserAgentSettings: "fanhub/org/organiser-agent/settings",
+    // GET the org's threads (only those with messages, newest first, up to 50); POST starts one.
+    organiserAgentSessions: "fanhub/org/organiser-agent/sessions",
+    // GET one thread with every message; DELETE removes it.
+    organiserAgentSession: (id: string) => `fanhub/org/organiser-agent/sessions/${id}`,
+    // POST { text, clientRequestId, optionId }: answers 202 at once; the reply comes on the socket.
+    organiserAgentMessages: (id: string) => `fanhub/org/organiser-agent/sessions/${id}/messages`,
+    // POST { decision: CONFIRM | CANCEL } for a change the agent previewed.
+    organiserAgentConfirmation: (token: string) => `fanhub/org/organiser-agent/confirmations/${encodeURIComponent(token)}`,
     // Call booking (FANHUB_SPONSOR_AI_CALENDAR_FRONTEND.md): GET the organisation's calendar, DELETE disconnects it.
     sponsorAiCalendar: "fanhub/org/sponsor-ai/calendar",
     // POST { provider }: the Google / Microsoft sign-in link that connects the calendar (works 10 minutes).
