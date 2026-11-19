@@ -49,6 +49,9 @@ export interface LogoRect {
 // The icon's important part goes in its central 80%, the backend's safe zone.
 export const ICON_SAFE_ZONE = 0.8;
 
+// How close to the standard box (a share of each side) still counts as at standard size, so it can be reached by hand.
+const STANDARD_TOLERANCE = 0.02;
+
 // A raster logo enlarged more than this may look blurry, so the editor says so.
 const BLURRY_ENLARGEMENT = 1.5;
 // The longest side an SVG is drawn at, so it stays sharp on the canvas.
@@ -103,6 +106,34 @@ export function clampView(view: LogoView, image: Size, frame: Size): LogoView {
     ...view,
     x: clamp(view.x, Math.max(0, 0.5 + r.width / 2 - KEEP_VISIBLE)),
     y: clamp(view.y, Math.max(0, 0.5 + r.height / 2 - KEEP_VISIBLE)),
+  };
+}
+
+// The logo itself (margins left out) inside the frame, as shares of the frame's width and height.
+export function contentRect(image: LogoImage, frame: Size, view: LogoView): LogoRect {
+  const r = logoRect(image, frame, view);
+  const { content } = image;
+  return {
+    left: r.left + (content.left / image.width) * r.width,
+    top: r.top + (content.top / image.height) * r.height,
+    width: (content.width / image.width) * r.width,
+    height: (content.height / image.height) * r.height,
+  };
+}
+
+// Whether the logo is at the standard size: inside the standard box (the frame, or its centred `inset` share for
+// the icon's safe zone) with nothing cut off, and reaching it edge to edge on at least one side. `size` is the
+// logo's and `target` the box's, in the saved file's pixels (`frame` is the kind's recommended size).
+export function standardCheck(image: LogoImage, frame: Size, view: LogoView, inset = 1) {
+  const c = contentRect(image, frame, view);
+  const edge = (1 - inset) / 2;
+  const t = STANDARD_TOLERANCE;
+  const inside = c.left >= edge - t && c.top >= edge - t && c.left + c.width <= 1 - edge + t && c.top + c.height <= 1 - edge + t;
+  const reaches = c.width >= inset - t || c.height >= inset - t;
+  return {
+    size: { width: Math.round(c.width * frame.width), height: Math.round(c.height * frame.height) },
+    target: { width: Math.round(inset * frame.width), height: Math.round(inset * frame.height) },
+    matched: inside && reaches,
   };
 }
 
