@@ -18,6 +18,9 @@ export const FRAME_BACKGROUND: Record<LogoVariant, string> = {
   ICON: "bg-white",
 };
 
-// The zoom sliders' range, in % of the logo just fitting the frame.
+// The zoom sliders' range, in % of the logo at the standard size.
 export const MIN_ZOOM = 10;
 export const MAX_ZOOM = 400;
+
+// A zoom this close to 100% (the standard size) snaps to it.
+export const SNAP_RANGE = 3;

@@ -30,7 +30,8 @@ export interface LogoKind {
   usage: string;
   // The picked logo's id; null = the default of the kind.
   picked: string | null;
-  // "Default" first (id null), then the sponsor's logos of this kind.
+  // The sponsor's logos of this kind, one card each. The default comes first with id null: picking it follows the
+  // default, so the slot changes with it; any other logo is pinned to the slot.
   options: { id: string | null; name: string; sub: string; url: string | null }[];
   // No logo of this kind at all: fans see the brand name.
   missing: boolean;
@@ -121,12 +122,11 @@ export default function SlotEditor({
       <div className={NOTE}>
         <Info className="size-[18px] flex-none mt-px text-[#c7d2fe]" strokeWidth={1.8} aria-hidden="true" />
         <span>
-          Simple BPA shows only your logo in this slot. Pick a logo above, or keep Default to follow your default logo
-          on{" "}
+          Simple BPA shows only your logo in this slot. &ldquo;Your default&rdquo; follows the default logo on{" "}
           <Link href={routes.ui.sponsor.brandAssets} className={HINT_LINK}>
             Brand Assets
           </Link>
-          .
+          , so this slot changes when your default does. Pick another logo to keep it here.
         </span>
       </div>
 
@@ -182,7 +182,9 @@ function LogoPicker({ kind, brandName, logos, disabled, onPick }: LogoPickerProp
   return (
     <fieldset disabled={disabled} className="flex flex-col gap-[10px] min-w-0">
       <legend className={LEGEND}>LOGO ON THIS SCREEN · {kind.label.toUpperCase()}</legend>
-      <span className={cn(HINT, "-mt-1")}>{kind.usage}</span>
+      <span className={cn(HINT, "-mt-1")}>
+        {kind.usage} · this screen uses your {kind.label.toLowerCase()} only, so other logo types aren&apos;t listed
+      </span>
 
       {kind.missing ? (
         <div role="alert" className="flex flex-wrap items-center gap-3 rounded-[10px] border border-[#854d0e] bg-[#2b1d05] px-[14px] py-3">
