@@ -13,14 +13,19 @@ interface PhysicalAddOnsProps {
   onAddToCart?: (physicalAsset: SponsorPhysicalAsset) => void;
   // Already in the sponsor's cart: its Add to cart waits.
   isInCart?: (physicalAsset: SponsorPhysicalAsset) => boolean;
-  // The sponsor already has it active: one disabled "Active" in place of both actions.
+  // The sponsor already holds a spot: one disabled "Active" in place of both actions.
   isActive?: (physicalAsset: SponsorPhysicalAsset) => boolean;
-  // Active for some of the stores but not all ("Active for 2 of 3 stores"); undefined otherwise.
-  activeNote?: (physicalAsset: SponsorPhysicalAsset) => string | undefined;
+  // The sponsor's own spot is still being paid: one disabled "Payment pending".
+  isPending?: (physicalAsset: SponsorPhysicalAsset) => boolean;
 }
 
+// "2 of 3 spots left", "1 of 1 spot left", "Sold out".
+const spotsText = ({ spotsLeft, maxSponsors }: SponsorPhysicalAsset) =>
+  spotsLeft <= 0 ? "Sold out" : `${spotsLeft} of ${maxSponsors} ${maxSponsors === 1 ? "spot" : "spots"} left`;
+
 // The organization's physical assets (banners, scoreboard wraps…), sold on their own under the packages:
-// each with its size, price (its value × the same teams or games), Add to cart and Activate.
+// each with its size, its sponsor spots (the organisation sets how many sponsors can buy it, one spot each),
+// price (its value × the same teams or games), Add to cart and Activate. A full one shows as Sold out.
 export default function PhysicalAddOns({
   orgName,
   physicalAssets,
@@ -28,7 +33,7 @@ export default function PhysicalAddOns({
   onAddToCart,
   isInCart,
   isActive,
-  activeNote,
+  isPending,
 }: PhysicalAddOnsProps) {
   return (
     <InsetSection
@@ -38,69 +43,82 @@ export default function PhysicalAddOns({
       {physicalAssets.length === 0 ? (
         <p className="text-sm text-[#a8a8a8]">No physical assets offered.</p>
       ) : (
-        physicalAssets.map((x) => (
-          <div
-            key={x.activationId}
-            className="w-full min-h-16 px-2.5 sm:px-3 py-[10px] rounded-[10px] border border-[#222] flex flex-wrap items-center gap-2.5 sm:gap-[14px] text-white"
-          >
-            {x.size && (
-              <span className="w-16 h-10 flex-none rounded-[6px] border-[1.5px] border-dashed border-[#555] flex items-center justify-center text-[11px] text-center text-[#a8a8a8]">
-                {x.size}
-              </span>
-            )}
-            <span className="flex-auto min-w-0">
-              <span className="flex flex-wrap items-center gap-2">
-                <span className="text-[15px] font-semibold">{x.name}</span>
-                {/* Its category, set by the organization (none for an asset made before categories). */}
-                {x.assetCategory && (
-                  <span className="text-[11px] font-bold tracking-[0.5px] text-[#a3e3a5] border border-[#2f4a30] rounded-full px-2 py-0.5">
-                    {x.assetCategory.label}
+        physicalAssets.map((x) => {
+          const active = !!isActive?.(x);
+          const pending = !active && !!isPending?.(x);
+          // Every spot taken by other sponsors (the sponsor's own spot shows as Active or Payment pending).
+          const soldOut = !active && !pending && x.unavailableReason === "FULL";
+          // The one status that replaces both actions.
+          const status = active ? "Active" : pending ? "Payment pending" : soldOut ? "Sold out" : null;
+          return (
+            <div
+              key={x.activationId}
+              className="w-full min-h-16 px-2.5 sm:px-3 py-[10px] rounded-[10px] border border-[#222] flex flex-wrap items-center gap-2.5 sm:gap-[14px] text-white"
+            >
+              {x.size && (
+                <span className="w-16 h-10 flex-none rounded-[6px] border-[1.5px] border-dashed border-[#555] flex items-center justify-center text-[11px] text-center text-[#a8a8a8]">
+                  {x.size}
+                </span>
+              )}
+              <span className="flex-auto min-w-0">
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="text-[15px] font-semibold">{x.name}</span>
+                  {/* Its category, set by the organization (none for an asset made before categories). */}
+                  {x.assetCategory && (
+                    <span className="text-[11px] font-bold tracking-[0.5px] text-[#a3e3a5] border border-[#2f4a30] rounded-full px-2 py-0.5">
+                      {x.assetCategory.label}
+                    </span>
+                  )}
+                  <span
+                    className={cn(
+                      "text-[11px] font-bold tracking-[0.5px] rounded-full px-2 py-0.5 border",
+                      x.spotsLeft > 0 ? "text-[#c4b5fd] border-[#3b2f6b]" : "text-[#a8a8a8] border-[#333]"
+                    )}
+                  >
+                    {spotsText(x)}
+                  </span>
+                </span>
+                {/* Only its total is shown, not how it's built (value × teams or games). */}
+                {x.description && (
+                  <span className="block text-[13px] text-[#a8a8a8] mt-[2px]">{x.description}</span>
+                )}
+                {!x.isAvailable && x.unavailableMessage && !active && !pending && (
+                  <span className={cn("block text-[13px] mt-[2px]", soldOut ? "text-[#a8a8a8]" : "text-[#f0c36a]")}>
+                    {x.unavailableMessage}
                   </span>
                 )}
               </span>
-              {/* Only its total is shown, not how it's built (value × teams or games). */}
-              {x.description && (
-                <span className="block text-[13px] text-[#a8a8a8] mt-[2px]">{x.description}</span>
+              <span className="text-[15px] font-bold whitespace-nowrap">
+                {formatCents(x.totalCents, x.currency)}
+              </span>
+              {status ? (
+                <Button label={status} disabled className={cn(OUTLINE_BUTTON, "h-10 px-4 rounded-[10px] text-sm")} />
+              ) : (
+                <>
+                  {onAddToCart && (
+                    <Button
+                      label={isInCart?.(x) ? "In cart" : "Add to cart"}
+                      onClick={() => onAddToCart(x)}
+                      disabled={!x.isAvailable || !!isInCart?.(x)}
+                      className={cn(OUTLINE_BUTTON, "h-10 px-4 rounded-[10px] text-sm")}
+                    />
+                  )}
+                  {onActivate && (
+                    <Button
+                      label="Activate"
+                      onClick={() => onActivate(x)}
+                      disabled={!x.isAvailable}
+                      className={cn(
+                        x.isAvailable ? PRIMARY_BUTTON : OUTLINE_BUTTON,
+                        "h-10 px-4 rounded-[10px] text-sm",
+                      )}
+                    />
+                  )}
+                </>
               )}
-              {!x.isAvailable && x.unavailableMessage && (
-                <span className="block text-[13px] text-[#f0c36a] mt-[2px]">
-                  {x.unavailableMessage}
-                </span>
-              )}
-              {!isActive?.(x) && activeNote?.(x) && (
-                <span className="block text-[13px] text-[#a3e3a5] mt-[2px]">{activeNote(x)}</span>
-              )}
-            </span>
-            <span className="text-[15px] font-bold whitespace-nowrap">
-              {formatCents(x.totalCents, x.currency)}
-            </span>
-            {isActive?.(x) ? (
-              <Button label="Active" disabled className={cn(OUTLINE_BUTTON, "h-10 px-4 rounded-[10px] text-sm")} />
-            ) : (
-              <>
-                {onAddToCart && (
-                  <Button
-                    label={isInCart?.(x) ? "In cart" : "Add to cart"}
-                    onClick={() => onAddToCart(x)}
-                    disabled={!x.isAvailable || !!isInCart?.(x)}
-                    className={cn(OUTLINE_BUTTON, "h-10 px-4 rounded-[10px] text-sm")}
-                  />
-                )}
-                {onActivate && (
-                  <Button
-                    label="Activate"
-                    onClick={() => onActivate(x)}
-                    disabled={!x.isAvailable}
-                    className={cn(
-                      x.isAvailable ? PRIMARY_BUTTON : OUTLINE_BUTTON,
-                      "h-10 px-4 rounded-[10px] text-sm",
-                    )}
-                  />
-                )}
-              </>
-            )}
-          </div>
-        ))
+            </div>
+          );
+        })
       )}
     </InsetSection>
   );

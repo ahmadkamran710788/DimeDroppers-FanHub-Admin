@@ -46,6 +46,7 @@ const EVENT_REASONS: Record<UnavailableReason, string> = {
   EVENT_ENDED: "Event ended",
   TOURNAMENT_INCOMPLETE: "Format not set yet",
   TAKEN: "Taken by a sponsor",
+  FULL: "All sponsor spots taken",
 };
 
 const fmtDate = (iso: string | null) =>
@@ -199,26 +200,12 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
   // The stores this package or asset is already active for here; undefined when it isn't active.
   const takenFor = (choice: Choice) => activeMap?.get(cartItemKey(target(choice, 0)));
 
-  // Active, with no store left to add it for: one disabled "Active". A package belongs to one sponsor, its stores
-  // picked in that one activation, so it's never added for more stores; a physical asset can be.
-  const isActive = (choice: Choice) => {
-    const taken = takenFor(choice);
-    if (!taken) return false;
-    return !!choice.tier || nearStores.length === 0 || nearStores.every((s) => taken.has(s.id));
-  };
+  // Active: one disabled "Active". A package belongs to one sponsor and a physical asset gives each sponsor one
+  // spot, with the stores picked in that one activation, so neither is bought again here, not even for more stores.
+  const isActive = (choice: Choice) => !!takenFor(choice);
 
-  // The sponsor's own activation of this package is still being paid: it holds the package already.
+  // The sponsor's own activation is still being paid: it holds the package or spot already.
   const isPending = (choice: Choice) => !!pendingMap?.has(cartItemKey(target(choice, 0)));
-
-  // Active, but still open for some of the near stores.
-  const activeNote = (choice: Choice) => {
-    const taken = takenFor(choice);
-    if (!taken || isActive(choice)) return undefined;
-    const covered = nearStores.filter((s) => taken.has(s.id)).length;
-    return covered
-      ? `Active for ${covered} of ${nearStores.length} stores`
-      : "Already active here; you can add it for these stores";
-  };
 
   // The near stores that don't have it yet.
   const freeStores = (choice: Choice) => {
@@ -308,7 +295,8 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
     }
     if (r.status !== 409) return false;
     // A store that got it meanwhile: reload what's active, and keep the confirm open with that store taken.
-    // Any other 409 is a price change: reload and close, so the new price shows before asking again.
+    // Any other 409 (the package taken, the asset's spots full or one taken at the same moment, one the sponsor
+    // already has, or a price change): reload and close, so the card shows why before asking again.
     setReloads((n) => n + 1);
     return !STORE_TAKEN.test(r.message ?? "");
   };
@@ -401,7 +389,6 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
                   inCart={cart.has(target({ tier: p.tier }, p.totalCents))}
                   active={isActive({ tier: p.tier })}
                   pending={isPending({ tier: p.tier })}
-                  activeNote={activeNote({ tier: p.tier })}
                   basisCount={basisCount(view.priceBasis)}
                 />
               ))}
@@ -416,7 +403,7 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
             }
             isInCart={(x) => cart.has(target({ physicalAssetId: x.activationId }, x.totalCents))}
             isActive={(x) => isActive({ physicalAssetId: x.activationId })}
-            activeNote={(x) => activeNote({ physicalAssetId: x.activationId })}
+            isPending={(x) => isPending({ physicalAssetId: x.activationId })}
           />
         </>
       )}

@@ -17,8 +17,6 @@ interface PackageCardProps {
   active?: boolean;
   // The sponsor's own activation of it is still being paid (it holds the package): one disabled "Payment pending".
   pending?: boolean;
-  // Active for some of the stores but not all ("Active for 2 of 3 stores"): shown above the actions.
-  activeNote?: string;
   // Each placement's own value: shown to the organisation, hidden from sponsors (they see the total).
   showPlacementValues?: boolean;
   // What the price is counted for, under it: "2 games", "5 teams".
@@ -39,7 +37,6 @@ export default function PackageCard({
   inCart = false,
   active = false,
   pending = false,
-  activeNote,
   showPlacementValues = false,
   basisCount,
   recommended = false,
@@ -115,7 +112,6 @@ export default function PackageCard({
         {!pkg.isAvailable && pkg.unavailableMessage && !active && !pending && (
           <p className={cn("text-[13px]", sold ? "text-[#a8a8a8]" : "text-[#f0c36a]")}>{pkg.unavailableMessage}</p>
         )}
-        {!active && activeNote && <p className="text-[13px] text-[#a3e3a5]">{activeNote}</p>}
         {status ? (
           <Button
             label={status}
