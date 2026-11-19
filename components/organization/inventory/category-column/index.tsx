@@ -22,6 +22,8 @@ interface CategoryColumnProps {
   onToggle: (rowKey: string) => void;
   onValueChange: (rowKey: string, value: string) => void;
   onSizeChange: (rowKey: string, size: string) => void;
+  // A physical asset's Sponsor spots (Exclusivity only).
+  onMaxSponsorsChange?: (rowKey: string, maxSponsors: string) => void;
   onSelectAll: () => void;
   onClearAll: () => void;
   onReorder: (fromKey: string, toKey: string) => void;
@@ -46,6 +48,7 @@ export default function CategoryColumn({
   onToggle,
   onValueChange,
   onSizeChange,
+  onMaxSponsorsChange,
   onSelectAll,
   onClearAll,
   onReorder,
@@ -98,6 +101,7 @@ export default function CategoryColumn({
             onToggle={() => onToggle(slot.rowKey)}
             onValueChange={(value) => onValueChange(slot.rowKey, value)}
             onSizeChange={(size) => onSizeChange(slot.rowKey, size)}
+            onMaxSponsorsChange={onMaxSponsorsChange && ((spots) => onMaxSponsorsChange(slot.rowKey, spots))}
             assetCategories={assetCategories}
             onAssetCategoryChange={onAssetCategoryChange && ((code) => onAssetCategoryChange(slot.rowKey, code))}
             onRemove={onRemove && slot.editable ? () => onRemove(slot.rowKey) : undefined}

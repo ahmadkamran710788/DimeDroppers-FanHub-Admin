@@ -146,6 +146,7 @@ export default function InventoryPage() {
       onToggle={(rowKey) => inv.toggle(category, rowKey)}
       onValueChange={(rowKey, value) => inv.setValue(category, rowKey, value)}
       onSizeChange={(rowKey, size) => inv.setSize(category, rowKey, size)}
+      onMaxSponsorsChange={(rowKey, spots) => inv.setMaxSponsors(category, rowKey, spots)}
       onSelectAll={() => inv.selectAll(category)}
       onClearAll={() => inv.clearAll(category)}
       onReorder={(from, to) => inv.reorder(category, from, to)}

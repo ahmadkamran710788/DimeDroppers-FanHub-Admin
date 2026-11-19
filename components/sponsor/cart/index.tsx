@@ -89,10 +89,9 @@ export default function SponsorCart({ returnedPayment }: SponsorCartProps) {
   const quote = current?.quote;
   const activeMap = activeLoaded?.key === quoteKey ? activeLoaded.active : null;
   const quoting = items.length > 0 && (!current || !activeMap);
-  // A package belongs to one sponsor, so one the sponsor has is never bought again, not even for other stores; a
-  // physical asset can be, for stores that don't have it.
-  const isAlreadyActive = (line: (typeof lines)[number]) =>
-    (!!line.item.tier || !line.item.sponsorLocationIds?.length) && !!activeMap?.has(line.key);
+  // A package belongs to one sponsor and a physical asset gives each sponsor one spot, so one the sponsor has is
+  // never bought again, not even for other stores.
+  const isAlreadyActive = (line: (typeof lines)[number]) => !!activeMap?.has(line.key);
   const alreadyActiveCount = lines.filter(isAlreadyActive).length;
   // Lines with stores to choose from but none ticked: an activation is always for at least one store.
   const needsStore = (line: (typeof lines)[number]) => !!line.stores && !line.item.sponsorLocationIds?.length;

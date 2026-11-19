@@ -23,6 +23,7 @@ export interface SlotInitial {
   value: string;
   size: string;
   assetCategory: string;
+  maxSponsors: string;
 }
 
 export interface FormSlot {
@@ -52,6 +53,9 @@ export interface FormSlot {
   size: string;
   // A physical asset's category code; "" for none (one made before categories, until the org picks one).
   assetCategory: string;
+  // A physical asset's "Sponsor spots" (how many sponsors can buy it), as typed; "" on every other slot. Every
+  // physical asset has it, Dime's catalogue ones too.
+  maxSponsors: string;
   initial: SlotInitial;
   placements: PlacementInput[];
 }
@@ -74,6 +78,7 @@ const fromView = (a: InventoryActivation, offered: Set<string>): FormSlot => {
     value: editable ? String(a.value) : "",
     size: a.size ?? "",
     assetCategory: a.assetCategory?.code ?? "",
+    maxSponsors: a.isEditable ? String(a.maxSponsors ?? 1) : "",
   };
   return {
     rowKey: catalogKey ? catalogRowKey(catalogKey) : `custom:${a.id}`,
@@ -137,15 +142,17 @@ export function buildForm(
 }
 
 // An added exclusivity always sends its value and size (both are required) and its category once it has one
-// (a new one must; an older one without stays without); the form checks them before a save.
-const customFields = (slot: FormSlot): Pick<ActivationInput, "value" | "size" | "assetCategory"> =>
-  slot.editable
-    ? {
-        value: Number(slot.value.trim()),
-        size: slot.size.trim(),
-        ...(slot.assetCategory && { assetCategory: slot.assetCategory }),
-      }
-    : {};
+// (a new one must; an older one without stays without). Every physical asset sends its Sponsor spots: the API
+// needs them on a first save (a catalogue one too) and keeps the same number otherwise. The form checks them
+// before a save.
+const customFields = (slot: FormSlot): Pick<ActivationInput, "value" | "size" | "assetCategory" | "maxSponsors"> => ({
+  ...(slot.editable && {
+    value: Number(slot.value.trim()),
+    size: slot.size.trim(),
+    ...(slot.assetCategory && { assetCategory: slot.assetCategory }),
+  }),
+  ...(slot.exclusive && slot.maxSponsors.trim() && { maxSponsors: Number(slot.maxSponsors.trim()) }),
+});
 
 // A tournament event's format for the save (sent whenever set).
 export interface TournamentPicks {
@@ -197,6 +204,7 @@ export interface NewAssetFields {
   value: string;
   size: string;
   assetCategory: string;
+  maxSponsors: string;
 }
 
 // A new exclusivity, switched on, waiting for the next save to get its id.
@@ -217,8 +225,9 @@ export function newExclusivity(fields: NewAssetFields, n: number): FormSlot {
     value,
     size: fields.size.trim(),
     assetCategory: fields.assetCategory,
+    maxSponsors: fields.maxSponsors.trim(),
     // Unsaved, so everything counts as changed.
-    initial: { enabled: false, value: "", size: "", assetCategory: "" },
+    initial: { enabled: false, value: "", size: "", assetCategory: "", maxSponsors: "" },
     placements: [],
   };
 }

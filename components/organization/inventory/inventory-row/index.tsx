@@ -29,6 +29,8 @@ interface InventoryRowProps {
   onToggle: () => void;
   onValueChange: (value: string) => void;
   onSizeChange: (size: string) => void;
+  // A physical asset's Sponsor spots (catalogue ones too).
+  onMaxSponsorsChange?: (maxSponsors: string) => void;
   // The physical asset categories (labels for the read-only row, options while editing).
   assetCategories: OptionView[];
   onAssetCategoryChange?: (code: string) => void;
@@ -54,7 +56,8 @@ function Detail({ label, value }: { label: string; value: string }) {
 
 // One slot in a category card: switch (shown to sponsors or not), name and description, its pills or
 // Dime's value and size, and a drag handle. An exclusivity the org added takes its own category, value and
-// size (set while it's switched on) and can be removed.
+// size (set while it's switched on) and can be removed. Every physical asset takes its Sponsor spots: how many
+// sponsors can buy it (set while it's switched on).
 export default function InventoryRow({
   slot,
   layout,
@@ -62,6 +65,7 @@ export default function InventoryRow({
   onToggle,
   onValueChange,
   onSizeChange,
+  onMaxSponsorsChange,
   assetCategories,
   onAssetCategoryChange,
   onRemove,
@@ -80,6 +84,27 @@ export default function InventoryRow({
   // Exclusivity rows show the value (and size) on the right; the Custom Banner swaps it for its inputs
   // while it's switched on.
   const showValue = slot.exclusive && !(slot.editable && slot.enabled);
+  // Every switched-on physical asset edits its Sponsor spots; switched off, they show read-only.
+  const editingSpots = slot.exclusive && slot.enabled;
+  const fieldLabel = "text-xs font-normal text-white/70";
+  const spotsInput = (
+    <Input
+      variant="dark"
+      type="number"
+      inputMode="numeric"
+      label="Sponsor spots"
+      labelClassName={fieldLabel}
+      name={`spots-${slot.rowKey}`}
+      placeholder="e.g. 3"
+      value={slot.maxSponsors}
+      onChange={(e) => onMaxSponsorsChange?.(e.target.value)}
+      error={errors?.maxSponsors}
+      hint="How many sponsors can buy this asset"
+      hintClassName="text-white/60"
+      inputClassName="h-10 text-sm px-3"
+    />
+  );
+  const rowError = errors?.value ?? errors?.assetCategory ?? errors?.maxSponsors;
 
   return (
     <div {...drag} className={cn("flex flex-col gap-3 transition-opacity", dragging && "opacity-50")}>
@@ -96,6 +121,7 @@ export default function InventoryRow({
             {categoryLabel && <Detail label="Category" value={categoryLabel} />}
             <Detail label="Value" value={formatMoney(slot.savedValue)} />
             {slot.size && <Detail label="Size" value={slot.size} />}
+            {!editingSpots && slot.maxSponsors && <Detail label="Spots" value={slot.maxSponsors} />}
           </span>
         )}
         {onRemove && (
@@ -156,11 +182,15 @@ export default function InventoryRow({
             maxLength={MAX_SIZE_LENGTH}
             inputClassName="h-10 text-sm px-3"
           />
+          {spotsInput}
+        </div>
+      ) : editingSpots ? (
+        // Dime's catalogue asset: its value and size are Dime's, but the org sets its Sponsor spots.
+        <div className="pl-14 grid grid-cols-1 sm:grid-cols-2 gap-3" draggable onDragStart={(e) => e.preventDefault()}>
+          {spotsInput}
         </div>
       ) : (
-        (errors?.value || errors?.assetCategory) && (
-          <p className="pl-14 text-sm text-error">{errors.value ?? errors.assetCategory}</p>
-        )
+        rowError && <p className="pl-14 text-sm text-error">{rowError}</p>
       )}
     </div>
   );

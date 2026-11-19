@@ -12,7 +12,7 @@ import {
   type NewAssetFields,
   type TournamentPicks,
 } from "@/components/organization/inventory/helpers";
-import { customSlotSchema } from "@/components/organization/inventory/schema";
+import { customSlotSchema, spotsSchema } from "@/components/organization/inventory/schema";
 import { backendFetch, forceSignOut } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type {
@@ -33,12 +33,12 @@ interface ApiResult<T> {
   error?: ActivationApiError;
 }
 
-export type SlotField = "value" | "size" | "assetCategory";
+export type SlotField = "value" | "size" | "assetCategory" | "maxSponsors";
 
 // A new physical asset saved without a category: the API answers 400 with this (and no data.errors).
 const CATEGORY_REQUIRED = /^Choose a category for the physical asset: (.+)$/;
 
-// Problems with a slot's value, size or category, keyed by row.
+// Problems with a slot's value, size, category or Sponsor spots, keyed by row.
 export type RowErrors = Record<string, Partial<Record<SlotField, string>>>;
 
 const NETWORK_ERROR = "Please check your network and try again.";
@@ -167,6 +167,10 @@ export function useInventory(eventId: string | null) {
   const setAssetCategory = (category: ActivationCategory, rowKey: string, assetCategory: string) =>
     updateSlot(category, rowKey, (s) => (s.editable ? { ...s, assetCategory } : s));
 
+  // Sponsor spots: on every physical asset, Dime's catalogue ones as well as the org's own.
+  const setMaxSponsors = (category: ActivationCategory, rowKey: string, maxSponsors: string) =>
+    updateSlot(category, rowKey, (s) => (s.exclusive ? { ...s, maxSponsors } : s));
+
   const selectAll = (category: ActivationCategory) =>
     updateColumn(category, (slots) => slots.map((s) => ({ ...s, enabled: true })));
 
@@ -221,17 +225,20 @@ export function useInventory(eventId: string | null) {
   // ---- Save ----
 
   // Every exclusivity the org added needs a whole-dollar value and a size, and a new one a category (older
-  // ones without may stay without).
+  // ones without may stay without). Every physical asset needs its Sponsor spots (1 – 100).
   const findFieldErrors = async (f: InventoryForm) => {
     const found: RowErrors = {};
     const messages: string[] = [];
     for (const slot of CATEGORY_ORDER.flatMap((c) => f.columns[c])) {
-      if (!slot.editable) continue;
-      const errors = await validateForm(customSlotSchema, { value: slot.value, size: slot.size });
-      const assetCategory = !slot.id && !slot.assetCategory ? "Choose a category" : undefined;
-      if (!errors.value && !errors.size && !assetCategory) continue;
-      found[slot.rowKey] = { value: errors.value, size: errors.size, assetCategory };
-      messages.push(`${slot.name}: ${errors.value ?? errors.size ?? assetCategory}`);
+      if (!slot.exclusive) continue;
+      const errors: Record<string, string> = slot.editable
+        ? await validateForm(customSlotSchema, { value: slot.value, size: slot.size })
+        : {};
+      const spots = await validateForm(spotsSchema, { maxSponsors: slot.maxSponsors });
+      const assetCategory = slot.editable && !slot.id && !slot.assetCategory ? "Choose a category" : undefined;
+      if (!errors.value && !errors.size && !assetCategory && !spots.maxSponsors) continue;
+      found[slot.rowKey] = { value: errors.value, size: errors.size, assetCategory, maxSponsors: spots.maxSponsors };
+      messages.push(`${slot.name}: ${errors.value ?? errors.size ?? assetCategory ?? spots.maxSponsors}`);
     }
     return { found, messages };
   };
@@ -242,7 +249,7 @@ export function useInventory(eventId: string | null) {
       const [root, index, field] = path.split(".");
       const rowKey = root === "activations" ? indexMap[Number(index)] : undefined;
       if (!rowKey) continue;
-      const key: SlotField = field === "size" || field === "assetCategory" ? field : "value";
+      const key: SlotField = field === "size" || field === "assetCategory" || field === "maxSponsors" ? field : "value";
       found[rowKey] = { ...found[rowKey], [key]: found[rowKey]?.[key] ?? message };
     }
     setRowErrors(found);
@@ -334,6 +341,7 @@ export function useInventory(eventId: string | null) {
     setValue,
     setSize,
     setAssetCategory,
+    setMaxSponsors,
     assetCategories: loaded?.assetCategories ?? [],
     selectAll,
     clearAll,

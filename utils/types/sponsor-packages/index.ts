@@ -10,6 +10,7 @@ export type PriceBasis = "TEAMS" | "GAMES";
 export type PackageActivationStatus = "ACTIVE" | "CANCELLED" | "EXPIRED" | "PENDING_PAYMENT" | "PAYMENT_FAILED";
 // TAKEN: one sponsor holds each package per organisation (per event for a tournament), and someone does: another
 // sponsor or the caller, the listing doesn't say which (the caller's own shows under GET /activations).
+// FULL: every sponsor spot of a physical asset is taken (the organisation sets how many).
 export type UnavailableReason =
   | "NO_SLOTS"
   | "NO_TEAMS"
@@ -17,7 +18,8 @@ export type UnavailableReason =
   | "NO_UPCOMING_GAMES"
   | "EVENT_ENDED"
   | "TOURNAMENT_INCOMPLETE"
-  | "TAKEN";
+  | "TAKEN"
+  | "FULL";
 export type SponsorSearchSort =
   | "UPCOMING_GAMES"
   | "ATTENDANCE"
@@ -186,6 +188,11 @@ export interface SponsorPhysicalAsset {
   size: string | null;
   // null for an asset made before categories.
   assetCategory: FilterOption | null;
+  // How many sponsors can buy it (set by the organisation), how many hold it now (paid or being paid) and how
+  // many spots are left; each sponsor holds one spot. 0 left: unavailable with reason FULL.
+  maxSponsors: number;
+  spotsTaken: number;
+  spotsLeft: number;
   isAvailable: boolean;
   unavailableReason: UnavailableReason | null;
   unavailableMessage: string | null;

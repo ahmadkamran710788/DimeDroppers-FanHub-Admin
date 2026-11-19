@@ -12,7 +12,8 @@ import { validateAndSetErrors } from "@/utils/validation";
 import type { OptionView } from "@/utils/types/activations";
 
 type Field = keyof NewAssetFields;
-const EMPTY: NewAssetFields = { name: "", value: "", size: "", assetCategory: "" };
+// Sponsor spots start at 1 (one sponsor can buy it), as the API's existing assets do.
+const EMPTY: NewAssetFields = { name: "", value: "", size: "", assetCategory: "", maxSponsors: "1" };
 
 interface AddExclusivityProps {
   // The physical asset categories, in the API's order.
@@ -21,8 +22,8 @@ interface AddExclusivityProps {
   onAdd: (fields: NewAssetFields) => string | null;
 }
 
-// The Exclusivity card's foot: an Add button that opens a name / category / value / size form. The new
-// exclusivity is switched on and saved with Save Inventory.
+// The Exclusivity card's foot: an Add button that opens a name / category / value / size / Sponsor spots form.
+// The new exclusivity is switched on and saved with Save Inventory.
 export default function AddExclusivity({ categories, onAdd }: AddExclusivityProps) {
   const [open, setOpen] = useState(false);
   const [fields, setFields] = useState(EMPTY);
@@ -113,6 +114,21 @@ export default function AddExclusivity({ categories, onAdd }: AddExclusivityProp
           onChange={(e) => set("size", e.target.value)}
           error={errors.size}
           maxLength={MAX_SIZE_LENGTH}
+          inputClassName="h-10 text-sm px-3"
+        />
+        <Input
+          variant="dark"
+          type="number"
+          inputMode="numeric"
+          label="Sponsor spots"
+          labelClassName={labelClassName}
+          name="exclusivity-spots"
+          placeholder="e.g. 3"
+          value={fields.maxSponsors}
+          onChange={(e) => set("maxSponsors", e.target.value)}
+          error={errors.maxSponsors}
+          hint="How many sponsors can buy this asset"
+          hintClassName="text-white/60"
           inputClassName="h-10 text-sm px-3"
         />
       </div>

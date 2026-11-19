@@ -61,3 +61,6 @@ export const MAX_SIZE_LENGTH = 40;
 // A Physical Assets slot's name.
 export const MAX_NAME_LENGTH = 120;
 
+// A Physical Assets slot's "Sponsor spots": how many sponsors can buy it, 1 – 100.
+export const MAX_SPONSOR_SPOTS = 100;
+

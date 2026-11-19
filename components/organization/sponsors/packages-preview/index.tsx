@@ -21,6 +21,7 @@ const EVENT_REASONS: Record<UnavailableReason, string> = {
   EVENT_ENDED: "ended",
   TOURNAMENT_INCOMPLETE: "format not set",
   TAKEN: "taken by a sponsor",
+  FULL: "all sponsor spots taken",
 };
 
 // GET /org/sponsor-packages/events answers the events as the whole `data` list.

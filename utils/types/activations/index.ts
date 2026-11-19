@@ -120,6 +120,9 @@ export interface InventoryActivation {
   valueSource: ValueSource;
   // Only Physical Assets slots: value and size can be changed.
   isEditable: boolean;
+  // Physical assets: how many sponsors can buy it ("Sponsor spots", 1 for an unsaved catalogue one); null on
+  // every other slot.
+  maxSponsors: number | null;
   // The checkbox: sponsors can see this slot.
   isAvailableForSponsors: boolean;
   sortOrder: number;
@@ -266,6 +269,9 @@ export interface ActivationInput {
   // Physical Assets only: a category code; null clears it. Required for a new physical asset; left out on
   // an existing one, unchanged.
   assetCategory?: string | null;
+  // Physical Assets only: how many sponsors can buy it, 1 – 100. Required on its first save (a catalogue one
+  // too); left out on a saved one, unchanged. Lowering it keeps the sponsors who already bought.
+  maxSponsors?: number;
   isAvailableForSponsors?: boolean;
   // Defaults to [] — so a slot sent without them loses its placements.
   placements?: PlacementInput[];
