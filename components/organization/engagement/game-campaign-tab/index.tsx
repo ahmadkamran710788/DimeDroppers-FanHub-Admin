@@ -10,6 +10,7 @@ import StatCard, { type Stat } from "@/components/common/stat-card";
 import { ENGAGEMENT_PAGE_SIZE } from "@/components/organization/engagement/settings-table";
 import { useCampaignCounts } from "@/components/organization/engagement/use-campaign-counts";
 import { useEngagementCampaigns } from "@/components/organization/engagement/use-engagement-campaigns";
+import { useSetup } from "@/context/setup";
 import { cn } from "@/utils/cn";
 import { FALLBACK_CREST } from "@/utils/constants/fallback-crest";
 import type { CampaignMatch, GamePhase, PredictionCampaign, PredictionStats, VotingCampaign, VotingStats } from "@/utils/types/engagement";
@@ -64,9 +65,10 @@ const PHASE_BADGE: Record<GamePhase, { label: string; cls: string }> = {
   POST_GAME: { label: "Post-game", cls: "bg-[#B18CFF]/20 text-[#C9AEFF]" },
 };
 
-// One side of a match: its logo (or the neutral crest) and name.
+// One side of a match: its logo, else the organisation's (like the other pages), else the neutral crest; and name.
 function Side({ team, reverse }: { team: CampaignMatch["home"]; reverse?: boolean }) {
-  const src = team.logoUrl || FALLBACK_CREST;
+  const { savedSchool } = useSetup();
+  const src = team.logoUrl || savedSchool?.logoUrl || FALLBACK_CREST;
   return (
     <span className={cn("flex min-w-0 items-center gap-2", reverse && "flex-row-reverse text-right")}>
       <Image
