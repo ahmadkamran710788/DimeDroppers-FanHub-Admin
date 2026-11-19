@@ -14,13 +14,24 @@ interface MessageBubbleProps {
   status?: string | null;
   // Shown under the bubble, e.g. the package PDF sent with the first email.
   children?: ReactNode;
+  // Which side it sits on. Left out: the sponsor on the left, everyone else on the right. The organiser
+  // agent's replies sit on the left ("start").
+  align?: "start" | "end";
+  // E.g. a wider column for the cards under an agent reply.
+  className?: string;
 }
 
 // One message in a sponsor conversation, styled like the Communications chat.
-export default function MessageBubble({ side, who, time, text, status, children }: MessageBubbleProps) {
-  const right = side !== "sponsor";
+export default function MessageBubble({ side, who, time, text, status, children, align, className }: MessageBubbleProps) {
+  const right = align ? align === "end" : side !== "sponsor";
   return (
-    <div className={cn("max-w-[90%] lg:max-w-[640px] flex flex-col gap-1.5", right ? "self-end items-end" : "self-start items-start")}>
+    <div
+      className={cn(
+        "max-w-[90%] lg:max-w-[640px] flex flex-col gap-1.5",
+        right ? "self-end items-end" : "self-start items-start",
+        className
+      )}
+    >
       <span className="flex items-center gap-1 text-[11px] text-white/50">
         {side === "agent" && <Sparkles className="size-3 text-[#d9ccff]" aria-hidden="true" />}
         {`${who} · ${time}`}

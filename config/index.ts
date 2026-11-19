@@ -1,5 +1,18 @@
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+// The API's origin (https://api.dimedroppers.com), where Socket.IO namespaces live; null without an API URL.
+const apiOrigin = (() => {
+  try {
+    return apiUrl ? new URL(apiUrl).origin : null;
+  } catch {
+    return null;
+  }
+})();
+
 export const config = {
-  apiUrl: process.env.NEXT_PUBLIC_API_URL,
+  apiUrl,
+  // Socket.IO server for live replies (the organiser agent's /fanhub-org namespace). Defaults to the API's origin.
+  socketUrl: process.env.NEXT_PUBLIC_SOCKET_URL || apiOrigin,
   // A browser key (Maps JavaScript API + Places API (New), restricted to our sites) for the address search and
   // map pin; without it the pickers fall back to typed latitude and longitude.
   googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
