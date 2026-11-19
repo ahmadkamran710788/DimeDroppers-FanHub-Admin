@@ -20,6 +20,7 @@ const EVENT_REASONS: Record<UnavailableReason, string> = {
   NO_UPCOMING_GAMES: "no upcoming games",
   EVENT_ENDED: "ended",
   TOURNAMENT_INCOMPLETE: "format not set",
+  TAKEN: "taken by a sponsor",
 };
 
 // GET /org/sponsor-packages/events answers the events as the whole `data` list.
