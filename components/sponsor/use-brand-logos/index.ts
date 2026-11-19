@@ -1,16 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { sponsorRequest, type SponsorApiResult } from "@/components/sponsor/sponsor-api";
-import { checkBrandLogo } from "@/components/sponsor/data";
+import { checkBrandLogo, checkLogoFormat } from "@/components/sponsor/data";
+import { loadLogoImage, type LogoImage } from "@/components/sponsor/logo-fit/render";
 import { routes } from "@/utils/routes";
 import type {
   BrandAsset,
   BrandAssetList,
   BrandAssetOptions,
   LogoVariant,
+  VariantSpec,
 } from "@/utils/types/sponsor-brand-assets";
+
+// A picked logo waiting in the fit editor (LogoFitModal); `resolve` gets the fitted file, or null on Cancel.
+export interface LogoFitting {
+  id: number;
+  file: File;
+  spec: VariantSpec;
+  image: LogoImage;
+  maxBytes: number;
+  resolve: (file: File | null) => void;
+}
 
 // The rules and the logos, with the load they answer, so an older one never shows after Retry.
 interface Loaded {
@@ -35,6 +47,9 @@ export function useBrandLogos() {
   const [busy, setBusy] = useState<string | null>(null);
   // Bumped after every change, so the slots showing these logos load again.
   const [version, setVersion] = useState(0);
+  // The logo in the fit editor, and a count that keys each one.
+  const [fitting, setFitting] = useState<LogoFitting | null>(null);
+  const fits = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,10 +104,40 @@ export function useBrandLogos() {
     return problem !== null;
   }
 
-  // A new logo of this kind. The first full-color one also makes the white logo and icon; a white logo or icon
-  // replaces the made one of its kind and becomes the default.
-  async function upload(variant: LogoVariant, file: File, { name, isDefault }: { name?: string; isDefault?: boolean } = {}) {
-    if (await rejected(file, variant)) return false;
+  // Opens the fit editor on a picked file: the fitted file to upload, or null when it's the wrong format, can't be
+  // read, or the sponsor cancels. The file itself while the rules haven't loaded.
+  async function fit(file: File, variant: LogoVariant): Promise<File | null> {
+    const spec = specOf(variant);
+    if (!spec || !options) return file;
+    const problem = checkLogoFormat(file, spec);
+    if (problem) {
+      toast.error(problem);
+      return null;
+    }
+    const image = await loadLogoImage(file);
+    if (!image) {
+      toast.error("The file could not be read as an image");
+      return null;
+    }
+    const { maxBytes } = options.limits;
+    fits.current += 1;
+    const id = fits.current;
+    return new Promise((resolve) => setFitting({ id, file, spec, image, maxBytes, resolve }));
+  }
+
+  // Closes the fit editor with what it saved (null: cancelled).
+  function finishFit(file: File | null) {
+    if (!fitting) return;
+    URL.revokeObjectURL(fitting.image.url);
+    fitting.resolve(file);
+    setFitting(null);
+  }
+
+  // A new logo of this kind, fitted to its frame first. The first full-color one also makes the white logo and
+  // icon; a white logo or icon replaces the made one of its kind and becomes the default.
+  async function upload(variant: LogoVariant, picked: File, { name, isDefault }: { name?: string; isDefault?: boolean } = {}) {
+    const file = await fit(picked, variant);
+    if (!file || (await rejected(file, variant))) return false;
     const body = new FormData();
     body.append("file", file);
     body.append("variant", variant);
@@ -107,13 +152,14 @@ export function useBrandLogos() {
         if (generated.length) made = ` · ${generated.map((g) => labelOf(g.variant)).join(" and ")} made from it`;
         return r;
       },
-      () => `${file.name} added as your ${labelOf(variant)}${made}`
+      () => `${picked.name} added as your ${labelOf(variant)}${made}`
     );
   }
 
-  // A new image for a logo; every slot using it shows the new one.
-  async function replace(asset: BrandAsset, file: File) {
-    if (await rejected(file, asset.variant)) return false;
+  // A new image for a logo, fitted to its frame first; every slot using it shows the new one.
+  async function replace(asset: BrandAsset, picked: File) {
+    const file = await fit(picked, asset.variant);
+    if (!file || (await rejected(file, asset.variant))) return false;
     const body = new FormData();
     body.append("file", file);
     return run(
@@ -153,6 +199,8 @@ export function useBrandLogos() {
     busy,
     version,
     specOf,
+    fitting,
+    finishFit,
     upload,
     replace,
     rename,
