@@ -105,7 +105,7 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
         {tab === "Players" ? (
           <PlayersTab teamId={team.id} players={players} loading={rosterLoading} reload={reloadRoster} />
         ) : tab === "Parents" ? (
-          <ParentsTab rows={parents} loading={rosterLoading} />
+          <ParentsTab teamId={team.id} rows={parents} players={players} loading={rosterLoading} reload={reloadRoster} />
         ) : tab === "Staff" ? (
           <StaffTab teamId={team.id} staff={staff} loading={staffLoading} reload={reloadStaff} />
         ) : (

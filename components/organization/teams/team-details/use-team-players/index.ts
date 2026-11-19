@@ -47,12 +47,17 @@ export interface RosterPlayer {
 
 export interface RosterParent {
   id: string;
+  // The player this parent is under (the parent calls take it).
+  playerId: string;
   name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   // The player this parent belongs to, e.g. "#14 Ravi Trainer".
   player: string;
   status: string;
+  invitationStatus: InvitationStatus;
 }
 
 const fullName = (first: string, last: string | null) => [first, last].filter(Boolean).join(" ");
@@ -93,11 +98,15 @@ export function useTeamPlayers(schoolTeamId: string) {
         entries.flatMap((p) =>
           p.parents.map((parent) => ({
             id: parent.id,
+            playerId: p.id,
             name: fullName(parent.firstName, parent.lastName),
+            firstName: parent.firstName,
+            lastName: parent.lastName ?? "",
             email: parent.email ?? "",
             phone: parent.phone ?? "",
             player: [p.number && `#${p.number}`, fullName(p.firstName, p.lastName)].filter(Boolean).join(" "),
             status: INVITATION_LABEL[parent.invitationStatus] ?? parent.invitationStatus,
+            invitationStatus: parent.invitationStatus,
           })),
         ),
       );

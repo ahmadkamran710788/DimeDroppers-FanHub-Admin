@@ -89,6 +89,13 @@ body {
   }
 }
 
+/* LogoMarquee: the row holds two copies, so moving it left by half loops seamlessly. */
+@keyframes logo-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 @keyframes stat-card-in {
   from {
     opacity: 0;

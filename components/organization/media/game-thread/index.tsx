@@ -5,6 +5,7 @@ import { useState, type ReactNode } from "react";
 import Image from "next/image";
 import { ChevronDown, Clock3, Trophy, Zap } from "lucide-react";
 import Loader from "@/components/common/loader";
+import LogoMarquee from "@/components/common/logo-marquee";
 import RowActionsMenu from "@/components/common/row-actions-menu";
 import SegmentedControl from "@/components/common/segmented-control";
 import type { GamePhase, MediaGame, PlayEvent, Quarter } from "@/components/organization/media/data";
@@ -140,31 +141,37 @@ const optionsOf = (data: ThreadItem["data"]): ChoiceOption[] => {
     .filter((o) => o.label);
 };
 
-// The sponsor's label ("Presented by") and logo, or its brand name when it has no logo.
-function SponsorBanner({ sponsor }: { sponsor: OrgSponsor }) {
-  const { name } = sponsor;
+// A sponsor's logo, or its brand name when it has no logo.
+function SponsorMark({ sponsor }: { sponsor: OrgSponsor }) {
   const logoUrl = sponsor.logos?.logoUrl ?? sponsor.logoUrl;
+  return logoUrl ? (
+    // The sponsor's logo from the API (any host), so it skips the image optimizer.
+    <Image src={logoUrl} alt={sponsor.name} width={140} height={36} unoptimized className="h-9 w-auto max-w-45 object-contain" />
+  ) : (
+    <span className="whitespace-nowrap font-display text-[28px] font-extrabold uppercase italic leading-none tracking-tight text-black">
+      {sponsor.name}
+    </span>
+  );
+}
+
+// The label ("Presented by", from the first sponsor) and every sponsor's logo: side by side when they fit,
+// sliding when they don't.
+function SponsorBanner({ sponsors }: { sponsors: OrgSponsor[] }) {
   return (
     <div className="flex items-center justify-center gap-3 rounded-[10px] bg-white px-5 py-3">
-      <span className="text-base text-black">{sponsor.logos?.label || "Presented by"}</span>
-      {logoUrl ? (
-        // The sponsor's logo from the API (any host), so it skips the image optimizer.
-        <Image src={logoUrl} alt={name} width={140} height={36} unoptimized className="h-9 w-auto max-w-45 object-contain" />
-      ) : (
-        <span className="font-display text-[28px] font-extrabold uppercase italic leading-none tracking-tight text-black">
-          {name}
-        </span>
-      )}
+      <span className="shrink-0 text-base text-black">{sponsors[0].logos?.label || "Presented by"}</span>
+      <LogoMarquee items={sponsors.map((s) => ({ key: s.sponsorId, node: <SponsorMark sponsor={s} /> }))} />
     </div>
   );
 }
 
-// The sponsor a tab's banner presents: the one bought for that phase's game screens, else the
-// Presenting Partner (HEADER). The list comes in the API's order, so the first match wins.
+// The sponsors a tab's banner presents: those bought for that phase's game screens, else the Presenting
+// Partners (HEADER). In the API's order (Presenting Partner first).
 const PHASE_PLACEMENT: Record<ThreadPhase, SponsorPlacement> = { pre: "GAME_PRE", live: "GAME_LIVE", final: "GAME_POST" };
-const sponsorFor = (sponsors: OrgSponsor[], phase: ThreadPhase) =>
-  sponsors.find((s) => s.placements.includes(PHASE_PLACEMENT[phase])) ??
-  sponsors.find((s) => s.placements.includes("HEADER"));
+const sponsorsFor = (sponsors: OrgSponsor[], phase: ThreadPhase) => {
+  const forPhase = sponsors.filter((s) => s.placements.includes(PHASE_PLACEMENT[phase]));
+  return forPhase.length ? forPhase : sponsors.filter((s) => s.placements.includes("HEADER"));
+};
 
 // The sponsor slot behind each engagement card, by phase (the backend's activation catalog keys).
 const SLOT_KEYS: Partial<Record<ThreadItem["kind"], Partial<Record<ThreadPhase, string[]>>>> = {
@@ -315,7 +322,7 @@ function ApiThread({ gameId }: { gameId: string }) {
   const phase = TAB_PHASE[activeTab];
   // Quarter start / end markers stay in the API's answer; with an engagement picked only that kind is shown.
   const items = (data?.items ?? []).filter((i) => i.phase === phase && (!engagement || i.kind === engagement));
-  const sponsor = sponsors ? sponsorFor(sponsors, phase) : undefined;
+  const bannerSponsors = sponsors ? sponsorsFor(sponsors, phase) : [];
   const tabOptions = available?.[phase];
   const options = {
     // A single section (Pre-Game, Final) is the whole tab, so there's nothing to narrow.
@@ -378,7 +385,7 @@ function ApiThread({ gameId }: { gameId: string }) {
       )}
 
       {/* Nothing until the sponsors load, and no banner when the organisation has none. */}
-      {sponsor && <SponsorBanner sponsor={sponsor} />}
+      {bannerSponsors.length > 0 && <SponsorBanner sponsors={bannerSponsors} />}
 
       {loading ? (
         <Loader className="m-10" />
