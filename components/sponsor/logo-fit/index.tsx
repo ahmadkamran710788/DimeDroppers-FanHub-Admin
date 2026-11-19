@@ -2,10 +2,9 @@
 
 import { useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import toast from "react-hot-toast";
-import { Scan } from "lucide-react";
+import { Lock, LockOpen, Scan } from "lucide-react";
 import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
-import Checkbox from "@/components/common/checkbox";
 import Modal from "@/components/common/modal";
 import RangeSlider from "@/components/common/range-slider";
 import type { BrandLogos, LogoFitting } from "@/components/sponsor/use-brand-logos";
@@ -24,7 +23,6 @@ import {
 import {
   ICON_SAFE_ZONE,
   clampView,
-  contentRect,
   looksBlurry,
   presetView,
   renderFittedLogo,
@@ -63,8 +61,8 @@ interface LogoFitEditorProps {
 }
 
 // The logo in a frame the size of the standard logo (the logo sizes doc's, from GET /brand-assets/options), shaped
-// like its slot in the app: drag it, zoom it (or stretch it with "Keep proportions" off) and see it at app size.
-// Save waits until the logo is at the standard size, so every saved logo shows properly; the frame is the file.
+// like its slot in the app: drag it, resize it with Width and Height (locked together, or one at a time to stretch
+// it), and see it at app size. The standard size is shown as a guide; any size can be saved. The frame is the file.
 function LogoFitEditor({ fitting, onDone }: LogoFitEditorProps) {
   const { image, spec, file, maxBytes } = fitting;
   const frame = spec.recommended;
@@ -73,6 +71,7 @@ function LogoFitEditor({ fitting, onDone }: LogoFitEditorProps) {
   const inset = icon ? ICON_SAFE_ZONE : 1;
   // The standard size, and 100% on the sliders: the logo (margins left out) just fitting that box, centred.
   const fitView = useMemo(() => presetView(image, frame, "fit", inset), [image, frame, inset]);
+  const fillView = useMemo(() => presetView(image, frame, "fill"), [image, frame]);
   const base = fitView.sx;
 
   const [view, setView] = useState<LogoView>(fitView);
@@ -87,16 +86,26 @@ function LogoFitEditor({ fitting, onDone }: LogoFitEditorProps) {
   const percent = (scale: number) => Math.round((scale / base) * 100);
   // A slider value as a scale; close to 100% snaps to it, the standard size.
   const fromPercent = (value: number) => ((Math.abs(value - 100) <= SNAP_RANGE ? 100 : value) / 100) * base;
+  // Room for Fill when it's beyond MAX_ZOOM (a wide logo in the square icon).
+  const maxZoom = Math.max(MAX_ZOOM, Math.ceil(percent(Math.max(fillView.sx, view.sx, view.sy)) / 50) * 50);
   const frameBackground = icon ? ICON_BACKGROUNDS[iconBackground].className : FRAME_BACKGROUND[spec.variant];
+  // A full-color logo on a flat colour keeps it around the logo, so the backend can still remove it when it makes the
+  // white logo and icon. A white logo stays transparent; the icon has its own background.
+  const fill = spec.variant === "FULL_COLOR" ? image.background : null;
   const standard = standardCheck(image, frame, view, inset);
-  const outline = contentRect(image, frame, view);
 
   const scaleTo = (sx: number, sy: number) => setView((v) => clampView(scaleView(v, sx, sy), image, frame));
 
-  function toggleShape() {
-    // Back on: the height follows the width, so the logo has its own proportions again.
-    if (!keepShape) scaleTo(view.sx, view.sx);
-    setKeepShape(!keepShape);
+  // One slider moved: with "Keep proportions" on, the other follows so the shape stays as it is now (even after a
+  // stretch); off, only that side changes.
+  function setWidth(value: number) {
+    const sx = fromPercent(value);
+    scaleTo(sx, keepShape ? (view.sy * sx) / view.sx : view.sy);
+  }
+
+  function setHeight(value: number) {
+    const sy = fromPercent(value);
+    scaleTo(keepShape ? (view.sx * sy) / view.sy : view.sx, sy);
   }
 
   function startDrag(e: PointerEvent<HTMLDivElement>) {
@@ -121,9 +130,8 @@ function LogoFitEditor({ fitting, onDone }: LogoFitEditorProps) {
   }
 
   async function save() {
-    if (!standard.matched) return;
     setSaving(true);
-    const background = icon ? ICON_BACKGROUNDS[iconBackground].color : null;
+    const background = icon ? ICON_BACKGROUNDS[iconBackground].color : fill;
     const fitted = await renderFittedLogo(image, file.name, spec, view, background, maxBytes);
     if (!fitted) {
       setSaving(false);
@@ -146,12 +154,10 @@ function LogoFitEditor({ fitting, onDone }: LogoFitEditorProps) {
     >
       <div className="w-full flex flex-col gap-5">
         <p className="text-sm leading-6 text-midnight-navy/80">
-          The box is the standard logo size, {frame.width} × {frame.height} px, shaped like your logo&apos;s space in
-          the app.{" "}
-          {icon
-            ? "Fit your logo inside the dashed square in the middle, touching it on at least one side, "
-            : "Fit your logo to the box, edge to edge on at least one side with nothing cut off, "}
-          and it shows properly everywhere. Drag it to move it, and use the slider to resize it.
+          {/* One string: the compiler drops a space between {…} and text that wraps to the next line. */}
+          {`The box is your logo's space in the app, at the standard size of ${frame.width} × ${frame.height} px. ${
+            icon ? "Keep the important part inside the dashed square in the middle. " : ""
+          }Drag the logo to move it, and use Width and Height to resize it. Turn off Keep proportions to stretch it one way only. Fans see exactly what's inside the box.`}
         </p>
 
         <div className="rounded-[16px] bg-[#08090c] p-4 sm:p-6 flex justify-center">
@@ -169,25 +175,17 @@ function LogoFitEditor({ fitting, onDone }: LogoFitEditorProps) {
               icon && "max-w-[280px]"
             )}
           >
-            <FramedLogo image={image} frame={frame} view={view} className={cn("w-full rounded-[4px]", frameBackground)}>
-              {/* The icon's safe zone: the standard box its logo fits. */}
+            <FramedLogo
+              image={image}
+              frame={frame}
+              view={view}
+              fill={fill}
+              className={cn("w-full rounded-[4px]", frameBackground)}
+            >
+              {/* The icon's safe zone: where its important part goes. */}
               {icon && (
                 <div aria-hidden="true" className="absolute inset-[10%] border border-dashed border-[#8b6dff] pointer-events-none" />
               )}
-              {/* The logo's own outline: green at the standard size, amber until then. */}
-              <div
-                aria-hidden="true"
-                className={cn(
-                  "absolute border border-dashed pointer-events-none",
-                  standard.matched ? "border-[#22c55e]" : "border-[#f59e0b]"
-                )}
-                style={{
-                  left: `${outline.left * 100}%`,
-                  top: `${outline.top * 100}%`,
-                  width: `${outline.width * 100}%`,
-                  height: `${outline.height * 100}%`,
-                }}
-              />
             </FramedLogo>
           </div>
         </div>
@@ -195,61 +193,50 @@ function LogoFitEditor({ fitting, onDone }: LogoFitEditorProps) {
         <StandardSize canvas={frame} target={standard.target} size={standard.size} matched={standard.matched} />
 
         <div className="flex flex-col gap-4">
-          {keepShape ? (
+          <div className="flex flex-col gap-2">
             <RangeSlider
-              label="Zoom"
+              label="Width"
               value={percent(view.sx)}
               min={MIN_ZOOM}
-              max={MAX_ZOOM}
-              onChange={(value) => scaleTo(fromPercent(value), fromPercent(value))}
+              max={maxZoom}
+              onChange={setWidth}
               valueText={`${percent(view.sx)}%`}
               labelClassName="text-midnight-navy"
             />
-          ) : (
-            <>
-              <RangeSlider
-                label="Width"
-                value={percent(view.sx)}
-                min={MIN_ZOOM}
-                max={MAX_ZOOM}
-                onChange={(value) => scaleTo(fromPercent(value), view.sy)}
-                valueText={`${percent(view.sx)}%`}
-                labelClassName="text-midnight-navy"
-              />
-              <RangeSlider
-                label="Height"
-                value={percent(view.sy)}
-                min={MIN_ZOOM}
-                max={MAX_ZOOM}
-                onChange={(value) => scaleTo(view.sx, fromPercent(value))}
-                valueText={`${percent(view.sy)}%`}
-                labelClassName="text-midnight-navy"
-              />
-            </>
-          )}
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {/* The lock between the two sliders: on, they move together; off, each stretches one way only. */}
             <Button
               variant="text"
               size="sm"
               label="Keep proportions"
               role="checkbox"
               aria-checked={keepShape}
-              icon={<Checkbox checked={keepShape} variant="violet" className="size-5" />}
-              onClick={toggleShape}
-              className="text-sm text-midnight-navy hover:text-midnight-navy"
+              icon={keepShape ? <Lock className="size-4" /> : <LockOpen className="size-4" />}
+              onClick={() => setKeepShape(!keepShape)}
+              className={cn(
+                "self-start text-sm hover:text-midnight-navy",
+                keepShape ? "text-[#6a4be6] font-semibold" : "text-midnight-navy/70"
+              )}
             />
+            <RangeSlider
+              label="Height"
+              value={percent(view.sy)}
+              min={MIN_ZOOM}
+              max={maxZoom}
+              onChange={setHeight}
+              valueText={`${percent(view.sy)}%`}
+              labelClassName="text-midnight-navy"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
               variant="secondary"
               label="Snap to standard size"
               icon={<Scan className="size-4" />}
-              onClick={() => {
-                setKeepShape(true);
-                setView(fitView);
-              }}
-              className="ml-auto"
+              onClick={() => setView(fitView)}
             />
+            <Button size="sm" variant="secondary" label="Fill the box" onClick={() => setView(fillView)} />
           </div>
 
           {icon && (
@@ -278,24 +265,17 @@ function LogoFitEditor({ fitting, onDone }: LogoFitEditorProps) {
           )}
         </div>
 
-        <SlotPreviews image={image} spec={spec} view={view} iconBackground={ICON_BACKGROUNDS[iconBackground].className} />
+        <SlotPreviews
+          image={image}
+          spec={spec}
+          view={view}
+          fill={fill}
+          iconBackground={ICON_BACKGROUNDS[iconBackground].className}
+        />
 
-        <div className="flex flex-col gap-2">
-          {!standard.matched && (
-            <p className="text-[13px] leading-normal text-[#92400e]">
-              Bring your logo to the standard size to save it, or use Snap to standard size.
-            </p>
-          )}
-          <div className="flex gap-3">
-            <Button label="Cancel" variant="secondary" onClick={cancel} disabled={saving} fullWidth />
-            <Button
-              label={saving ? "Saving…" : "Save logo"}
-              variant="cta"
-              onClick={save}
-              disabled={saving || !standard.matched}
-              fullWidth
-            />
-          </div>
+        <div className="flex gap-3">
+          <Button label="Cancel" variant="secondary" onClick={cancel} disabled={saving} fullWidth />
+          <Button label={saving ? "Saving…" : "Save logo"} variant="cta" onClick={save} disabled={saving} fullWidth />
         </div>
       </div>
     </Modal>

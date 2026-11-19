@@ -9,14 +9,18 @@ interface SlotPreviewsProps {
   image: LogoImage;
   spec: VariantSpec;
   view: LogoView;
+  // The colour filled around the logo in the saved file, if any.
+  fill: string | null;
   // The icon's background class.
   iconBackground: string;
 }
 
 // The fitted logo at the size fans see it, in the app's own containers: the white "Presented by" banner (logo
 // 30 px tall), the dark scoreboard credit (16 px) and the home sponsor strip tile (72×30 inside), or the icon badge.
-export default function SlotPreviews({ image, spec, view, iconBackground }: SlotPreviewsProps) {
-  const logo = (className: string) => <FramedLogo image={image} frame={spec.recommended} view={view} className={className} />;
+export default function SlotPreviews({ image, spec, view, fill, iconBackground }: SlotPreviewsProps) {
+  const logo = (className: string) => (
+    <FramedLogo image={image} frame={spec.recommended} view={view} fill={fill} className={className} />
+  );
 
   function previews() {
     if (spec.variant === "FULL_COLOR") {

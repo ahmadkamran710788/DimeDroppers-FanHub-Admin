@@ -183,7 +183,7 @@ function LogoPicker({ kind, brandName, logos, disabled, onPick }: LogoPickerProp
     <fieldset disabled={disabled} className="flex flex-col gap-[10px] min-w-0">
       <legend className={LEGEND}>LOGO ON THIS SCREEN · {kind.label.toUpperCase()}</legend>
       <span className={cn(HINT, "-mt-1")}>
-        {kind.usage} · this screen uses your {kind.label.toLowerCase()} only, so other logo types aren&apos;t listed
+        {`${kind.usage} · this screen uses your ${kind.label.toLowerCase()} only, so other logo types aren't listed`}
       </span>
 
       {kind.missing ? (
