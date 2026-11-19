@@ -44,46 +44,61 @@ export default function SlotSetup({ orgName, chip, lines, packageNames, orgCount
   const row = lines[0];
   const items = logos.list?.items ?? [];
 
+  const defaultIdOf = (variant: LogoVariant) => logos.list?.variants.find((v) => v.variant === variant)?.defaultAssetId ?? null;
+
   // The default of a kind: its default logo, else (full color) the profile logo.
   function fallback(variant: LogoVariant) {
-    const status = logos.list?.variants.find((v) => v.variant === variant);
-    const asset = items.find((a) => a.id === status?.defaultAssetId);
+    const asset = items.find((a) => a.id === defaultIdOf(variant));
     if (asset) return { name: asset.name, url: asset.url };
     const profile = variant === "FULL_COLOR" ? (logos.list?.profileLogoUrl ?? null) : null;
     return { name: profile ? "Sponsor Profile logo" : null, url: profile };
   }
 
+  // A choice as the picker shows it: the default logo itself (e.g. pinned by "Save for" while every organization
+  // shares a logo) is the same card as following the default, so it reads as null too.
+  const asShown = (variant: LogoVariant, id: string | null) => (id !== null && id === defaultIdOf(variant) ? null : id);
+
   const pickOf = (logo: SlotLogo) => {
     const p = picks[logo.variant];
     return p && p.from === chosen(logo) ? p.to : chosen(logo);
   };
-  const changed = row ? row.logos.filter((l) => pickOf(l) !== chosen(l)) : [];
+  const changed = row ? row.logos.filter((l) => asShown(l.variant, pickOf(l)) !== asShown(l.variant, chosen(l))) : [];
   // What all organizations show now differs from the picks, or this one has its own logo.
   const differsFromAll = row
     ? row.logos.some((l) => {
         const all = chip.logos.find((c) => c.variant === l.variant)?.slotTypeAssetId ?? null;
-        return pickOf(l) !== all || l.slotAssetId !== null;
+        return asShown(l.variant, pickOf(l)) !== asShown(l.variant, all) || l.slotAssetId !== null;
       })
     : false;
 
   const kinds: LogoKind[] = (row?.logos ?? []).map((l) => {
-    const own = items.filter((a) => a.variant === l.variant);
+    const defaultId = defaultIdOf(l.variant);
+    // The default logo first; it's the "follow my default" card (id null), so it never shows twice.
+    const own = items
+      .filter((a) => a.variant === l.variant)
+      .sort((a, b) => Number(b.id === defaultId) - Number(a.id === defaultId));
     const def = fallback(l.variant);
-    const picked = pickOf(l);
+    const picked = asShown(l.variant, pickOf(l));
+    const saved = asShown(l.variant, chosen(l));
     return {
       variant: l.variant,
       label: l.variantLabel,
       usage: l.usage,
       picked,
       options: [
-        { id: null, name: "Default", sub: def.name ?? "None yet", url: def.url },
-        ...own.map((a) => ({ id: a.id, name: a.name, sub: a.isDefault ? "Your default" : a.source === "GENERATED" ? "Auto-made" : "", url: a.url })),
+        // No logo of the kind yet: the profile logo is the default.
+        ...(!defaultId && def.url ? [{ id: null, name: def.name ?? "Default", sub: "Your default", url: def.url }] : []),
+        ...own.map((a) =>
+          a.id === defaultId
+            ? { id: null, name: a.name, sub: "Your default", url: a.url }
+            : { id: a.id, name: a.name, sub: a.source === "GENERATED" ? "Auto-made" : "", url: a.url }
+        ),
       ],
       // Nothing of this kind to show yet: fans see the brand name.
       missing: own.length === 0 && !def.url,
       overrides: chip.logos.find((c) => c.variant === l.variant)?.slotOverrides ?? 0,
       // What fans see with the picks: the saved logo until it changes.
-      previewUrl: picked === chosen(l) ? l.url : picked ? (items.find((a) => a.id === picked)?.url ?? null) : def.url,
+      previewUrl: picked === saved ? l.url : picked ? (items.find((a) => a.id === picked)?.url ?? null) : def.url,
     };
   });
 
