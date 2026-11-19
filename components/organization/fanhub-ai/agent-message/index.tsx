@@ -7,7 +7,8 @@ import ListCard from "@/components/organization/fanhub-ai/blocks/list-card";
 import OptionsBlock from "@/components/organization/fanhub-ai/blocks/options-block";
 import ReceiptBlock from "@/components/organization/fanhub-ai/blocks/receipt-block";
 import RecordCard from "@/components/organization/fanhub-ai/blocks/record-card";
-import { STATE_STYLE } from "@/components/organization/fanhub-ai/data";
+import { config } from "@/config";
+import { KEYWORD_FALLBACK_TEXT, STATE_STYLE } from "@/components/organization/fanhub-ai/data";
 import { formatBubbleTime } from "@/components/organization/messages/helpers";
 import MessageBubble from "@/components/organization/sponsor-messages/message-bubble";
 import type {
@@ -70,6 +71,8 @@ export default function AgentMessage({ message, ...actions }: AgentMessageProps)
   const text = first?.type === "text" ? first.text : (message.text ?? "");
   const rest = blocks.filter((_, i) => i !== textIndex);
   const status = message.state === "BLOCKED" || message.state === "FAILED" ? STATE_STYLE[message.state].label : null;
+  // Developers only: this reply means the API answers with its keyword stand-in, not Claude.
+  const keywordFallback = config.isDev && text.trim() === KEYWORD_FALLBACK_TEXT;
 
   return (
     <MessageBubble
@@ -87,6 +90,12 @@ export default function AgentMessage({ message, ...actions }: AgentMessageProps)
             <BlockView key={`${block.type}-${i}`} block={block} {...actions} />
           ))}
         </div>
+      )}
+      {keywordFallback && (
+        <p className="rounded-[6px] bg-[#3d2a12] px-3 py-1.5 text-[11px] text-[#ffc999]">
+          Dev: the API is answering with its keyword stand-in, not Claude (ASSISTANT_ORGANISER_MODEL_PROVIDER isn’t
+          claude on the server).
+        </p>
       )}
     </MessageBubble>
   );

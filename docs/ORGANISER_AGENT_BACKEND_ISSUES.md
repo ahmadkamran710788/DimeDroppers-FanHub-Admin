@@ -1,5 +1,10 @@
 # Organiser agent: backend issues found during panel integration (19 Nov 2026)
 
+> **Status, 19 Nov 2026 (evening):** items 2–7 were fixed in backend `9c17aba6` (PR #570), and checked in the code.
+> Item 1: the migration is reported applied. Two ops settings still have to be checked on the servers:
+> `ALLOWED_ORIGIN` with the Vercel panel host, and `ASSISTANT_ORGANISER_MODEL_PROVIDER=claude` with `ANTHROPIC_API_KEY`.
+> Item 8: the backend doc has been updated. The panel follow-ups from that doc's §0 are done in the panel.
+
 These issues came up while connecting the organisation panel (DimeDroppers-FanHub-Admin) to the organiser agent. That agent is described in `backend/src/docs/FANHUB_ORGANISER_AGENT_FRONTEND.md` and was added in PR #569.
 
 Every reference below was checked against backend `main` at commit `84f4f7b5` ("Merge pull request #569 from DimeDroppersOrg/new-task"). Paths are relative to `backend/`.

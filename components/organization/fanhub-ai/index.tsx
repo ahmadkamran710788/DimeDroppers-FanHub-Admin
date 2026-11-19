@@ -143,6 +143,8 @@ export default function FanHubAiPage({ threadId }: FanHubAiPageProps) {
           onSend={chat.send}
           onAnswer={chat.answer}
           onRefresh={chat.refresh}
+          canRetry={chat.canRetry}
+          onRetry={chat.retry}
           onDelete={selectedId ? () => setConfirmDelete(true) : undefined}
           onBack={() => setShowChat(false)}
           onOpenSettings={() => setSettingsOpen(true)}
