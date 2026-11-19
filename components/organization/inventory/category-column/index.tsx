@@ -71,7 +71,8 @@ export default function CategoryColumn({
   };
 
   return (
-    <div className={cn("w-full min-w-0 h-full rounded-[10px] overflow-hidden flex flex-col border border-white/10", style.body)}>
+    // `relative`: the Add Physical Asset form opens as an overlay over the whole card.
+    <div className={cn("relative w-full min-w-0 h-full rounded-[10px] overflow-hidden flex flex-col border border-white/10", style.body)}>
       {/* Header */}
       <div className={cn("flex items-center gap-3 px-3 py-3", style.header)}>
         <span className={cn("size-12 shrink-0 rounded-[8px] flex items-center justify-center", style.badge)}>
@@ -127,7 +128,7 @@ export default function CategoryColumn({
 
       {onAdd && (
         <div className="mx-4 py-3 border-t border-white/15 flex">
-          <AddExclusivity categories={assetCategories} onAdd={onAdd} />
+          <AddExclusivity categories={assetCategories} onAdd={onAdd} panelClassName={style.body} />
         </div>
       )}
 

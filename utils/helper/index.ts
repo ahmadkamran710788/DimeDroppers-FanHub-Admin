@@ -51,6 +51,11 @@ export const formatMoney = (amount: number): string =>
 // "1 need" / "3 needs" (for words that take an "s").
 export const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
 
+// A label shown next to a name, or null when it only repeats it: a Dime catalogue physical asset's category is
+// often its own name ("Court-Side Branding" in "Court-Side Branding").
+export const distinctFrom = (label: string | null | undefined, name: string | null | undefined): string | null =>
+  label && label.trim().toLowerCase() !== (name ?? "").trim().toLowerCase() ? label : null;
+
 // A calendar date as yyyy-mm-dd in local time (not UTC, which can be a day off).
 export const toIsoDate = (date: Date): string =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
