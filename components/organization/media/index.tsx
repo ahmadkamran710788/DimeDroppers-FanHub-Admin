@@ -1,12 +1,13 @@
 "use client";
 
 import EventSelect from "@/components/organization/event-select";
+import GameChat from "@/components/organization/media/game-chat";
 import GameDetails from "@/components/organization/media/game-details";
 import GamesBrowser from "@/components/organization/media/games-browser";
 import GameThread from "@/components/organization/media/game-thread";
 import { useOrgGames } from "@/components/organization/media/use-org-games";
 
-const CONTENT_TABS = ["Game Thread", "Game Details"] as const;
+const CONTENT_TABS = ["Game Thread", "Game Details", "Chat"] as const;
 
 // Media: pick a game on the left, see its score, play-by-play thread and recap on the right.
 // - School: its own games (GET /schedules, with results and opponent logos).
@@ -37,8 +38,10 @@ export default function MediaPage() {
       renderContent={(tab, game) =>
         tab === "Game Thread" ? (
           <GameThread game={game} />
-        ) : (
+        ) : tab === "Game Details" ? (
           <GameDetails game={game} />
+        ) : (
+          <GameChat game={game} />
         )
       }
     />
