@@ -4,7 +4,7 @@ import { useState } from "react";
 import GenericTable, { type Column } from "@/components/common/generic-table";
 import CardFrame from "@/components/organization/fanhub-ai/card-frame";
 import KeyValueList from "@/components/organization/fanhub-ai/key-value-list";
-import { fieldLabel, formatValue, isFlat } from "@/components/organization/fanhub-ai/data";
+import { fieldLabel, formatValue, isFlat, zoneOf } from "@/components/organization/fanhub-ai/data";
 import type { OrgListData } from "@/utils/types/organiser-agent";
 
 // More columns than this and the rest open under a row instead.
@@ -16,6 +16,9 @@ interface ListCardProps {
   data: OrgListData;
 }
 
+// Never a column: ids, and the timezone label (shown with the times it belongs to).
+const HIDDEN_KEYS = new Set(["id", "timezone"]);
+
 // ORG_LIST: the item keys are the columns. Ids and nested records stay out of the table; a row with more
 // than fits opens to show every field.
 export default function ListCard({ data }: ListCardProps) {
@@ -26,15 +29,17 @@ export default function ListCard({ data }: ListCardProps) {
   for (const item of items) {
     for (const key of Object.keys(item)) if (!keys.includes(key)) keys.push(key);
   }
-  const tableKeys = keys.filter((key) => key !== "id" && items.some((item) => isFlat(item[key]) && item[key] != null));
+  const tableKeys = keys.filter(
+    (key) => !HIDDEN_KEYS.has(key) && items.some((item) => isFlat(item[key]) && item[key] != null)
+  );
   const shown = tableKeys.slice(0, MAX_COLUMNS);
-  const hasMore = keys.some((key) => key !== "id" && !shown.includes(key));
+  const hasMore = keys.some((key) => !HIDDEN_KEYS.has(key) && !shown.includes(key));
 
   const columns: Column<Item>[] = shown.map((key) => ({
     header: fieldLabel(key),
     cls: "flex-1 min-w-[120px]",
     cell: (item) => {
-      const text = formatValue(item[key]);
+      const text = formatValue(item[key], zoneOf(item));
       return (
         <span className="truncate" title={text}>
           {text}

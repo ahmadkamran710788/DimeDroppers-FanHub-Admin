@@ -31,6 +31,9 @@ interface ChatPaneProps {
   onSend: (text: string, optionId?: string | null) => Promise<boolean>;
   onAnswer: (token: string, decision: "CONFIRM" | "CANCEL") => Promise<boolean>;
   onRefresh: () => void;
+  // Sends a message the agent couldn't run again (offered when `canRetry`).
+  canRetry: boolean;
+  onRetry: () => void;
   // Left out for a new chat.
   onDelete?: () => void;
   // Back to the chats list (phones and tablets).
@@ -54,6 +57,8 @@ export default function ChatPane({
   onSend,
   onAnswer,
   onRefresh,
+  canRetry,
+  onRetry,
   onDelete,
   onBack,
   onOpenSettings,
@@ -189,13 +194,25 @@ export default function ChatPane({
               </div>
             )}
             {notice?.kind === "failed" && (
-              <p
+              <div
                 role="alert"
-                className="self-start flex items-start gap-2 rounded-[8px] bg-[#3d1717] px-4 py-2 text-xs text-[#ff9c9c]"
+                className="self-start flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[8px] bg-[#3d1717] px-4 py-2 text-xs text-[#ff9c9c]"
               >
-                <CircleAlert className="size-3.5 shrink-0 mt-px" aria-hidden="true" />
-                {notice.error ?? "That didn’t go through. Please try again."}
-              </p>
+                <span className="flex items-start gap-2">
+                  <CircleAlert className="size-3.5 shrink-0 mt-px" aria-hidden="true" />
+                  {notice.error ?? "That didn’t go through. Please try again."}
+                </span>
+                {canRetry && !agentOff && (
+                  <Button
+                    variant="text"
+                    size="sm"
+                    label="Try again"
+                    onClick={onRetry}
+                    disabled={busy}
+                    className="text-xs text-white hover:text-white/80"
+                  />
+                )}
+              </div>
             )}
           </>
         )}

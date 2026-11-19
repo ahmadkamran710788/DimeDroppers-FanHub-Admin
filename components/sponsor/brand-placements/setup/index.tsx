@@ -2,6 +2,7 @@
 
 import { useSponsorAccount } from "@/components/sponsor/use-sponsor-account";
 import { useBrandLogos } from "@/components/sponsor/use-brand-logos";
+import LogoFitModal from "@/components/sponsor/logo-fit";
 import type { BrandAsset } from "@/components/sponsor/brand-assets/data";
 import Creatives from "@/components/sponsor/brand-placements/setup/creatives";
 import LogoVariants from "@/components/sponsor/brand-placements/setup/logo-variants";
@@ -30,6 +31,9 @@ export default function PlacementsSetup({ assets, inventoryId }: PlacementsSetup
       <div id={inventoryId} className="scroll-mt-6">
         <PurchasedInventory logos={logos} brandName={brandName} />
       </div>
+
+      {/* Logo Variants and the slot editor upload through useBrandLogos, which fits each logo here first. */}
+      <LogoFitModal logos={logos} />
     </div>
   );
 }

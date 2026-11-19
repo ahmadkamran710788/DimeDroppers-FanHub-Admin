@@ -93,12 +93,20 @@ export const logoAccept = (spec: VariantSpec) =>
 const joinOr = (items: string[]) =>
   items.length > 1 ? `${items.slice(0, -1).join(", ")} or ${items[items.length - 1]}` : (items[0] ?? "");
 
+// Whether a picked file is a format its kind takes: the problem to show, or null. Checked before the fit editor
+// opens; the fitted file it saves goes through checkBrandLogo.
+export function checkLogoFormat(file: File, spec: VariantSpec): string | null {
+  // Some systems give no type; the backend reads the file itself.
+  if (file.type && !spec.mimeTypes.includes(file.type)) return `${spec.label} must be ${joinOr(spec.formats)}`;
+  return null;
+}
+
 // A Brand Assets logo against its kind's rules from GET /brand-assets/options: the problem to show, or null when
 // it's fine. Size and shape are checked for a PNG or JPG; an SVG's, and a white PNG's transparency, are left
 // to the backend, which checks everything again.
 export async function checkBrandLogo(file: File, spec: VariantSpec, maxBytes: number): Promise<string | null> {
-  // Some systems give no type; the backend reads the file itself.
-  if (file.type && !spec.mimeTypes.includes(file.type)) return `${spec.label} must be ${joinOr(spec.formats)}`;
+  const format = checkLogoFormat(file, spec);
+  if (format) return format;
   if (file.size > maxBytes) return `Logo must be ${Number((maxBytes / (1024 * 1024)).toFixed(1))} MB or smaller`;
   if (file.type !== "image/png" && file.type !== "image/jpeg") return null;
 

@@ -11,6 +11,8 @@ const apiOrigin = (() => {
 
 export const config = {
   apiUrl,
+  // `next dev` (not a production build): turns on hints meant for developers only.
+  isDev: process.env.NODE_ENV !== "production",
   // Socket.IO server for live replies (the organiser agent's /fanhub-org namespace). Defaults to the API's origin.
   socketUrl: process.env.NEXT_PUBLIC_SOCKET_URL || apiOrigin,
   // A browser key (Maps JavaScript API + Places API (New), restricted to our sites) for the address search and

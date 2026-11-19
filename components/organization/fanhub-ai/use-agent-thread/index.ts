@@ -10,8 +10,8 @@ import {
   postMessage,
 } from "@/components/organization/fanhub-ai/agent-api";
 import {
-  PENDING_REPLY_WAIT_MS,
   POLL_MS,
+  REPLY_WAIT_CONNECTED_MS,
   REPLY_WAIT_MS,
   browserTimeZone,
   newRequestId,
@@ -57,8 +57,10 @@ interface Turn {
   baseCount: number;
   // The organiser's bubble until the stored copy arrives (the worker, not the API, stores it).
   text: string;
+  // The option tapped, so a failed message can be sent again as it was.
+  optionId: string | null;
   startedAt: number;
-  // "late": no reply within REPLY_WAIT_MS. "failed": the worker couldn't run it.
+  // "late": no reply in time (see the timer). "failed": the turn couldn't run (the socket said why).
   status: "waiting" | "late" | "failed";
   error?: string;
 }
@@ -71,17 +73,10 @@ export interface TurnNotice {
 const isAnswered = (thread: Thread | undefined, turn: Turn | undefined) =>
   !!turn && !!thread && thread.messages.slice(turn.baseCount).some((m) => m.role === "ASSISTANT");
 
-// The open thread is only polled when a reply is due and the socket can't bring it, or when the agent stored
-// a "working on it" reply whose result is added later without a socket message.
-function pollInterval(thread: Thread | undefined, turn: Turn | undefined, connected: boolean): number | false {
-  if (!connected && turn?.status === "waiting" && !isAnswered(thread, turn)) return POLL_MS;
-  const last = thread?.messages.at(-1);
-  const recentWorking =
-    last?.role === "ASSISTANT" &&
-    last.state === "PENDING" &&
-    Date.now() - Date.parse(last.createdAt) < PENDING_REPLY_WAIT_MS;
-  return recentWorking ? POLL_MS : false;
-}
+// The open thread is only polled when a reply is due and the socket can't bring it. A slow change's later
+// "Update: …" comes on the socket too (clientRequestId "update:<messageId>"), so nothing else is polled.
+const pollInterval = (thread: Thread | undefined, turn: Turn | undefined, connected: boolean): number | false =>
+  !connected && turn?.status === "waiting" && !isAnswered(thread, turn) ? POLL_MS : false;
 
 // A reply the thread couldn't be reloaded for: added as it came, after the organiser's own message.
 function withReply(thread: Thread, turn: Turn | undefined, response: MessageResponse): Thread {
@@ -140,10 +135,9 @@ export function useAgentThread({ threadId, onCreated, onReply }: UseAgentThreadO
     async (message: AgentSocketMessage) => {
       const { sessionId, clientRequestId, response, error } = message;
       const due = turns[sessionId];
-      // A confirmation that expired in the queue comes back as "confirm:" with no id.
-      const mine =
-        !!due &&
-        (due.clientRequestId === clientRequestId || (due.kind === "confirm" && clientRequestId.startsWith("confirm:")));
+      // A message comes back with the id it was sent with, a confirmation with the "confirm:<invocationId>" of its
+      // 202, a slow change's later update with "update:<messageId>" (no turn waits for that one).
+      const mine = !!due && due.clientRequestId === clientRequestId;
       onReply(sessionId, response?.state ?? null);
 
       if (error) {
@@ -178,15 +172,17 @@ export function useAgentThread({ threadId, onCreated, onReply }: UseAgentThreadO
   const thread = threadId ? (query.data ?? null) : null;
   const answered = isAnswered(query.data, turn);
 
-  // No reply within REPLY_WAIT_MS: say so (a job that failed for good sends nothing).
+  // No reply in time: say so. With the socket up every turn ends in a reply or an error, so the long wait only
+  // catches a backend whose worker isn't running; without it, the polls give up after REPLY_WAIT_MS.
   useEffect(() => {
     if (!threadId || !turn || turn.status !== "waiting" || answered) return;
+    const wait = connected ? REPLY_WAIT_CONNECTED_MS : REPLY_WAIT_MS;
     const timer = setTimeout(
       () => patchTurn(threadId, turn.key, { status: "late" }),
-      Math.max(0, turn.startedAt + REPLY_WAIT_MS - Date.now())
+      Math.max(0, turn.startedAt + wait - Date.now())
     );
     return () => clearTimeout(timer);
-  }, [threadId, turn, answered, patchTurn]);
+  }, [threadId, turn, answered, connected, patchTurn]);
 
   // Back online with a reply due: it may have come while the socket was down.
   const catchUp = useEffectEvent(() => {
@@ -222,6 +218,7 @@ export function useAgentThread({ threadId, onCreated, onReply }: UseAgentThreadO
           clientRequestId,
           baseCount,
           text,
+          optionId,
           startedAt: Date.now(),
           status: "waiting",
         },
@@ -258,6 +255,7 @@ export function useAgentThread({ threadId, onCreated, onReply }: UseAgentThreadO
           baseCount,
           // The thread stores the answer as the organiser's message.
           text: decision === "CONFIRM" ? "Confirm" : "Cancel",
+          optionId: null,
           startedAt: Date.now(),
           status: "waiting",
         },
@@ -282,6 +280,13 @@ export function useAgentThread({ threadId, onCreated, onReply }: UseAgentThreadO
     [threadId, queryClient, patchTurn, dropTurn]
   );
 
+  // A message the worker couldn't run goes again as a new turn. A Confirm doesn't: the backend keeps one job per
+  // confirmation and decision, so the organiser asks again for a fresh preview instead.
+  const canRetry = turn?.kind === "message" && turn.status === "failed" && !answered;
+  const retry = useCallback(() => {
+    if (turn?.kind === "message" && turn.status === "failed") void send(turn.text, turn.optionId);
+  }, [turn, send]);
+
   const waiting = turn?.status === "waiting" && !answered;
   const notice: TurnNotice | null =
     turn && !answered && turn.status !== "waiting" ? { kind: turn.status, error: turn.error } : null;
@@ -300,6 +305,8 @@ export function useAgentThread({ threadId, onCreated, onReply }: UseAgentThreadO
     connected,
     send,
     answer,
+    canRetry,
+    retry,
     refresh: () => void query.refetch(),
   };
 }

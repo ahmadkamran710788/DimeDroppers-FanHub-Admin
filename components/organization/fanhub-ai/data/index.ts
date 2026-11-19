@@ -4,16 +4,22 @@ import type { AgentArea, MessageState } from "@/utils/types/organiser-agent";
 // CONTEXT is the organization profile (the overview tools sit under OPERATIONS).
 export const AREAS: Record<AgentArea, { label: string; hint: string }> = {
   CONTEXT: { label: "Organization profile", hint: "Name, description, contact, address, colors and links" },
-  SCHEDULE: { label: "Schedules & games", hint: "Add, move, reschedule, cancel or delete games" },
-  SCORE: { label: "Scores", hint: "Game scores" },
-  ROSTER: { label: "Teams, sports & players", hint: "Teams, sports, players, coaches and role requests" },
-  FUNDRAISING: { label: "Donation campaigns", hint: "Create, change, publish, end or cancel campaigns" },
-  TICKETS: { label: "Tickets", hint: "Ticket campaigns, ticket types and games on sale" },
-  ENGAGEMENT: { label: "Predictions, votes & challenges", hint: "Open, change or take down fan engagement" },
+  SCHEDULE: { label: "Schedules & games", hint: "Games and fan-submitted schedules; add, move, cancel or delete games" },
+  SCORE: { label: "Scores", hint: "Box scores, recaps, AI insights and game threads" },
+  ROSTER: { label: "Teams, sports & players", hint: "Teams, players, parents, followers, coaches and role requests" },
+  FUNDRAISING: { label: "Donation campaigns", hint: "Campaigns, donations and sponsor-funded needs" },
+  TICKETS: { label: "Tickets", hint: "Ticket campaigns, orders, sales, games on sale and attendance" },
+  ENGAGEMENT: {
+    label: "Predictions, votes & challenges",
+    hint: "Predictions, votes, challenges, fan wall, recognitions and photo booth",
+  },
   MESSAGING: { label: "Messages", hint: "Direct and group messages to your teams’ people" },
-  COMMERCIAL: { label: "Activations & sponsors", hint: "Look up your activation inventory and sponsors" },
-  TOURNAMENT: { label: "Events & divisions", hint: "Events, divisions, venues, event games and documents" },
-  OPERATIONS: { label: "Scorekeepers & videographers", hint: "Officials, pools, requests, overview and live games" },
+  COMMERCIAL: { label: "Activations & sponsors", hint: "Activation inventory, sponsors, vendor booths and Sponsor AI" },
+  TOURNAMENT: { label: "Events & divisions", hint: "Events, divisions, venues, standings, event games and documents" },
+  OPERATIONS: {
+    label: "Scorekeepers, videographers & command center",
+    hint: "Officials, pools, requests, overview and live games",
+  },
 };
 
 // Shown in an empty chat; the same quick picks the agent offers when it can't work a request out.
@@ -22,13 +28,16 @@ export const STARTER_PROMPTS = ["Upcoming games", "Add a team", "Move a game", "
 // The API's limit on one message.
 export const MESSAGE_MAX_CHARS = 1000;
 
-// Without the socket, the open thread is checked this often while a reply is due…
-export const POLL_MS = 3_000;
-// …and a reply that hasn't come by then is reported as late (the doc's 60 seconds).
+// Without the socket, the open thread is checked this often while a reply is due (each check counts against
+// the organization's 120 chat calls per 10 minutes)…
+export const POLL_MS = 5_000;
+// …and a reply that hasn't come by then is reported as late.
 export const REPLY_WAIT_MS = 60_000;
-// A slow change stores a "working on it" reply and adds its result later without a socket message, so the
-// thread is checked for this long after such a reply.
-export const PENDING_REPLY_WAIT_MS = 120_000;
+// With the socket up every turn ends in a reply or an error; this only catches a backend whose worker isn't running.
+export const REPLY_WAIT_CONNECTED_MS = 180_000;
+
+// The backend's keyword stand-in answers anything it doesn't match with this: the API isn't running with Claude.
+export const KEYWORD_FALLBACK_TEXT = "I can help with schedules, scores, Fan Hub, sponsor benefits and game-day tasks.";
 
 // Each message carries a fresh id, so a resend is never run twice. crypto.randomUUID only exists in secure
 // contexts (https or localhost).
@@ -76,37 +85,50 @@ export const fieldLabel = (key: string) => {
   return words ? words[0].toUpperCase() + words.slice(1) : key;
 };
 
-const ISO_DATE_TIME = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/;
+const ISO_DATE_TIME = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/i;
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-// Game times are stored as the venue's wall-clock time (with a misleading trailing Z), so a date-time is
-// shown as written, never shifted into the browser's timezone.
-function formatDateText(text: string): string | null {
-  const dateTime = ISO_DATE_TIME.exec(text);
-  const date = dateTime ?? ISO_DATE.exec(text);
-  if (!date) return null;
-  const [, y, mo, d, h = "0", mi = "0"] = date;
-  const at = new Date(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi));
-  if (Number.isNaN(at.getTime())) return null;
-  const day = at.toLocaleDateString("en-US", {
+const formatDay = (at: Date) =>
+  at.toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
     ...(at.getFullYear() !== new Date().getFullYear() && { year: "numeric" }),
   });
-  return dateTime ? `${day}, ${at.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : day;
+const formatTime = (at: Date) => at.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+
+// A date-time with Z or an offset (endsAt, createdAt…) is a real instant: shown in the viewer's time. One without
+// (a game's start) is the organization's wall time: shown as written, with its timezone label ("ET") when known.
+function formatDateText(text: string, zone: string | null): string | null {
+  const dateTime = ISO_DATE_TIME.exec(text);
+  if (dateTime) {
+    const [, y, mo, d, h, mi, offset] = dateTime;
+    const at = offset ? new Date(text) : new Date(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi));
+    if (Number.isNaN(at.getTime())) return null;
+    const shown = `${formatDay(at)}, ${formatTime(at)}`;
+    return !offset && zone ? `${shown} ${zone}` : shown;
+  }
+  const date = ISO_DATE.exec(text);
+  if (!date) return null;
+  const at = new Date(Number(date[1]), Number(date[2]) - 1, Number(date[3]));
+  return Number.isNaN(at.getTime()) ? null : formatDay(at);
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+// A record's timezone label ("ET"), sent beside a game's wall-time start; shown with the time, not on its own.
+export const zoneOf = (record: Record<string, unknown>) =>
+  typeof record.timezone === "string" && record.timezone ? record.timezone : null;
+
 // One value of a card as text: dates readable, lists joined, a nested record by its name or its fields.
-export function formatValue(value: unknown): string {
+// `zone` is the record's timezone label, added to its wall-time dates.
+export function formatValue(value: unknown, zone: string | null = null): string {
   if (value === null || value === undefined || value === "") return "—";
   if (typeof value === "boolean") return value ? "Yes" : "No";
   if (typeof value === "number") return value.toLocaleString("en-US");
-  if (typeof value === "string") return formatDateText(value) ?? value;
-  if (Array.isArray(value)) return value.length ? value.map(formatValue).join(", ") : "—";
+  if (typeof value === "string") return formatDateText(value, zone) ?? value;
+  if (Array.isArray(value)) return value.length ? value.map((v) => formatValue(v)).join(", ") : "—";
   if (isRecord(value)) {
     const name = value.name ?? value.title ?? value.label;
     if (typeof name === "string" && name) return name;

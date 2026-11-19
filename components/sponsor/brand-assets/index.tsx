@@ -6,6 +6,7 @@ import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
 import { PRIMARY_BUTTON } from "@/components/sponsor/styles";
 import { useBrandLogos } from "@/components/sponsor/use-brand-logos";
+import LogoFitModal from "@/components/sponsor/logo-fit";
 import BrandProfile from "@/components/sponsor/brand-assets/brand-profile";
 import LogoLibrary from "@/components/sponsor/brand-assets/logo-library";
 import PlacementSpecs from "@/components/sponsor/brand-assets/placement-specs";
@@ -45,6 +46,9 @@ export default function BrandAssets() {
       </div>
 
       <PlacementSpecs />
+
+      {/* Every logo picked here is fitted to its slot's frame before it goes up. */}
+      <LogoFitModal logos={logos} />
     </div>
   );
 }
