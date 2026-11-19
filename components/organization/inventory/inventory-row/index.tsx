@@ -9,7 +9,7 @@ import { MAX_SIZE_LENGTH } from "@/components/organization/inventory/data";
 import type { FormSlot } from "@/components/organization/inventory/helpers";
 import type { SlotField } from "@/components/organization/inventory/use-inventory";
 import { cn } from "@/utils/cn";
-import { formatMoney } from "@/utils/helper";
+import { distinctFrom, formatMoney } from "@/utils/helper";
 import type { OptionView } from "@/utils/types/activations";
 
 interface DragProps {
@@ -73,7 +73,8 @@ export default function InventoryRow({
   dragging,
   drag,
 }: InventoryRowProps) {
-  const categoryLabel = assetCategories.find((c) => c.code === slot.assetCategory)?.label;
+  // Left out when it only repeats the name (Dime's catalogue assets).
+  const categoryLabel = distinctFrom(assetCategories.find((c) => c.code === slot.assetCategory)?.label, slot.name);
   const pills = (
     <>
       {slot.isRecommended && !slot.retired && <span className={cn(PILL, pillClassName)}>Recommended</span>}

@@ -1,4 +1,5 @@
 import { cn } from "@/utils/cn";
+import { distinctFrom } from "@/utils/helper";
 import Button from "@/components/common/button";
 import { OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
 import InsetSection from "@/components/sponsor/find-organizations/inset-section";
@@ -50,6 +51,9 @@ export default function PhysicalAddOns({
           const soldOut = !active && !pending && x.unavailableReason === "FULL";
           // The one status that replaces both actions.
           const status = active ? "Active" : pending ? "Payment pending" : soldOut ? "Sold out" : null;
+          // Its category, set by the organization; left out when it only repeats the name (Dime's catalogue
+          // assets) and for an asset made before categories.
+          const category = distinctFrom(x.assetCategory?.label, x.name);
           return (
             <div
               key={x.activationId}
@@ -63,10 +67,9 @@ export default function PhysicalAddOns({
               <span className="flex-auto min-w-0">
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="text-[15px] font-semibold">{x.name}</span>
-                  {/* Its category, set by the organization (none for an asset made before categories). */}
-                  {x.assetCategory && (
+                  {category && (
                     <span className="text-[11px] font-bold tracking-[0.5px] text-[#a3e3a5] border border-[#2f4a30] rounded-full px-2 py-0.5">
-                      {x.assetCategory.label}
+                      {category}
                     </span>
                   )}
                   <span
