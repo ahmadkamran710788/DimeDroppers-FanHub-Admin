@@ -1,7 +1,7 @@
 import { activationItemKey } from "@/context/sponsor-cart";
 import { backendFetch } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
-import type { PackageActivationsPage } from "@/utils/types/sponsor-packages";
+import type { PackageActivationStatus, PackageActivationsPage } from "@/utils/types/sponsor-packages";
 
 // A field-level validation error from the backend (`path` = the field name).
 export interface FieldError {
@@ -83,12 +83,16 @@ export async function sponsorList<T>(
 // Cart item key → the stores (ids) it is already active for; an empty set when activated without stores.
 export type ActiveActivations = Map<string, Set<string>>;
 
-// The packages and physical assets the sponsor already has active (at one organization, or anywhere). Without
-// stores the same item isn't activated twice; with stores it can be, for stores that don't have it yet. Up to
-// the API's page cap; null when it fails.
-export async function activeActivations(schoolId?: string): Promise<ActiveActivations | null> {
+// The packages and physical assets the sponsor already has active (at one organization, or anywhere), or in
+// another status (PENDING_PAYMENT: still being paid, which holds a package too). A package is held by one sponsor,
+// so it's never activated twice; a physical asset without stores isn't either, and with stores it can be, for
+// stores that don't have it yet. Up to the API's page cap; null when it fails.
+export async function activeActivations(
+  schoolId?: string,
+  status: PackageActivationStatus = "ACTIVE"
+): Promise<ActiveActivations | null> {
   const r = await sponsorRequest<PackageActivationsPage>("GET", routes.api.sponsorActivations, {
-    params: { status: "ACTIVE", schoolId, page: 1, limit: 100 },
+    params: { status, schoolId, page: 1, limit: 100 },
   });
   if (!r.view) return null;
   const active: ActiveActivations = new Map();

@@ -8,13 +8,16 @@ export type PriceBasis = "TEAMS" | "GAMES";
 // PENDING_PAYMENT: waiting for its payment (a bank payment clearing, or one still to finish); PAYMENT_FAILED:
 // its payment didn't go through. Only ACTIVE / EXPIRED / CANCELLED were bought.
 export type PackageActivationStatus = "ACTIVE" | "CANCELLED" | "EXPIRED" | "PENDING_PAYMENT" | "PAYMENT_FAILED";
+// TAKEN: one sponsor holds each package per organisation (per event for a tournament), and someone does: another
+// sponsor or the caller, the listing doesn't say which (the caller's own shows under GET /activations).
 export type UnavailableReason =
   | "NO_SLOTS"
   | "NO_TEAMS"
   | "NO_GAMES"
   | "NO_UPCOMING_GAMES"
   | "EVENT_ENDED"
-  | "TOURNAMENT_INCOMPLETE";
+  | "TOURNAMENT_INCOMPLETE"
+  | "TAKEN";
 export type SponsorSearchSort =
   | "UPCOMING_GAMES"
   | "ATTENDANCE"

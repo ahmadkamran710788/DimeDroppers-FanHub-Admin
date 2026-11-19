@@ -45,6 +45,7 @@ const EVENT_REASONS: Record<UnavailableReason, string> = {
   NO_UPCOMING_GAMES: "No upcoming games",
   EVENT_ENDED: "Event ended",
   TOURNAMENT_INCOMPLETE: "Format not set yet",
+  TAKEN: "Taken by a sponsor",
 };
 
 const fmtDate = (iso: string | null) =>
@@ -54,7 +55,8 @@ const fmtDate = (iso: string | null) =>
 type Choice = Pick<ActivatePackageRequest, "tier" | "physicalAssetId">;
 
 // A 409 because a store already has this package here (another tab, or a cart activation): the API names
-// the store(s). Any other 409 is a price change.
+// the store(s). Any other 409 is the package taken by another sponsor meanwhile, one the sponsor already has, or a
+// price change: all reload (the card then shows Sold, Active or the new price) and close.
 const STORE_TAKEN = /already has this package or physical asset active here/i;
 
 const NO_STORES: NearStores = { nearLocations: [], nearLocationCount: 0 };
@@ -109,7 +111,12 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
   const pay = useCheckout();
   const [paying, setPaying] = useState<Paying | null>(null);
   // What the sponsor already has active here (cart item key → its stores).
-  const [activeLoaded, setActiveLoaded] = useState<{ key: string; active: ActiveActivations } | null>(null);
+  // What the sponsor already has here: active, and still being paid (which holds a package too).
+  const [activeLoaded, setActiveLoaded] = useState<{
+    key: string;
+    active: ActiveActivations;
+    pending: ActiveActivations;
+  } | null>(null);
 
   // A tournament's events.
   useEffect(() => {
@@ -156,9 +163,9 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
   const activeKey = `${org.id}|${reloads}`;
   useEffect(() => {
     let cancelled = false;
-    activeActivations(org.id).then((active) => {
+    Promise.all([activeActivations(org.id), activeActivations(org.id, "PENDING_PAYMENT")]).then(([active, pending]) => {
       // If it can't be checked, the sponsor isn't blocked.
-      if (!cancelled) setActiveLoaded({ key: activeKey, active: active ?? new Map() });
+      if (!cancelled) setActiveLoaded({ key: activeKey, active: active ?? new Map(), pending: pending ?? new Map() });
     });
     return () => {
       cancelled = true;
@@ -166,6 +173,7 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
   }, [activeKey, org.id]);
 
   const activeMap = activeLoaded?.key === activeKey ? activeLoaded.active : null;
+  const pendingMap = activeLoaded?.key === activeKey ? activeLoaded.pending : null;
 
   // The brand's stores near what is being activated: near the organization, or near the picked event of a
   // tournament (its nearest venue). None without a search near stores.
@@ -191,11 +199,16 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
   // The stores this package or asset is already active for here; undefined when it isn't active.
   const takenFor = (choice: Choice) => activeMap?.get(cartItemKey(target(choice, 0)));
 
-  // Active, with no store left to add it for: one disabled "Active".
+  // Active, with no store left to add it for: one disabled "Active". A package belongs to one sponsor, its stores
+  // picked in that one activation, so it's never added for more stores; a physical asset can be.
   const isActive = (choice: Choice) => {
     const taken = takenFor(choice);
-    return !!taken && (nearStores.length === 0 || nearStores.every((s) => taken.has(s.id)));
+    if (!taken) return false;
+    return !!choice.tier || nearStores.length === 0 || nearStores.every((s) => taken.has(s.id));
   };
+
+  // The sponsor's own activation of this package is still being paid: it holds the package already.
+  const isPending = (choice: Choice) => !!pendingMap?.has(cartItemKey(target(choice, 0)));
 
   // Active, but still open for some of the near stores.
   const activeNote = (choice: Choice) => {
@@ -387,6 +400,7 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
                   onAddToCart={() => addToCart("PACKAGE", p.name, p.totalCents, p.currency, { tier: p.tier })}
                   inCart={cart.has(target({ tier: p.tier }, p.totalCents))}
                   active={isActive({ tier: p.tier })}
+                  pending={isPending({ tier: p.tier })}
                   activeNote={activeNote({ tier: p.tier })}
                   basisCount={basisCount(view.priceBasis)}
                 />

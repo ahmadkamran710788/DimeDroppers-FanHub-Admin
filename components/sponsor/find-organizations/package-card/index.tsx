@@ -15,6 +15,8 @@ interface PackageCardProps {
   inCart?: boolean;
   // The sponsor already has it active: one disabled "Active" in place of both actions.
   active?: boolean;
+  // The sponsor's own activation of it is still being paid (it holds the package): one disabled "Payment pending".
+  pending?: boolean;
   // Active for some of the stores but not all ("Active for 2 of 3 stores"): shown above the actions.
   activeNote?: string;
   // Each placement's own value: shown to the organisation, hidden from sponsors (they see the total).
@@ -28,13 +30,15 @@ interface PackageCardProps {
 }
 
 // One of an organization's three packages: what it's for, its total price, the placements it includes,
-// Add to cart and Activate. An unavailable package keeps its card with the reason and neither action.
+// Add to cart and Activate. An unavailable package keeps its card with the reason and neither action; one that
+// another sponsor holds (one sponsor per package) shows as Sold, also on the organisation's read-only preview.
 export default function PackageCard({
   pkg,
   onActivate,
   onAddToCart,
   inCart = false,
   active = false,
+  pending = false,
   activeNote,
   showPlacementValues = false,
   basisCount,
@@ -43,6 +47,10 @@ export default function PackageCard({
 }: PackageCardProps) {
   const slots = slotLimit ? pkg.slots.slice(0, slotLimit) : pkg.slots;
   const hiddenSlots = pkg.slots.length - slots.length;
+  // Held by a sponsor; when it's this one's, Active or Payment pending says so instead.
+  const sold = !active && !pending && pkg.unavailableReason === "TAKEN";
+  // The one status that replaces both actions.
+  const status = active ? "Active" : pending ? "Payment pending" : sold ? "Sold" : null;
   return (
     <article
       aria-label={`${pkg.name} package`}
@@ -104,13 +112,13 @@ export default function PackageCard({
 
       {/* mt-auto pins the action to the card bottom, so the cards in a row line up. */}
       <div className="mt-auto flex flex-col gap-2">
-        {!pkg.isAvailable && pkg.unavailableMessage && (
-          <p className="text-[13px] text-[#f0c36a]">{pkg.unavailableMessage}</p>
+        {!pkg.isAvailable && pkg.unavailableMessage && !active && !pending && (
+          <p className={cn("text-[13px]", sold ? "text-[#a8a8a8]" : "text-[#f0c36a]")}>{pkg.unavailableMessage}</p>
         )}
         {!active && activeNote && <p className="text-[13px] text-[#a3e3a5]">{activeNote}</p>}
-        {active ? (
+        {status ? (
           <Button
-            label="Active"
+            label={status}
             disabled
             className={cn(OUTLINE_BUTTON, "w-full h-11 px-[6px] rounded-[10px] text-sm font-semibold transition-none")}
           />

@@ -44,13 +44,16 @@ export default function CartLine({
   const pickedIds = line.item.sponsorLocationIds ?? [];
   // It has stores to choose from but none ticked: it can't be activated for no store.
   const needsStore = !!line.stores && pickedIds.length === 0;
+  // Why it can't be activated as it is; a package another sponsor holds says so before asking for a store.
   const problem = alreadyActive
     ? "You already have this sponsorship active. Remove it to continue."
-    : needsStore
-      ? "Tick at least one store for this item (Edit stores)."
-      : newPrice !== null
-        ? `The price has changed from ${formatCents(line.totalCents, currency)} to ${formatCents(newPrice, currency)}`
-        : quote?.problem;
+    : quote && !quote.isAvailable && quote.problem
+      ? quote.problem
+      : needsStore
+        ? "Tick at least one store for this item (Edit stores)."
+        : newPrice !== null
+          ? `The price has changed from ${formatCents(line.totalCents, currency)} to ${formatCents(newPrice, currency)}`
+          : quote?.problem;
   // The quote's stores carry their distance; while it prices (or when it has a problem) the ones picked here.
   const forStores = quote?.locations.length
     ? quote.locations
