@@ -10,6 +10,7 @@ import RowActionsMenu from "@/components/common/row-actions-menu";
 import SegmentedControl from "@/components/common/segmented-control";
 import type { GamePhase, MediaGame, PlayEvent, Quarter } from "@/components/organization/media/data";
 import { useGameDetail } from "@/components/organization/media/use-game-detail";
+import { THREAD_FIRST_PAGE } from "@/components/organization/media/use-live-sides";
 import { useOrgSponsors } from "@/components/organization/media/use-org-sponsors";
 import { cn } from "@/utils/cn";
 import { routes } from "@/utils/routes";
@@ -61,7 +62,6 @@ const EMPTY_TEXT: Record<ThreadPhase, string> = {
   final: "No post-game recap yet. It will appear here once the game ends.",
 };
 
-const THREAD_LIMIT = 200;
 
 // Small label above a play, e.g. "2PT Made".
 const TYPE_LABELS: Record<string, string> = {
@@ -309,8 +309,7 @@ function ApiThread({ gameId }: { gameId: string }) {
     ...(period && { period }),
     // The API only narrows the engagement items and keeps the plays, so picking one hides the plays too.
     ...(engagement && { engagement, plays: "none" }),
-    page: 1,
-    limit: THREAD_LIMIT,
+    ...THREAD_FIRST_PAGE,
   });
 
   // The menus' options describe the whole game whatever is picked, so the last ones are kept while a
