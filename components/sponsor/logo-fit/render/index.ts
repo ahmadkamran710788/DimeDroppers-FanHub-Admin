@@ -27,6 +27,10 @@ export interface LogoImage extends Size {
   vector: boolean;
   // The part with the logo, without the empty or flat-colour margins around it.
   content: Box;
+  // The flat colour a full-color logo sits on (a JPG on white), as "rgb(…)"; null when it's transparent or not one
+  // colour. The saved file is filled with it around the logo: the backend removes a background only when the
+  // file's corners are one colour, and transparent corners would leave it in, making the white logo a solid box.
+  background: string | null;
 }
 
 // Where the logo sits in its frame: its scale on each axis, as a multiple of the size at which the whole file just
@@ -162,7 +166,7 @@ export async function loadLogoImage(file: File): Promise<LogoImage | null> {
     URL.revokeObjectURL(url);
     return null;
   }
-  return { element, url, width, height, vector, content: contentBox(element, width, height) };
+  return { element, url, width, height, vector, ...scanLogo(element, width, height) };
 }
 
 // The SVG with its size set from its viewBox, long side SVG_LONG_SIDE: one without a size can't be drawn, and a
@@ -190,10 +194,11 @@ async function sizedSvg(file: File): Promise<Blob> {
   }
 }
 
-// The box around the logo without its margins: a transparent background, or a flat colour in all four corners
-// (a JPG on white). The whole file when there's neither, or it can't be read.
-function contentBox(element: HTMLImageElement, width: number, height: number): Box {
-  const whole = { left: 0, top: 0, width, height };
+// The box around the logo without its margins, and its flat background colour: a transparent background, or a flat
+// opaque colour in all four corners (a JPG on white). The whole file and no colour when there's neither, or it can't
+// be read.
+function scanLogo(element: HTMLImageElement, width: number, height: number): { content: Box; background: string | null } {
+  const whole = { content: { left: 0, top: 0, width, height }, background: null };
   const k = Math.min(1, SCAN_SIZE / Math.max(width, height));
   const w = Math.max(1, Math.round(width * k));
   const h = Math.max(1, Math.round(height * k));
@@ -213,15 +218,18 @@ function contentBox(element: HTMLImageElement, width: number, height: number): B
   const at = (x: number, y: number) => (y * w + x) * 4;
   const corners = [at(0, 0), at(w - 1, 0), at(0, h - 1), at(w - 1, h - 1)];
   let isLogo: (i: number) => boolean;
+  let background: string | null = null;
   if (corners.every((i) => data[i + 3] <= EMPTY_ALPHA)) {
     isLogo = (i) => data[i + 3] > VISIBLE_ALPHA;
   } else {
     const c = corners[0];
-    const background = (i: number) =>
+    const near = (i: number) =>
       Math.max(Math.abs(data[i] - data[c]), Math.abs(data[i + 1] - data[c + 1]), Math.abs(data[i + 2] - data[c + 2])) <=
       BACKGROUND_TOLERANCE;
-    if (!corners.every(background)) return whole;
-    isLogo = (i) => data[i + 3] > VISIBLE_ALPHA && !background(i);
+    if (!corners.every((i) => near(i) && data[i + 3] === 255)) return whole;
+    const mean = (offset: number) => Math.round(corners.reduce((sum, i) => sum + data[i + offset], 0) / corners.length);
+    background = `rgb(${mean(0)}, ${mean(1)}, ${mean(2)})`;
+    isLogo = (i) => data[i + 3] > VISIBLE_ALPHA && !near(i);
   }
 
   let minX = w;
@@ -240,7 +248,10 @@ function contentBox(element: HTMLImageElement, width: number, height: number): B
   if (maxX < 0) return whole;
   const kx = width / w;
   const ky = height / h;
-  return { left: minX * kx, top: minY * ky, width: (maxX - minX + 1) * kx, height: (maxY - minY + 1) * ky };
+  return {
+    content: { left: minX * kx, top: minY * ky, width: (maxX - minX + 1) * kx, height: (maxY - minY + 1) * ky },
+    background,
+  };
 }
 
 // The recommended size, then the smallest of the same shape the rules allow, for a file over the size limit.
@@ -250,7 +261,8 @@ function outputSizes(spec: VariantSpec): Size[] {
   return k < 1 ? [spec.recommended, { width: Math.ceil(width * k), height: Math.ceil(height * k) }] : [spec.recommended];
 }
 
-// The frame drawn as a PNG: transparent around the logo, or on `background` (the icon).
+// The frame drawn as a PNG: transparent around the logo, or on `background` (the icon's, or a full-color logo's own
+// flat colour).
 function draw(image: LogoImage, size: Size, view: LogoView, background: string | null): Promise<Blob | null> {
   const canvas = document.createElement("canvas");
   canvas.width = size.width;

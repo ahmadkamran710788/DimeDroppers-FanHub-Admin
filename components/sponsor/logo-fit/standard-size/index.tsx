@@ -1,20 +1,20 @@
-import { Check, TriangleAlert } from "lucide-react";
-import { cn } from "@/utils/cn";
+import { Check } from "lucide-react";
 import type { Size } from "@/components/sponsor/logo-fit/render";
 
 interface StandardSizeProps {
   // The saved file's size (the logo sizes doc's standard, e.g. 1000×200).
   canvas: Size;
-  // The box the logo has to fill: the canvas, or the icon's central 80%.
+  // The box the logo fills at the standard size: the canvas, or the icon's central 80%.
   target: Size;
   // The logo's size now, in the saved file's pixels.
   size: Size;
+  // The logo is at the standard size now.
   matched: boolean;
 }
 
 const px = (s: Size) => `${s.width} × ${s.height} px`;
 
-// The standard size, the logo's size now, and whether it's there yet (Save waits until it is).
+// The standard size as a guide, the logo's size now, and a tick when it's there. Any size can still be saved.
 export default function StandardSize({ canvas, target, size, matched }: StandardSizeProps) {
   const safeZone = target.width !== canvas.width || target.height !== canvas.height;
 
@@ -29,16 +29,15 @@ export default function StandardSize({ canvas, target, size, matched }: Standard
           Your logo: <strong className="font-semibold text-midnight-navy tabular-nums">{px(size)}</strong>
         </span>
       </div>
-      <span
-        role="status"
-        className={cn(
-          "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold",
-          matched ? "bg-[#dcfce7] text-[#166534]" : "bg-[#fef3c7] text-[#92400e]"
-        )}
-      >
-        {matched ? <Check className="size-3.5" strokeWidth={3} /> : <TriangleAlert className="size-3.5" />}
-        {matched ? "Standard size" : "Not at standard size"}
-      </span>
+      {matched && (
+        <span
+          role="status"
+          className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold bg-[#dcfce7] text-[#166534]"
+        >
+          <Check className="size-3.5" strokeWidth={3} />
+          Standard size
+        </span>
+      )}
     </div>
   );
 }
