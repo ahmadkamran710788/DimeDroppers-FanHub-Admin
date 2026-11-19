@@ -300,6 +300,15 @@ export const routes = {
     // Invite that player by email (POST { email }) or withdraw the pending invitation (DELETE).
     rosterSchoolPlayerInvite: (schoolTeamId: string, playerId: string) =>
       `fanhub/org/roster/teams/${schoolTeamId}/players/${playerId}/invite`,
+    // A player's parents: POST { firstName, lastName?, phone? } adds one (email comes at invite time).
+    rosterSchoolPlayerParents: (schoolTeamId: string, playerId: string) =>
+      `fanhub/org/roster/teams/${schoolTeamId}/players/${playerId}/parents`,
+    // One parent: PATCH { firstName?, lastName?, email?, phone? } edits, DELETE removes.
+    rosterSchoolParent: (schoolTeamId: string, playerId: string, parentId: string) =>
+      `fanhub/org/roster/teams/${schoolTeamId}/players/${playerId}/parents/${parentId}`,
+    // Invite that parent by email (POST { email }) or withdraw the pending invitation (DELETE).
+    rosterSchoolParentInvite: (schoolTeamId: string, playerId: string, parentId: string) =>
+      `fanhub/org/roster/teams/${schoolTeamId}/players/${playerId}/parents/${parentId}/invite`,
     // Fans following a team, each tagged PLAYER / PARENT / STAFF / FAN: GET ?schoolTeamId=&page=&limit=.
     rosterFollowers: "fanhub/org/roster/followers",
     // Activations — the sponsor slots the org sells (FANHUB_ACTIVATIONS_FRONTEND.md).
