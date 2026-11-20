@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useEffectEvent, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import {
@@ -22,6 +22,7 @@ import type {
   MessageResponse,
   MessageState,
   Thread,
+  ThreadLastMessage,
   ThreadMessage,
 } from "@/utils/types/organiser-agent";
 
@@ -78,6 +79,12 @@ const isAnswered = (thread: Thread | undefined, turn: Turn | undefined) =>
 const pollInterval = (thread: Thread | undefined, turn: Turn | undefined, connected: boolean): number | false =>
   !connected && turn?.status === "waiting" && !isAnswered(thread, turn) ? POLL_MS : false;
 
+// The reply as a list preview: its text is its first (text) block, if any.
+function replyPreview(response: MessageResponse): ThreadLastMessage {
+  const first = response.blocks[0];
+  return { role: "ASSISTANT", text: first?.type === "text" ? first.text : null, createdAt: new Date().toISOString() };
+}
+
 // A reply the thread couldn't be reloaded for: added as it came, after the organiser's own message.
 function withReply(thread: Thread, turn: Turn | undefined, response: MessageResponse): Thread {
   if (thread.messages.some((m) => m.id === response.messageId)) return thread;
@@ -103,8 +110,8 @@ interface UseAgentThreadOptions {
   threadId: string | null;
   // A new chat got its thread: select it.
   onCreated: (id: string) => void;
-  // A reply came for a thread (open or not): the list shows its new state.
-  onReply: (sessionId: string, state: MessageState | null) => void;
+  // A reply came for a thread (open or not): the list shows its new state and preview.
+  onReply: (sessionId: string, state: MessageState | null, lastMessage: ThreadLastMessage | null) => void;
 }
 
 // The open chat with the organiser agent: its messages, sending, Confirm / Cancel, and the reply of each
@@ -138,7 +145,7 @@ export function useAgentThread({ threadId, onCreated, onReply }: UseAgentThreadO
       // A message comes back with the id it was sent with, a confirmation with the "confirm:<invocationId>" of its
       // 202, a slow change's later update with "update:<messageId>" (no turn waits for that one).
       const mine = !!due && due.clientRequestId === clientRequestId;
-      onReply(sessionId, response?.state ?? null);
+      onReply(sessionId, response?.state ?? null, response ? replyPreview(response) : null);
 
       if (error) {
         if (mine) patchTurn(sessionId, due.key, { status: "failed", error });
@@ -191,6 +198,22 @@ export function useAgentThread({ threadId, onCreated, onReply }: UseAgentThreadO
   useEffect(() => {
     if (connected) catchUp();
   }, [connected]);
+
+  // Without the socket, a reply reaches this thread by polling, which doesn't go through `receive`, so the chat
+  // list is never told (a new chat would then only show after a manual reload). When a turn here is answered
+  // that way, report it once so the list refreshes from the backend — the same `onReply` the socket path makes.
+  const reported = useRef<string | null>(null);
+  useEffect(() => {
+    if (connected || !threadId || !turn || !answered || reported.current === turn.key) return;
+    reported.current = turn.key;
+    const messages = query.data?.messages ?? [];
+    const reply = messages.findLast((m) => m.role === "ASSISTANT");
+    onReply(
+      threadId,
+      reply?.state ?? null,
+      reply ? { role: reply.role, text: reply.text, createdAt: reply.createdAt } : null
+    );
+  }, [connected, threadId, turn, answered, query.data, onReply]);
 
   // Sends a typed message, or an option the organiser tapped (`text` is then its label). Returns whether it
   // went (the box is cleared then); on failure the backend's message is toasted.

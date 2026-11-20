@@ -32,12 +32,22 @@ export interface AgentSettingsUpdate {
 // (agent or area off, another organisation). AWAITING_APPROVAL never happens for organisers.
 export type MessageState = "COMPLETED" | "PENDING" | "NEEDS_INPUT" | "BLOCKED" | "FAILED" | "AWAITING_APPROVAL";
 
+// The conversation's last message, whatever the role, for the list's preview line.
+export interface ThreadLastMessage {
+  role: "USER" | "ASSISTANT";
+  // null when that turn carried only blocks and no text.
+  text: string | null;
+  createdAt: string;
+}
+
 export interface ThreadSummary {
   id: string;
   // The first 80 characters of the first message; null until the worker stores it.
   title: string | null;
   // The newest reply's state.
   lastState: MessageState | null;
+  // The last message either side sent; null when the chat has no messages yet.
+  lastMessage: ThreadLastMessage | null;
   createdAt: string;
   updatedAt: string;
 }
