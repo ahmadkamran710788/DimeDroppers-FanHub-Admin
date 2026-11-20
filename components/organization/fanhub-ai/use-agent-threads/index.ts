@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { deleteSession, listSessions, type AgentResult } from "@/components/organization/fanhub-ai/agent-api";
-import type { MessageState, ThreadSummary } from "@/utils/types/organiser-agent";
+import type { MessageState, ThreadLastMessage, ThreadSummary } from "@/utils/types/organiser-agent";
 
 // The organiser's chats, newest first. Only chats with a message are listed, and the API stores a chat's
 // first message with its reply, so a new chat appears once it has been answered.
@@ -32,18 +32,21 @@ export function useAgentThreads() {
     };
   }, [apply]);
 
-  // A reply arrived: a listed chat moves to the top with its new state; a new one needs the list again.
+  // A reply arrived: a listed chat moves to the top with its new state and preview; a new one needs the list again.
   const touch = useCallback(
-    (sessionId: string, state: MessageState | null) => {
+    (sessionId: string, state: MessageState | null, lastMessage: ThreadLastMessage | null = null) => {
       if (!threads?.some((t) => t.id === sessionId)) {
         void refresh();
         return;
       }
-      const at = new Date().toISOString();
+      const at = lastMessage?.createdAt ?? new Date().toISOString();
       setThreads((prev) => {
         const thread = prev?.find((t) => t.id === sessionId);
         if (!prev || !thread) return prev;
-        return [{ ...thread, lastState: state ?? thread.lastState, updatedAt: at }, ...prev.filter((t) => t.id !== sessionId)];
+        return [
+          { ...thread, lastState: state ?? thread.lastState, lastMessage: lastMessage ?? thread.lastMessage, updatedAt: at },
+          ...prev.filter((t) => t.id !== sessionId),
+        ];
       });
     },
     [threads, refresh]
