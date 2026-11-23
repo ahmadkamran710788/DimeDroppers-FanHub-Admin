@@ -3,7 +3,7 @@ import BrandPlacements from "@/components/sponsor/brand-placements";
 import { PLACEMENTS_TABS, type PlacementsTab } from "@/components/sponsor/brand-placements/data";
 
 export const metadata: Metadata = {
-  title: "Dime Sponsors · Brand Placements",
+  title: "Dime Sponsors · Action Required",
 };
 
 const isTab = (value: unknown): value is PlacementsTab => PLACEMENTS_TABS.some((tab) => tab === value);
