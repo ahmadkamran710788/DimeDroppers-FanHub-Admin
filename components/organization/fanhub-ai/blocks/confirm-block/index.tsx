@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Clock, X } from "lucide-react";
 import Button from "@/components/common/button";
 import type { ConfirmBlock as ConfirmBlockData } from "@/utils/types/organiser-agent";
@@ -27,10 +27,19 @@ export default function ConfirmBlock({ block, active, expired, onAnswer }: Confi
     return () => clearTimeout(timer);
   }, [active, block.expiresAt]);
 
+  // Set at once (state lags a render), so a double click answers only once.
+  const lockRef = useRef(false);
+
   const answer = async (decision: "CONFIRM" | "CANCEL") => {
+    if (lockRef.current) return;
+    lockRef.current = true;
     setSending(decision);
-    await onAnswer(block.token, decision);
-    setSending(null);
+    try {
+      await onAnswer(block.token, decision);
+    } finally {
+      lockRef.current = false;
+      setSending(null);
+    }
   };
 
   const gone = expired || timedOut;
