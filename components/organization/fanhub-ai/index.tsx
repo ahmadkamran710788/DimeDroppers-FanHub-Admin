@@ -33,7 +33,8 @@ export default function FanHubAiPage({ threadId }: FanHubAiPageProps) {
   // Below xl the list and the chat take turns.
   const [showChat, setShowChat] = useState(!!threadId);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  // The chat waiting on the delete confirmation (from the list's ⋮ menu or the open chat's bin).
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   // The URL keeps the open chat, so a reload comes back to it (no navigation: the page keeps its state).
   const select = useCallback((id: string | null) => {
@@ -54,10 +55,10 @@ export default function FanHubAiPage({ threadId }: FanHubAiPageProps) {
   const summary = threads?.find((t) => t.id === selectedId);
   const title = chat.thread?.title || summary?.title || "New chat";
 
-  const deleteOpen = async () => {
-    if (!selectedId) return false;
-    const deleted = await remove(selectedId);
-    if (deleted) {
+  // Deleting the open chat also closes it; another one just leaves the list.
+  const deleteThread = async (id: string) => {
+    const deleted = await remove(id);
+    if (deleted && id === selectedId) {
       open(null);
       setShowChat(false);
     }
@@ -123,6 +124,7 @@ export default function FanHubAiPage({ threadId }: FanHubAiPageProps) {
                   thread={thread}
                   selected={thread.id === selectedId}
                   onSelect={() => open(thread.id)}
+                  onDelete={() => setConfirmDelete(thread.id)}
                 />
               ))
             )}
@@ -145,7 +147,7 @@ export default function FanHubAiPage({ threadId }: FanHubAiPageProps) {
           onRefresh={chat.refresh}
           canRetry={chat.canRetry}
           onRetry={chat.retry}
-          onDelete={selectedId ? () => setConfirmDelete(true) : undefined}
+          onDelete={selectedId ? () => setConfirmDelete(selectedId) : undefined}
           onBack={() => setShowChat(false)}
           onOpenSettings={() => setSettingsOpen(true)}
           className={cn(!showChat && "hidden xl:flex")}
@@ -157,13 +159,13 @@ export default function FanHubAiPage({ threadId }: FanHubAiPageProps) {
       )}
 
       <ConfirmModal
-        isOpen={confirmDelete}
-        onClose={() => setConfirmDelete(false)}
+        isOpen={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
         title="Delete this chat?"
         message="The chat and its messages are removed from your list. Changes the agent already made stay as they are."
         confirmLabel="Delete chat"
         busyLabel="Deleting…"
-        onConfirm={deleteOpen}
+        onConfirm={() => (confirmDelete ? deleteThread(confirmDelete) : Promise.resolve(false))}
         destructive
       />
     </div>
