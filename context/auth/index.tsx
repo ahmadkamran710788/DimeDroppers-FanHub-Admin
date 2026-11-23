@@ -92,6 +92,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       routes.ui.signUp,
       routes.ui.organizationSignUp,
       routes.ui.sponsorSignUp,
+      // Public claim/registration flow — no session to restore (a 401 here would sign the visitor out).
+      routes.ui.fanhubClaim,
     ].some((p) => pathname.startsWith(p));
     loadProfile(signedOutPage)
       // A network failure is not a dead session; keep the user where they are.
