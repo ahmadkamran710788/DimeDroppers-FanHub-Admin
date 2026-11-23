@@ -1,6 +1,6 @@
 import { toOptions } from "@/utils/helper";
 import type { VariantSpec } from "@/utils/types/sponsor-brand-assets";
-import type { LogoRules } from "@/utils/types/sponsor-profile";
+import type { LogoRules, SponsorBrandProfile, SponsorSignupOptions } from "@/utils/types/sponsor-profile";
 
 // The signed-in sponsor, shown in the sponsor header and sidebar. Mock data until sponsor
 // auth is integrated.
@@ -40,14 +40,39 @@ export const categoryOptionsAZ = (categories: { code: string; label: string }[])
     .map((c) => ({ label: c.label, value: c.code }))
     .sort((a, b) => a.label.localeCompare(b.label));
 
-// "Other" in the category list (sign-up and profile): the sponsor types their own category, which is sent as
-// the category's text.
+// "Other" in the category list (sign-up and profile): it opens a box where the sponsor adds categories of their
+// own, which are sent as their text.
 export const OTHER_CATEGORY = "__other__";
 export const CUSTOM_CATEGORY_MAX = 60;
 
-// The category to send: the typed one for Other, else the picked option (a code, or Google's business type).
-export const categoryText = (category: string, other: string) =>
-  category === OTHER_CATEGORY ? other.trim() : category;
+type CategoryOption = SponsorSignupOptions["categories"][number];
+
+// A picked category's label: a code's from the list, a typed one as it is.
+export const categoryLabel = (category: string, options: CategoryOption[]) =>
+  options.find((c) => c.code === category)?.label ?? category;
+
+// The categories with a typed one added: as the listed code when it names one, and not twice (any case).
+export function withTypedCategory(categories: string[], typed: string, options: CategoryOption[]) {
+  const text = typed.trim();
+  if (!text) return categories;
+  const wanted = text.toLowerCase();
+  const category = options.find((c) => c.label.toLowerCase() === wanted)?.code ?? text;
+  return categories.some((c) => c.toLowerCase() === category.toLowerCase()) ? categories : [...categories, category];
+}
+
+// The sponsor's saved categories. Until the backend returns `categories`, the one `category` it keeps.
+export const savedCategories = (brand: SponsorBrandProfile | null): string[] =>
+  brand?.categories?.length ? brand.categories : brand?.category ? [brand.category] : [];
+
+// The same categories, in any order.
+export const sameCategories = (a: string[], b: string[]) => a.length === b.length && a.every((c) => b.includes(c));
+
+// The categories in a multipart sign-up or profile save: the list as JSON text, and the first one as
+// `category` for a backend that only stores one.
+export function appendCategories(form: FormData, categories: string[]) {
+  form.append("categories", JSON.stringify(categories));
+  if (categories[0]) form.append("category", categories[0]);
+}
 
 // The sponsor's logo: SVG or PNG only (file picker filter, and the check for dropped files).
 export const LOGO_ACCEPT = ".svg,.png";

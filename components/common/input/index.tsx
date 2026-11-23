@@ -13,6 +13,8 @@ interface InputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   // Fires when the field loses focus, e.g. to save a value once the user is done typing.
   onBlur?: () => void;
+  // E.g. Enter to add what was typed, instead of submitting the form around it.
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   placeholder?: string;
   icon?: ReactNode;
   // Fixed text at the field's end, e.g. "%" (not part of the value).
@@ -48,6 +50,7 @@ export default function Input({
   value,
   onChange,
   onBlur,
+  onKeyDown,
   placeholder,
   icon,
   suffix,
@@ -104,6 +107,7 @@ export default function Input({
           value={value}
           onChange={onChange}
           onBlur={onBlur}
+          onKeyDown={onKeyDown}
           placeholder={placeholder}
           disabled={disabled}
           maxLength={maxLength}

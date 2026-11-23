@@ -73,8 +73,13 @@ export interface SponsorBrandProfile {
   sponsorType: SponsorTypeCode;
   sponsorTypeLabel: string;
   name: string;
-  // null for some older sponsor accounts: they pick one on the profile.
+  // The first category (all of them are in `categories`). null for some older sponsor accounts: they pick
+  // some on the profile.
   category: string | null;
+  // Every category the sponsor picked or typed, in order. Requested from the backend
+  // (docs/SPONSOR_CATEGORIES_BACKEND_REQUEST.md); until it's there, read them with savedCategories(), which
+  // falls back to `category`.
+  categories?: string[];
   // Signed for one hour and re-signed on every GET; never stored.
   logoUrl: string | null;
 }
@@ -198,7 +203,9 @@ export interface SponsorProfileUpdate {
   phone?: string | null;
   sponsorType?: SponsorTypeCode;
   sponsorName?: string;
+  // Sent with `categories`: their first one, for a backend that only stores one.
   category?: string;
+  categories?: string[];
   removeLogo?: boolean;
 }
 

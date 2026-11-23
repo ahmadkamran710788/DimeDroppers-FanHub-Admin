@@ -10,7 +10,7 @@ import { setSponsorAccount } from "@/utils/auth/session";
 import { validateAndSetErrors } from "@/utils/validation";
 import Button from "@/components/common/button";
 import { OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
-import { OTHER_CATEGORY, categoryText } from "@/components/sponsor/data";
+import { appendCategories, withTypedCategory } from "@/components/sponsor/data";
 import { sponsorAccountSchema, sponsorBrandSchema, sponsorMainLocationSchema } from "@/components/auth/schema";
 import BrandPanel from "@/components/auth/sign-up-shared/brand-panel";
 import SignUpSteps from "@/components/auth/sign-up-shared/sign-up-steps";
@@ -82,16 +82,14 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
     );
   };
 
-  // From the map picker: Google's business type for the picked place, null for a plain address. It's the
-  // first choice for the category, so it replaces the current one. Without one, the previous place's type
-  // goes, along with the category if it was that type; a category the sponsor picked stays.
-  const setBusinessType = (businessType: string | null) => {
-    setForm((prev) => {
-      if (businessType) return { ...prev, googleCategory: businessType, category: businessType };
-      const wasGoogle = prev.googleCategory !== "" && prev.category === prev.googleCategory;
-      return { ...prev, googleCategory: "", category: wasGoogle ? "" : prev.category };
-    });
-    if (businessType) clearError("category");
+  const setCategories = (categories: string[]) => {
+    setForm((prev) => ({ ...prev, categories }));
+    clearError("categories");
+  };
+
+  const setCategoryOther = (categoryOther: string) => {
+    setForm((prev) => ({ ...prev, categoryOther }));
+    clearError("categoryOther");
   };
 
   const setPhone = (value: string) => {
@@ -114,7 +112,7 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
     if (form.phone) body.append("phone", toE164Phone(form.phone));
     body.append("sponsorType", type);
     body.append("sponsorName", form.name.trim());
-    body.append("category", categoryText(form.category, form.categoryOther));
+    appendCategories(body, form.categories);
     body.append("address", form.street.trim());
     body.append("city", form.city.trim());
     body.append("state", form.state);
@@ -134,11 +132,8 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
           toast.error(message);
           return;
         }
-        // A refused typed category is shown under its text box.
-        const { category, ...rest } = problem.errors;
-        const typed = category && form.category === OTHER_CATEGORY;
         setStep(problem.step);
-        setErrors(typed ? { ...rest, categoryOther: category } : problem.errors);
+        setErrors(problem.errors);
         return;
       }
       // For the sponsor header until /me answers in the sponsor panel.
@@ -155,7 +150,13 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
   async function handleNext(e: React.FormEvent) {
     e.preventDefault();
     if (step === 1 && !(await validateAndSetErrors(sponsorAccountSchema, form, setErrors))) return;
-    if (step === 2 && !(await validateAndSetErrors(brandStepSchema, form, setErrors))) return;
+    if (step === 2) {
+      // A category still in the Other box counts as added.
+      const listed = setup?.options.categories ?? [];
+      const next = { ...form, categories: withTypedCategory(form.categories, form.categoryOther, listed) };
+      if (!(await validateAndSetErrors(brandStepSchema, next, setErrors))) return;
+      setForm({ ...next, categoryOther: "" });
+    }
     if (step === 3) {
       if (agree && !submitting) await createAccount();
       return;
@@ -206,7 +207,8 @@ export default function SponsorSignUp({ setup }: SponsorSignUpProps) {
                   type={type}
                   onType={setType}
                   onLocation={setLocation}
-                  onBusinessType={setBusinessType}
+                  onCategories={setCategories}
+                  onCategoryOther={setCategoryOther}
                 />
               )}
               {step === 3 && (
