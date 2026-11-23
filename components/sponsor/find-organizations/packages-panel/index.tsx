@@ -15,16 +15,14 @@ import CheckoutPaymentModal from "@/components/sponsor/checkout/checkout-payment
 import PaymentChoice from "@/components/sponsor/checkout/payment-choice";
 import { toastOutcome, type CheckoutOutcome } from "@/components/sponsor/checkout/settle-checkout";
 import { useCheckout } from "@/components/sponsor/checkout/use-checkout";
-import { nearText, type EventFilters } from "@/components/sponsor/find-organizations/data";
+import { fmtEventDate } from "@/components/sponsor/find-organizations/data";
 import {
   activeActivations,
   formatCents,
   sponsorRequest,
-  toQuery,
   type ActiveActivations,
 } from "@/components/sponsor/sponsor-api";
 import { cartItemKey, useSponsorCart } from "@/context/sponsor-cart";
-import { backendFetch } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
 import type {
   ActivatePackageRequest,
@@ -35,22 +33,7 @@ import type {
   SponsorNearLocation,
   SponsorOrganizationListItem,
   SponsorPackages,
-  UnavailableReason,
 } from "@/utils/types/sponsor-packages";
-
-const EVENT_REASONS: Record<UnavailableReason, string> = {
-  NO_SLOTS: "No slots switched on",
-  NO_TEAMS: "No teams yet",
-  NO_GAMES: "No teams yet, so no games to count",
-  NO_UPCOMING_GAMES: "No upcoming games",
-  EVENT_ENDED: "Event ended",
-  TOURNAMENT_INCOMPLETE: "Format not set yet",
-  TAKEN: "Taken by a sponsor",
-  FULL: "All sponsor spots taken",
-};
-
-const fmtDate = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : null;
 
 // A package or a physical asset, never both.
 type Choice = Pick<ActivatePackageRequest, "tier" | "physicalAssetId">;
@@ -84,8 +67,11 @@ interface Paying {
 
 interface PackagesPanelProps {
   org: SponsorOrganizationListItem;
-  // The search's stores, radius and genders: a tournament lists only the events its card counted.
-  eventFilters?: EventFilters;
+  // A tournament's event picked in the list under its card; undefined while its events load, or when none
+  // can be sponsored.
+  event?: SponsorEventOption;
+  // The tournament's events are still loading.
+  eventsLoading?: boolean;
   // The search's sponsor budget in cents: only the packages within it are listed (physical assets aren't
   // counted against it); undefined for any price.
   budgetCents?: number;
@@ -96,15 +82,20 @@ interface PackagesPanelProps {
 }
 
 // The selected organization's packages and physical assets, priced for it (teams) or for one of its
-// events (games). A tournament picks an event first. Each one is activated on its own or added to the
-// cart to activate with others, for the brand's stores near it (ticked in the confirm). It is paid in the
-// confirm (a saved method, or a new one in Stripe's form) and goes live once paid.
-export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMiles, onActivated }: PackagesPanelProps) {
+// events (games). A tournament's event is picked in the list under its card. Each one is activated on its
+// own or added to the cart to activate with others, for the brand's stores near it (ticked in the confirm).
+// It is paid in the confirm (a saved method, or a new one in Stripe's form) and goes live once paid.
+export default function PackagesPanel({
+  org,
+  event,
+  eventsLoading,
+  budgetCents,
+  radiusMiles,
+  onActivated,
+}: PackagesPanelProps) {
   const isTournament = org.organizationType === "TOURNAMENT";
   const cart = useSponsorCart();
-  const eventQuery = toQuery({ ...eventFilters });
-  const [events, setEvents] = useState<{ orgId: string; items: SponsorEventOption[]; error?: string } | null>(null);
-  const [eventId, setEventId] = useState("");
+  const eventId = isTournament ? (event?.id ?? "") : "";
   const [loaded, setLoaded] = useState<{ key: string; view?: SponsorPackages; error?: string } | null>(null);
   // Bumped to refetch the packages (after a 409 or an activation).
   const [reloads, setReloads] = useState(0);
@@ -119,26 +110,6 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
     pending: ActiveActivations;
   } | null>(null);
 
-  // A tournament's events.
-  useEffect(() => {
-    if (!isTournament) return;
-    let cancelled = false;
-    backendEvents(org.id, eventQuery).then((items) => {
-      if (cancelled) return;
-      if (!items) {
-        setEvents({ orgId: org.id, items: [], error: "Couldn't load this tournament's events." });
-        return;
-      }
-      setEvents({ orgId: org.id, items });
-      // Start on the first event that can be sponsored.
-      setEventId(items.find((e) => e.isOffered)?.id ?? "");
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [isTournament, org.id, eventQuery]);
-
-  const eventsForOrg = events?.orgId === org.id ? events : null;
   const packagesKey = isTournament
     ? eventId
       ? `${org.id}|${eventId}|${budgetCents}|${reloads}`
@@ -178,12 +149,7 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
 
   // The brand's stores near what is being activated: near the organization, or near the picked event of a
   // tournament (its nearest venue). None without a search near stores.
-  const near: NearStores =
-    radiusMiles === null
-      ? NO_STORES
-      : isTournament
-        ? (eventsForOrg?.items.find((e) => e.id === eventId) ?? NO_STORES)
-        : org;
+  const near: NearStores = radiusMiles === null ? NO_STORES : isTournament ? (event ?? NO_STORES) : org;
   const nearStores = near.nearLocations;
 
   // The body of one activation (alone or as a cart item): this organization, the event for a
@@ -313,57 +279,25 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
           <h3 className="font-display font-extrabold text-2xl lg:text-[30px] uppercase leading-[1.05] break-words">
             {org.name ?? "Unnamed organization"}
           </h3>
+          {/* The tournament event the packages are priced for, picked in the list under its card. */}
+          {isTournament && event && (
+            <p className="mt-1 text-sm text-[#c9b8ff] break-words">
+              {[
+                event.name?.trim() || "Untitled event",
+                fmtEventDate(event.startDate),
+                [event.city, event.state].filter(Boolean).join(", "),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
         </div>
       </div>
 
-      {/* A tournament: its events (only offered ones can be opened). */}
-      {isTournament && (
-        <div className="flex flex-col gap-2">
-          <div className="text-xs font-bold tracking-[1.2px] text-[#c4c4c4]">EVENT</div>
-          {!eventsForOrg ? (
-            <Loader />
-          ) : eventsForOrg.items.length === 0 ? (
-            <p className="text-sm text-[#a8a8a8]">{eventsForOrg.error ?? "This tournament has no events selling packages yet."}</p>
-          ) : (
-            <div className="flex flex-col gap-1.5">
-              {eventsForOrg.items.map((e) => (
-                // A whole clickable row, not an action button, so it stays a native button.
-                <button
-                  key={e.id}
-                  type="button"
-                  disabled={!e.isOffered}
-                  aria-pressed={e.id === eventId}
-                  onClick={() => setEventId(e.id)}
-                  className={cn(
-                    "w-full text-left px-3 py-2.5 rounded-[10px] border flex flex-col gap-0.5 text-white",
-                    e.id === eventId ? "bg-[#17151f] border-[#8b6dff]" : "bg-transparent border-[#222]",
-                    e.isOffered ? "cursor-pointer" : "cursor-not-allowed opacity-60"
-                  )}
-                >
-                  <span className="text-[15px] font-semibold">{e.name?.trim() || "Untitled event"}</span>
-                  <span className="text-[13px] text-[#a8a8a8]">
-                    {[
-                      fmtDate(e.startDate),
-                      [e.city, e.state].filter(Boolean).join(", "),
-                      `${e.teamCount} teams · ${e.divisionCount} divisions · ${e.games} games`,
-                      e.tournamentFormatLabel,
-                      e.unavailableReason && EVENT_REASONS[e.unavailableReason],
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </span>
-                  {e.nearLocations.length > 0 && (
-                    <span className="text-[13px] text-[#c9b8ff]">{`Near ${nearText(e)}`}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {isTournament && !eventId ? (
-        eventsForOrg && eventsForOrg.items.length > 0 && (
+        eventsLoading ? (
+          <Loader />
+        ) : (
           <p className="text-sm text-[#a8a8a8]">None of this tournament&apos;s events can be sponsored yet.</p>
         )
       ) : !packages || !activeMap ? (
@@ -460,16 +394,4 @@ export default function PackagesPanel({ org, eventFilters, budgetCents, radiusMi
       />
     </section>
   );
-}
-
-// GET /organizations/:id/events answers the events as the whole `data` list.
-async function backendEvents(orgId: string, query: string): Promise<SponsorEventOption[] | null> {
-  try {
-    const res = await backendFetch(`${routes.api.sponsorOrgEvents(orgId)}${query}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    const json = await res.json().catch(() => null);
-    return Array.isArray(json?.data) ? (json.data as SponsorEventOption[]) : null;
-  } catch {
-    return null;
-  }
 }

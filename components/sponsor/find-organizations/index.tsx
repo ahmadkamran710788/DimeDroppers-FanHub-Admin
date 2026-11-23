@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { cn } from "@/utils/cn";
 import FilterChipMenu from "@/components/common/filter-chip-menu";
@@ -10,10 +10,12 @@ import Pagination from "@/components/common/pagination";
 import Select from "@/components/common/select";
 import StatCard, { type Stat } from "@/components/common/stat-card";
 import { CARD } from "@/components/sponsor/styles";
+import EventList from "@/components/sponsor/find-organizations/event-list";
 import OrgCard from "@/components/sponsor/find-organizations/org-card";
 import PackagesPanel from "@/components/sponsor/find-organizations/packages-panel";
 import SearchFilters from "@/components/sponsor/find-organizations/search-filters";
 import { useSponsorStores } from "@/components/sponsor/find-organizations/use-sponsor-stores";
+import { useTournamentEvents } from "@/components/sponsor/find-organizations/use-tournament-events";
 import {
   DEFAULT_SORT,
   PAGE_SIZE,
@@ -151,6 +153,8 @@ export default function FindOrganizations() {
   const items = results?.items ?? [];
   // The open organization, or the first result.
   const selected = items.find((o) => o.id === selectedId) ?? items[0];
+  // A selected tournament's events (listed under its card) and the one whose packages the panel shows.
+  const tournament = useTournamentEvents(selected, shown ? eventFiltersOf(shown) : undefined);
 
   function runSearch(next: OrgSearch) {
     setSearch(next);
@@ -273,7 +277,18 @@ export default function FindOrganizations() {
               ) : items.length ? (
                 <>
                   {items.map((org) => (
-                    <OrgCard key={org.id} org={org} selected={org.id === selected?.id} onSelect={() => setSelectedId(org.id)} />
+                    <Fragment key={org.id}>
+                      <OrgCard org={org} selected={org.id === selected?.id} onSelect={() => setSelectedId(org.id)} />
+                      {org.id === selected?.id && org.organizationType === "TOURNAMENT" && (
+                        <EventList
+                          events={tournament.events}
+                          loading={tournament.loading}
+                          error={tournament.error}
+                          eventId={tournament.event?.id}
+                          onSelect={tournament.pick}
+                        />
+                      )}
+                    </Fragment>
                   ))}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4">
                     <span className="text-xs text-white/80">{`Showing ${from} to ${to} of ${results?.total ?? 0} organizations`}</span>
@@ -292,7 +307,8 @@ export default function FindOrganizations() {
               <PackagesPanel
                 key={selected.id}
                 org={selected}
-                eventFilters={eventFiltersOf(shown)}
+                event={tournament.event}
+                eventsLoading={tournament.loading}
                 budgetCents={budgetCentsOf(shown)}
                 radiusMiles={results?.radiusMiles ?? null}
                 onActivated={() => setRefreshes((n) => n + 1)}
