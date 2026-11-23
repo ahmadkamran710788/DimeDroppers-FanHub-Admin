@@ -15,6 +15,8 @@ interface InputProps {
   onBlur?: () => void;
   placeholder?: string;
   icon?: ReactNode;
+  // Fixed text at the field's end, e.g. "%" (not part of the value).
+  suffix?: ReactNode;
   error?: string;
   type?: string;
   disabled?: boolean;
@@ -48,6 +50,7 @@ export default function Input({
   onBlur,
   placeholder,
   icon,
+  suffix,
   error,
   type = "text",
   disabled = false,
@@ -116,9 +119,21 @@ export default function Input({
             icon && (dark ? "pl-16" : "pl-10"),
             isPassword && "pr-11",
             inputClassName,
+            // After inputClassName so a caller's px-* can't cover the suffix.
+            suffix && "pr-10",
             error && "border-error focus:border-error"
           )}
         />
+        {suffix && (
+          <span
+            className={cn(
+              "absolute right-4 pointer-events-none text-base",
+              dark ? "text-white/60" : "text-midnight-navy/60"
+            )}
+          >
+            {suffix}
+          </span>
+        )}
         {isPassword && (
           <button
             type="button"

@@ -13,21 +13,27 @@ import Input from "@/components/common/input";
 import MultiSelect, { ALL } from "@/components/common/multi-select";
 import Select from "@/components/common/select";
 import { sponsorRequest } from "@/components/sponsor/sponsor-api";
-import { FIELD, HINT, HINT_LINK, PRIMARY_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
+import { HINT, HINT_LINK, PRIMARY_BUTTON, SECTION_LABEL } from "@/components/sponsor/styles";
 import type { SponsorStore } from "@/components/sponsor/find-organizations/use-sponsor-stores";
 import { MAX_PICKED_STORES } from "@/components/sponsor/find-organizations/data";
+import BriefTag from "@/components/sponsor/campaign-planner/brief-tag";
 import PromptBox from "@/components/sponsor/campaign-planner/prompt-box";
 import { MISSING_MESSAGES, fillFromPrompt } from "@/components/sponsor/campaign-planner/prompt-fill";
 import { campaignRequestSchema } from "@/components/sponsor/campaign-planner/schema";
-import { DEFAULT_FORM, GOAL_OPTIONS, type PlanForm } from "@/components/sponsor/campaign-planner/data";
+import SplitBudget from "@/components/sponsor/campaign-planner/split-budget";
+import { splitAreas, splitTotal, toAllocations } from "@/components/sponsor/campaign-planner/split-rows";
+import {
+  BRIEF_BORDER,
+  DEFAULT_FORM,
+  GOAL_OPTIONS,
+  PLAN_CONTROL,
+  type PlanForm,
+} from "@/components/sponsor/campaign-planner/data";
 import type { FilterOption, SponsorSearchFilters } from "@/utils/types/sponsor-packages";
 import type { PlanGoal, SponsorPlanPromptResult, SponsorPlanRequest } from "@/utils/types/sponsor-plan";
 
-const CONTROL = cn(FIELD, "h-12 text-[16px] min-w-0");
-
-// A field the brief filled: a purple border and this tag by its label, until the sponsor edits it.
-const BRIEF_BORDER = "border-[#8b6dff]";
-const BRIEF_TAG = <span className="text-[11px] font-bold tracking-[1px] text-[#c9b8ff]">FROM YOUR BRIEF</span>;
+// A field the brief filled shows a purple border (BRIEF_BORDER) and <BriefTag /> by its label, until the sponsor
+// edits it.
 
 const chipOptions = (options: FilterOption[] | undefined) => (options ?? []).map((o) => ({ label: o.label, value: o.code }));
 
@@ -63,6 +69,11 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
   // The brief left these to the sponsor: Build my plan waits until they're filled.
   const waiting =
     (missing.has("stores") && form.stores !== ALL && !form.stores.length) || (missing.has("budget") && !form.budget.trim());
+  // The budget split's choices: the states and cities of the stores the plan is around.
+  const areas = splitAreas(stores, form.stores);
+  // A split is sent only once its rows add up to 100% (no rows is no split).
+  const splitUnfinished = form.split.length > 0 && splitTotal(form.split) !== 100;
+  const blocked = building || noStores || reading || waiting || splitUnfinished;
 
   function update<K extends keyof PlanForm>(field: K, value: PlanForm[K]) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -94,8 +105,8 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
 
   async function build(e: React.FormEvent) {
     e.preventDefault();
-    if (building || noStores || reading || waiting) return;
-    if (!(await validateAndSetErrors(campaignRequestSchema, form, setErrors))) return;
+    if (blocked) return;
+    if (!(await validateAndSetErrors(campaignRequestSchema(areas), form, setErrors))) return;
     const request: SponsorPlanRequest = {
       brandLocationIds: form.stores === ALL ? "ALL" : form.stores,
       radiusMiles: Number(form.radius),
@@ -104,6 +115,7 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
       goal: form.goal,
       ...(form.sports.length && { sports: form.sports }),
       ...(form.genders.length && { genders: form.genders }),
+      ...(form.split.length && { allocations: toAllocations(form.split) }),
     };
     const problems = await onBuild(request);
     if (problems) setErrors(problems);
@@ -143,7 +155,7 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
         <div className="@container grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 items-start">
           <MultiSelect
             label="BRAND LOCATIONS"
-            labelHint={filled.has("stores") ? BRIEF_TAG : undefined}
+            labelHint={filled.has("stores") ? <BriefTag /> : undefined}
             name="plan-locations"
             value={form.stores}
             onChange={(picked) => update("stores", picked)}
@@ -158,12 +170,12 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
             variant="dark"
             className="min-w-0 @min-[416px]:col-span-2"
             labelClassName={SECTION_LABEL}
-            selectClassName={cn(CONTROL, "px-3", filled.has("stores") && BRIEF_BORDER)}
+            selectClassName={cn(PLAN_CONTROL, "px-3", filled.has("stores") && BRIEF_BORDER)}
           />
           {/* Whole miles, digits only (checked against the API's 1–250 when building). */}
           <Input
             label="RADIUS (MILES)"
-            labelHint={filled.has("radius") ? BRIEF_TAG : undefined}
+            labelHint={filled.has("radius") ? <BriefTag /> : undefined}
             name="plan-radius"
             value={form.radius}
             onChange={(e) => update("radius", e.target.value.replace(/\D/g, "").slice(0, 3))}
@@ -172,7 +184,7 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
             error={errors.radius}
             className="min-w-0"
             labelClassName={SECTION_LABEL}
-            inputClassName={cn(CONTROL, "py-0 px-[14px] placeholder:text-[#757575]", filled.has("radius") && BRIEF_BORDER)}
+            inputClassName={cn(PLAN_CONTROL, "py-0 px-[14px] placeholder:text-[#757575]", filled.has("radius") && BRIEF_BORDER)}
           />
         </div>
         {noStores && (
@@ -186,11 +198,20 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
         )}
       </div>
 
+      <SplitBudget
+        rows={form.split}
+        onChange={(rows) => update("split", rows)}
+        areas={areas}
+        fromBrief={filled.has("split")}
+        error={errors.split}
+        disabled={building || noStores}
+      />
+
       <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4 items-start">
         {/* Dollars, the number only; the "$" is fixed in the field. */}
         <Input
           label="TOTAL BUDGET"
-          labelHint={filled.has("budget") ? BRIEF_TAG : undefined}
+          labelHint={filled.has("budget") ? <BriefTag /> : undefined}
           name="plan-budget"
           value={form.budget}
           onChange={(e) => {
@@ -204,7 +225,7 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
           className="min-w-0"
           labelClassName={SECTION_LABEL}
           inputClassName={cn(
-            CONTROL,
+            PLAN_CONTROL,
             "py-0 px-[14px] pl-9 placeholder:text-[#757575]",
             filled.has("budget") && BRIEF_BORDER
           )}
@@ -213,7 +234,7 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
         {(filters?.seasons.length ?? 0) > 0 && (
           <Select
             label="SEASON"
-            labelHint={filled.has("season") ? BRIEF_TAG : undefined}
+            labelHint={filled.has("season") ? <BriefTag /> : undefined}
             name="plan-season"
             value={season}
             onChange={(e) => update("season", e.target.value)}
@@ -222,12 +243,12 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
             variant="dark"
             className="min-w-0"
             labelClassName={SECTION_LABEL}
-            selectClassName={cn(CONTROL, "px-3", filled.has("season") && BRIEF_BORDER)}
+            selectClassName={cn(PLAN_CONTROL, "px-3", filled.has("season") && BRIEF_BORDER)}
           />
         )}
         <Select
           label="GOAL"
-          labelHint={filled.has("goal") ? BRIEF_TAG : undefined}
+          labelHint={filled.has("goal") ? <BriefTag /> : undefined}
           name="plan-goal"
           value={form.goal}
           onChange={(e) => update("goal", e.target.value as PlanGoal)}
@@ -236,7 +257,7 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
           variant="dark"
           className="min-w-0"
           labelClassName={SECTION_LABEL}
-          selectClassName={cn(CONTROL, "px-3", filled.has("goal") && BRIEF_BORDER)}
+          selectClassName={cn(PLAN_CONTROL, "px-3", filled.has("goal") && BRIEF_BORDER)}
         />
       </div>
 
@@ -244,7 +265,7 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
         <div className="flex justify-between gap-3 flex-wrap">
           <div className="flex items-baseline gap-x-3 gap-y-1 flex-wrap">
             <div className={SECTION_LABEL}>SPORTS · SELECT ANY</div>
-            {filled.has("sports") && BRIEF_TAG}
+            {filled.has("sports") && <BriefTag />}
           </div>
           <div className={HINT}>{form.sports.length ? `${form.sports.length} selected` : "All sports"}</div>
         </div>
@@ -263,7 +284,7 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
         <div className="flex justify-between gap-3 flex-wrap">
           <div className="flex items-baseline gap-x-3 gap-y-1 flex-wrap">
             <div className={SECTION_LABEL}>GENDER · SELECT ANY</div>
-            {filled.has("genders") && BRIEF_TAG}
+            {filled.has("genders") && <BriefTag />}
           </div>
           <div className={HINT}>{form.genders.length ? `${form.genders.length} selected` : "All genders"}</div>
         </div>
@@ -288,7 +309,7 @@ export default function PlanComposer({ filters, filtersFailed, onRetryFilters, s
           type="submit"
           label={building ? "Building your plan…" : "Build my plan"}
           icon={<Sparkles className="size-[18px]" strokeWidth={2} />}
-          disabled={building || noStores || reading || waiting}
+          disabled={blocked}
           className={cn(PRIMARY_BUTTON, "h-12 px-6 rounded-[10px] text-base")}
         />
       </div>

@@ -1,10 +1,14 @@
-import { X } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { ChevronDown, X } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { plural } from "@/utils/helper";
 import Button from "@/components/common/button";
 import FilterChips from "@/components/common/filter-chips";
 import { dollars } from "@/utils/needs";
 import { CARD } from "@/components/sponsor/styles";
+import LineDetail, { hasDetail, lineStats } from "@/components/sponsor/campaign-planner/line-detail";
 import type { SponsorPlanLine, SponsorPlanMarket } from "@/utils/types/sponsor-plan";
 
 // Shared by the header and the rows so the columns line up.
@@ -17,6 +21,8 @@ interface PlacementsTableProps {
   lines: SponsorPlanLine[];
   // The plan's markets, for the filter chips.
   markets: SponsorPlanMarket[];
+  // The plan's radius around each store (the line detail's "N of your stores within R miles").
+  radiusMiles: number;
   // ALL_MARKETS or a market key.
   market: string;
   onMarketChange: (market: string) => void;
@@ -30,9 +36,12 @@ interface PlacementsTableProps {
 }
 
 // The plan line by line; a line's ✕ removes it from the list and the totals (on screen only, nothing is sent).
+// Each row shows its reach, share of the budget and cost per person; "Why this organization" opens its facts and
+// nearest store under it.
 export default function PlacementsTable({
   lines,
   markets,
+  radiusMiles,
   market,
   onMarketChange,
   excluded,
@@ -40,6 +49,14 @@ export default function PlacementsTable({
   onRestore,
   notes,
 }: PlacementsTableProps) {
+  // Indexes of the lines whose detail is open, for the plan they were opened on (a new plan opens none).
+  const [opened, setOpened] = useState<{ lines: SponsorPlanLine[]; indexes: ReadonlySet<number> } | null>(null);
+  const open = opened?.lines === lines ? opened.indexes : new Set<number>();
+  function toggle(index: number) {
+    const next = new Set(open);
+    if (!next.delete(index)) next.add(index);
+    setOpened({ lines, indexes: next });
+  }
   const options = [
     { label: "All", value: ALL_MARKETS },
     ...markets.map((m) => ({ label: m.label, value: m.key })),
@@ -90,6 +107,8 @@ export default function PlacementsTable({
               {shown.map(({ line, index }) => {
                 const name = line.event?.name ? `${line.organization.name} · ${line.event.name}` : line.organization.name;
                 const note = notes?.get(index);
+                const detailId = `plan-line-${index}-detail`;
+                const isOpen = open.has(index) && hasDetail(line);
                 return (
                   <li
                     key={`${line.schoolId}|${line.eventId ?? ""}|${index}`}
@@ -106,7 +125,26 @@ export default function PlacementsTable({
                     <div className="min-w-0">
                       <div className="text-[15px] font-bold break-words">{name}</div>
                       <div className="text-[13px] text-[#a8a8a8] mt-[2px] leading-[1.4]">{line.reason}</div>
+                      <div className="text-[13px] text-[#e0e0e0] mt-1 leading-[1.4]">{lineStats(line).join(" · ")}</div>
                       {note && <div className="text-[13px] text-[#f0c36a] mt-1 leading-[1.4]">{note}</div>}
+                      {hasDetail(line) && (
+                        <Button
+                          variant="text"
+                          size="sm"
+                          label="Why this organization"
+                          icon={
+                            <ChevronDown
+                              className={cn("size-4 transition-transform", isOpen && "rotate-180")}
+                              strokeWidth={2}
+                            />
+                          }
+                          iconPosition="end"
+                          aria-expanded={isOpen}
+                          aria-controls={isOpen ? detailId : undefined}
+                          onClick={() => toggle(index)}
+                          className="mt-1 text-[13px] font-semibold text-[#c9b8ff] hover:text-white"
+                        />
+                      )}
                     </div>
                     <div className="text-sm">{line.market.label}</div>
                     <div>
@@ -129,6 +167,7 @@ export default function PlacementsTable({
                       {line.physicalAssets.map((a) => a.name).join(" · ") || "—"}
                     </div>
                     <div className="text-base font-bold text-right">{dollars(line.totalCents)}</div>
+                    {isOpen && <LineDetail id={detailId} line={line} radiusMiles={radiusMiles} />}
                   </li>
                 );
               })}

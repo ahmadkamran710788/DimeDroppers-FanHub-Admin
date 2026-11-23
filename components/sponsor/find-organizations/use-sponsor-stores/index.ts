@@ -15,6 +15,9 @@ export interface SponsorStore {
   hint?: string;
   // "Vancouver, WA": tells same-named stores apart in short lists.
   area: string;
+  // The store's own city and state (the Campaign Planner's budget split), trimmed; null when not set.
+  city: string | null;
+  state: string | null;
 }
 
 // GET /fanhub/sponsor-profile/locations answers the stores as the whole `data` list (the API puts a list
@@ -49,6 +52,8 @@ export function useSponsorStores(): SponsorStore[] | null {
               id: l.id,
               label: locationLabel(l),
               area: [l.city, l.state].filter(Boolean).join(", "),
+              city: l.city?.trim() || null,
+              state: l.state?.trim() || null,
               ...(l.name && address && { hint: address }),
             };
           })

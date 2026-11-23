@@ -5,9 +5,16 @@ export interface PlanMarketSummary {
   label: string;
   totalCents: number;
   organizationCount: number;
-  fanReach: number;
+  // People reached by the market's lines.
+  projectedReach: number;
   // Whole percent of the plan's spend.
   shareOfSpend: number;
+  // What's spent here as a percent of the budget, to one decimal (58.5).
+  shareOfBudget: number;
+  // The budget split row's percent; null without a split.
+  requestedPercent: number | null;
+  // The market's share of the budget in cents (the split row's, or the reach-based one).
+  targetCents: number;
 }
 
 export interface PlanSummary {
@@ -15,8 +22,12 @@ export interface PlanSummary {
   budgetCents: number;
   remainingCents: number;
   organizationCount: number;
-  fanReach: number;
-  costPerFanCents: number | null;
+  // People reached (students or rostered players, with their parents).
+  projectedReach: number;
+  // Null when the reach is 0.
+  costPerReachCents: number | null;
+  // The most one organization may cost.
+  lineCapCents: number;
   // Lines still in the plan (the "N packages" and the inventory mix's "of N").
   lineCount: number;
   markets: PlanMarketSummary[];
@@ -26,36 +37,43 @@ export interface PlanSummary {
 // The API's inventory mix keeps the top 8 slots.
 const MIX_MAX = 8;
 
-// Organisations and their fan reach, each organisation once (two event lines of a tournament share it).
+// Organisations (each once: two event lines of a tournament are one organisation) and the lines' reach added up,
+// as the API adds it (each event line reaches its own teams).
 function reachOf(lines: SponsorPlanLine[]) {
-  const reach = new Map<string, number>();
-  for (const line of lines) reach.set(line.organization.id, line.fanReach);
-  return { organizationCount: reach.size, fanReach: [...reach.values()].reduce((sum, n) => sum + n, 0) };
+  return {
+    organizationCount: new Set(lines.map((line) => line.organization.id)).size,
+    projectedReach: lines.reduce((sum, line) => sum + line.projectedReach, 0),
+  };
 }
 
 const totalOf = (lines: SponsorPlanLine[]) => lines.reduce((sum, line) => sum + line.totalCents, 0);
 
 // The plan's numbers for the lines still in it (`excluded` holds the removed lines' indexes). With every line
 // in, they're the API's own; after a removal they're worked out again from the remaining lines, as the API does
-// (FANHUB_SPONSOR_PLAN_FRONTEND.md §3). Markets stay listed at $0 when all their lines are removed.
+// (FANHUB_SPONSOR_PLAN_FRONTEND.md §3, FANHUB_SPONSOR_PLAN_CHANGES_21_NOV_FRONTEND.md §2). Markets stay listed
+// at $0 when all their lines are removed, with their split percent and target.
 export function summarizePlan(plan: SponsorPlan, excluded: ReadonlySet<number>): PlanSummary {
+  const { totals } = plan;
   if (excluded.size === 0) {
-    const { totals } = plan;
     return {
       totalCents: totals.totalCents,
       budgetCents: totals.budgetCents,
       remainingCents: totals.remainingCents,
       organizationCount: totals.organizationCount,
-      fanReach: totals.fanReach,
-      costPerFanCents: totals.costPerFanCents,
+      projectedReach: totals.projectedReach,
+      costPerReachCents: totals.costPerReachCents,
+      lineCapCents: totals.lineCapCents,
       lineCount: plan.lines.length,
-      markets: plan.markets.map(({ key, label, totalCents, organizationCount, fanReach, shareOfSpend }) => ({
-        key,
-        label,
-        totalCents,
-        organizationCount,
-        fanReach,
-        shareOfSpend,
+      markets: plan.markets.map((m) => ({
+        key: m.key,
+        label: m.label,
+        totalCents: m.totalCents,
+        organizationCount: m.organizationCount,
+        projectedReach: m.projectedReach,
+        shareOfSpend: m.shareOfSpend,
+        shareOfBudget: m.shareOfBudget,
+        requestedPercent: m.requestedPercent,
+        targetCents: m.targetCents,
       })),
       inventoryMix: plan.inventoryMix,
     };
@@ -63,9 +81,9 @@ export function summarizePlan(plan: SponsorPlan, excluded: ReadonlySet<number>):
 
   const included = plan.lines.filter((_, i) => !excluded.has(i));
   const totalCents = totalOf(included);
-  const { organizationCount, fanReach } = reachOf(included);
+  const { organizationCount, projectedReach } = reachOf(included);
 
-  const markets = plan.markets.map(({ key, label }) => {
+  const markets = plan.markets.map(({ key, label, requestedPercent, targetCents }) => {
     const lines = included.filter((line) => line.market.key === key);
     const marketCents = totalOf(lines);
     return {
@@ -74,6 +92,9 @@ export function summarizePlan(plan: SponsorPlan, excluded: ReadonlySet<number>):
       totalCents: marketCents,
       ...reachOf(lines),
       shareOfSpend: totalCents ? Math.round((marketCents / totalCents) * 100) : 0,
+      shareOfBudget: totals.budgetCents ? Math.round((marketCents / totals.budgetCents) * 1000) / 10 : 0,
+      requestedPercent,
+      targetCents,
     };
   });
 
@@ -86,11 +107,12 @@ export function summarizePlan(plan: SponsorPlan, excluded: ReadonlySet<number>):
 
   return {
     totalCents,
-    budgetCents: plan.totals.budgetCents,
-    remainingCents: Math.max(0, plan.totals.budgetCents - totalCents),
+    budgetCents: totals.budgetCents,
+    remainingCents: Math.max(0, totals.budgetCents - totalCents),
     organizationCount,
-    fanReach,
-    costPerFanCents: fanReach ? Math.round(totalCents / fanReach) : null,
+    projectedReach,
+    costPerReachCents: projectedReach ? Math.round(totalCents / projectedReach) : null,
+    lineCapCents: totals.lineCapCents,
     lineCount: included.length,
     markets,
     inventoryMix,
