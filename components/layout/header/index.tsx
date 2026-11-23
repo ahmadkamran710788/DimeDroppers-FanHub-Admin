@@ -105,7 +105,7 @@ export default function Header({ className, title = "Setup Wizard", onMenuClick 
         className={cn(
           // z-20 keeps header tooltips above the page content (main is z-10).
           "relative z-20 h-20 flex items-center justify-between px-4 lg:px-10 shrink-0",
-          "bg-[rgba(11,28,45,0.01)] backdrop-blur-[48px]",
+          "bg-[rgba(11,28,45,0.01)]",
           "shadow-[inset_0_-1px_0_0_rgba(255,255,255,0.2)]",
           className
         )}

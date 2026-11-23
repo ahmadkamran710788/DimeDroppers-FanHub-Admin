@@ -111,7 +111,7 @@ export default function DocsGeneralInfoPage() {
         </div>
       </div>
 
-      <div className="rounded-[8px] p-4 sm:p-6 flex flex-col gap-8 backdrop-blur-[24px] bg-surface-06">
+      <div className="rounded-[8px] p-4 sm:p-6 flex flex-col gap-8 isolate bg-surface-06">
         <Tabs tabs={TABS} active={tab} onChange={setTab} counts={eventId && !notes.loading ? { Notes: notes.total } : undefined} />
         {tab === "Notes" ? notesTab : <p className="py-12 text-center text-sm text-white/40">{tab} is coming soon.</p>}
       </div>

@@ -206,7 +206,7 @@ export default function SponsorsPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_348px] gap-10 items-start">
         {/* Sponsorships list */}
-        <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[24px] bg-surface-06 min-w-0">
+        <div className="rounded-[8px] p-6 flex flex-col gap-6 isolate bg-surface-06 min-w-0">
           <Tabs
             tabs={TABS}
             active={tab}

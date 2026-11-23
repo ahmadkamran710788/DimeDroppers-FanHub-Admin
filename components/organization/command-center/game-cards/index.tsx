@@ -36,7 +36,7 @@ export default function GameCards({ eventId = "" }: { eventId?: string }) {
   const total = data?.total ?? 0;
 
   return (
-    <section className="rounded-[8px] p-6 flex flex-col gap-5 bg-surface-07 backdrop-blur-[24px]">
+    <section className="rounded-[8px] p-6 flex flex-col gap-5 bg-surface-07 isolate">
       <div className="flex items-center justify-between gap-4">
         <h3 className="font-display font-extrabold text-[28px] uppercase text-white leading-none">Live Games</h3>
         <span className="text-xs text-white/50 whitespace-nowrap">{`${total} live now`}</span>

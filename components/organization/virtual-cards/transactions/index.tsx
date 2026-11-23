@@ -67,7 +67,7 @@ export default function Transactions({ needId, allowedCategories }: Transactions
     slug ? (allowedCategories.find((c) => c.stripeCategory === slug)?.label ?? humanizeSlug(slug)) : null;
 
   return (
-    <section className="rounded-[8px] bg-surface-06 text-white backdrop-blur-[24px]">
+    <section className="rounded-[8px] bg-surface-06 text-white isolate">
       <div className="flex items-center justify-between gap-3 border-b border-white/10 p-4 lg:px-6">
         <h3 className="font-display font-black text-xl lg:text-[28px] uppercase leading-tight">Transactions</h3>
         {current?.activity && <span className="text-[13px] text-white/60">{plural(list.length, "transaction")}</span>}

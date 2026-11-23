@@ -163,7 +163,7 @@ export default function TournamentTeamDetails({ eventId, teamId }: { eventId: st
       </div>
 
       {/* Tabs */}
-      <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px] bg-surface-07">
+      <div className="rounded-[8px] p-6 flex flex-col gap-6 isolate bg-surface-07">
         <Tabs tabs={TABS} active={tab} onChange={setTab} counts={{ Players: loaded.players.length, Followers: team.followerCount, Schedule: games.length }} />
         {tab === "Players" ? (
           <PlayersTab

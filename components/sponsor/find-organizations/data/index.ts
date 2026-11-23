@@ -80,6 +80,10 @@ export const nearText = ({ nearLocations, nearLocationCount }: NearStores, max =
   return more > 0 ? `${listed} +${more} more` : listed;
 };
 
+// "Oct 29, 2026": an event's start date (a calendar date, so read in UTC); null without one.
+export const fmtEventDate = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : null;
+
 // The typed budget in cents, for budgetCents; undefined without one.
 export const budgetCentsOf = (search: OrgSearch) => {
   const amount = parseMoney(search.budget);

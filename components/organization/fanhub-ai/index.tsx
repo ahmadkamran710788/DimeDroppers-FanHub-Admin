@@ -96,7 +96,7 @@ export default function FanHubAiPage({ threadId }: FanHubAiPageProps) {
         </div>
       )}
 
-      <div className="h-[calc(100vh-280px)] min-h-[560px] grid grid-cols-1 grid-rows-1 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)] rounded-[8px] overflow-hidden border border-white/10 bg-[rgba(11,28,45,0.96)] backdrop-blur-[48px]">
+      <div className="h-[calc(100vh-280px)] min-h-[560px] grid grid-cols-1 grid-rows-1 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)] rounded-[8px] overflow-hidden border border-white/10 bg-[rgba(11,28,45,0.96)] isolate">
         <section
           aria-label="Chats"
           className={cn("min-h-0 flex flex-col xl:border-r border-white/10", showChat && "hidden xl:flex")}

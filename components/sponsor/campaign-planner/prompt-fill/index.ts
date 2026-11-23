@@ -1,5 +1,6 @@
 import { ALL } from "@/components/common/multi-select";
 import { fieldOfPath, type PlanForm } from "@/components/sponsor/campaign-planner/data";
+import { fromAllocations, splitAreas } from "@/components/sponsor/campaign-planner/split-rows";
 import type { SponsorStore } from "@/components/sponsor/find-organizations/use-sponsor-stores";
 import type { FilterOption, SponsorSearchFilters } from "@/utils/types/sponsor-packages";
 import type { SponsorPlanPromptResult } from "@/utils/types/sponsor-plan";
@@ -49,14 +50,19 @@ export function fillFromPrompt(
   const sports = offered(brief.sports, filters?.sports);
   const genders = offered(brief.genders, filters?.genders);
 
+  const storeChoice = brief.brandLocationIds === "ALL" ? ALL : picked;
+  // The split, when the brief gave a percent for every area with stores (FANHUB_SPONSOR_PLAN_CHANGES_21_NOV §4).
+  const split = brief.allocations?.length ? fromAllocations(brief.allocations, splitAreas(stores, storeChoice)) : [];
+
   const form: PlanForm = {
-    stores: brief.brandLocationIds === "ALL" ? ALL : picked,
+    stores: storeChoice,
     radius: String(brief.radiusMiles),
     budget: brief.budgetCents === null ? "" : budgetText(brief.budgetCents),
     season,
     goal: brief.goal,
     sports,
     genders,
+    split,
   };
 
   const missing = fieldsOf(result.missing);
@@ -68,9 +74,13 @@ export function fillFromPrompt(
   if (!season) filled.delete("season");
   if (!sports.length) filled.delete("sports");
   if (!genders.length) filled.delete("genders");
+  if (!split.length) filled.delete("split");
 
-  // Where the stores came from ("Texas (6), Oklahoma (1)"); areas with none are in the API's notes.
-  const areas = result.areas.filter((a) => a.locationCount > 0).map((a) => `${a.label} (${a.locationCount})`);
+  // Where the stores came from, with the brief's percent ("Texas (6) · 60%, Oklahoma (1) · 40%"); areas with
+  // none are in the API's notes.
+  const areas = result.areas
+    .filter((a) => a.locationCount > 0)
+    .map((a) => `${a.label} (${a.locationCount})${typeof a.percent === "number" ? ` · ${a.percent}%` : ""}`);
   const notes = [...(areas.length ? [`Locations from your brief: ${areas.join(", ")}`] : []), ...result.notes];
 
   return { form, filled, missing, notes };

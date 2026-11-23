@@ -7,7 +7,7 @@ import LocationPicker from "@/components/common/location-picker";
 import Select from "@/components/common/select";
 import { US_STATE_OPTIONS } from "@/components/organization/org-form/form";
 import { SECTION_LABEL } from "@/components/sponsor/styles";
-import { CUSTOM_CATEGORY_MAX, OTHER_CATEGORY, categoryOptionsAZ } from "@/components/sponsor/data";
+import CategoryPicker from "@/components/sponsor/category-picker";
 import StepHeading from "@/components/auth/sign-up-shared/step-heading";
 import SponsorTypePicker from "@/components/auth/sponsor-sign-up/sponsor-type-picker";
 import type { MainLocationField, SponsorSignUpForm } from "@/components/auth/sponsor-sign-up/data";
@@ -25,8 +25,9 @@ interface BrandStepProps {
   onType: (type: SponsorTypeCode) => void;
   // Several main location fields at once, from the map picker.
   onLocation: (fields: Partial<Pick<SponsorSignUpForm, MainLocationField>>) => void;
-  // Google's business type for a place picked on the map, null for a plain address.
-  onBusinessType: (businessType: string | null) => void;
+  onCategories: (categories: string[]) => void;
+  // The Other box's text.
+  onCategoryOther: (text: string) => void;
 }
 
 // Step 2: the brand organizations see when this sponsor sponsors them, and its main location.
@@ -38,28 +39,9 @@ export default function BrandStep({
   type,
   onType,
   onLocation,
-  onBusinessType,
+  onCategories,
+  onCategoryOther,
 }: BrandStepProps) {
-  // Google's business type for the main location first (unless it's already one of ours), then our
-  // categories, then Other for one the sponsor types.
-  const fromGoogle =
-    form.googleCategory && !options.categories.some((c) => c.code === form.googleCategory)
-      ? [{ label: `${form.googleCategory} · from Google`, value: form.googleCategory }]
-      : [];
-  const categoryOptions = [
-    ...fromGoogle,
-    ...categoryOptionsAZ(options.categories),
-    { label: "Other", value: OTHER_CATEGORY },
-  ];
-  // Without a Maps key there's no search to fill it from.
-  const categoryHint = !form.category
-    ? config.googleMapsApiKey
-      ? "Search for your business under Main location above and we’ll fill this in from Google."
-      : ""
-    : form.googleCategory && form.category === form.googleCategory
-      ? "From your Google listing. You can choose a different category."
-      : "";
-
   return (
     <section aria-label="About your brand" className="flex flex-col gap-[22px]">
       <StepHeading
@@ -104,9 +86,6 @@ export default function BrandStep({
               longitude: coordinateText(place.longitude),
             })
           }
-          // The category from Google: the picked business's type, or the business's at a picked address.
-          onBusinessType={onBusinessType}
-          businessName={form.name}
           onPin={(latitude, longitude) =>
             onLocation({ latitude: coordinateText(latitude), longitude: coordinateText(longitude) })
           }
@@ -200,37 +179,24 @@ export default function BrandStep({
         </div>
       </div>
 
-      {/* After the main location, which usually fills it from Google. */}
-      <div className="flex flex-col gap-[14px] border-t border-[#1f1f1f] pt-[22px]">
-        <div className="flex flex-col gap-2">
-          <Select
-            label="SPONSOR CATEGORY"
-            name="sponsor-category"
-            value={form.category}
-            onChange={onField("category")}
-            options={categoryOptions}
-            placeholder="Choose a category"
-            error={errors.category}
-            variant="dark"
-            labelClassName={SECTION_LABEL}
-            selectClassName={SELECT}
-          />
-          {!errors.category && categoryHint && <p className="text-sm text-[#a8a8a8]">{categoryHint}</p>}
-        </div>
-        {form.category === OTHER_CATEGORY && (
-          <Input
-            label="YOUR CATEGORY"
-            name="sponsor-category-other"
-            value={form.categoryOther}
-            onChange={onField("categoryOther")}
-            placeholder="e.g. Pizza restaurant"
-            maxLength={CUSTOM_CATEGORY_MAX}
-            error={errors.categoryOther}
-            variant="dark"
-            labelClassName={SECTION_LABEL}
-            inputClassName={INPUT}
-          />
-        )}
+      {/* Picked by the sponsor: as many as fit, plus their own under Other. */}
+      <div className="border-t border-[#1f1f1f] pt-[22px]">
+        <CategoryPicker
+          name="sponsor-categories"
+          label="SPONSOR CATEGORIES"
+          options={options.categories}
+          value={form.categories}
+          onChange={onCategories}
+          other={form.categoryOther}
+          onOther={onCategoryOther}
+          error={errors.categories}
+          otherError={errors.categoryOther}
+          otherLabel="YOUR CATEGORY"
+          labelClassName={SECTION_LABEL}
+          selectClassName={SELECT}
+          inputClassName={INPUT}
+          addClassName="h-[52px]"
+        />
       </div>
     </section>
   );

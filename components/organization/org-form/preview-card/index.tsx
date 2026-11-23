@@ -24,7 +24,7 @@ export default function PreviewCard({ form, logoUrl, title = "Preview", subtitle
     : "TL";
 
   return (
-    <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px]" style={{ background: "rgba(255,255,255,0.08)" }}>
+    <div className="rounded-[8px] p-6 flex flex-col gap-6 isolate" style={{ background: "rgba(255,255,255,0.08)" }}>
       <div className="flex flex-col gap-2">
         <h3 className="font-display font-black text-[28px] uppercase text-white leading-none">{title}</h3>
         {subtitle && <p className="text-sm text-white/60">{subtitle}</p>}
@@ -50,7 +50,6 @@ export default function PreviewCard({ form, logoUrl, title = "Preview", subtitle
               background: logoUrl ? "#231F20" : "rgba(255,255,255,0.15)",
               outline: "2px solid rgba(255,255,255,0.5)",
               outlineOffset: "-2px",
-              backdropFilter: "blur(48px)",
             }}
           >
             {logoUrl ? (

@@ -24,7 +24,7 @@ export default function Badge({ variant, label, className }: BadgeProps) {
     <span
       className={cn(
         "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-normal",
-        variant === "recommended" && "bg-[rgba(0,0,0,0.2)] text-success backdrop-blur-[104px]",
+        variant === "recommended" && "bg-[rgba(0,0,0,0.2)] text-success isolate",
         variant === "complete" && "text-success",
         variant === "connected" && "text-success",
         variant === "error" && "text-error",

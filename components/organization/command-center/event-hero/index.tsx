@@ -87,7 +87,7 @@ export default function EventHero({
 
   return (
     <section
-      className="relative overflow-hidden rounded-[8px] p-6 lg:p-8 flex flex-col justify-center gap-5 bg-surface-07 backdrop-blur-[24px] outline outline-1 outline-white/10"
+      className="relative overflow-hidden rounded-[8px] p-6 lg:p-8 flex flex-col justify-center gap-5 bg-surface-07 isolate outline outline-1 outline-white/10"
       style={{ backgroundImage: "radial-gradient(circle at 85% 20%, rgba(157,98,193,0.45), transparent 55%)" }}
     >
       {body}

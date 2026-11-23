@@ -24,7 +24,7 @@ export default function InventorySummary({ columns, categoryLabels }: InventoryS
   const share = (count: number) => (total > 0 ? Math.round((count / total) * 100) : 0);
 
   return (
-    <div className="rounded-[10px] p-5 flex flex-col gap-6 border border-white/10 bg-[rgba(11,20,36,0.7)] backdrop-blur-[48px]">
+    <div className="rounded-[10px] p-5 flex flex-col gap-6 border border-white/10 bg-[rgba(11,20,36,0.7)] isolate">
       <div className="flex items-center justify-between gap-3 pb-4 border-b border-white/10">
         <h3 className="font-display font-black text-xl uppercase text-white leading-none whitespace-nowrap">Inventory Summary</h3>
         <FilterDropdown label="All Time" options={PERIODS} value="" onChange={() => {}} clearable={false} align="right" />

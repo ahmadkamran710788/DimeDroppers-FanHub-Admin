@@ -22,7 +22,7 @@ export default function ReadinessCard({ readiness, loading }: ReadinessCardProps
     : [];
 
   return (
-    <section className="rounded-[8px] p-6 flex flex-col gap-4 bg-surface-07 backdrop-blur-[24px]">
+    <section className="rounded-[8px] p-6 flex flex-col gap-4 bg-surface-07 isolate">
       <h3 className="font-display font-extrabold text-[28px] uppercase text-white leading-none">Event Readiness</h3>
       {loading ? (
         <Loader />

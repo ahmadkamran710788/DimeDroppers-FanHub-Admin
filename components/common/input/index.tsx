@@ -13,8 +13,12 @@ interface InputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   // Fires when the field loses focus, e.g. to save a value once the user is done typing.
   onBlur?: () => void;
+  // E.g. Enter to add what was typed, instead of submitting the form around it.
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   placeholder?: string;
   icon?: ReactNode;
+  // Fixed text at the field's end, e.g. "%" (not part of the value).
+  suffix?: ReactNode;
   error?: string;
   type?: string;
   disabled?: boolean;
@@ -46,8 +50,10 @@ export default function Input({
   value,
   onChange,
   onBlur,
+  onKeyDown,
   placeholder,
   icon,
+  suffix,
   error,
   type = "text",
   disabled = false,
@@ -101,6 +107,7 @@ export default function Input({
           value={value}
           onChange={onChange}
           onBlur={onBlur}
+          onKeyDown={onKeyDown}
           placeholder={placeholder}
           disabled={disabled}
           maxLength={maxLength}
@@ -116,9 +123,21 @@ export default function Input({
             icon && (dark ? "pl-16" : "pl-10"),
             isPassword && "pr-11",
             inputClassName,
+            // After inputClassName so a caller's px-* can't cover the suffix.
+            suffix && "pr-10",
             error && "border-error focus:border-error"
           )}
         />
+        {suffix && (
+          <span
+            className={cn(
+              "absolute right-4 pointer-events-none text-base",
+              dark ? "text-white/60" : "text-midnight-navy/60"
+            )}
+          >
+            {suffix}
+          </span>
+        )}
         {isPassword && (
           <button
             type="button"

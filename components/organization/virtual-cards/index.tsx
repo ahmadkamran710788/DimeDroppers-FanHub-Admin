@@ -109,12 +109,12 @@ export default function VirtualCards({ initialCardId }: VirtualCardsProps) {
       {!current ? (
         <Loader className="py-16" />
       ) : current.error ? (
-        <section className="flex flex-col items-center gap-3 rounded-[8px] bg-surface-06 px-6 py-12 text-center text-white backdrop-blur-[24px]">
+        <section className="flex flex-col items-center gap-3 rounded-[8px] bg-surface-06 px-6 py-12 text-center text-white isolate">
           <p className="text-sm text-white/60">{`Couldn't load your cards: ${current.error}`}</p>
           <Button variant="outline" label="Try again" onClick={() => setReloads((n) => n + 1)} />
         </section>
       ) : !selected ? (
-        <section className="flex flex-col items-center gap-3 rounded-[8px] bg-surface-06 px-6 py-12 text-center text-white backdrop-blur-[24px]">
+        <section className="flex flex-col items-center gap-3 rounded-[8px] bg-surface-06 px-6 py-12 text-center text-white isolate">
           <h3 className="font-display font-black text-xl lg:text-[28px] uppercase leading-tight">No cards yet</h3>
           <p className="max-w-[420px] text-sm leading-[1.5] text-white/60">
             Your first fundable need of each kind sets up its card.

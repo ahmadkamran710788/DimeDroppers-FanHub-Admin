@@ -93,7 +93,7 @@ export default function StaffPoolTable({ rows, loading = false, empty, onAction,
   ];
 
   return (
-    <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 backdrop-blur-xl">
+    <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 isolate">
       <GenericTable columns={columns} rows={rows} getKey={(m) => m.id} loading={loading} empty={empty} />
     </div>
   );

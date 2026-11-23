@@ -34,7 +34,7 @@ export default function TournamentSetup({
 }: TournamentSetupProps) {
   return (
     // Above the category cards below, so the event and format lists open over their switches.
-    <div className="relative z-20 rounded-[10px] border border-white/10 bg-[rgba(11,20,36,0.7)] backdrop-blur-[48px] p-4 flex flex-col gap-4">
+    <div className="relative z-20 rounded-[10px] border border-white/10 bg-[rgba(11,20,36,0.7)] p-4 flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h3 className="font-display font-black text-xl uppercase text-white leading-none">Tournament Setup</h3>
         <p className="text-sm text-white/70">Each event has its own inventory. Pick an event, then its tournament format.</p>

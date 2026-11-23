@@ -111,7 +111,7 @@ export default function ExternalLinkCard({ config }: ExternalLinkCardProps) {
   };
 
   return (
-    <section className={cn("rounded-xl border p-3 lg:p-4 flex flex-col gap-6 backdrop-blur-[48px]", theme.card)}>
+    <section className={cn("rounded-xl border p-3 lg:p-4 flex flex-col gap-6 isolate", theme.card)}>
       {/* Header strip */}
       <div className={cn("rounded-[8px] p-3 lg:p-4 flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6", theme.strip)}>
         <div className="flex items-center gap-6 flex-1 min-w-0">

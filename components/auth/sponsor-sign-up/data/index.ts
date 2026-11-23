@@ -24,12 +24,10 @@ export interface SponsorSignUpForm {
   password: string;
   phone: string;
   name: string;
-  // A category code, Google's business type (googleCategory), or OTHER_CATEGORY with the text in categoryOther.
-  category: string;
+  // Listed category codes and the sponsor's own categories, in the order picked.
+  categories: string[];
+  // The Other box: a category of their own, typed but not added yet (it's added on Continue).
   categoryOther: string;
-  // Google's business type for the place picked as the main location ("" for a plain address): the first
-  // choice for the category, offered above the list.
-  googleCategory: string;
   // The main location (headquarters or main branch), from the map picker or typed: Fetch locations searches
   // from it. The state is a two-letter code; the pin is text, e.g. "30.3058" and "-97.7516".
   street: string;
@@ -46,9 +44,8 @@ export const INITIAL_FORM: SponsorSignUpForm = {
   password: "",
   phone: "",
   name: "",
-  category: "",
+  categories: [],
   categoryOther: "",
-  googleCategory: "",
   street: "",
   city: "",
   state: "",
@@ -68,7 +65,9 @@ const FIELD_STEPS: Record<string, { field: string; step: number }> = {
   phone: { field: "phone", step: 1 },
   sponsorType: { field: "sponsorType", step: 2 },
   sponsorName: { field: "name", step: 2 },
-  category: { field: "category", step: 2 },
+  // `category` carries the first one, for a backend that only stores one.
+  category: { field: "categories", step: 2 },
+  categories: { field: "categories", step: 2 },
   address: { field: "street", step: 2 },
   city: { field: "city", step: 2 },
   state: { field: "state", step: 2 },
@@ -89,7 +88,11 @@ export interface SignUpProblem {
 // A taken email (409) comes without a `path`.
 export function placeSignUpError(status: number, message: string, errors: FieldError[]): SignUpProblem | null {
   if (status === 409) return { step: 1, errors: { email: message } };
-  const placed = errors.flatMap((e) => (FIELD_STEPS[e.path] ? [{ ...FIELD_STEPS[e.path], message: e.message }] : []));
+  const placed = errors.flatMap((e) => {
+    // A list item's path names the list ("categories.1").
+    const place = FIELD_STEPS[e.path.split(/[.[]/)[0]];
+    return place ? [{ ...place, message: e.message }] : [];
+  });
   if (!placed.length) return null;
   const step = Math.min(...placed.map((p) => p.step));
   const fields: Record<string, string> = {};

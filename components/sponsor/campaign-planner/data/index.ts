@@ -1,4 +1,6 @@
+import { cn } from "@/utils/cn";
 import { ALL, type MultiSelectValue } from "@/components/common/multi-select";
+import { FIELD } from "@/components/sponsor/styles";
 import type { PlanGoal } from "@/utils/types/sponsor-plan";
 
 // Campaign Planner (national and regional brands), on POST /fanhub/sponsor-packages/plans/recommend
@@ -24,6 +26,25 @@ export const MAX_RADIUS_MILES = 250;
 export const MIN_PROMPT_LENGTH = 10;
 export const MAX_PROMPT_LENGTH = 1000;
 
+// The budget split's rows (the API takes up to 10).
+export const MAX_SPLIT_ROWS = 10;
+
+// The composer's fields (selects and inputs), and the border of a field the brief filled.
+export const PLAN_CONTROL = cn(FIELD, "h-12 text-[16px] min-w-0");
+export const BRIEF_BORDER = "border-[#8b6dff]";
+
+// One row of the budget split, as typed.
+export interface SplitRow {
+  // Keeps the row's fields when another row is removed.
+  id: string;
+  // A two-letter code; "" until one is chosen.
+  state: string;
+  // One of the state's store cities, as the store spells it; "" for the whole state.
+  city: string;
+  // Whole percent, digits only.
+  percent: string;
+}
+
 // The composer as typed (chip values are API codes, e.g. "FOOTBALL").
 export interface PlanForm {
   // The brand's locations to plan around: ALL, or picked ids.
@@ -37,6 +58,8 @@ export interface PlanForm {
   goal: PlanGoal;
   sports: string[];
   genders: string[];
+  // The budget split by state or city; [] for none.
+  split: SplitRow[];
 }
 
 export const DEFAULT_FORM: PlanForm = {
@@ -48,6 +71,7 @@ export const DEFAULT_FORM: PlanForm = {
   goal: "BRAND_AWARENESS",
   sports: [],
   genders: [],
+  split: [],
 };
 
 // The API's field names (data.errors[].path, e.g. "sports.1") → the composer field under which the message
@@ -62,6 +86,7 @@ export const fieldOfPath = (path: string): keyof PlanForm | null => {
     goal: "goal",
     sports: "sports",
     genders: "genders",
+    allocations: "split",
   };
   return fields[root] ?? null;
 };
@@ -71,5 +96,5 @@ export const PLAN_STAT_TINTS = {
   cost: "#3d6f3e",
   organizations: "#3d5194",
   reach: "#5e4277",
-  costPerFan: "#7a4a2e",
+  costPerReach: "#7a4a2e",
 };

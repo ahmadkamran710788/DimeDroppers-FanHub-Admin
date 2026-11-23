@@ -27,7 +27,8 @@ import { PLAN_STAT_TINTS, fieldOfPath, type PlannerTier } from "@/components/spo
 import type { SponsorSearchFilters } from "@/utils/types/sponsor-packages";
 import type { SponsorPlan, SponsorPlanRequest } from "@/utils/types/sponsor-plan";
 
-// The four stat cards over the plan (fan, as the API counts it: app followers of the organizations).
+// The four stat cards over the plan. Reach is people (students, or a tournament event's rostered players) × 1.5
+// for their parents; the API's fan reach (app followers only) isn't shown (FANHUB_SPONSOR_PLAN_CHANGES_21_NOV §2).
 function planStats(summary: PlanSummary): Stat[] {
   const markets = summary.markets.filter((m) => m.totalCents > 0).length;
   return [
@@ -44,17 +45,17 @@ function planStats(summary: PlanSummary): Stat[] {
       caption: `across ${plural(markets, "market")}`,
     },
     {
-      label: "Est. fan reach",
-      value: summary.fanReach.toLocaleString("en-US"),
+      label: "Est. reach",
+      value: summary.projectedReach.toLocaleString("en-US"),
       tint: PLAN_STAT_TINTS.reach,
-      caption: "from organizations’ follower data",
+      caption: "students, players and their parents",
     },
     {
-      label: "Cost per fan",
-      // "—" when no fans are counted (the API sends null).
-      value: summary.costPerFanCents === null ? "—" : dollars(summary.costPerFanCents),
-      tint: PLAN_STAT_TINTS.costPerFan,
-      caption: "per season",
+      label: "Cost per person",
+      // "—" when no one is counted (the API sends null).
+      value: summary.costPerReachCents === null ? "—" : dollars(summary.costPerReachCents),
+      tint: PLAN_STAT_TINTS.costPerReach,
+      caption: "per person reached",
     },
   ];
 }
@@ -259,10 +260,21 @@ export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
-            {planStats(summary).map((stat) => (
-              <StatCard key={stat.label} {...stat} />
-            ))}
+          <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
+              {planStats(summary).map((stat) => (
+                <StatCard key={stat.label} {...stat} />
+              ))}
+            </div>
+            {/* Why the plan left money: each organization is capped, and only so many are near the stores (or in a
+                split row). Not after a removal, when the sponsor's own removals left it. */}
+            {excluded.size === 0 && summary.remainingCents > 0 && (
+              <p className={HINT}>
+                {`${dollars(summary.remainingCents)} is left: no organization takes more than ${dollars(
+                  summary.lineCapCents
+                )}, and only so many are near your locations. A larger radius or more locations would use it.`}
+              </p>
+            )}
           </div>
 
           <MarketBreakdown markets={summary.markets} />
@@ -270,6 +282,7 @@ export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
           <PlacementsTable
             lines={plan.lines}
             markets={plan.markets}
+            radiusMiles={plan.input.radiusMiles}
             market={market}
             onMarketChange={setMarket}
             excluded={excluded}

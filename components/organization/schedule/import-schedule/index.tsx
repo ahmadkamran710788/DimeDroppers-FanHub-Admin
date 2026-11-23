@@ -696,7 +696,7 @@ export default function ImportScheduleContent() {
                   : "cursor-pointer hover:border-[rgba(255,255,255,0.5)]",
                 scrapeDragging && "border-white bg-[rgba(255,255,255,0.04)]"
               )}
-              style={{ boxShadow: "inset 0px 1px 0px 0px rgba(255,255,255,0.16)", backdropFilter: "blur(64px)" }}
+              style={{ boxShadow: "inset 0px 1px 0px 0px rgba(255,255,255,0.16)" }}
             >
               {scraping ? (
                 <>
@@ -776,7 +776,6 @@ export default function ImportScheduleContent() {
                         placeholder="https://"
                         style={{
                           boxShadow: "inset 0px 1px 0px 0px rgba(255,255,255,0.16)",
-                          backdropFilter: "blur(64px)",
                         }}
                         className={[
                           "w-full h-12 rounded-[8px] bg-white text-midnight-navy text-base font-medium px-4 py-3 pr-10",
@@ -911,7 +910,7 @@ export default function ImportScheduleContent() {
         <div className="flex-1 min-w-0 flex flex-col gap-10">
           {/* Import Summary */}
           <div
-            className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px]"
+            className="rounded-[8px] p-6 flex flex-col gap-6 isolate"
             style={{ background: "rgba(255,255,255,0.08)" }}
           >
             <div className="flex flex-col gap-2">
@@ -926,7 +925,7 @@ export default function ImportScheduleContent() {
                 return (
                   <div
                     key={stat.label}
-                    className="flex items-center gap-4 p-4 rounded-[8px] backdrop-blur-[48px]"
+                    className="flex items-center gap-4 p-4 rounded-[8px] isolate"
                     style={{ background: "rgba(255,255,255,0.05)" }}
                   >
                     <span
@@ -963,7 +962,7 @@ export default function ImportScheduleContent() {
 
           {/* Information */}
           <div
-            className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px]"
+            className="rounded-[8px] p-6 flex flex-col gap-6 isolate"
             style={{ background: "rgba(255,255,255,0.08)" }}
           >
             <button
@@ -1008,7 +1007,7 @@ export default function ImportScheduleContent() {
                 if (exposureErrors.apiKey) setExposureErrors((prev) => ({ ...prev, apiKey: "" }));
               }}
               placeholder="API Key"
-              style={{ boxShadow: "inset 0px 1px 0px 0px rgba(255,255,255,0.16)", backdropFilter: "blur(64px)" }}
+              style={{ boxShadow: "inset 0px 1px 0px 0px rgba(255,255,255,0.16)" }}
               className={`w-full h-12 rounded-[8px] bg-white text-midnight-navy text-base font-medium px-4 py-3 border-2 outline-none transition-colors placeholder:text-[rgba(11,28,45,0.4)] ${exposureErrors.apiKey ? "border-error" : "border-border-input focus:border-steel-blue"
                 }`}
             />
@@ -1030,7 +1029,7 @@ export default function ImportScheduleContent() {
                     if (exposureErrors.apiSecret) setExposureErrors((prev) => ({ ...prev, apiSecret: "" }));
                   }}
                   placeholder="Secret Key"
-                  style={{ boxShadow: "inset 0px 1px 0px 0px rgba(255,255,255,0.16)", backdropFilter: "blur(64px)" }}
+                  style={{ boxShadow: "inset 0px 1px 0px 0px rgba(255,255,255,0.16)" }}
                   className={`w-full h-12 rounded-[8px] bg-white text-midnight-navy text-base font-medium px-4 py-3 pr-11 border-2 outline-none transition-colors placeholder:text-[rgba(11,28,45,0.4)] ${exposureErrors.apiSecret ? "border-error" : "border-border-input focus:border-steel-blue"
                     }`}
                 />

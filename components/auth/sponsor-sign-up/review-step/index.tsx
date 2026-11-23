@@ -9,7 +9,8 @@ import StepHeading from "@/components/auth/sign-up-shared/step-heading";
 import LegalModal from "@/components/auth/sign-up-shared/legal-modal";
 import type { SponsorSignUpForm } from "@/components/auth/sponsor-sign-up/data";
 import { formatAddress } from "@/components/sponsor/profile/data";
-import { categoryText } from "@/components/sponsor/data";
+import { categoryLabel } from "@/components/sponsor/data";
+import CategoryBadges from "@/components/sponsor/category-picker/category-badges";
 import type { LegalDocument, SponsorSignupOptions, SponsorTypeCode } from "@/utils/types/sponsor-profile";
 
 const ROW = "flex flex-wrap gap-x-5 gap-y-2 items-center py-4";
@@ -46,9 +47,8 @@ export default function ReviewStep({
 }: ReviewStepProps) {
   const [reading, setReading] = useState<"terms" | "privacy" | null>(null);
   const typeName = options.sponsorTypes.find((t) => t.code === type)?.label;
-  // A typed (Other) or Google category is shown as it is.
-  const category = categoryText(form.category, form.categoryOther);
-  const categoryName = options.categories.find((c) => c.code === category)?.label ?? category;
+  // The sponsor's own categories (Other) are shown as typed.
+  const categories = form.categories.map((c) => ({ value: c, label: categoryLabel(c, options.categories) }));
 
   return (
     <section aria-label="Review" className="flex flex-col gap-[18px]">
@@ -70,9 +70,8 @@ export default function ReviewStep({
           <div className="flex-[1_1_220px] min-w-0 text-[15px] leading-[1.5] break-words">
             {form.name}
             <br />
-            <span className="text-[#bdbdbd]">
-              {categoryName} · {typeName}
-            </span>
+            <span className="text-[#bdbdbd]">{typeName}</span>
+            <CategoryBadges categories={categories} className="mt-2" />
           </div>
           <Button variant="text" size="sm" label="Edit" aria-label="Edit brand" onClick={() => onEdit(2)} className={EDIT} />
         </div>

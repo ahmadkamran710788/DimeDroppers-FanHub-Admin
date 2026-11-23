@@ -10,7 +10,7 @@ export interface BadgeStat {
 // (Teams, Buy Tickets).
 export default function BadgeStatCard({ label, value, caption, tint }: BadgeStat) {
   return (
-    <div className="h-full rounded-[8px] p-6 flex flex-col gap-4 backdrop-blur-[48px] bg-surface-07">
+    <div className="h-full rounded-[8px] p-6 flex flex-col gap-4 isolate bg-surface-07">
       <div className="flex items-start justify-between gap-4">
         <h3 className="min-w-0 break-words font-display font-black text-[22px] 2xl:text-[28px] uppercase text-white leading-tight">{label}</h3>
         <span

@@ -77,7 +77,7 @@ export default function PackagesPreview() {
   const event = events?.find((e) => e.id === eventId);
 
   return (
-    <section className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[24px] bg-surface-06 min-w-0">
+    <section className="rounded-[8px] p-6 flex flex-col gap-6 isolate bg-surface-06 min-w-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h3 className="font-display font-extrabold text-2xl uppercase text-white leading-none">What sponsors can buy</h3>
