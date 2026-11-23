@@ -11,7 +11,7 @@ export default function TabBody({ stats, title, children }: { stats: Stat[]; tit
         ))}
       </div>
 
-      <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[24px] bg-surface-06">
+      <div className="rounded-[8px] p-6 flex flex-col gap-6 isolate bg-surface-06">
         <h3 className="font-display font-extrabold text-[28px] uppercase text-white leading-none">{title}</h3>
         {children}
       </div>

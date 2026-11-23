@@ -34,7 +34,7 @@ export default function RowActionsMenu({ items, ariaLabel, className, trigger }:
         aria-label={ariaLabel}
         onClick={() => (open ? close() : setOpen(true))}
         className={cn(
-          "size-10 px-2 bg-white/10 rounded-lg outline outline-1 outline-white/10 backdrop-blur-xl flex items-center justify-center hover:bg-white/20 transition-colors",
+          "size-10 px-2 bg-white/10 rounded-lg outline outline-1 outline-white/10 isolate flex items-center justify-center hover:bg-white/20 transition-colors",
           className
         )}
       >

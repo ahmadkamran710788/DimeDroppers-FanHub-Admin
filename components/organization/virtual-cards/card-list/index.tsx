@@ -23,7 +23,7 @@ export default function CardList({ items, total, selectedId, onSelect, page, pag
   return (
     <section
       aria-label="Cards"
-      className="flex min-w-0 flex-[1_1_280px] flex-col gap-1.5 rounded-[8px] bg-surface-06 p-3 backdrop-blur-[24px]"
+      className="flex min-w-0 flex-[1_1_280px] flex-col gap-1.5 rounded-[8px] bg-surface-06 p-3 isolate"
     >
       <h3 className="px-3 pt-2.5 pb-2 text-[13px] font-semibold uppercase tracking-[1px] text-white/60">{`Cards · ${total}`}</h3>
       {items.map(({ card, category, currentNeed }) => {

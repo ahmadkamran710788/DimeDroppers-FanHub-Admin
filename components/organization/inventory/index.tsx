@@ -25,7 +25,7 @@ interface Stat {
 // Compact stat: icon badge on the left, then the label, the figure and a caption.
 function StatCard({ label, value, caption, icon: Icon }: Stat) {
   return (
-    <div className="rounded-[10px] px-4 py-4 flex items-start gap-3 border border-white/10 bg-[rgba(11,20,36,0.7)] backdrop-blur-[48px]">
+    <div className="rounded-[10px] px-4 py-4 flex items-start gap-3 border border-white/10 bg-[rgba(11,20,36,0.7)] isolate">
       <span className="size-11 shrink-0 rounded-[8px] bg-[rgba(255,255,255,0.08)] flex items-center justify-center">
         {Icon === "dot" ? <span className="size-5 rounded-full bg-success" /> : <Icon className="size-6 text-white" strokeWidth={1.5} />}
       </span>

@@ -33,7 +33,7 @@ export default function SegmentedControl<T extends string>({
       role="tablist"
       aria-label={ariaLabel}
       className={cn(
-        "p-1 gap-1 rounded-full backdrop-blur-[24px]",
+        "p-1 gap-1 rounded-full isolate",
         fullWidth ? "flex w-full" : "inline-flex self-start",
         light ? "bg-white/5" : "bg-white/10",
         className

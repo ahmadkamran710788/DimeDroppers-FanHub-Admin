@@ -156,13 +156,13 @@ function buildStatsFromGames(games: ScheduleItem[]) {
 
 function StatCard({ label, subtitle, value, color }: { label: string; subtitle: string; value: number; color: string }) {
   return (
-    <div className="flex-1 p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 backdrop-blur-xl flex flex-col gap-6 overflow-hidden">
+    <div className="flex-1 p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 isolate flex flex-col gap-6 overflow-hidden">
       <div className="flex justify-start items-start gap-2">
         <div className="flex-1 flex flex-col gap-2">
           <div className="text-white text-3xl font-extrabold font-display uppercase">{label}</div>
           <div className="text-white text-xs font-normal leading-5">{subtitle}</div>
         </div>
-        <div className={cn("size-16 relative overflow-hidden rounded-lg border-2 backdrop-blur-xl flex items-center justify-center", color)}>
+        <div className={cn("size-16 relative overflow-hidden rounded-lg border-2 isolate flex items-center justify-center", color)}>
           <div className="text-white text-3xl font-extrabold font-display uppercase">{value}</div>
         </div>
       </div>
@@ -197,14 +197,14 @@ function GameRow({ game, onEdit, onDelete }: GameRowProps) {
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
             aria-label={expanded ? "Hide game details" : "Show game details"}
-            className="size-10 rounded-lg bg-white/10 outline outline-1 outline-white/10 backdrop-blur-xl flex items-center justify-center hover:bg-white/20 transition-colors"
+            className="size-10 rounded-lg bg-white/10 outline outline-1 outline-white/10 isolate flex items-center justify-center hover:bg-white/20 transition-colors"
           >
             <ChevronDown className={cn("w-4 h-4 text-white transition-transform", expanded && "rotate-180")} strokeWidth={2} />
           </button>
         </div>
         {/* DATE */}
         <div className="flex-1 px-2 py-4 bg-white/5 flex justify-center items-center overflow-hidden">
-          <div className="px-4 py-1 bg-white/10 rounded-lg outline outline-1 outline-white/10 backdrop-blur-xl flex items-center">
+          <div className="px-4 py-1 bg-white/10 rounded-lg outline outline-1 outline-white/10 isolate flex items-center">
             <div className="w-7 flex flex-col items-center">
               <div className="text-white text-3xl font-extrabold font-display uppercase leading-none">{day}</div>
               <div className="text-white text-xs font-bold uppercase leading-6">{month}</div>
@@ -226,7 +226,7 @@ function GameRow({ game, onEdit, onDelete }: GameRowProps) {
                 className="size-10 shrink-0 rounded-full border border-white/30 object-cover"
               />
             ) : (
-              <div className="size-10 shrink-0 bg-white/20 rounded-full border border-white/30 backdrop-blur-sm" />
+              <div className="size-10 shrink-0 bg-white/20 rounded-full border border-white/30 isolate" />
             )}
             <div className="flex flex-col justify-center gap-0.5 min-w-0">
               <div className="text-white text-xs font-semibold leading-4 truncate">
@@ -386,7 +386,7 @@ function MiniCalendar({ games }: { games: ScheduleItem[] }) {
   const next = () => { if (month === 11) { setMonth(0); setYear((y) => y + 1); } else setMonth((m) => m + 1); };
 
   return (
-    <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 backdrop-blur-xl flex flex-col gap-4">
+    <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 isolate flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="text-white text-base font-bold uppercase font-display tracking-wide">Calendar</div>
         <button type="button" onClick={() => { setYear(now.getFullYear()); setMonth(now.getMonth()); }} className="text-white/60 text-xs hover:text-white transition-colors">Today</button>
@@ -451,7 +451,7 @@ function NextGameCard({ game }: { game: ScheduleItem | null }) {
   const { time } = formatTime(game.start, game.isAllDay);
 
   return (
-    <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 backdrop-blur-xl flex flex-col gap-4">
+    <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 isolate flex flex-col gap-4">
       <div className="text-white text-base font-bold uppercase font-display tracking-wide">Next Game</div>
       <div className="flex items-center justify-between gap-2 p-4 bg-white/5 rounded-lg outline outline-1 outline-white/10">
         <TeamSide name={savedSchool?.name || "My Team"} logoUrl={savedSchool?.logoUrl} />
@@ -477,7 +477,7 @@ function TournamentNextGameCard() {
   const time = new Date(game.start).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 
   return (
-    <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 backdrop-blur-xl flex flex-col gap-4">
+    <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 isolate flex flex-col gap-4">
       <div className="text-white text-base font-bold uppercase font-display tracking-wide">Next Game</div>
       <div className="flex items-center justify-between gap-2 p-4 bg-white/5 rounded-lg outline outline-1 outline-white/10">
         <TeamSide name={game.home.shortName || "TBD"} logoUrl={game.home.logo || undefined} />
@@ -494,7 +494,7 @@ function TournamentNextGameCard() {
 function ScheduleTools({ onAddGame }: { onAddGame: () => void }) {
   const [open, setOpen] = useState(true);
   return (
-    <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 backdrop-blur-xl flex flex-col gap-4">
+    <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 isolate flex flex-col gap-4">
       <button type="button" onClick={() => setOpen((v) => !v)} className="flex items-center justify-between w-full" aria-expanded={open}>
         <div className="text-white text-base font-bold uppercase font-display tracking-wide">Schedule Tools</div>
         <ChevronDown className={cn("w-5 h-5 text-white transition-transform", open && "rotate-180")} />
@@ -735,7 +735,7 @@ export default function SchedulePage() {
         </div>
 
         {/* Games panel */}
-        <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 backdrop-blur-xl flex flex-col gap-6">
+        <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 isolate flex flex-col gap-6">
           {/* Tabs */}
           <div className="relative h-11 overflow-hidden">
             <div className="absolute bottom-0 left-0 right-0 h-px bg-white/20" />
@@ -757,7 +757,7 @@ export default function SchedulePage() {
           {/* Search + Filters (not while one event's games are shown) */}
           {!showEventGames && (
           <div className="flex items-center gap-6">
-            <div className="flex-1 h-12 px-4 py-3 bg-white rounded-lg shadow-[inset_0px_1px_0px_0px_rgba(255,255,255,0.16)] outline outline-2 outline-offset-[-2px] outline-slate-900/10 backdrop-blur-[32px] flex items-center gap-2">
+            <div className="flex-1 h-12 px-4 py-3 bg-white rounded-lg shadow-[inset_0px_1px_0px_0px_rgba(255,255,255,0.16)] outline outline-2 outline-offset-[-2px] outline-slate-900/10 isolate flex items-center gap-2">
               <Search className="w-5 h-5 text-slate-900 shrink-0" strokeWidth={2} />
               <input
                 type="text"

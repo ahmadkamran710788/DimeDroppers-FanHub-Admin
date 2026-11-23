@@ -274,7 +274,7 @@ export default function GameCampaignTab({ tab }: { tab: GameTab }) {
         ))}
       </div>
 
-      <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[24px] bg-surface-06">
+      <div className="rounded-[8px] p-6 flex flex-col gap-6 isolate bg-surface-06">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <h3 className="font-display font-extrabold text-[28px] uppercase text-white leading-none">{copy.title}</h3>
           <div className="flex flex-col gap-3 sm:flex-row">

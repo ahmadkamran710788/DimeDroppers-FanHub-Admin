@@ -29,7 +29,7 @@ export default function CommunicationsPage({
         {subtitle && <p className="text-base leading-[26px]">{subtitle}</p>}
       </div>
 
-      <div className="h-[calc(100vh-280px)] min-h-[520px] flex flex-col rounded-[8px] overflow-hidden border border-white/10 bg-[rgba(11,28,45,0.96)] backdrop-blur-[48px]">
+      <div className="h-[calc(100vh-280px)] min-h-[520px] flex flex-col rounded-[8px] overflow-hidden border border-white/10 bg-[rgba(11,28,45,0.96)] isolate">
         <MessagesWorkspace
           // A new ?chat= starts the workspace over on that conversation.
           key={chatId ?? "list"}

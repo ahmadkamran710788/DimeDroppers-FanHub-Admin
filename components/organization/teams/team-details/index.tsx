@@ -95,7 +95,7 @@ export default function TeamDetailsPage({ teamId }: { teamId: string }) {
       </div>
 
       {/* Roster tabs */}
-      <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px] bg-surface-07">
+      <div className="rounded-[8px] p-6 flex flex-col gap-6 isolate bg-surface-07">
         <Tabs
           tabs={TABS}
           active={tab}

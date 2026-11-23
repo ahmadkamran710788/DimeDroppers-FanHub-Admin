@@ -191,7 +191,7 @@ export default function TeamsPage() {
       </div>
 
       {/* Sports and their teams */}
-      <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px] bg-surface-07">
+      <div className="rounded-[8px] p-6 flex flex-col gap-6 isolate bg-surface-07">
         {kindUnknown ? (
           <Loader className="m-10" />
         ) : isTournament ? (

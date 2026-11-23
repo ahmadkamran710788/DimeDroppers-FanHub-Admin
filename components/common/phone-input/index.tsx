@@ -59,7 +59,6 @@ export default function PhoneInput({
             ? undefined
             : {
                 boxShadow: "inset 0px 1px 0px 0px rgba(255,255,255,0.16)",
-                backdropFilter: "blur(64px)",
               }
         }
         className={cn(

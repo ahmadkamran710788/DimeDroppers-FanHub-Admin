@@ -12,7 +12,7 @@ interface ProfileSectionProps {
 // Read-only card on the Profile page: icon + title, an Edit button, and the saved values.
 export default function ProfileSection({ icon, title, onEdit, children }: ProfileSectionProps) {
   return (
-    <section className="rounded-[8px] p-5 lg:p-6 flex flex-col gap-4 backdrop-blur-[48px] bg-surface-07">
+    <section className="rounded-[8px] p-5 lg:p-6 flex flex-col gap-4 isolate bg-surface-07">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <span className="size-10 shrink-0 rounded-full bg-white/10 flex items-center justify-center text-white">

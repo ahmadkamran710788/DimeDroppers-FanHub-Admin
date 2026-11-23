@@ -12,7 +12,7 @@ export default function ProfileAvatar({ logoUrl, className }: { logoUrl?: string
         logoUrl ? "bg-white" : "bg-white/10",
         className
       )}
-      style={{ border: "2px solid rgba(255,255,255,0.5)", backdropFilter: "blur(24px)" }}
+      style={{ border: "2px solid rgba(255,255,255,0.5)" }}
     >
       {logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- signed S3 link

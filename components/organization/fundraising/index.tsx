@@ -119,7 +119,7 @@ function SchoolFundraising() {
       <GivingOverview teams={teamDonations} loading={donationsLoading} />
 
       {/* Tabs */}
-      <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[24px] bg-surface-06">
+      <div className="rounded-[8px] p-6 flex flex-col gap-6 isolate bg-surface-06">
         <Tabs tabs={TABS} active={tab} onChange={setTab} counts={{ Fundraisers: campaigns.length }} />
 
         {tab === "Teams" ? (

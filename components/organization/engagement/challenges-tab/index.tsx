@@ -206,7 +206,7 @@ export default function ChallengesTab() {
         ))}
       </div>
 
-      <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[24px] bg-surface-06">
+      <div className="rounded-[8px] p-6 flex flex-col gap-6 isolate bg-surface-06">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h3 className="font-display font-extrabold text-[28px] uppercase text-white leading-none">Challenges</h3>
           <div role="group" aria-label="Status" className="inline-flex gap-1 rounded-full border border-white/15 p-1">

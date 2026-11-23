@@ -77,7 +77,7 @@ export default function AddOnsPage() {
         <RowActionsMenu
           ariaLabel={`Change status of ${a.name}`}
           className={cn(
-            "size-auto h-6 px-2 gap-2 rounded-full outline-0 backdrop-blur-[52px] text-xs font-medium text-midnight-navy hover:opacity-80",
+            "size-auto h-6 px-2 gap-2 rounded-full outline-0 isolate text-xs font-medium text-midnight-navy hover:opacity-80",
             ADD_ON_STATUS_COLOR[a.status]
           )}
           trigger={
@@ -94,7 +94,7 @@ export default function AddOnsPage() {
       header: "Display Order",
       cls: "w-[70px] shrink-0",
       cell: (a) => (
-        <span className="h-12 w-10 flex items-center justify-center rounded-[8px] border border-white/25 bg-[rgba(235,235,235,0.25)] backdrop-blur-[24px] text-base font-medium text-white">
+        <span className="h-12 w-10 flex items-center justify-center rounded-[8px] border border-white/25 bg-[rgba(235,235,235,0.25)] isolate text-base font-medium text-white">
           {a.displayOrder}
         </span>
       ),
@@ -110,7 +110,7 @@ export default function AddOnsPage() {
       cell: (a) => (
         <RowActionsMenu
           ariaLabel={`Actions for ${a.name}`}
-          className="h-12 w-[50px] px-3 rounded-[8px] outline-0 bg-[rgba(235,235,235,0.25)] hover:bg-white/35 backdrop-blur-[24px]"
+          className="h-12 w-[50px] px-3 rounded-[8px] outline-0 bg-[rgba(235,235,235,0.25)] hover:bg-white/35 isolate"
           items={[
             { label: "Edit Add-On", onSelect: comingSoon },
             { label: "Delete Add-On", onSelect: comingSoon, variant: "destructive" },
@@ -149,7 +149,7 @@ export default function AddOnsPage() {
       </div>
 
       {/* Add-ons list */}
-      <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[24px] bg-surface-06">
+      <div className="rounded-[8px] p-6 flex flex-col gap-6 isolate bg-surface-06">
         <Tabs
           tabs={TABS}
           active={tab}
@@ -196,7 +196,7 @@ export default function AddOnsPage() {
       </div>
 
       {/* About */}
-      <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[24px] bg-surface-06">
+      <div className="rounded-[8px] p-6 flex flex-col gap-6 isolate bg-surface-06">
         <div className="flex items-start gap-2 text-white">
           <Info className="size-10 shrink-0" strokeWidth={1.5} />
           <div className="flex flex-col gap-2">

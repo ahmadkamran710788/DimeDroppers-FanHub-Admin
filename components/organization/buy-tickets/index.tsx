@@ -326,7 +326,7 @@ export default function BuyTicketsPage() {
       <CampaignCard campaigns={campaigns} loading={campaignsLoading} ticketLink={ticketLink} onEdit={setEditing} />
 
       {/* Schedules | Orders */}
-      <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px] bg-surface-07">
+      <div className="rounded-[8px] p-6 flex flex-col gap-6 isolate bg-surface-07">
         <Tabs tabs={TABS} active={tab} onChange={setTab} counts={{ Schedules: total }} />
 
         {tab === "Orders" ? (

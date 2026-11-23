@@ -17,10 +17,11 @@ interface ToggleProps {
   className?: string;
 }
 
-// Track, knob and the knob's off / on position per size.
+// Track, knob and the knob's off / on position per size. The knob slides with a transform, not `left`, so
+// switching doesn't re-lay out the page on every frame of the slide (Inventory has dozens of switches).
 const SIZES = {
-  md: { track: "w-[52px] h-[30px]", knob: "top-[3px] w-6 h-6", off: "left-[3px]", on: "left-[25px]" },
-  sm: { track: "w-10 h-6", knob: "top-[3px] w-[18px] h-[18px]", off: "left-[3px]", on: "left-[19px]" },
+  md: { track: "w-[52px] h-[30px]", knob: "top-[3px] left-[3px] w-6 h-6", off: "translate-x-0", on: "translate-x-[22px]" },
+  sm: { track: "w-10 h-6", knob: "top-[3px] left-[3px] w-[18px] h-[18px]", off: "translate-x-0", on: "translate-x-4" },
 };
 
 export default function Toggle({
@@ -54,7 +55,7 @@ export default function Toggle({
       >
         <span
           className={cn(
-            "absolute rounded-full bg-white shadow transition-all duration-200",
+            "absolute rounded-full bg-white shadow transition-transform duration-200",
             s.knob,
             checked ? s.on : s.off
           )}

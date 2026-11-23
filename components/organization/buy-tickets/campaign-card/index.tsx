@@ -27,7 +27,7 @@ interface CampaignCardProps {
 // game), its games and its sales, each with its own Edit.
 export default function CampaignCard({ campaigns, loading, ticketLink, onEdit }: CampaignCardProps) {
   return (
-    <div className="rounded-[8px] p-6 flex flex-col gap-6 backdrop-blur-[48px] bg-surface-07">
+    <div className="rounded-[8px] p-6 flex flex-col gap-6 isolate bg-surface-07">
       <div className="flex flex-col lg:flex-row lg:items-center gap-6">
         <div className="flex items-center gap-4 flex-1 min-w-0">
           <span

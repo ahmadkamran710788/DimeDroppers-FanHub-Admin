@@ -90,7 +90,7 @@ export default function EventDataPage({ kind }: { kind: EventDataKind }) {
         />
       </div>
 
-      <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 backdrop-blur-xl flex flex-col gap-4">
+      <div className="p-6 bg-white/5 rounded-lg outline outline-2 outline-offset-[-2px] outline-white/10 isolate flex flex-col gap-4">
         {!eventId ? (
           <p className="py-12 text-center text-sm text-white/60">{`Pick an event to see its ${page.noun}.`}</p>
         ) : (
