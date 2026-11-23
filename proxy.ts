@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { routes } from "@/utils/routes";
 
 // Next.js 16 renamed the `middleware` file convention to `proxy`. This runs the
 // auth guard before routes render: unauthenticated users are sent to sign-in,
@@ -27,6 +28,14 @@ const SPONSOR_HOME = "/sponsor/sponsorships";
 // its own panel. No cookie (a session from before it existed) is an organiser.
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Public pages reachable without a session (and without being bounced when signed in): the
+  // claim/registration flow. Let them through before the auth gate below runs. The path comes from
+  // routes.ui so renaming it there updates this guard too.
+  if (pathname === routes.ui.fanhubClaim || pathname.startsWith(`${routes.ui.fanhubClaim}/`)) {
+    return NextResponse.next();
+  }
+
   const hasSession = request.cookies.has("refreshToken");
   const isAuthPage = pathname.startsWith("/auth");
   const isSponsor = request.cookies.get("accountRole")?.value === "SPONSOR";
