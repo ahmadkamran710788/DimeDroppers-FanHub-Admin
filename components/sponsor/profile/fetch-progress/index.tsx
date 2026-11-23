@@ -14,7 +14,7 @@ interface FetchProgressProps {
   foundCount: number | null;
 }
 
-// A location fetch in progress: its steps (Getting ready → Searching Google Maps → Saving → Done) as a row of
+// A location fetch in progress: its steps (Getting ready → Searching for stores → Saving → Done) as a row of
 // ticks, a bar, what it's doing now, and the areas it searches.
 export default function FetchProgress({ status, areas, foundCount }: FetchProgressProps) {
   const current = Math.max(
@@ -25,7 +25,7 @@ export default function FetchProgress({ status, areas, foundCount }: FetchProgre
     status === "PENDING"
       ? "Getting ready…"
       : status === "RUNNING"
-        ? "Searching Google Maps for your stores…"
+        ? "Searching for your stores…"
         : foundCount
           ? `Found ${foundCount} ${foundCount === 1 ? "store" : "stores"}, saving them…`
           : "Saving the stores we found…";

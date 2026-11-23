@@ -65,7 +65,7 @@ export default function LocationRow({ location, onEdit, onRemove, onMakeMain, bu
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 mt-1 text-sm text-[#c9b8ff] underline hover:text-white"
           >
-            View on Google Maps
+            View on map
             <ExternalLink className="size-3.5" strokeWidth={1.8} aria-hidden />
           </a>
         )}

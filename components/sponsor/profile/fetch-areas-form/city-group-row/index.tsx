@@ -12,7 +12,7 @@ import { useStateCities } from "@/components/sponsor/profile/use-us-places";
 // A state's city list is long (Texas has about 1,500): only this many are listed until the search narrows it.
 const CITIES_SHOWN = 200;
 
-// One row of the picker: a state and some of its cities.
+// One row of the picker: a state, searched whole when it has no cities, or only in its cities.
 export interface CityGroup {
   // Keeps the row (and its focus) when one above it is removed.
   id: number;
@@ -40,8 +40,8 @@ const cityName = (typed: string) => {
   return name === name.toLowerCase() ? name.replace(/\b[a-z]/g, (c) => c.toUpperCase()) : name;
 };
 
-// A state, then any of its cities from the US ZIP list. A town missing from the list can be typed and added,
-// so any city can still be searched.
+// A state, then (optionally) any of its cities from the US ZIP list. No cities searches the whole state. A town
+// missing from the list can be typed and added, so any city can still be searched.
 export default function CityGroupRow({
   index,
   group,
@@ -67,14 +67,15 @@ export default function CityGroupRow({
     onChange({ ...group, cities: [...group.cities, name] });
   }
 
-  const placeholder = !group.state ? "Pick a state first" : loading ? "Loading cities…" : "Pick cities";
+  // Without cities the row searches the whole state, which the empty field says.
+  const placeholder = !group.state ? "Pick a state first" : loading ? "Loading cities…" : "Whole state · or pick cities";
   const where = stateName || `row ${index + 1}`;
 
   return (
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-[minmax(0,150px)_minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,200px)_minmax(0,1fr)_auto] gap-2 items-start">
         <Select
-          label={`State of cities row ${index + 1}`}
+          label={`State, row ${index + 1}`}
           name={`fetch-group-state-${group.id}`}
           value={group.state}
           // The cities belong to the old state: a new state starts with none.
@@ -88,7 +89,7 @@ export default function CityGroupRow({
           selectClassName={SELECT}
         />
         <MultiSelect
-          label={`Cities in ${where}`}
+          label={`Cities in ${where} (none searches the whole state)`}
           name={`fetch-group-cities-${group.id}`}
           value={group.cities}
           onChange={(picked) => onChange({ ...group, cities: picked === ALL ? [] : picked })}
@@ -110,7 +111,7 @@ export default function CityGroupRow({
         <Button
           size="icon"
           icon={<X className="size-4" strokeWidth={2} />}
-          aria-label={`Remove the cities in ${where}`}
+          aria-label={`Remove ${where}`}
           onClick={onRemove}
           className="size-12 rounded-[10px] bg-transparent border border-[#3a3a3a] text-[#d4d4d4] backdrop-blur-none"
         />

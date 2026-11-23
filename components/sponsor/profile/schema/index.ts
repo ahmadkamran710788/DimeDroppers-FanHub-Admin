@@ -58,17 +58,20 @@ export const locationSchema = yup
 // Fetch locations for a regional or national brand, as the picker holds it: whole states, rows of a state with
 // some of its cities, and ZIP codes; at least one of them. Errors come keyed "cityGroups[2].cities" and
 // "zipCodes[1]"; the picker puts them under the right row. Empty rows are left out before this runs.
+// A row with a state and no cities is the whole state; with cities, only those.
 export const locationFetchSchema = yup
   .object({
-    states: yup.array(yup.string().required()).max(MAX_FETCH_STATES, `Choose at most ${MAX_FETCH_STATES} states`),
     cityGroups: yup
       .array(
         yup.object({
           state: yup.string().required("Choose a US state"),
-          cities: yup
-            .array(yup.string().trim().required().max(120, "Keep the city under 120 characters"))
-            .min(1, "Pick at least one city"),
+          cities: yup.array(yup.string().trim().required().max(120, "Keep the city under 120 characters")),
         })
+      )
+      .test(
+        "most-states",
+        `Choose at most ${MAX_FETCH_STATES} whole states`,
+        (groups) => (groups ?? []).filter((g) => !g.cities?.length).length <= MAX_FETCH_STATES
       )
       .test(
         "most-cities",
@@ -81,7 +84,7 @@ export const locationFetchSchema = yup
   })
   .test("some", function (v) {
     return (
-      (v.states?.length ?? 0) + (v.cityGroups?.length ?? 0) + (v.zipCodes?.length ?? 0) > 0 ||
-      this.createError({ path: "states", message: "Choose at least one state, city or ZIP code" })
+      (v.cityGroups?.length ?? 0) + (v.zipCodes?.length ?? 0) > 0 ||
+      this.createError({ path: "cityGroups", message: "Choose at least one state or ZIP code" })
     );
   });
