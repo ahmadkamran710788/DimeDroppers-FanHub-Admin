@@ -2,6 +2,11 @@ export const routes = {
   ui: {
     indexRoute: "/",
     profile: "/profile",
+    // Public claim/registration flow (no session needed — allowed through in proxy.ts): enter an
+    // email, pick your organization, submit; the result opens the success or failure screen.
+    fanhubClaim: "/fanhub-claim",
+    fanhubClaimSuccess: "/fanhub-claim/success",
+    fanhubClaimFailure: "/fanhub-claim/failure",
     signIn: "/auth/sign-in",
     // Pick an organization or a sponsor account; each opens its own sign-up form.
     signUp: "/auth/sign-up",
