@@ -18,10 +18,10 @@ export const isLookupActive = (status: SponsorLocationFetchStatus | null | undef
   status === "PENDING" || status === "RUNNING" || status === "SAVING";
 
 // The steps a location fetch goes through, as its progress shows them, and how far along the bar each one is.
-// Done is reached when it completes.
+// Done is reached when it completes. The labels don't name the map service the search uses.
 export const FETCH_STEPS: { status: SponsorLocationFetchStatus; label: string; percent: number }[] = [
   { status: "PENDING", label: "Getting ready", percent: 10 },
-  { status: "RUNNING", label: "Searching Google Maps", percent: 40 },
+  { status: "RUNNING", label: "Searching for stores", percent: 40 },
   { status: "SAVING", label: "Saving", percent: 75 },
   { status: "COMPLETED", label: "Done", percent: 100 },
 ];

@@ -50,7 +50,7 @@ export default function BrandPlacements({ initialTab = "setup" }: BrandPlacement
       <div className="flex flex-wrap gap-5 items-end justify-between">
         <div className="flex flex-col gap-2">
           <h2 className="font-display font-extrabold text-[32px] sm:text-[40px] lg:text-[56px] lg:leading-[68px] uppercase leading-none">
-            Brand Placements
+            Action Required
           </h2>
           <p className="max-w-[720px] text-base leading-[26px] text-[#e5e5e5]">
             Every slot you buy starts as a simple brand placement (BPA) that shows only your logo. For any organization

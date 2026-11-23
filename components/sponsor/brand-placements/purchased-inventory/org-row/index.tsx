@@ -9,8 +9,8 @@ interface OrgRowProps {
   onSelect: () => void;
 }
 
-// An organization the sponsor bought the picked slot at: its packages (one per event at a tournament) and
-// the slot's template.
+// An organization the sponsor bought at (in the picked category): its packages (one per event at a tournament)
+// and the slot's template.
 export default function OrgRow({ item, selected, onSelect }: OrgRowProps) {
   const { organization: org, packages } = item;
   const place = [org.city, org.state].filter(Boolean).join(", ");

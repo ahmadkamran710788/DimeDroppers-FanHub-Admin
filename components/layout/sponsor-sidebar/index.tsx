@@ -23,7 +23,7 @@ const NAV_SECTIONS: NavSection[] = [
       { icon: "/icons/icon-calendar.svg", label: "My Sponsorships", href: routes.ui.sponsor.mySponsorships },
       {
         icon: <MonitorCheck className="size-6" strokeWidth={1.5} />,
-        label: "Brand Placements",
+        label: "Action Required",
         href: routes.ui.sponsor.brandPlacements,
         badge: "NEW",
       },
