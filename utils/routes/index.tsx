@@ -140,6 +140,13 @@ export const routes = {
     // The signed-in organisation (GET, Bearer access token). Called straight from the browser
     // on load to restore the session after a refresh or in a new tab.
     authMe: "fanhub/org-auth/me",
+    // School search for the public claim page. `fanhubSchoolsList` is the upstream backend path
+    // (POST { search, page, limit }; results in `data[0].items`), called server-side from the route
+    // handler below so the secret x-fanhub-key never reaches the browser. `proxyFanhubSchoolsList`
+    // is the same-origin Next route the browser posts to (plain fetch, no token, so an
+    // unauthenticated visitor is never signed out on the public /fanhub-claim page).
+    fanhubSchoolsList: "fanhub/schools/list",
+    proxyFanhubSchoolsList: "/api/fanhub-claim/schools",
     // FanHub — Step 1 "Create School" (multipart: form fields + logo).
     createSchool: "fanhub/schools",
     // FanHub — Step 1 "Update School" (when the user comes Back and re-submits an
