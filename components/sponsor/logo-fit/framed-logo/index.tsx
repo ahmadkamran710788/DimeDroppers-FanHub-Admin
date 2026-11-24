@@ -7,7 +7,7 @@ interface FramedLogoProps {
   // The saved file's size; only its shape is used here.
   frame: Size;
   view: LogoView;
-  // A colour filled around the logo, as in the saved file (a full-color logo's own flat background).
+  // A colour filled around the logo, as in the saved file (a landscape logo's own flat background).
   fill?: string | null;
   // The box's size, background, radius and border; its other side follows the frame's shape.
   className?: string;

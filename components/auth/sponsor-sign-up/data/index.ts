@@ -65,7 +65,7 @@ const FIELD_STEPS: Record<string, { field: string; step: number }> = {
   phone: { field: "phone", step: 1 },
   sponsorType: { field: "sponsorType", step: 2 },
   sponsorName: { field: "name", step: 2 },
-  // `category` carries the first one, for a backend that only stores one.
+  // `category` carries the first one (the API uses `categories` when both are sent).
   category: { field: "categories", step: 2 },
   categories: { field: "categories", step: 2 },
   address: { field: "street", step: 2 },

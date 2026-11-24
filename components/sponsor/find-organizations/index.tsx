@@ -278,7 +278,17 @@ export default function FindOrganizations() {
                 <>
                   {items.map((org) => (
                     <Fragment key={org.id}>
-                      <OrgCard org={org} selected={org.id === selected?.id} onSelect={() => setSelectedId(org.id)} />
+                      <OrgCard
+                        org={org}
+                        selected={org.id === selected?.id}
+                        onSelect={() => setSelectedId(org.id)}
+                        // The selected tournament's loaded list, so its card counts what the list shows.
+                        openEvents={
+                          org.id === selected?.id && !tournament.loading && !tournament.error
+                            ? tournament.events.length
+                            : undefined
+                        }
+                      />
                       {org.id === selected?.id && org.organizationType === "TOURNAMENT" && (
                         <EventList
                           events={tournament.events}

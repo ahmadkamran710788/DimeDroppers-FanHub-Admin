@@ -22,25 +22,31 @@ import {
   sponsorRequest,
   type ActiveActivations,
 } from "@/components/sponsor/sponsor-api";
-import { cartItemKey, useSponsorCart } from "@/context/sponsor-cart";
+import { NO_OWN_GAMES, cartSplitOf, partLabel } from "@/components/sponsor/package-splits/data";
+import { cartItemKey, holdingKey, useSponsorCart } from "@/context/sponsor-cart";
 import { routes } from "@/utils/routes";
 import type {
   ActivatePackageRequest,
+  CartSplit,
   NearStores,
   PackageActivationResult,
+  PackageSplit,
+  PackageTier,
   SponsorCartKind,
   SponsorEventOption,
   SponsorNearLocation,
   SponsorOrganizationListItem,
+  SponsorPackage,
   SponsorPackages,
 } from "@/utils/types/sponsor-packages";
 
-// A package or a physical asset, never both.
-type Choice = Pick<ActivatePackageRequest, "tier" | "physicalAssetId">;
+// A package (with the part of it, by its key) or a physical asset, never both.
+type Choice = Pick<ActivatePackageRequest, "tier" | "splitKey" | "physicalAssetId">;
 
-// A 409 because a store already has this package here (another tab, or a cart activation): the API names
-// the store(s). Any other 409 is the package taken by another sponsor meanwhile, one the sponsor already has, or a
-// price change: all reload (the card then shows Sold, Active or the new price) and close.
+// A 409 because a store already has this package part or asset here (another tab, or a cart activation): the API
+// names the store(s). Any other 409 is the part taken by another sponsor meanwhile, changed (its games did), one the
+// sponsor already has, or a price change: all reload (the card then shows Sold, Active, the new parts or the new
+// price) and close.
 const STORE_TAKEN = /already has this package or physical asset active here/i;
 
 const NO_STORES: NearStores = { nearLocations: [], nearLocationCount: 0 };
@@ -163,15 +169,39 @@ export default function PackagesPanel({
     ...(storeIds.length > 0 && radiusMiles !== null && { sponsorLocationIds: storeIds, radiusMiles }),
   });
 
-  // The stores this package or asset is already active for here; undefined when it isn't active.
-  const takenFor = (choice: Choice) => activeMap?.get(cartItemKey(target(choice, 0)));
+  // The stores a physical asset is already active for here; undefined when it isn't active. A package part is new
+  // (the sponsor's own parts can't be bought again), so none of its stores have it.
+  const takenFor = (choice: Choice) =>
+    choice.physicalAssetId ? activeMap?.get(holdingKey(target(choice, 0)))?.stores : undefined;
 
-  // Active: one disabled "Active". A package belongs to one sponsor and a physical asset gives each sponsor one
-  // spot, with the stores picked in that one activation, so neither is bought again here, not even for more stores.
+  // Active: one disabled "Active". A physical asset gives each sponsor one spot, with the stores picked in that one
+  // activation, so it isn't bought again here, not even for more stores.
   const isActive = (choice: Choice) => !!takenFor(choice);
 
-  // The sponsor's own activation is still being paid: it holds the package or spot already.
-  const isPending = (choice: Choice) => !!pendingMap?.has(cartItemKey(target(choice, 0)));
+  // The sponsor's own activation of it is still being paid: it holds the spot already.
+  const isPending = (choice: Choice) => !!pendingMap?.has(holdingKey(target(choice, 0)));
+
+  // The games of the sponsor's own parts of a package here, active and being paid: the card marks those parts.
+  const ownOf = (tier: PackageTier) => {
+    const key = holdingKey(target({ tier }, 0));
+    return {
+      active: activeMap?.get(key)?.games ?? NO_OWN_GAMES,
+      pending: pendingMap?.get(key)?.games ?? NO_OWN_GAMES,
+    };
+  };
+
+  // A package's part as an activation choice, its name and price.
+  const partChoice = (p: SponsorPackage, split: PackageSplit | null) => {
+    const part = split ? partLabel(split.number, p.splits.length) : "";
+    return {
+      choice: { tier: p.tier, ...(split?.splitKey && { splitKey: split.splitKey }) },
+      name: p.name,
+      // "the Community Partner package (part 2 of 3)", for the confirm.
+      label: `the ${p.name} package${part ? ` (${part.toLowerCase()})` : ""}`,
+      totalCents: split?.totalCents ?? p.totalCents,
+      split: split ? cartSplitOf(p, split) : undefined,
+    };
+  };
 
   // The near stores that don't have it yet.
   const freeStores = (choice: Choice) => {
@@ -203,7 +233,14 @@ export default function PackagesPanel({
   const pendingHasStores = !!pending && pending.stores.length > 0 && radiusMiles !== null;
   const needsStore = pendingHasStores && pendingPicked.length === 0;
 
-  const addToCart = (kind: SponsorCartKind, name: string, totalCents: number, currency: string, choice: Choice) => {
+  const addToCart = (
+    kind: SponsorCartKind,
+    name: string,
+    totalCents: number,
+    currency: string,
+    choice: Choice,
+    split?: CartSplit
+  ) => {
     // Every near store that doesn't have it yet; the cart can untick some before checkout.
     const stores = freeStores(choice);
     const error = cart.add({
@@ -215,6 +252,7 @@ export default function PackagesPanel({
       totalCents,
       currency,
       ...(stores.length > 0 && radiusMiles !== null && { stores: { near: stores, radiusMiles } }),
+      ...(split && { split }),
     });
     if (error) toast.error(error);
     else toast.success(`${name} added to your cart`);
@@ -316,13 +354,19 @@ export default function PackagesPanel({
             <div className="grid grid-cols-[repeat(auto-fill,minmax(min(250px,100%),1fr))] gap-3">
               {view.packages.map((p) => (
                 <PackageCard
-                  key={p.tier}
+                  // Keyed by its parts too: new parts (a changed max, games added) start on the first open one.
+                  key={`${p.tier}|${(p.splits ?? []).map((s) => s.splitKey ?? "-").join(",")}`}
                   pkg={p}
-                  onActivate={() => ask(`the ${p.name} package`, p.totalCents, p.currency, { tier: p.tier })}
-                  onAddToCart={() => addToCart("PACKAGE", p.name, p.totalCents, p.currency, { tier: p.tier })}
-                  inCart={cart.has(target({ tier: p.tier }, p.totalCents))}
-                  active={isActive({ tier: p.tier })}
-                  pending={isPending({ tier: p.tier })}
+                  onActivate={(split) => {
+                    const part = partChoice(p, split);
+                    ask(part.label, part.totalCents, p.currency, part.choice);
+                  }}
+                  onAddToCart={(split) => {
+                    const part = partChoice(p, split);
+                    addToCart("PACKAGE", part.name, part.totalCents, p.currency, part.choice, part.split);
+                  }}
+                  isInCart={(splitKey) => cart.has(target({ tier: p.tier, ...(splitKey && { splitKey }) }, 0))}
+                  own={ownOf(p.tier)}
                   basisCount={basisCount(view.priceBasis)}
                 />
               ))}

@@ -8,14 +8,16 @@ interface FanPreviewProps {
   // The picked slot; null on "All slots".
   chip: SlotChip | null;
   orgName: string;
-  // The logo the slot's screen shows first (with the picks not saved yet); null when it shows none.
+  // The banner logo the slot's screen shows (with the picks not saved yet); null when it shows none.
   logo: { url: string | null; variant: LogoVariant } | null;
+  // The round badge (Partner Offers' circular logo, or the icon until there's one); null on other slots.
+  badge?: { url: string | null } | null;
   brandName: string;
 }
 
 // The slot as fans see it in the Fan Hub: Simple BPA, the sponsor's logo on its kind's background (the brand
-// name while there's no logo).
-export default function FanPreview({ chip, orgName, logo, brandName }: FanPreviewProps) {
+// name while there's no logo), and the round badge on an offer card.
+export default function FanPreview({ chip, orgName, logo, badge = null, brandName }: FanPreviewProps) {
   const sample = chip ? (PREVIEW_SAMPLES[chip.catalogKey] ?? { title: chip.name, choices: [] }) : GENERIC_SAMPLE;
 
   return (
@@ -31,7 +33,21 @@ export default function FanPreview({ chip, orgName, logo, brandName }: FanPrevie
           >
             {chip ? `${chip.categoryLabel} · ${chip.name}`.toUpperCase() : "ANY SLOT"}
           </span>
-          <span className="font-display font-black text-[20px] leading-[1.15]">{sample.title}</span>
+          {badge ? (
+            <div className="flex items-center gap-3">
+              <LogoPreview
+                url={badge.url}
+                variant="CIRCULAR"
+                brandName={brandName}
+                alt={`${brandName} badge`}
+                className="size-12 shrink-0 rounded-full text-lg"
+                imageClassName="p-0"
+              />
+              <span className="font-display font-black text-[20px] leading-[1.15]">{sample.title}</span>
+            </div>
+          ) : (
+            <span className="font-display font-black text-[20px] leading-[1.15]">{sample.title}</span>
+          )}
           {sample.choices.length > 0 && (
             <div className="flex gap-2">
               {sample.choices.map((choice) => (

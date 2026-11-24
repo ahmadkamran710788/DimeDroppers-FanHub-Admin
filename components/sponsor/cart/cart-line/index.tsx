@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
 import { OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
@@ -9,7 +10,14 @@ import StoreChecklist from "@/components/sponsor/store-checklist";
 import { KIND_COLOR, KIND_LABEL } from "@/components/sponsor/find-organizations/data";
 import { storeNames } from "@/components/sponsor/data";
 import { formatCents } from "@/components/sponsor/sponsor-api";
+import { partLabel, splitSummary } from "@/components/sponsor/package-splits/data";
+import { HINT_LINK } from "@/components/sponsor/styles";
+import { routes } from "@/utils/routes";
 import type { SponsorCartLine, SponsorCartQuoteItem } from "@/utils/types/sponsor-packages";
+
+// The 409 for a package part whose games changed (games added or sold, or a new max price): it's bought again from
+// the organisation's packages.
+const PART_CHANGED = /no longer offered because its games changed/i;
 
 interface CartLineProps {
   line: SponsorCartLine;
@@ -81,6 +89,11 @@ export default function CartLine({
         <p className="text-[13px] text-[#a8a8a8] break-words">
           {[organization.name ?? "Unnamed organization", (quote?.event ?? line.event)?.name].filter(Boolean).join(" · ")}
         </p>
+        {line.split && (
+          <p className="text-[13px] text-[#c4c4c4] break-words">
+            {[partLabel(line.split.number, line.split.of), splitSummary(line.split)].filter(Boolean).join(" · ")}
+          </p>
+        )}
         {line.stores && (
           <div className="flex flex-wrap items-center gap-x-2 text-[13px]">
             <span className="text-[#c9b8ff] break-words">
@@ -97,6 +110,15 @@ export default function CartLine({
           </div>
         )}
         {problem && <p className="text-[13px] text-[#f0c36a]">{problem}</p>}
+        {problem && PART_CHANGED.test(problem) && (
+          <p className="text-[13px] text-[#a8a8a8]">
+            Remove it, then pick a part again in{" "}
+            <Link href={routes.ui.sponsor.findOrganizations} className={HINT_LINK}>
+              Find Organizations
+            </Link>
+            .
+          </p>
+        )}
       </div>
       <span className={cn("text-[15px] font-bold whitespace-nowrap", unavailable && "text-[#757575] line-through")}>
         {formatCents(price, currency)}

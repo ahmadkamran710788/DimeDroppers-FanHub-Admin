@@ -7,6 +7,7 @@ import Input from "@/components/common/input";
 import MultiSelect, { ALL, type MultiSelectValue } from "@/components/common/multi-select";
 import CategoryBadges from "@/components/sponsor/category-picker/category-badges";
 import {
+  CATEGORY_MAX,
   CUSTOM_CATEGORY_MAX,
   OTHER_CATEGORY,
   categoryLabel,
@@ -39,8 +40,8 @@ interface CategoryPickerProps {
   addClassName?: string;
 }
 
-// A sponsor's categories (sign-up and profile): a dropdown that ticks as many as fit, with Other at the end
-// opening a box for categories of their own. Every pick shows as a badge under it, with an × to remove it.
+// A sponsor's categories (sign-up and profile): a dropdown that ticks up to five (the API's limit), with Other at
+// the end opening a box for categories of their own. Every pick shows as a badge under it, with an × to remove it.
 export default function CategoryPicker({
   name,
   label,
@@ -64,6 +65,8 @@ export default function CategoryPicker({
   const labelOf = (category: string) => categoryLabel(category, options);
   // The sponsor's own categories are rows too, ticked, so the list unticks them like any other.
   const own = value.filter((v) => !options.some((c) => c.code === v)).map((v) => ({ label: v, value: v }));
+  // Five picked: nothing more can be added until one is removed.
+  const full = value.length >= CATEGORY_MAX;
 
   // One row changed: Other opens or closes its box, any other row is picked or unpicked.
   function pick(next: MultiSelectValue) {
@@ -78,7 +81,7 @@ export default function CategoryPicker({
   }
 
   function add() {
-    if (!other.trim()) return;
+    if (!other.trim() || full) return;
     onChange(withTypedCategory(value, other, options));
     onOther("");
   }
@@ -90,6 +93,8 @@ export default function CategoryPicker({
         name={name}
         value={otherOpen ? [...value, OTHER_CATEGORY] : value}
         onChange={pick}
+        // The open Other row is one of the ticks, not a category.
+        max={CATEGORY_MAX + (otherOpen ? 1 : 0)}
         options={[...categoryOptionsAZ(options), ...own, { label: "Other", value: OTHER_CATEGORY }]}
         // Counts the categories, not the Other row.
         countLabel={() => (value.length === 1 ? labelOf(value[0]) : `${value.length} categories`)}
@@ -101,7 +106,7 @@ export default function CategoryPicker({
         selectClassName={selectClassName}
       />
       {!error && value.length === 0 && !otherOpen && (
-        <p className="text-sm text-[#a8a8a8]">Pick all that fit. Choose Other to add your own.</p>
+        <p className="text-sm text-[#a8a8a8]">{`Pick up to ${CATEGORY_MAX}. Choose Other to add your own.`}</p>
       )}
 
       <CategoryBadges
@@ -140,10 +145,15 @@ export default function CategoryPicker({
             <Button
               label="Add"
               onClick={add}
-              disabled={!other.trim()}
+              disabled={!other.trim() || full}
               className={cn(OUTLINE_BUTTON, "shrink-0 rounded-[10px] px-5 font-semibold", addClassName)}
             />
           </div>
+          {full && (
+            <p className="text-sm text-[#a8a8a8]">
+              {`You have ${CATEGORY_MAX} categories, the most you can pick. Remove one to add your own.`}
+            </p>
+          )}
         </div>
       )}
     </div>

@@ -1,7 +1,8 @@
 import { activationItemKey } from "@/context/sponsor-cart";
 import { backendFetch } from "@/utils/api-call";
 import { routes } from "@/utils/routes";
-import type { PackageActivationStatus, PackageActivationsPage } from "@/utils/types/sponsor-packages";
+import { ownGamesOf, type OwnGames } from "@/components/sponsor/package-splits/data";
+import type { PackageActivation, PackageActivationStatus, PackageActivationsPage } from "@/utils/types/sponsor-packages";
 
 // A field-level validation error from the backend (`path` = the field name).
 export interface FieldError {
@@ -80,13 +81,20 @@ export async function sponsorList<T>(
   }
 }
 
-// Cart item key → the stores (ids) it is already active for; an empty set when activated without stores.
-export type ActiveActivations = Map<string, Set<string>>;
+// What the sponsor holds of one package or physical asset (by holdingKey): the stores (ids) it is active for (empty
+// when activated without stores) and, for a package, the games of the parts they have.
+export interface ActiveHolding {
+  stores: Set<string>;
+  games: OwnGames;
+}
+
+// holdingKey → what the sponsor holds there.
+export type ActiveActivations = Map<string, ActiveHolding>;
 
 // The packages and physical assets the sponsor already has active (at one organization, or anywhere), or in
-// another status (PENDING_PAYMENT: still being paid, which holds a package too). A package is held by one sponsor,
-// so it's never activated twice; a physical asset without stores isn't either, and with stores it can be, for
-// stores that don't have it yet. Up to the API's page cap; null when it fails.
+// another status (PENDING_PAYMENT: still being paid, which holds them too). A package part is held by one sponsor,
+// so it's never activated twice (another part can be); a physical asset gives each sponsor one spot. Up to the
+// API's page cap; null when it fails.
 export async function activeActivations(
   schoolId?: string,
   status: PackageActivationStatus = "ACTIVE"
@@ -95,12 +103,16 @@ export async function activeActivations(
     params: { status, schoolId, page: 1, limit: 100 },
   });
   if (!r.view) return null;
-  const active: ActiveActivations = new Map();
+  const byKey = new Map<string, PackageActivation[]>();
   for (const activation of r.view.items) {
     const key = activationItemKey(activation);
-    const stores = active.get(key) ?? new Set<string>();
-    for (const location of activation.locations ?? []) if (location.id) stores.add(location.id);
-    active.set(key, stores);
+    byKey.set(key, [...(byKey.get(key) ?? []), activation]);
+  }
+  const active: ActiveActivations = new Map();
+  for (const [key, activations] of byKey) {
+    const stores = new Set<string>();
+    for (const a of activations) for (const location of a.locations ?? []) if (location.id) stores.add(location.id);
+    active.set(key, { stores, games: ownGamesOf(activations) });
   }
   return active;
 }

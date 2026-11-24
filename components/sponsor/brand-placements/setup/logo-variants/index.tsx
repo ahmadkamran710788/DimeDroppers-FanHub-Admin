@@ -9,7 +9,7 @@ import HiddenFileInput from "@/components/common/hidden-file-input";
 import Loader from "@/components/common/loader";
 import LoadProblem from "@/components/sponsor/load-problem";
 import LogoPreview from "@/components/sponsor/logo-preview";
-import { logoAccept } from "@/components/sponsor/data";
+import { isSquareLogo, logoAccept } from "@/components/sponsor/data";
 import { CARD, HINT_LINK, OUTLINE_BUTTON, PRIMARY_BUTTON, SECTION_TITLE } from "@/components/sponsor/styles";
 import type { BrandLogos } from "@/components/sponsor/use-brand-logos";
 import { routes } from "@/utils/routes";
@@ -27,7 +27,7 @@ interface LogoVariantsProps {
 }
 
 // The logo kinds the sponsor's slots call for, each with what's in use and Upload / Replace. The full list
-// (several logos per kind, default, rename, delete) is on Brand Assets.
+// (several logos per kind, default, rename, delete) and the main logo are on Brand Assets.
 export default function LogoVariants({ logos, brandName }: LogoVariantsProps) {
   const { list } = logos;
 
@@ -65,8 +65,9 @@ export default function LogoVariants({ logos, brandName }: LogoVariantsProps) {
         </div>
       </div>
       <p className="max-w-[760px] text-sm leading-normal text-[#a8a8a8]">
-        Different screens need different versions of your logo. Upload your full-color logo and we make the white logo
-        and icon from it; upload your own to replace them.
+        {logos.mainLogo === "CIRCULAR"
+          ? "Different screens need different versions of your logo. Your main logo is your circular logo, so nothing is made from it: upload your white logo and icon yourself."
+          : "Different screens need different versions of your logo. Your main logo is your landscape logo: we make the white logo and icon from it, and you can upload your own to replace them."}
       </p>
       {body()}
     </section>
@@ -85,9 +86,11 @@ function VariantCard({ status, logos, brandName }: VariantCardProps) {
   const items = logos.list?.items ?? [];
   const current = items.find((a) => a.id === status.defaultAssetId) ?? null;
   const fromProfile = status.inUse.source === "PROFILE";
-  const has = status.state === "READY";
-  const badge = BADGE[status.state];
-  // A full-color default keeps its id when replaced (every slot on it updates, the versions are made again);
+  // No circular logo yet: Partner Offers shows the default icon meanwhile.
+  const iconFallback = status.variant === "CIRCULAR" && !status.defaultAssetId && Boolean(status.inUse.url);
+  const has = status.state === "READY" && !iconFallback;
+  const badge = iconFallback ? { label: "Showing your icon", style: BADGE.NOT_NEEDED.style } : BADGE[status.state];
+  // A landscape default keeps its id when replaced (every slot on it updates, the versions are made again);
   // any other upload becomes the default of its kind, taking over from a made one.
   const replacing = status.variant === "FULL_COLOR" && current ? current : null;
   const busy = logos.busy === `upload:${status.variant}` || (replacing !== null && logos.busy === replacing.id);
@@ -95,6 +98,7 @@ function VariantCard({ status, logos, brandName }: VariantCardProps) {
 
   function fileLine() {
     if (fromProfile) return "From your Sponsor Profile";
+    if (iconFallback) return "Not uploaded · fans see your icon until you add one";
     if (current) return status.inUse.generated ? `${current.name} · Auto-made` : current.name;
     return "Not uploaded";
   }
@@ -111,7 +115,7 @@ function VariantCard({ status, logos, brandName }: VariantCardProps) {
         variant={status.variant}
         brandName={brandName}
         alt={status.label}
-        className={cn("h-[84px] rounded-[10px]", status.variant === "ICON" ? "text-[34px]" : "text-[26px]")}
+        className={cn("h-[84px] rounded-[10px]", isSquareLogo(status.variant) ? "text-[34px]" : "text-[26px]")}
       />
       <div className="flex flex-col gap-1 min-w-0">
         <div className="flex items-center justify-between gap-2">

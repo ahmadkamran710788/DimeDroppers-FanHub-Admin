@@ -7,6 +7,7 @@ import { cn } from "@/utils/cn";
 import Button from "@/components/common/button";
 import Modal from "@/components/common/modal";
 import RangeSlider from "@/components/common/range-slider";
+import { isSquareLogo } from "@/components/sponsor/data";
 import type { BrandLogos, LogoFitting } from "@/components/sponsor/use-brand-logos";
 import FramedLogo from "@/components/sponsor/logo-fit/framed-logo";
 import SlotPreviews from "@/components/sponsor/logo-fit/slot-previews";
@@ -66,8 +67,11 @@ interface LogoFitEditorProps {
 function LogoFitEditor({ fitting, onDone }: LogoFitEditorProps) {
   const { image, spec, file, maxBytes } = fitting;
   const frame = spec.recommended;
-  const icon = spec.variant === "ICON";
-  // The share of the frame the logo fills at the standard size: all of it, or the icon's safe zone.
+  // The icon and the circular logo: a square frame with a safe zone and a background of the sponsor's pick.
+  const icon = isSquareLogo(spec.variant);
+  // Shown in a circle in the app: the frame's corners are cut off.
+  const round = spec.variant === "CIRCULAR";
+  // The share of the frame the logo fills at the standard size: all of it, or the safe zone.
   const inset = icon ? ICON_SAFE_ZONE : 1;
   // The standard size, and 100% on the sliders: the logo (margins left out) just fitting that box, centred.
   const fitView = useMemo(() => presetView(image, frame, "fit", inset), [image, frame, inset]);
@@ -89,8 +93,8 @@ function LogoFitEditor({ fitting, onDone }: LogoFitEditorProps) {
   // Room for Fill when it's beyond MAX_ZOOM (a wide logo in the square icon).
   const maxZoom = Math.max(MAX_ZOOM, Math.ceil(percent(Math.max(fillView.sx, view.sx, view.sy)) / 50) * 50);
   const frameBackground = icon ? ICON_BACKGROUNDS[iconBackground].className : FRAME_BACKGROUND[spec.variant];
-  // A full-color logo on a flat colour keeps it around the logo, so the backend can still remove it when it makes the
-  // white logo and icon. A white logo stays transparent; the icon has its own background.
+  // A landscape logo on a flat colour keeps it around the logo, so the backend can still remove it when it makes the
+  // white logo and icon. A white logo stays transparent; the icon and circular logo have their own background.
   const fill = spec.variant === "FULL_COLOR" ? image.background : null;
   const standard = standardCheck(image, frame, view, inset);
 
@@ -156,8 +160,14 @@ function LogoFitEditor({ fitting, onDone }: LogoFitEditorProps) {
         <p className="text-sm leading-6 text-midnight-navy/80">
           {/* One string: the compiler drops a space between {…} and text that wraps to the next line. */}
           {`The box is your logo's space in the app, at the standard size of ${frame.width} × ${frame.height} px. ${
-            icon ? "Keep the important part inside the dashed square in the middle. " : ""
-          }Drag the logo to move it, and use Width and Height to resize it. Turn off Keep proportions to stretch it one way only. Fans see exactly what's inside the box.`}
+            round
+              ? "Fans see it in a circle, so the corners are cut off. Keep the important part inside the dashed circle. "
+              : icon
+                ? "Keep the important part inside the dashed square in the middle. "
+                : ""
+          }Drag the logo to move it, and use Width and Height to resize it. Turn off Keep proportions to stretch it one way only. ${
+            round ? "The file is saved square, as the app expects." : "Fans see exactly what's inside the box."
+          }`}
         </p>
 
         <div className="rounded-[16px] bg-[#08090c] p-4 sm:p-6 flex justify-center">
@@ -182,9 +192,19 @@ function LogoFitEditor({ fitting, onDone }: LogoFitEditorProps) {
               fill={fill}
               className={cn("w-full rounded-[4px]", frameBackground)}
             >
-              {/* The icon's safe zone: where its important part goes. */}
+              {/* The circle the app cuts it to, with the corners dimmed (the shadow fills the frame outside it). */}
+              {round && (
+                <div aria-hidden="true" className="absolute inset-0 rounded-full shadow-[0_0_0_999px_rgba(8,9,12,0.6)] pointer-events-none" />
+              )}
+              {/* The safe zone: where the important part goes. */}
               {icon && (
-                <div aria-hidden="true" className="absolute inset-[10%] border border-dashed border-[#8b6dff] pointer-events-none" />
+                <div
+                  aria-hidden="true"
+                  className={cn(
+                    "absolute inset-[10%] border border-dashed border-[#8b6dff] pointer-events-none",
+                    round && "rounded-full"
+                  )}
+                />
               )}
             </FramedLogo>
           </div>
@@ -240,7 +260,7 @@ function LogoFitEditor({ fitting, onDone }: LogoFitEditorProps) {
           </div>
 
           {icon && (
-            <div role="radiogroup" aria-label="Icon background" className="flex flex-wrap items-center gap-2">
+            <div role="radiogroup" aria-label={`${spec.label} background`} className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-medium text-midnight-navy mr-1">Background</span>
               {ICON_BACKGROUND_OPTIONS.map((option) => (
                 <Button

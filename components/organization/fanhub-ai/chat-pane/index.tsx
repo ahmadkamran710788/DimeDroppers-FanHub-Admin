@@ -80,6 +80,9 @@ export default function ChatPane({
     if (list) list.scrollTop = list.scrollHeight;
   }, [thread?.id, messages.length, outgoing, waiting, notice]);
 
+  // Set at once (state lags a render), so a double click or Enter + click sends the message only once.
+  const lockRef = useRef(false);
+
   // The box empties once the message has gone; on a failure it keeps the text to send again.
   async function submit(text: string, optionId: string | null = null) {
     setSending(true);
@@ -89,13 +92,24 @@ export default function ChatPane({
   }
 
   async function sendDraft() {
-    if (busy || agentOff) return;
-    if (!(await validateAndSetErrors(agentMessageSchema, { text: draft }, setErrors))) return;
-    if (await submit(draft.trim())) setDraft("");
+    if (busy || agentOff || lockRef.current) return;
+    lockRef.current = true;
+    try {
+      if (!(await validateAndSetErrors(agentMessageSchema, { text: draft }, setErrors))) return;
+      if (await submit(draft.trim())) setDraft("");
+    } finally {
+      lockRef.current = false;
+    }
   }
 
-  const pick = (option: AgentOption) => {
-    if (!busy) void submit(option.label, option.id);
+  const pick = async (option: AgentOption) => {
+    if (busy || lockRef.current) return;
+    lockRef.current = true;
+    try {
+      await submit(option.label, option.id);
+    } finally {
+      lockRef.current = false;
+    }
   };
 
   return (
