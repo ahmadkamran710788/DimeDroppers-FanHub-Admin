@@ -8,6 +8,7 @@ import Button from "@/components/common/button";
 import HiddenFileInput from "@/components/common/hidden-file-input";
 import RowActionsMenu, { type RowAction } from "@/components/common/row-actions-menu";
 import LogoPreview from "@/components/sponsor/logo-preview";
+import { isSquareLogo } from "@/components/sponsor/data";
 import { OUTLINE_BUTTON } from "@/components/sponsor/styles";
 import type { BrandAsset } from "@/utils/types/sponsor-brand-assets";
 
@@ -17,7 +18,7 @@ const BADGE = "text-[11px] font-bold rounded-full px-2 py-0.5 whitespace-nowrap"
 
 const FORMATS: Record<string, string> = { "image/svg+xml": "SVG", "image/png": "PNG", "image/jpeg": "JPG" };
 
-// "Full-color logo · PNG · 1000×200 · 18 KB": every kind shares the library grid, so the kind leads.
+// "Landscape logo · PNG · 1000×200 · 18 KB": every kind shares the library grid, so the kind leads.
 const fileLine = (asset: BrandAsset) =>
   [
     asset.variantLabel,
@@ -45,13 +46,16 @@ interface LogoCardProps {
   onReplace: (file: File) => void;
   onMakeDefault: () => void;
   onRename: () => void;
-  // Full-color logos only: make the white logo and icon from it again.
+  // Landscape logos only, while it's the main logo: make the white logo and icon from it again.
   onRegenerate?: () => void;
   onDelete: () => void;
+  // The landscape logo is the main logo: what couldn't be made from this logo is shown. Off, nothing is made, so an
+  // old result would only confuse.
+  showVersions?: boolean;
 }
 
 // One logo in the Brand Assets library: on its kind's background, with Default / Auto-made, where it's used and,
-// on a full-color logo, the versions that couldn't be made from it.
+// on a landscape logo, the versions that couldn't be made from it.
 export default function LogoCard({
   asset,
   brandName,
@@ -62,9 +66,10 @@ export default function LogoCard({
   onRename,
   onRegenerate,
   onDelete,
+  showVersions = true,
 }: LogoCardProps) {
   const replaceRef = useRef<HTMLInputElement>(null);
-  const generation = asset.generation;
+  const generation = showVersions ? asset.generation : null;
   const notMade = generation?.results.filter((r) => r.state === "NEEDS_UPLOAD" && r.reason) ?? [];
 
   const actions: RowAction[] = [
@@ -81,7 +86,7 @@ export default function LogoCard({
         variant={asset.variant}
         brandName={brandName}
         alt={asset.name}
-        className={cn("h-[120px] rounded-none border-0 border-b border-[#222]", asset.variant === "ICON" ? "text-[34px]" : "text-[26px]")}
+        className={cn("h-[120px] rounded-none border-0 border-b border-[#222]", isSquareLogo(asset.variant) ? "text-[34px]" : "text-[26px]")}
         imageClassName="p-4"
       />
 
@@ -96,7 +101,7 @@ export default function LogoCard({
         <div className="text-[13px] text-[#bdbdbd]">{fileLine(asset)}</div>
         <div className="text-[13px] text-[#a8a8a8]">{usageLine(asset)}</div>
         {asset.source === "GENERATED" && (
-          <div className="text-[13px] text-[#a8a8a8]">Made from your full-color logo. Replace it with your own any time.</div>
+          <div className="text-[13px] text-[#a8a8a8]">Made from your landscape logo. Replace it with your own any time.</div>
         )}
         {generation?.status === "FAILED" && (
           <p className="text-[13px] leading-normal text-[#fcd34d]">

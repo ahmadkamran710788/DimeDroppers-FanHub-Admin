@@ -47,6 +47,7 @@ export const PREVIEW_SAMPLES: Record<string, PreviewSample> = {
   PRE_GAME_SCHEDULE: { title: "Next game: Sat 10:00 AM, Court 2", choices: ["Add to calendar"] },
   LIVE_SCHEDULE: { title: "Now playing: Court 2", choices: ["Watch"] },
   POST_GAME_SCHEDULE: { title: "Final: Home 61 – 55 Away", choices: ["See results"] },
+  PARTNER_OFFERS: { title: "20% off your next order", choices: ["Claim offer"] },
 };
 
 // The preview with no slot picked.

@@ -33,8 +33,10 @@ export interface LogoKind {
   // The sponsor's logos of this kind, one card each. The default comes first with id null: picking it follows the
   // default, so the slot changes with it; any other logo is pinned to the slot.
   options: { id: string | null; name: string; sub: string; url: string | null }[];
-  // No logo of this kind at all: fans see the brand name.
+  // No logo of this kind at all: fans see `meanwhile`.
   missing: boolean;
+  // What fans see while it's missing: the brand name, or (circular logo) the sponsor's icon.
+  meanwhile: string;
   // Organizations where this slot has its own logo of this kind.
   overrides: number;
   previewUrl: string | null;
@@ -189,7 +191,7 @@ function LogoPicker({ kind, brandName, logos, disabled, onPick }: LogoPickerProp
       {kind.missing ? (
         <div role="alert" className="flex flex-wrap items-center gap-3 rounded-[10px] border border-[#854d0e] bg-[#2b1d05] px-[14px] py-3">
           <span className="flex-1 min-w-[200px] text-[13px] text-[#fcd34d]">
-            Upload your {kind.label.toLowerCase()} first. Fans see your brand name here until you do.
+            Upload your {kind.label.toLowerCase()} first. Fans see {kind.meanwhile} here until you do.
           </span>
           <Button
             label={uploading ? "Uploading…" : "Upload"}

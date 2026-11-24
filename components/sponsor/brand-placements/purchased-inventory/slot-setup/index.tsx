@@ -46,7 +46,7 @@ export default function SlotSetup({ orgName, chip, lines, packageNames, orgCount
 
   const defaultIdOf = (variant: LogoVariant) => logos.list?.variants.find((v) => v.variant === variant)?.defaultAssetId ?? null;
 
-  // The default of a kind: its default logo, else (full color) the profile logo.
+  // The default of a kind: its default logo, else (landscape) the profile logo.
   function fallback(variant: LogoVariant) {
     const asset = items.find((a) => a.id === defaultIdOf(variant));
     if (asset) return { name: asset.name, url: asset.url };
@@ -94,8 +94,10 @@ export default function SlotSetup({ orgName, chip, lines, packageNames, orgCount
             : { id: a.id, name: a.name, sub: a.source === "GENERATED" ? "Auto-made" : "", url: a.url }
         ),
       ],
-      // Nothing of this kind to show yet: fans see the brand name.
+      // Nothing of this kind to show yet: fans see the brand name, or for the circular logo the icon (the slot's
+      // resolved logo is then the icon).
       missing: own.length === 0 && !def.url,
+      meanwhile: l.variant === "CIRCULAR" && l.url ? "your icon" : "your brand name",
       overrides: chip.logos.find((c) => c.variant === l.variant)?.slotOverrides ?? 0,
       // What fans see with the picks: the saved logo until it changes.
       previewUrl: picked === saved ? l.url : picked ? (items.find((a) => a.id === picked)?.url ?? null) : def.url,
@@ -152,7 +154,11 @@ export default function SlotSetup({ orgName, chip, lines, packageNames, orgCount
     return finish(requests, `Logo saved for all ${orgCount} organizations`);
   }
 
-  const preview = kinds[0] ? { url: kinds[0].previewUrl, variant: kinds[0].variant } : null;
+  // The "Presented by" banner shows the landscape or white logo; Partner Offers also shows the round badge.
+  const banner = kinds.find((k) => k.variant === "FULL_COLOR" || k.variant === "WHITE") ?? kinds[0];
+  const round = kinds.find((k) => k.variant === "CIRCULAR");
+  const preview = banner ? { url: banner.previewUrl, variant: banner.variant } : null;
+  const badge = round && round !== banner ? { url: round.previewUrl } : null;
 
   return (
     <>
@@ -171,7 +177,7 @@ export default function SlotSetup({ orgName, chip, lines, packageNames, orgCount
         onSaveOrg={saveForOrg}
         onUseAll={useForAll}
       />
-      <FanPreview chip={chip} orgName={orgName} logo={preview} brandName={brandName} />
+      <FanPreview chip={chip} orgName={orgName} logo={preview} badge={badge} brandName={brandName} />
     </>
   );
 }

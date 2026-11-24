@@ -1,5 +1,5 @@
 import { toOptions } from "@/utils/helper";
-import type { VariantSpec } from "@/utils/types/sponsor-brand-assets";
+import type { LogoVariant, VariantSpec } from "@/utils/types/sponsor-brand-assets";
 import type { LogoRules, SponsorBrandProfile, SponsorSignupOptions } from "@/utils/types/sponsor-profile";
 
 // The signed-in sponsor, shown in the sponsor header and sidebar. Mock data until sponsor
@@ -112,6 +112,10 @@ const MIME_EXTENSIONS: Record<string, string> = {
   "image/png": ".png",
   "image/jpeg": ".jpg,.jpeg",
 };
+
+// The square kinds: the icon and the circular logo (shown in a circle). A first letter stands in for them, and
+// they're fitted in a square frame with a safe zone.
+export const isSquareLogo = (variant: LogoVariant) => variant === "ICON" || variant === "CIRCULAR";
 
 // The file picker filter for one logo kind (".svg,.png,.jpg,.jpeg").
 export const logoAccept = (spec: VariantSpec) =>
