@@ -11,6 +11,7 @@ import type {
   BrandAssetList,
   BrandAssetOptions,
   LogoVariant,
+  MainLogo,
   VariantSpec,
 } from "@/utils/types/sponsor-brand-assets";
 
@@ -35,8 +36,9 @@ interface Loaded {
 export type BrandLogos = ReturnType<typeof useBrandLogos>;
 
 // The sponsor's logos (Brand Assets and Brand Placements): the rules per kind (GET /options), the logos with
-// a state per kind (GET /), and every change to them. After a change the list is loaded again, since making
-// the white logo and icon or moving the default changes several logos at once.
+// a state per kind and the main logo (GET /), and every change to them. After a change the list is loaded again,
+// since making the white logo and icon, moving the default or deleting the last circular logo (which switches the
+// main logo back to landscape) changes several things at once.
 export function useBrandLogos() {
   // Bumped by Retry to load both again.
   const [reloads, setReloads] = useState(0);
@@ -73,6 +75,9 @@ export function useBrandLogos() {
 
   const specOf = (variant: LogoVariant) => options?.variants.find((v) => v.variant === variant);
   const labelOf = (variant: LogoVariant) => (specOf(variant)?.label ?? "logo").toLowerCase();
+  // LANDSCAPE until the list says otherwise. The white logo and icon are only made from a landscape main logo.
+  const mainLogo: MainLogo = list?.mainLogo ?? options?.defaultMainLogo ?? "LANDSCAPE";
+  const canRegenerate = mainLogo === "LANDSCAPE";
 
   async function refresh() {
     const r = await sponsorRequest<BrandAssetList>("GET", routes.api.sponsorBrandAssets);
@@ -133,8 +138,9 @@ export function useBrandLogos() {
     setFitting(null);
   }
 
-  // A new logo of this kind, fitted to its frame first. The first full-color one also makes the white logo and
-  // icon; a white logo or icon replaces the made one of its kind and becomes the default.
+  // A new logo of this kind, fitted to its frame first. The first landscape one also makes the white logo and icon
+  // (while the main logo is landscape); a white logo or icon replaces the made one of its kind and becomes the
+  // default.
   async function upload(variant: LogoVariant, picked: File, { name, isDefault }: { name?: string; isDefault?: boolean } = {}) {
     const file = await fit(picked, variant);
     if (!file || (await rejected(file, variant))) return false;
@@ -182,13 +188,33 @@ export function useBrandLogos() {
   const remove = (asset: BrandAsset) =>
     run(asset.id, () => sponsorRequest("DELETE", routes.api.sponsorBrandAsset(asset.id)), `${asset.name} deleted`);
 
-  // Makes the white logo and icon again from a full-color logo.
+  // Makes the white logo and icon again from a landscape logo (only while it's the main logo).
   const regenerate = (asset: BrandAsset) =>
     run(
       asset.id,
       () => sponsorRequest<BrandAssetList>("POST", routes.api.sponsorBrandAssetGenerate(asset.id)),
-      `White logo and icon made again from ${asset.name}`
+      `${capitalize(labelOf("WHITE"))} and ${labelOf("ICON")} made again from ${asset.name}`
     );
+
+  // Which logo the versions follow. CIRCULAR removes the made white logo and icon (and the slot choices that
+  // used them); LANDSCAPE makes them again. Answers the list, which is kept as it is.
+  async function setMainLogo(value: MainLogo) {
+    const option = options?.mainLogos.find((o) => o.value === value);
+    setBusy("main-logo");
+    const r = await sponsorRequest<BrandAssetList>("PUT", routes.api.sponsorBrandAssetMainLogo, {
+      body: { mainLogo: value },
+    });
+    if (!r.view) {
+      setBusy(null);
+      toast.error(r.message ?? "Couldn't change your main logo, please try again.");
+      return false;
+    }
+    setFresh({ key: reloads, list: r.view });
+    setBusy(null);
+    setVersion((n) => n + 1);
+    toast.success(`Your ${(option?.label ?? "logo").toLowerCase()} is now your main logo`);
+    return true;
+  }
 
   return {
     list,
@@ -207,5 +233,11 @@ export function useBrandLogos() {
     makeDefault,
     remove,
     regenerate,
+    mainLogo,
+    canRegenerate,
+    setMainLogo,
   };
 }
+
+// "White logo" from "white logo".
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);

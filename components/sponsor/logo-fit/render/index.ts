@@ -27,7 +27,7 @@ export interface LogoImage extends Size {
   vector: boolean;
   // The part with the logo, without the empty or flat-colour margins around it.
   content: Box;
-  // The flat colour a full-color logo sits on (a JPG on white), as "rgb(…)"; null when it's transparent or not one
+  // The flat colour a landscape logo sits on (a JPG on white), as "rgb(…)"; null when it's transparent or not one
   // colour. The saved file is filled with it around the logo: the backend removes a background only when the
   // file's corners are one colour, and transparent corners would leave it in, making the white logo a solid box.
   background: string | null;
@@ -50,7 +50,7 @@ export interface LogoRect {
   height: number;
 }
 
-// The icon's important part goes in its central 80%, the backend's safe zone.
+// The icon's and circular logo's important part goes in their central 80%, the backend's safe zone.
 export const ICON_SAFE_ZONE = 0.8;
 
 // How close to the standard box (a share of each side) still counts as at standard size, so it can be reached by hand.
@@ -261,8 +261,8 @@ function outputSizes(spec: VariantSpec): Size[] {
   return k < 1 ? [spec.recommended, { width: Math.ceil(width * k), height: Math.ceil(height * k) }] : [spec.recommended];
 }
 
-// The frame drawn as a PNG: transparent around the logo, or on `background` (the icon's, or a full-color logo's own
-// flat colour).
+// The frame drawn as a PNG: transparent around the logo, or on `background` (the icon's or circular logo's, or a
+// landscape logo's own flat colour).
 function draw(image: LogoImage, size: Size, view: LogoView, background: string | null): Promise<Blob | null> {
   const canvas = document.createElement("canvas");
   canvas.width = size.width;

@@ -8,9 +8,10 @@ export type PriceBasis = "TEAMS" | "GAMES";
 // PENDING_PAYMENT: waiting for its payment (a bank payment clearing, or one still to finish); PAYMENT_FAILED:
 // its payment didn't go through. Only ACTIVE / EXPIRED / CANCELLED were bought.
 export type PackageActivationStatus = "ACTIVE" | "CANCELLED" | "EXPIRED" | "PENDING_PAYMENT" | "PAYMENT_FAILED";
-// TAKEN: one sponsor holds each package per organisation (per event for a tournament), and someone does: another
-// sponsor or the caller, the listing doesn't say which (the caller's own shows under GET /activations).
-// FULL: every sponsor spot of a physical asset is taken (the organisation sets how many).
+// TAKEN: every upcoming game of the package already belongs to a sponsor (each part of it is held by one sponsor):
+// another sponsor or the caller, the listing doesn't say which (the caller's own shows under GET /activations).
+// NO_UPCOMING_GAMES (organisations) / NO_GAMES (events): no games to sell. FULL: every sponsor spot of a physical
+// asset is taken (the organisation sets how many).
 export type UnavailableReason =
   | "NO_SLOTS"
   | "NO_TEAMS"
@@ -169,6 +170,33 @@ export interface PackageSlot {
   lineTotalCents: number;
 }
 
+// One game of a package part. `id` is null when the game left the schedule after it was sold; `startsAt` is null
+// for a game without a time yet.
+export interface SplitGame {
+  id: string | null;
+  startsAt: string | null;
+  title: string | null;
+}
+
+// One part of a package: a run of its games (in date order) sold to one sponsor. A TAKEN part hides who has it,
+// and its key and price.
+export interface PackageSplit {
+  // 1, 2, …: in the order of their first game.
+  number: number;
+  status: "AVAILABLE" | "TAKEN";
+  // 16 hex characters, for buying this part; null when TAKEN. Changes whenever its games change.
+  splitKey: string | null;
+  gameCount: number;
+  firstGameAt: string | null;
+  lastGameAt: string | null;
+  totalCents: number | null;
+  games: SplitGame[];
+}
+
+// A package, priced by its games: the slot values × the games of a part. Without a max price the package is one
+// part with every upcoming game; with one (set by the organisation) it's cut into parts, each up to that price.
+// `totalCents`, `factors` and `slots[].lineTotalCents` describe the first available part (every upcoming game
+// when none is).
 export interface SponsorPackage {
   tier: PackageTier;
   name: string;
@@ -180,9 +208,17 @@ export interface SponsorPackage {
   slotCount: number;
   slots: PackageSlot[];
   factors: PricingFactor[];
+  // The price of one game.
   slotValueTotalCents: number;
   totalCents: number;
   currency: string;
+  // The organisation's max price per part; null = one part.
+  maxPriceCents: number | null;
+  // The first available part's key; null when nothing can be bought.
+  splitKey: string | null;
+  availableSplitCount: number;
+  // Every part, in date order.
+  splits: PackageSplit[];
 }
 
 export interface SponsorPhysicalAsset {
@@ -229,11 +265,13 @@ export interface SponsorPackages {
   physicalAssets: SponsorPhysicalAsset[];
 }
 
-// POST /activations: a package (`tier`) or a physical asset (`physicalAssetId`), never both. Stores are
-// optional; with them, `radiusMiles` is the radius searched with and every store must be within it.
+// POST /activations: a package (`tier`, and `splitKey` for one part of it; without it, the first available part)
+// or a physical asset (`physicalAssetId`), never both. Stores are optional; with them, `radiusMiles` is the radius
+// searched with and every store must be within it.
 export interface ActivatePackageRequest {
   schoolId: string;
   tier?: PackageTier;
+  splitKey?: string;
   physicalAssetId?: string;
   eventId?: string;
   expectedTotalCents?: number;
@@ -257,7 +295,11 @@ export interface PackageActivation {
   sponsor: { name: string | null; brandName: string | null };
   inventoryVersion: number;
   priceBasis: PriceBasis;
+  // The number of games (`games`) for a package.
   basisQuantity: number;
+  // The games a package activation's sponsor is shown for; empty for a physical asset, and for a package bought
+  // before parts until the backend fills them in.
+  games: SplitGame[];
   slotValueTotalCents: number;
   totalCents: number;
   currency: string;
@@ -299,6 +341,18 @@ export interface SponsorCartLine {
   // The stores the item could be for when it was added (the ones near it in the search) and that search's
   // radius, so the cart can change which of them are attached; absent for items added without stores.
   stores?: { near: SponsorNearLocation[]; radiusMiles: number };
+  // The package part it is, as it was when added (the quote doesn't return it); absent for a physical asset and
+  // for a package added before parts.
+  split?: CartSplit;
+}
+
+// What the cart shows of a package part: "Part 2 of 3 · 7 games · Dec 19 – Jan 30".
+export interface CartSplit {
+  number: number;
+  of: number;
+  gameCount: number;
+  firstGameAt: string | null;
+  lastGameAt: string | null;
 }
 
 // POST /activations/quote
@@ -338,4 +392,36 @@ export interface SponsorCartActivation {
   currency: string;
   // The cart's one payment; null for a $0 cart (live at once).
   checkout: SponsorCheckout | null;
+}
+
+// GET / PUT /fanhub/org/sponsor-packages/splits (organiser token; `eventId` for a tournament): the max price per
+// package and the parts it gives. Physical assets aren't split.
+export interface PackageSplitSettings {
+  organization: { id: string; name: string | null; organizationType: SponsorOrganizationType };
+  event: SponsorEvent | null;
+  currency: string;
+  // The range a max price can take.
+  limits: { maxPriceCentsMin: number; maxPriceCentsMax: number };
+  // Every upcoming game, sold or not.
+  upcomingGameCount: number;
+  packages: PackageSplitSetting[];
+}
+
+export interface PackageSplitSetting {
+  tier: PackageTier;
+  name: string;
+  maxPriceCents: number | null;
+  // The price of one game of this package.
+  perGameCents: number;
+  isAvailable: boolean;
+  unavailableReason: UnavailableReason | null;
+  availableSplitCount: number;
+  takenSplitCount: number;
+  splits: PackageSplit[];
+}
+
+// PUT /fanhub/org/sponsor-packages/splits: the packages to change; null removes the max (one part again).
+export interface PackageSplitSettingsInput {
+  eventId?: string;
+  packages: { tier: PackageTier; maxPriceCents: number | null }[];
 }

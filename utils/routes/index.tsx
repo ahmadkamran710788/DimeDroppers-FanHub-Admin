@@ -458,11 +458,13 @@ export const routes = {
     // kind map; GET the logos with a state per kind, POST one (multipart: file, variant, name?, isDefault?).
     sponsorBrandAssetOptions: "fanhub/sponsor-profile/brand-assets/options",
     sponsorBrandAssets: "fanhub/sponsor-profile/brand-assets",
+    // PUT { mainLogo: "LANDSCAPE" | "CIRCULAR" }: which logo the white logo and icon follow; answers GET /'s body.
+    sponsorBrandAssetMainLogo: "fanhub/sponsor-profile/brand-assets/main-logo",
     // PATCH { name?, isDefault?: true }; DELETE.
     sponsorBrandAsset: (id: string) => `fanhub/sponsor-profile/brand-assets/${id}`,
     // PUT multipart { file }: a new image, same id.
     sponsorBrandAssetFile: (id: string) => `fanhub/sponsor-profile/brand-assets/${id}/file`,
-    // POST, no body: makes the white logo and icon again from a full-color logo; answers the list.
+    // POST, no body: makes the white logo and icon again from a landscape logo (400 while the main logo is circular); answers the list.
     sponsorBrandAssetGenerate: (id: string) => `fanhub/sponsor-profile/brand-assets/${id}/generate`,
     // Finding the brand's other stores on request (FANHUB_SPONSOR_LOCATION_FETCH_FRONTEND.md): POST starts one
     // (202), the list is the 20 latest (directly in `data`), and one fetch comes with its locations per area.
@@ -478,6 +480,9 @@ export const routes = {
     orgSponsorPackages: "fanhub/org/sponsor-packages/packages",
     orgSponsorEvents: "fanhub/org/sponsor-packages/events",
     orgSponsorActivations: "fanhub/org/sponsor-packages/activations",
+    // GET ?eventId= / PUT { eventId?, packages: [{ tier, maxPriceCents | null }] }: the max price per package and
+    // the parts it's cut into (FANHUB_SPONSOR_PACKAGE_SPLITS_FRONTEND.md §2).
+    orgSponsorPackageSplits: "fanhub/org/sponsor-packages/splits",
     // Recognition & Fan Wall: fans' photobooth images and the wall the org builds from them
     // (FANHUB_ORG_PHOTOBOOTH_FAN_WALL_FRONTEND.md).
     // Recognitions (FANHUB_ORG_RECOGNITIONS_FRONTEND.md): the read-only templates (?category=&template=),

@@ -163,7 +163,7 @@ export default function SponsorDetails({ brand, options, onSaved }: SponsorDetai
     const changes: Pick<SponsorProfileUpdate, "sponsorName" | "sponsorType"> = {};
     const name = form.name.trim();
     if (!brand || name !== brand.name) changes.sponsorName = name;
-    // The list, and its first one as `category` for a backend that only stores one.
+    // The list, and its first one as `category` (the API uses `categories` when both are sent).
     const categories = sameCategories(form.categories, savedCategories(brand)) ? null : form.categories;
     if (draft.sponsorType !== (brand?.sponsorType ?? "LOCAL_BUSINESS")) changes.sponsorType = draft.sponsorType;
     const removeLogo = !draft.logo && Boolean(brand?.logoUrl);

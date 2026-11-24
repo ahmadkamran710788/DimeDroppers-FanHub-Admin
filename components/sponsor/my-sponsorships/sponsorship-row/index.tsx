@@ -9,6 +9,8 @@ import OrgMonogram from "@/components/sponsor/find-organizations/org-monogram";
 import { CATEGORY_COLORS, CATEGORY_LABELS, KIND_COLOR, KIND_LABEL } from "@/components/sponsor/find-organizations/data";
 import { storeNames } from "@/components/sponsor/data";
 import { formatCents } from "@/components/sponsor/sponsor-api";
+import GamesDetails from "@/components/sponsor/package-splits/games-details";
+import { gamesSummary } from "@/components/sponsor/package-splits/data";
 import { distinctFrom } from "@/utils/helper";
 import type { PackageActivation, PackageActivationStatus } from "@/utils/types/sponsor-packages";
 
@@ -112,6 +114,13 @@ export default function SponsorshipRow({ activation: a, onCancel, onFinishPaymen
           </p>
           {a.locations.length > 0 && (
             <p className="text-[13px] text-[#c9b8ff] break-words">{`For: ${storeNames(a.locations)}`}</p>
+          )}
+          {/* The games a package part shows the brand at. */}
+          {gamesSummary(a.games) && (
+            <div className="flex flex-col gap-1">
+              <p className="text-[13px] text-[#c4c4c4] break-words">{gamesSummary(a.games)}</p>
+              <GamesDetails games={a.games} />
+            </div>
           )}
           <p className="text-[13px] text-[#a8a8a8]">{dates(a)}</p>
           {payment && <p className={cn("text-[13px] break-words", payment.className)}>{payment.text}</p>}
