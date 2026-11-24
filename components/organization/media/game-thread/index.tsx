@@ -187,7 +187,10 @@ const SLOT_KEYS: Partial<Record<ThreadItem["kind"], Partial<Record<ThreadPhase, 
   donation: { pre: ["CAMPAIGNS"], live: ["CAMPAIGNS"], final: ["CAMPAIGNS"] },
 };
 
-type SlotSponsor = { name: string; logos: SponsorLogos };
+// Slots whose card shows the sponsor's round badge (the circular logo, else its icon) rather than the banner logo.
+const BADGE_SLOTS = new Set(["PARTNER_OFFERS"]);
+
+type SlotSponsor = { name: string; logos: SponsorLogos; badge: boolean };
 
 // The sponsor that bought this card's slot in a running package, with the slot's own logos (else the
 // sponsor's). The list is in the API's order (Presenting Partner first), so the first match wins.
@@ -200,18 +203,30 @@ const slotSponsorFor = (sponsors: OrgSponsor[], item: ThreadItem): SlotSponsor |
         .flatMap((p) => p.slots)
         .find((sl) => sl.catalogKey === key);
       const logos = slot && (slot.logos ?? s.logos);
-      if (logos) return { name: s.name, logos };
+      if (logos) return { name: s.name, logos, badge: BADGE_SLOTS.has(key) };
     }
   }
 };
 
-// "Presented by" and the slot sponsor's logo (or name), under an engagement card.
+// "Presented by" and the slot sponsor's logo (or name), under an engagement card. An offer card shows the round
+// badge, as the app does, when the sponsor has one.
 function CardSponsor({ sponsor }: { sponsor: SlotSponsor }) {
   const logoUrl = mainLogoOf(sponsor.logos);
+  const badgeUrl = sponsor.badge ? sponsor.logos.badgeUrl : null;
   return (
     <div className="flex items-center gap-2 border-t border-white/10 pt-3 text-sm text-white/60">
       <span>{sponsor.logos.label || "Presented by"}</span>
-      {logoUrl ? (
+      {badgeUrl ? (
+        // The sponsor's logo from the API (any host), so it skips the image optimizer.
+        <Image
+          src={badgeUrl}
+          alt={sponsor.name}
+          width={28}
+          height={28}
+          unoptimized
+          className="size-7 rounded-full bg-white object-cover"
+        />
+      ) : logoUrl ? (
         // The sponsor's logo from the API (any host), so it skips the image optimizer.
         <span className="rounded-md bg-white px-2 py-1">
           <Image src={logoUrl} alt={sponsor.name} width={80} height={20} unoptimized className="h-5 w-auto max-w-24 object-contain" />

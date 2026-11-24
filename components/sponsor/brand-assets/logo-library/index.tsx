@@ -6,20 +6,22 @@ import { cn } from "@/utils/cn";
 import { validateAndSetErrors } from "@/utils/validation";
 import Button from "@/components/common/button";
 import ConfirmModal from "@/components/common/confirm-modal";
+import SegmentedControl from "@/components/common/segmented-control";
 import HiddenFileInput from "@/components/common/hidden-file-input";
 import Input from "@/components/common/input";
 import Loader from "@/components/common/loader";
 import Modal from "@/components/common/modal";
 import LoadProblem from "@/components/sponsor/load-problem";
 import LogoPreview from "@/components/sponsor/logo-preview";
-import { logoAccept } from "@/components/sponsor/data";
+import { isSquareLogo, logoAccept } from "@/components/sponsor/data";
 import { OUTLINE_BUTTON, SECTION_TITLE } from "@/components/sponsor/styles";
 import type { BrandLogos } from "@/components/sponsor/use-brand-logos";
 import { useSponsorAccount } from "@/components/sponsor/use-sponsor-account";
 import AssetDropzone from "@/components/sponsor/brand-assets/asset-dropzone";
 import LogoCard from "@/components/sponsor/brand-assets/logo-library/logo-card";
+import MainLogoChoice from "@/components/sponsor/brand-assets/main-logo-choice";
 import { logoNameSchema } from "@/components/sponsor/brand-assets/schema";
-import type { BrandAsset, VariantSpec, VariantStatus } from "@/utils/types/sponsor-brand-assets";
+import type { BrandAsset, LogoVariant, VariantSpec, VariantStatus } from "@/utils/types/sponsor-brand-assets";
 
 // The picker filter until the rules from GET /brand-assets/options arrive.
 const FALLBACK_ACCEPT = ".svg,.png,.jpg,.jpeg";
@@ -34,23 +36,32 @@ interface LogoLibraryProps {
   inputRef: RefObject<HTMLInputElement | null>;
 }
 
-// The Brand Assets library: the drop zone and every logo in one grid. Each upload is a full-color logo, and
-// the backend makes the white logo and icon from it; the sponsor swaps in their own with Replace on those.
+// The two main kinds the drop zone takes: the landscape and the circular logo.
+const DROP_KINDS: LogoVariant[] = ["FULL_COLOR", "CIRCULAR"];
+
+// The Brand Assets library: the main logo, the drop zone (a landscape or a circular logo) and every logo in one
+// grid. While the landscape logo is the main logo the backend makes the white logo and icon from it; the sponsor
+// swaps in their own with Replace on those, or uploads them while the circular logo is the main logo.
 export default function LogoLibrary({ logos, inputRef }: LogoLibraryProps) {
   const account = useSponsorAccount();
   const brandName = account?.brandName || account?.displayName || "Your brand";
   const [renaming, setRenaming] = useState<BrandAsset | null>(null);
   const [deleting, setDeleting] = useState<BrandAsset | null>(null);
+  // The kind the drop zone uploads; the main logo's kind until the sponsor picks.
+  const [picked, setPicked] = useState<LogoVariant | null>(null);
 
-  const fullColor = logos.specOf("FULL_COLOR");
+  const landscapeMain = logos.mainLogo === "LANDSCAPE";
+  const dropKinds = DROP_KINDS.flatMap((variant) => logos.specOf(variant) ?? []);
+  const dropKind = picked ?? (landscapeMain ? "FULL_COLOR" : "CIRCULAR");
+  const dropSpec = logos.specOf(dropKind);
   const maxBytes = logos.options?.limits.maxBytes;
-  const formats = fullColor ? `${fullColor.formats.join(", ")}${maxBytes ? ` up to ${toMB(maxBytes)} MB` : ""} · ` : "";
+  const formats = dropSpec ? `${dropSpec.formats.join(", ")}${maxBytes ? ` up to ${toMB(maxBytes)} MB` : ""}` : "";
   const uploading = logos.busy?.startsWith("upload:") ?? false;
   const summary = logos.list?.summary;
 
   // One after another, so each gets its own check and message.
   async function uploadAll(files: File[]) {
-    for (const file of files) await logos.upload("FULL_COLOR", file);
+    for (const file of files) await logos.upload(dropKind, file);
   }
 
   function body() {
@@ -60,6 +71,8 @@ export default function LogoLibrary({ logos, inputRef }: LogoLibraryProps) {
     }
     const { items, variants } = logos.list;
     const hasFullColor = items.some((a) => a.variant === "FULL_COLOR");
+    // Something to make the white logo and icon from, or nothing is made (the sponsor uploads them).
+    const versionsExpected = hasFullColor || !landscapeMain;
 
     const cards = logos.options.variants.flatMap((spec) => {
       const status = variants.find((v) => v.variant === spec.variant);
@@ -71,9 +84,18 @@ export default function LogoLibrary({ logos, inputRef }: LogoLibraryProps) {
         if (spec.variant === "FULL_COLOR" && status?.inUse.source === "PROFILE") {
           return [<ProfileLogoCard key="profile" url={status.inUse.url} brandName={brandName} />];
         }
-        // A white logo or icon that couldn't be made, or that slots need: upload one here. Before any
-        // full-color logo there's nothing to make them from, so the drop zone covers it.
-        if (spec.variant !== "FULL_COLOR" && hasFullColor && status && (status.needsUpload || status.state === "MISSING")) {
+        if (!status) return [];
+        // Offered once the library has logos: Partner Offers shows it, and the main logo can only be circular once
+        // there's one. An empty library says how to start instead.
+        if (spec.variant === "CIRCULAR") {
+          if (items.length === 0) return [];
+          return [<MissingLogoCard key={spec.variant} spec={spec} status={status} logos={logos} brandName={brandName} />];
+        }
+        // A white logo or icon that couldn't be made, isn't made (circular main logo) or that slots need: upload one
+        // here. Before any landscape logo there's nothing to make them from, so the drop zone covers it. With a
+        // circular logo the icon isn't shown anywhere, so it isn't asked for.
+        const iconUnused = spec.variant === "ICON" && status.state === "NOT_NEEDED" && !landscapeMain;
+        if (spec.variant !== "FULL_COLOR" && versionsExpected && !iconUnused && (status.needsUpload || status.state === "MISSING")) {
           return [<MissingLogoCard key={spec.variant} spec={spec} status={status} logos={logos} brandName={brandName} />];
         }
         return [];
@@ -89,7 +111,8 @@ export default function LogoLibrary({ logos, inputRef }: LogoLibraryProps) {
           onReplace={(file) => logos.replace(asset, file)}
           onMakeDefault={() => logos.makeDefault(asset)}
           onRename={() => setRenaming(asset)}
-          onRegenerate={asset.variant === "FULL_COLOR" ? () => logos.regenerate(asset) : undefined}
+          onRegenerate={asset.variant === "FULL_COLOR" && logos.canRegenerate ? () => logos.regenerate(asset) : undefined}
+          showVersions={logos.canRegenerate}
           onDelete={() => setDeleting(asset)}
         />
       ));
@@ -98,7 +121,8 @@ export default function LogoLibrary({ logos, inputRef }: LogoLibraryProps) {
     if (cards.length === 0) {
       return (
         <p className="text-base text-[#a8a8a8]">
-          No logos yet. Drop your full-color logo above and we&apos;ll make the white logo and icon from it.
+          No logos yet. Drop your landscape logo above and we&apos;ll make the white logo and icon from it, or switch to
+          Circular logo to add your round mark.
         </p>
       );
     }
@@ -107,10 +131,20 @@ export default function LogoLibrary({ logos, inputRef }: LogoLibraryProps) {
 
   return (
     <section aria-label="Library" className="flex-[2_1_520px] min-w-0 flex flex-col gap-[18px]">
+      <MainLogoChoice logos={logos} />
+      {dropKinds.length > 1 && (
+        <SegmentedControl
+          ariaLabel="Upload as"
+          options={dropKinds.map((s) => s.label)}
+          active={dropSpec?.label ?? dropKinds[0].label}
+          onChange={(label) => setPicked(dropKinds.find((s) => s.label === label)?.variant ?? null)}
+          variant="light"
+        />
+      )}
       <AssetDropzone
         inputRef={inputRef}
-        accept={fullColor ? logoAccept(fullColor) : FALLBACK_ACCEPT}
-        hint={`${formats}we make the white logo and icon from it`}
+        accept={dropSpec ? logoAccept(dropSpec) : FALLBACK_ACCEPT}
+        hint={dropHint(dropKind, formats, landscapeMain)}
         busy={uploading}
         onFiles={uploadAll}
       />
@@ -147,6 +181,17 @@ export default function LogoLibrary({ logos, inputRef }: LogoLibraryProps) {
 // "2" for 2 MB.
 const toMB = (bytes: number) => Number((bytes / (1024 * 1024)).toFixed(1));
 
+// Under the drop zone: the formats, and what happens after (versions made from a landscape main logo).
+function dropHint(kind: LogoVariant, formats: string, landscapeMain: boolean) {
+  const what =
+    kind === "CIRCULAR"
+      ? "a round mark on a square file, shown in a circle on Partner Offers"
+      : landscapeMain
+        ? "we make the white logo and icon from it"
+        : "nothing is made from it while your main logo is circular";
+  return [formats, what].filter(Boolean).join(" · ");
+}
+
 // What deleting a logo does to the slots that show it.
 function deleteMessage(asset: BrandAsset | null) {
   if (!asset) return "";
@@ -157,7 +202,7 @@ function deleteMessage(asset: BrandAsset | null) {
   return parts.join(" ");
 }
 
-// The sign-up logo, which slots show until a full-color logo is uploaded here (no white logo or icon is made
+// The sign-up logo, which slots show until a landscape logo is uploaded here (no white logo or icon is made
 // from it).
 function ProfileLogoCard({ url, brandName }: { url: string | null; brandName: string }) {
   return (
@@ -173,7 +218,7 @@ function ProfileLogoCard({ url, brandName }: { url: string | null; brandName: st
       <div className="p-4 flex flex-col gap-2">
         <h4 className="text-base font-bold">From your Sponsor Profile</h4>
         <p className="text-[13px] leading-normal text-[#a8a8a8]">
-          Your slots show this until you add a full-color logo here. Adding one also makes your white logo and icon.
+          Your slots show this until you add a landscape logo here. Adding one also makes your white logo and icon.
         </p>
       </div>
     </article>
@@ -187,32 +232,47 @@ interface MissingLogoCardProps {
   brandName: string;
 }
 
-// A white logo or icon that couldn't be made from the full-color logo (or that slots need and there's none):
-// why, its rules, and an upload of the sponsor's own.
+// A kind with no logo of the sponsor's own: a white logo or icon that couldn't be made from the landscape logo,
+// isn't made (circular main logo) or that slots need, or the circular logo (shown with the icon fans see meanwhile).
+// Why, its rules, and an upload of the sponsor's own.
 function MissingLogoCard({ spec, status, logos, brandName }: MissingLogoCardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const label = spec.label.toLowerCase();
   const uploading = logos.busy === `upload:${spec.variant}`;
+  // The circular kind shows the default icon until one is uploaded.
+  const fallback = spec.variant === "CIRCULAR" && !status.defaultAssetId ? status.inUse.url : null;
+  const missing = status.state === "MISSING" || Boolean(status.needsUpload);
+  const text =
+    status.needsUpload ??
+    (fallback
+      ? "Partner Offers shows your icon until you add one."
+      : status.state === "MISSING"
+        ? `None yet, and ${status.neededBySlots} of your slots need one. Fans see your brand name there until you add one.`
+        : spec.description);
 
   return (
     <article className={CARD_SHELL}>
       <LogoPreview
-        url={null}
+        url={fallback}
         variant={spec.variant}
         brandName={brandName}
-        className={cn(PREVIEW, spec.variant === "ICON" ? "text-[34px]" : "text-[26px]")}
+        alt={fallback ? "Your icon, shown until you add a circular logo" : ""}
+        className={cn(PREVIEW, isSquareLogo(spec.variant) ? "text-[34px]" : "text-[26px]")}
+        imageClassName="p-4"
       />
       <div className="p-4 flex flex-col gap-2 flex-1">
         <div className="flex justify-between gap-2 items-start">
           <h4 className="min-w-0 break-words text-base font-bold">{spec.label}</h4>
-          <span className="text-[11px] font-bold rounded-full px-2 py-0.5 whitespace-nowrap bg-[#3d2a12] text-[#ffc999]">
-            Missing
+          <span
+            className={cn(
+              "text-[11px] font-bold rounded-full px-2 py-0.5 whitespace-nowrap",
+              missing ? "bg-[#3d2a12] text-[#ffc999]" : "bg-[#1e222a] text-[#d4d4d8]"
+            )}
+          >
+            {missing ? "Missing" : "Not added"}
           </span>
         </div>
-        <p className="text-[13px] leading-normal text-[#fcd34d]">
-          {status.needsUpload ??
-            `None yet, and ${status.neededBySlots} of your slots need one. Fans see your brand name there until you add one.`}
-        </p>
+        <p className={cn("text-[13px] leading-normal", missing ? "text-[#fcd34d]" : "text-[#a8a8a8]")}>{text}</p>
         <div className="text-[13px] text-[#a8a8a8]">
           {spec.formats.join(", ")} · at least {spec.minWidth}×{spec.minHeight} px
         </div>

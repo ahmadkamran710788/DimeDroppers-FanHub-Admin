@@ -4,6 +4,7 @@ import { plural } from "@/utils/helper";
 import { CARD } from "@/components/sponsor/styles";
 import { BANK_CLEARING_TEXT } from "@/components/sponsor/payment-methods/data";
 import { formatCents } from "@/components/sponsor/sponsor-api";
+import { gamesSummary } from "@/components/sponsor/package-splits/data";
 import type { SponsorCartActivation } from "@/utils/types/sponsor-packages";
 
 // A batch checkout that went through: live now ("paid") or a bank payment clearing ("processing"). The
@@ -52,6 +53,10 @@ export default function ActivatedSummary({ done, actions }: ActivatedSummaryProp
                 <span className="block text-[13px] text-[#a8a8a8] break-words">
                   {[a.organization.name ?? "Unnamed organization", a.event?.name].filter(Boolean).join(" · ")}
                 </span>
+                {/* A package part: the games it shows the brand at. */}
+                {gamesSummary(a.games) && (
+                  <span className="block text-[13px] text-[#c4c4c4] break-words">{gamesSummary(a.games)}</span>
+                )}
               </span>
               <span className="text-[15px] font-bold whitespace-nowrap">{formatCents(a.totalCents, a.currency)}</span>
             </li>

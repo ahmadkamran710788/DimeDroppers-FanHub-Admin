@@ -101,6 +101,10 @@ export default function Input({
           </span>
         )}
         <input
+          // Browser form-fillers / password managers inject attributes (e.g. __gcruniqueid) onto
+          // inputs before React hydrates, which React would otherwise flag as a hydration mismatch.
+          // This input is fully controlled, so suppressing that attribute-only warning is safe.
+          suppressHydrationWarning
           id={name}
           name={name}
           type={isPassword && showPassword ? "text" : type}

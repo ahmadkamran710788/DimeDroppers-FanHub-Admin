@@ -118,6 +118,11 @@ export function toSponsorPackage(p: DraftPackage): SponsorPackage {
     slotValueTotalCents: p.totalCents,
     totalCents: p.totalCents,
     currency: p.currency,
+    // A draft isn't split into parts.
+    maxPriceCents: null,
+    splitKey: null,
+    availableSplitCount: 1,
+    splits: [],
   };
 }
 

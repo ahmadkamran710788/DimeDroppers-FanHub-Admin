@@ -17,7 +17,7 @@ import { useCheckout } from "@/components/sponsor/checkout/use-checkout";
 import { usePaymentReturn } from "@/components/sponsor/checkout/use-payment-return";
 import type { ReturnedPayment } from "@/components/sponsor/checkout/returned-payment";
 import { activeActivations, formatCents, sponsorRequest, type ActiveActivations } from "@/components/sponsor/sponsor-api";
-import { useSponsorCart } from "@/context/sponsor-cart";
+import { holdingKey, useSponsorCart } from "@/context/sponsor-cart";
 import { routes } from "@/utils/routes";
 import type { SponsorCartActivation, SponsorCartQuote } from "@/utils/types/sponsor-packages";
 
@@ -70,8 +70,8 @@ export default function SponsorCart({ returnedPayment }: SponsorCartProps) {
     };
   }, [quoteKey, items]);
 
-  // What the sponsor already has active, anywhere: a line without stores for one of those can't be
-  // activated again. A line with stores can (for stores that don't have it); the quote names any that do.
+  // What the sponsor already has active, anywhere: a physical asset they have can't be activated again (one spot
+  // each). A package line is another part of it, so the quote says when it's theirs already.
   const [activeLoaded, setActiveLoaded] = useState<{ key: string; active: ActiveActivations } | null>(null);
   useEffect(() => {
     if (!items.length) return;
@@ -89,9 +89,10 @@ export default function SponsorCart({ returnedPayment }: SponsorCartProps) {
   const quote = current?.quote;
   const activeMap = activeLoaded?.key === quoteKey ? activeLoaded.active : null;
   const quoting = items.length > 0 && (!current || !activeMap);
-  // A package belongs to one sponsor and a physical asset gives each sponsor one spot, so one the sponsor has is
-  // never bought again, not even for other stores.
-  const isAlreadyActive = (line: (typeof lines)[number]) => !!activeMap?.has(line.key);
+  // A physical asset gives each sponsor one spot, so one the sponsor has is never bought again, not even for other
+  // stores.
+  const isAlreadyActive = (line: (typeof lines)[number]) =>
+    line.kind === "PHYSICAL_ASSET" && !!activeMap?.has(holdingKey(line.item));
   const alreadyActiveCount = lines.filter(isAlreadyActive).length;
   // Lines with stores to choose from but none ticked: an activation is always for at least one store.
   const needsStore = (line: (typeof lines)[number]) => !!line.stores && !line.item.sponsorLocationIds?.length;

@@ -3,8 +3,9 @@
 // Where a sponsor's logo belongs: HEADER ("Presented by …"), the game screens per phase, cards, the strip.
 export type SponsorPlacement = "HEADER" | "ENGAGEMENT" | "GAME_PRE" | "GAME_LIVE" | "GAME_POST" | "SPONSOR_STRIP";
 
-// A sponsor's logo set: the landscape logo, a white one for dark backgrounds, a small badge, and the text
-// shown before it (e.g. "Presented by"). Links are stable API URLs (versioned with ?v=), not signed ones.
+// A sponsor's logo set: the landscape logo, a white one for dark backgrounds, the round badge (the circular logo,
+// else the icon; Partner Offers), and the text shown before it (e.g. "Presented by"). Links are stable API URLs
+// (versioned with ?v=), not signed ones.
 export interface SponsorLogos {
   // Which logo the sponsor chose as its main one in Brand Assets (missing on servers before 24 Nov 2026).
   mainLogo?: "LANDSCAPE" | "CIRCULAR";

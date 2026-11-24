@@ -14,15 +14,20 @@ const STORAGE_PREFIX = "sponsorCart:";
 // Server render (and hydration), and before the sponsor is known: an empty cart.
 const EMPTY: SponsorCartLine[] = [];
 
-// The same item, as the API counts duplicates: school + event + tier or physical asset. Not the stores: the
-// API refuses the same package twice in one cart, so all its stores go on one item.
+// The same item, as the API counts duplicates: school + event + tier + package part, or physical asset. Not the
+// stores: the API refuses the same item twice in one cart, so all its stores go on one item. Different parts of
+// one package are different items.
 export const cartItemKey = (item: SponsorCartItem) =>
+  [item.schoolId, item.eventId ?? "", item.tier ?? "", item.splitKey ?? "", item.physicalAssetId ?? ""].join("|");
+
+// What an item is bought from, without the part: school + event + tier or physical asset. Activations don't say
+// which part they are (their games do), so this is how a package or asset on screen is matched to the sponsor's own.
+export const holdingKey = (item: SponsorCartItem) =>
   [item.schoolId, item.eventId ?? "", item.tier ?? "", item.physicalAssetId ?? ""].join("|");
 
-// The same key for an activation, so a cart item or a package on screen can be matched to one the
-// sponsor already has.
+// The same key for an activation.
 export const activationItemKey = (a: PackageActivation) =>
-  cartItemKey({
+  holdingKey({
     schoolId: a.organization.id,
     eventId: a.event?.id,
     tier: a.tier ?? undefined,
@@ -39,7 +44,8 @@ function readCart(storageKey: string): SponsorCartLine[] {
   let lines = EMPTY;
   try {
     const parsed = JSON.parse(window.localStorage.getItem(storageKey) ?? "[]");
-    if (Array.isArray(parsed)) lines = parsed as SponsorCartLine[];
+    // Keyed again, so a line saved with an older key still matches its item.
+    if (Array.isArray(parsed)) lines = (parsed as SponsorCartLine[]).map((l) => ({ ...l, key: cartItemKey(l.item) }));
   } catch {
     // Storage blocked or corrupt: start empty.
   }

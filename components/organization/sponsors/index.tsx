@@ -15,6 +15,7 @@ import Tabs from "@/components/common/tabs";
 import PackagesPreview from "@/components/organization/sponsors/packages-preview";
 import { storeNames } from "@/components/sponsor/data";
 import { formatCents, sponsorRequest } from "@/components/sponsor/sponsor-api";
+import { gamesSummary } from "@/components/sponsor/package-splits/data";
 import { distinctFrom } from "@/utils/helper";
 import { routes } from "@/utils/routes";
 import type { PackageActivation, PackageActivationsPage, PackageActivationStatus } from "@/utils/types/sponsor-packages";
@@ -67,7 +68,8 @@ const columns: Column<PackageActivation>[] = [
             ? ["Physical asset", distinctFrom(a.physicalAsset?.assetCategory?.label, a.packageName), a.physicalAsset?.size]
                 .filter(Boolean)
                 .join(" · ")
-            : "Package"}
+            : // The games of the part this sponsor bought.
+              ["Package", gamesSummary(a.games)].filter(Boolean).join(" · ")}
         </span>
         {/* The sponsor's stores it is for (as they were when activated). */}
         {a.locations.length > 0 && <span className="opacity-70 break-words">{`For: ${storeNames(a.locations, 2)}`}</span>}
