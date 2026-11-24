@@ -141,9 +141,14 @@ const optionsOf = (data: ThreadItem["data"]): ChoiceOption[] => {
     .filter((o) => o.label);
 };
 
+// The one logo to draw on a light background: the sponsor's main logo (circular or landscape, as it chose),
+// else the landscape one (servers before 24 Nov 2026 send no mainLogoUrl).
+const mainLogoOf = (logos: SponsorLogos | null | undefined, fallback: string | null = null) =>
+  (logos?.mainLogoUrl !== undefined ? logos.mainLogoUrl : logos?.logoUrl) ?? fallback;
+
 // A sponsor's logo, or its brand name when it has no logo.
 function SponsorMark({ sponsor }: { sponsor: OrgSponsor }) {
-  const logoUrl = sponsor.logos?.logoUrl ?? sponsor.logoUrl;
+  const logoUrl = mainLogoOf(sponsor.logos, sponsor.logoUrl);
   return logoUrl ? (
     // The sponsor's logo from the API (any host), so it skips the image optimizer.
     <Image src={logoUrl} alt={sponsor.name} width={140} height={36} unoptimized className="h-9 w-auto max-w-45 object-contain" />
@@ -202,7 +207,7 @@ const slotSponsorFor = (sponsors: OrgSponsor[], item: ThreadItem): SlotSponsor |
 
 // "Presented by" and the slot sponsor's logo (or name), under an engagement card.
 function CardSponsor({ sponsor }: { sponsor: SlotSponsor }) {
-  const logoUrl = sponsor.logos.logoUrl;
+  const logoUrl = mainLogoOf(sponsor.logos);
   return (
     <div className="flex items-center gap-2 border-t border-white/10 pt-3 text-sm text-white/60">
       <span>{sponsor.logos.label || "Presented by"}</span>
@@ -304,7 +309,8 @@ function ApiThread({ gameId }: { gameId: string }) {
   const [tab, setTab] = useState<ThreadTab | null>(null);
   const [period, setPeriod] = useState("");
   const [engagement, setEngagement] = useState("");
-  const { sponsors } = useOrgSponsors();
+  // Only the sponsors shown at this game (a package can be sold in parts, each for certain games).
+  const { sponsors } = useOrgSponsors(gameId);
   const { data, error, loading } = useGameDetail<GameThreadDetail>(routes.api.gameDetailThread(gameId), {
     ...(period && { period }),
     // The API only narrows the engagement items and keeps the plays, so picking one hides the plays too.
