@@ -9,13 +9,20 @@ interface OrgCardProps {
   org: SponsorOrganizationListItem;
   selected: boolean;
   onSelect: () => void;
+  // A selected tournament's open events, counted from the list loaded under its card.
+  openEvents?: number;
 }
 
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
 
 // One organisation in the results: logo, name, type and sports, distance, the stores it is near, its reach,
 // expected audience and games left this season, and what it sells.
-export default function OrgCard({ org, selected, onSelect }: OrgCardProps) {
+export default function OrgCard({ org, selected, onSelect, openEvents }: OrgCardProps) {
+  // A tournament counts only the events a sponsor can pick, so it matches the list under the card. Until the
+  // backend sends offeredEventCount, a card that isn't selected shows all its events.
+  const open = openEvents ?? org.offeredEventCount;
+  const events = open === undefined ? plural(org.eventCount, "event") : plural(open, "open event");
+
   return (
     // A whole clickable card, not an action button, so it stays a native button.
     <button
@@ -70,7 +77,7 @@ export default function OrgCard({ org, selected, onSelect }: OrgCardProps) {
             <strong className="text-white">{org.physicalAssetCount}</strong>{" "}
             {org.physicalAssetCount === 1 ? "physical asset" : "physical assets"}
           </span>
-          {org.organizationType === "TOURNAMENT" && <span className="text-[#a8a8a8]">{plural(org.eventCount, "event")}</span>}
+          {org.organizationType === "TOURNAMENT" && <span className="text-[#a8a8a8]">{events}</span>}
           {org.fromCents !== null && <span className="text-[#a3e3a5]">{`from ${formatCents(org.fromCents, org.currency)}`}</span>}
         </div>
       </div>
