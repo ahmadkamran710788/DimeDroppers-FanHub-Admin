@@ -14,7 +14,7 @@ import StatCard, { type Stat } from "@/components/common/stat-card";
 import ActivatedSummary, { type ActivatedDone } from "@/components/sponsor/checkout/activated-summary";
 import { activeActivations, sponsorRequest, type ActiveActivations } from "@/components/sponsor/sponsor-api";
 import { CARD, HINT, LINK_BUTTON, OUTLINE_BUTTON, PRIMARY_BUTTON } from "@/components/sponsor/styles";
-import { cartItemKey } from "@/context/sponsor-cart";
+import { holdingKey } from "@/context/sponsor-cart";
 import { useSponsorStores } from "@/components/sponsor/find-organizations/use-sponsor-stores";
 import InventoryMix from "@/components/sponsor/campaign-planner/inventory-mix";
 import LaunchPanel from "@/components/sponsor/campaign-planner/launch-panel";
@@ -159,9 +159,12 @@ export default function CampaignPlanner({ tier }: CampaignPlannerProps) {
       )
     : [];
   const activeMap = active && active.plan === plan ? active.map : null;
-  // Lines with something the sponsor already has active: without stores it isn't bought twice.
+  // Lines with a physical asset the sponsor already has (one spot each). A package they have part of can still be
+  // bought: the line buys its first part left, and the quote says when there's none.
   const activeLines = new Set(
-    entries.filter((e) => activeMap?.has(cartItemKey(e.cartLine.item))).map((e) => e.lineIndex)
+    entries
+      .filter((e) => e.cartLine.kind === "PHYSICAL_ASSET" && activeMap?.has(holdingKey(e.cartLine.item)))
+      .map((e) => e.lineIndex)
   );
   const notes = new Map(problems);
   for (const index of activeLines) {

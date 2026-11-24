@@ -4,16 +4,16 @@ type Basis = SponsorPackages["priceBasis"];
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-// What the prices are counted for: "2 games" (a school's upcoming games, a tournament event's games)
-// or "5 teams" (club teams and leagues).
+// What the prices are counted for: "15 games", the organisation's (or a tournament event's) upcoming games. Older
+// prices for club teams and leagues were by team ("5 teams").
 export const basisCount = ({ basis, quantity }: Basis) => plural(quantity, basis === "TEAMS" ? "team" : "game");
 
 // The line above the packages, with a tournament's format.
 export const priceBasisText = (priceBasis: Basis) =>
   `Priced by ${basisCount(priceBasis)}${priceBasis.tournamentFormatLabel ? ` · ${priceBasis.tournamentFormatLabel}` : ""}`;
 
-// How a tournament event's games are counted for the price: each division's teams and games under the
-// event's format, and the total the packages multiply by. Nothing for a school, club team or league.
+// How a tournament event's games were counted for the price: each division's teams and games under the event's
+// format. Packages are now priced by the event's real games, so the API sends no divisions and this shows nothing.
 export default function GamesBreakdown({ priceBasis }: { priceBasis: Basis }) {
   if (priceBasis.basis !== "GAMES" || priceBasis.divisions.length === 0) return null;
   return (

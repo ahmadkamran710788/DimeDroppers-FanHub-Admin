@@ -480,6 +480,9 @@ export const routes = {
     orgSponsorPackages: "fanhub/org/sponsor-packages/packages",
     orgSponsorEvents: "fanhub/org/sponsor-packages/events",
     orgSponsorActivations: "fanhub/org/sponsor-packages/activations",
+    // GET ?eventId= / PUT { eventId?, packages: [{ tier, maxPriceCents | null }] }: the max price per package and
+    // the parts it's cut into (FANHUB_SPONSOR_PACKAGE_SPLITS_FRONTEND.md §2).
+    orgSponsorPackageSplits: "fanhub/org/sponsor-packages/splits",
     // Recognition & Fan Wall: fans' photobooth images and the wall the org builds from them
     // (FANHUB_ORG_PHOTOBOOTH_FAN_WALL_FRONTEND.md).
     // Recognitions (FANHUB_ORG_RECOGNITIONS_FRONTEND.md): the read-only templates (?category=&template=),
