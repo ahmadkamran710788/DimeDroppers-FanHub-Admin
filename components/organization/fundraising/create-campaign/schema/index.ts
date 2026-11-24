@@ -26,7 +26,6 @@ export const createCampaignSchema = yup.object({
       if (!startDate || !endDate) return true;
       return endDate >= startDate;
     }),
-  sponsorName: yup.string().trim(),
   impact: yup.array(yup.string().oneOf(IMPACT_OPTIONS)),
   description: yup.string().trim().max(DESCRIPTION_MAX, `Keep it under ${DESCRIPTION_MAX} characters`),
 });
