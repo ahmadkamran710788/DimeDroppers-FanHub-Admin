@@ -1,6 +1,6 @@
 import * as yup from "yup";
 import { isValidPhoneNumber } from "libphonenumber-js";
-import { CUSTOM_CATEGORY_MAX } from "@/components/sponsor/data";
+import { CATEGORY_MAX, CUSTOM_CATEGORY_MAX } from "@/components/sponsor/data";
 
 // A decimal degree no further from 0 than `max`, e.g. "-97.7516".
 const isDegree = (max: number) => (v: string | undefined) =>
@@ -140,9 +140,13 @@ export const sponsorBrandSchema = yup.object({
     .trim()
     .required("Sponsor name is required")
     .max(120, "Keep the sponsor name under 120 characters"),
-  // Listed codes and the sponsor's own, as many as they like. Text left in the Other box is added before this
-  // runs (withTypedCategory).
-  categories: yup.array().of(yup.string().required()).min(1, "Choose at least one category"),
+  // Listed codes and the sponsor's own, one to five (the API's limit). Text left in the Other box is added before
+  // this runs (withTypedCategory).
+  categories: yup
+    .array()
+    .of(yup.string().required())
+    .min(1, "Choose at least one category")
+    .max(CATEGORY_MAX, `Choose up to ${CATEGORY_MAX} categories`),
   // The Other box: a category of the sponsor's own, being typed.
   categoryOther: yup
     .string()

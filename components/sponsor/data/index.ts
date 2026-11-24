@@ -44,6 +44,9 @@ export const categoryOptionsAZ = (categories: { code: string; label: string }[])
 // own, which are sent as their text.
 export const OTHER_CATEGORY = "__other__";
 export const CUSTOM_CATEGORY_MAX = 60;
+// The most categories a sponsor can have: the API refuses a sixth ("Choose up to 5 categories"), and its options
+// don't send the limit.
+export const CATEGORY_MAX = 5;
 
 type CategoryOption = SponsorSignupOptions["categories"][number];
 
@@ -60,15 +63,15 @@ export function withTypedCategory(categories: string[], typed: string, options: 
   return categories.some((c) => c.toLowerCase() === category.toLowerCase()) ? categories : [...categories, category];
 }
 
-// The sponsor's saved categories. Until the backend returns `categories`, the one `category` it keeps.
+// The sponsor's saved categories; an older profile without `categories` has only its one `category`.
 export const savedCategories = (brand: SponsorBrandProfile | null): string[] =>
   brand?.categories?.length ? brand.categories : brand?.category ? [brand.category] : [];
 
 // The same categories, in any order.
 export const sameCategories = (a: string[], b: string[]) => a.length === b.length && a.every((c) => b.includes(c));
 
-// The categories in a multipart sign-up or profile save: the list as JSON text, and the first one as
-// `category` for a backend that only stores one.
+// The categories in a multipart sign-up or profile save: the list as JSON text (commas inside a name would split
+// plain text), and the first one as `category`, which the API ignores when `categories` is sent.
 export function appendCategories(form: FormData, categories: string[]) {
   form.append("categories", JSON.stringify(categories));
   if (categories[0]) form.append("category", categories[0]);
