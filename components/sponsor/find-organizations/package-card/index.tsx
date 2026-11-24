@@ -30,6 +30,9 @@ interface PackageCardProps {
   own?: { active: OwnGames; pending: OwnGames };
   // Each placement's own value: shown to the organisation, hidden from sponsors (they see the total).
   showPlacementValues?: boolean;
+  // Lays the placements out in two columns once the card is wide enough (the organisation's preview, where the three
+  // cards share the full width).
+  placementsInColumns?: boolean;
   // What the price is counted for when the package has no parts: "2 games".
   basisCount?: string;
   // The one the Sponsor AI Agent suggests: a purple border and a Recommended badge.
@@ -52,6 +55,7 @@ export default function PackageCard({
   isInCart,
   own,
   showPlacementValues = false,
+  placementsInColumns = false,
   basisCount,
   recommended = false,
   slotLimit,
@@ -99,6 +103,7 @@ export default function PackageCard({
       aria-label={`${pkg.name} package`}
       className={cn(
         "rounded-[12px] p-4 flex flex-col gap-3 border bg-[#0b0b0b]",
+        placementsInColumns && "@container",
         recommended ? "border-[#8b6dff]" : "border-[#262626]",
         !pkg.isAvailable && "opacity-80",
       )}
@@ -139,31 +144,31 @@ export default function PackageCard({
       )}
 
       <div className="text-xs font-bold tracking-[1.2px] text-[#c4c4c4]">{`PLACEMENTS INCLUDED · ${pkg.slotCount}`}</div>
-      <ul className="flex flex-col gap-1.5">
+      <ul className={cn("grid grid-cols-1 gap-1.5", placementsInColumns && "@sm:grid-cols-2")}>
         {slots.map((s) => (
-          <li
-            key={s.catalogKey}
-            className="px-[10px] py-2 rounded-[8px] bg-[#1a1a1a] border border-[#2a2a2a] flex items-start justify-between gap-2"
-          >
-            <span className="min-w-0">
+          <li key={s.catalogKey} className="min-w-0 px-[10px] py-2 rounded-[8px] bg-[#1a1a1a] border border-[#2a2a2a]">
+            {/* The value sits on the category line, so the name has the row's full width. */}
+            <span className="flex items-baseline justify-between gap-2">
               <span
-                className="block text-[11px] font-bold tracking-[1px] uppercase"
+                className="min-w-0 text-[11px] font-bold tracking-[1px] uppercase"
                 style={{ color: CATEGORY_COLORS[s.category] ?? "#c4c4c4" }}
               >
                 {s.categoryLabel}
               </span>
-              <span className="block text-[13px] leading-[1.35] mt-[2px]">
-                {s.name}
-              </span>
+              {showPlacementValues && (
+                <span className="text-[13px] text-[#a8a8a8] whitespace-nowrap">
+                  {`${formatCents(s.unitValueCents, pkg.currency)}${splits.length > 0 ? " / game" : ""}`}
+                </span>
+              )}
             </span>
-            {showPlacementValues && (
-              <span className="text-[13px] text-[#a8a8a8] whitespace-nowrap">
-                {`${formatCents(s.unitValueCents, pkg.currency)}${splits.length > 0 ? " / game" : ""}`}
-              </span>
-            )}
+            <span className="block text-[13px] leading-[1.35] mt-[2px]">
+              {s.name}
+            </span>
           </li>
         ))}
-        {hiddenSlots > 0 && <li className="px-[10px] text-[13px] text-[#a8a8a8]">{`+${hiddenSlots} more`}</li>}
+        {hiddenSlots > 0 && (
+          <li className={cn("px-[10px] text-[13px] text-[#a8a8a8]", placementsInColumns && "@sm:col-span-2")}>{`+${hiddenSlots} more`}</li>
+        )}
       </ul>
 
       {/* mt-auto pins the action to the card bottom, so the cards in a row line up. */}
