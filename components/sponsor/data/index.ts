@@ -113,8 +113,7 @@ const MIME_EXTENSIONS: Record<string, string> = {
   "image/jpeg": ".jpg,.jpeg",
 };
 
-// The square kinds: the icon and the circular logo (shown in a circle). A first letter stands in for them, and
-// they're fitted in a square frame with a safe zone.
+// The square kinds: the icon and the circular logo (shown in a circle). A first letter stands in for them.
 export const isSquareLogo = (variant: LogoVariant) => variant === "ICON" || variant === "CIRCULAR";
 
 // The file picker filter for one logo kind (".svg,.png,.jpg,.jpeg").
@@ -125,9 +124,8 @@ export const logoAccept = (spec: VariantSpec) =>
 const joinOr = (items: string[]) =>
   items.length > 1 ? `${items.slice(0, -1).join(", ")} or ${items[items.length - 1]}` : (items[0] ?? "");
 
-// Whether a picked file is a format its kind takes: the problem to show, or null. Checked before the fit editor
-// opens; the fitted file it saves goes through checkBrandLogo.
-export function checkLogoFormat(file: File, spec: VariantSpec): string | null {
+// Whether a picked file is a format its kind takes: the problem to show, or null.
+function checkLogoFormat(file: File, spec: VariantSpec): string | null {
   // Some systems give no type; the backend reads the file itself.
   if (file.type && !spec.mimeTypes.includes(file.type)) return `${spec.label} must be ${joinOr(spec.formats)}`;
   return null;

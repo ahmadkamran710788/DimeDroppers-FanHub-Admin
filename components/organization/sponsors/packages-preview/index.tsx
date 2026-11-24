@@ -8,6 +8,7 @@ import { CalendarDays } from "lucide-react";
 import { orgKindOf, useAuth } from "@/context/auth";
 import GamesBreakdown, { basisCount, priceBasisText } from "@/components/sponsor/find-organizations/games-breakdown";
 import PackageCard from "@/components/sponsor/find-organizations/package-card";
+import PackagePods from "@/components/sponsor/find-organizations/package-pods";
 import PhysicalAddOns from "@/components/sponsor/find-organizations/physical-add-ons";
 import MaxPriceField from "@/components/organization/sponsors/package-splits/max-price-field";
 import { maxPricesSchema } from "@/components/organization/sponsors/package-splits/schema";
@@ -137,16 +138,34 @@ export default function PackagesPreview() {
     setReloads((n) => n + 1);
   }
 
+  // Save max prices, above the cards so it's in reach of the max price fields.
+  const saveBar = splits.view ? (
+    <div className="flex flex-wrap items-center justify-end gap-3">
+      {changed.length > 0 && (
+        <>
+          <span className="text-sm text-white/70">{`${changed.length} max price${changed.length === 1 ? "" : "s"} not saved`}</span>
+          <Button variant="secondary" label="Discard" onClick={discard} disabled={splits.saving} />
+        </>
+      )}
+      <Button
+        variant="cta"
+        label={splits.saving ? "Saving…" : "Save max prices"}
+        onClick={saveMaxes}
+        disabled={changed.length === 0 || splits.saving}
+      />
+    </div>
+  ) : (
+    splits.error && <p className="text-sm text-white/60">{`Max prices can't be set right now: ${splits.error}`}</p>
+  );
+
   return (
     <section className="rounded-[8px] p-6 flex flex-col gap-6 isolate bg-surface-06 min-w-0">
+      {/* The tab names the section, so only its description shows. */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h3 className="font-display font-extrabold text-2xl uppercase text-white leading-none">What sponsors can buy</h3>
-          <p className="text-sm text-white/70">
-            Your packages and physical assets, priced as sponsors see them. Set a max price per sponsor to sell a
-            package in parts, each a run of games for one sponsor.
-          </p>
-        </div>
+        <p className="text-sm text-white/70 max-w-3xl">
+          Your packages and physical assets, priced as sponsors see them. Set a max price per sponsor to sell a
+          package in parts, each a run of games for one sponsor.
+        </p>
         {isTournament && events && events.length > 0 && (
           <FilterDropdown
             label="Select event"
@@ -177,51 +196,50 @@ export default function PackagesPreview() {
         </p>
       ) : (
         <>
-          <p className="text-sm text-white/70">{priceBasisText(view.priceBasis)}</p>
+          {/* Toolbar: what the prices are counted for, and Save max prices. */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p className="text-sm font-semibold text-white">{priceBasisText(view.priceBasis)}</p>
+            {view.packages.length > 0 && saveBar}
+          </div>
           <GamesBreakdown priceBasis={view.priceBasis} />
           {view.packages.length === 0 ? (
             <p className="py-8 text-center text-sm text-white/60">Packages are not available yet.</p>
           ) : (
-            <>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(260px,100%),1fr))] gap-3 text-white">
-                {view.packages.map((p) => {
+            // The packages as pods across the full width, each with its max price; the opened one's parts each get
+            // a whole card under them, as sponsors see them, with each placement's value.
+            <div className="text-white">
+              <PackagePods
+                packages={view.packages}
+                basisCount={basisCount(view.priceBasis)}
+                podsClassName="grid-cols-1 md:grid-cols-3 gap-4"
+                cardsClassName="grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+                podExtra={(p) => {
                   const setting = splits.view?.packages.find((s) => s.tier === p.tier);
                   return (
-                    <PackageCard key={p.tier} pkg={p} showPlacementValues basisCount={basisCount(view.priceBasis)}>
-                      {setting && splits.view && (
-                        <MaxPriceField
-                          setting={setting}
-                          currency={splits.view.currency}
-                          value={maxOf(p.tier)}
-                          onChange={(text) => type(p.tier, text)}
-                          error={errors[p.tier]}
-                          disabled={splits.saving}
-                        />
-                      )}
-                    </PackageCard>
+                    setting &&
+                    splits.view && (
+                      <MaxPriceField
+                        setting={setting}
+                        currency={splits.view.currency}
+                        value={maxOf(p.tier)}
+                        onChange={(text) => type(p.tier, text)}
+                        error={errors[p.tier]}
+                        disabled={splits.saving}
+                      />
+                    )
                   );
-                })}
-              </div>
-              {splits.view ? (
-                <div className="flex flex-wrap items-center justify-end gap-3">
-                  {changed.length > 0 && (
-                    <span className="text-sm text-white/70">{`${changed.length} max price${changed.length === 1 ? "" : "s"} not saved`}</span>
-                  )}
-                  {changed.length > 0 && (
-                    <Button variant="secondary" label="Discard" onClick={discard} disabled={splits.saving} />
-
-                  )}
-                  <Button
-                    variant="cta"
-                    label={splits.saving ? "Saving…" : "Save max prices"}
-                    onClick={saveMaxes}
-                    disabled={changed.length === 0 || splits.saving}
+                }}
+                renderCard={(p, split) => (
+                  <PackageCard
+                    pkg={p}
+                    split={split}
+                    showPlacementValues
+                    placementsInColumns
+                    basisCount={basisCount(view.priceBasis)}
                   />
-                </div>
-              ) : (
-                splits.error && <p className="text-sm text-white/60">{`Max prices can't be set right now: ${splits.error}`}</p>
-              )}
-            </>
+                )}
+              />
+            </div>
           )}
           <div className="text-white">
             <PhysicalAddOns orgName={view.organization.name ?? "Your organization"} physicalAssets={view.physicalAssets} />
