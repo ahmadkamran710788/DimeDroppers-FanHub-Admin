@@ -10,7 +10,7 @@ import StoreChecklist from "@/components/sponsor/store-checklist";
 import { KIND_COLOR, KIND_LABEL } from "@/components/sponsor/find-organizations/data";
 import { storeNames } from "@/components/sponsor/data";
 import { formatCents } from "@/components/sponsor/sponsor-api";
-import { partLabel, splitSummary } from "@/components/sponsor/package-splits/data";
+import { splitSummary } from "@/components/sponsor/package-splits/data";
 import { HINT_LINK } from "@/components/sponsor/styles";
 import { routes } from "@/utils/routes";
 import type { SponsorCartLine, SponsorCartQuoteItem } from "@/utils/types/sponsor-packages";
@@ -91,7 +91,7 @@ export default function CartLine({
         </p>
         {line.split && (
           <p className="text-[13px] text-[#c4c4c4] break-words">
-            {[partLabel(line.split.number, line.split.of), splitSummary(line.split)].filter(Boolean).join(" · ")}
+            {splitSummary(line.split)}
           </p>
         )}
         {line.stores && (

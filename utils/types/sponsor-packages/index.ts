@@ -346,10 +346,9 @@ export interface SponsorCartLine {
   split?: CartSplit;
 }
 
-// What the cart shows of a package part: "Part 2 of 3 · 7 games · Dec 19 – Jan 30".
+// What the cart shows of a package part: "7 games · Dec 19 – Jan 30, 2027". Lines saved before this may also carry
+// the part's number, which isn't shown.
 export interface CartSplit {
-  number: number;
-  of: number;
   gameCount: number;
   firstGameAt: string | null;
   lastGameAt: string | null;

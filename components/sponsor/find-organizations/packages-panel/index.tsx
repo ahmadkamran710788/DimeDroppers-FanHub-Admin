@@ -9,6 +9,7 @@ import { CARD } from "@/components/sponsor/styles";
 import OrgMonogram from "@/components/sponsor/find-organizations/org-monogram";
 import GamesBreakdown, { basisCount, priceBasisText } from "@/components/sponsor/find-organizations/games-breakdown";
 import PackageCard from "@/components/sponsor/find-organizations/package-card";
+import PackagePods from "@/components/sponsor/find-organizations/package-pods";
 import PhysicalAddOns from "@/components/sponsor/find-organizations/physical-add-ons";
 import StoreChecklist from "@/components/sponsor/store-checklist";
 import CheckoutPaymentModal from "@/components/sponsor/checkout/checkout-payment-modal";
@@ -22,7 +23,7 @@ import {
   sponsorRequest,
   type ActiveActivations,
 } from "@/components/sponsor/sponsor-api";
-import { NO_OWN_GAMES, cartSplitOf, partLabel } from "@/components/sponsor/package-splits/data";
+import { NO_OWN_GAMES, cartSplitOf, splitSummary } from "@/components/sponsor/package-splits/data";
 import { cartItemKey, holdingKey, useSponsorCart } from "@/context/sponsor-cart";
 import { routes } from "@/utils/routes";
 import type {
@@ -108,6 +109,8 @@ export default function PackagesPanel({
   const [pending, setPending] = useState<Pending | null>(null);
   const pay = useCheckout();
   const [paying, setPaying] = useState<Paying | null>(null);
+  // The package pod that's open, kept here so it stays open while the packages reload after an activation.
+  const [openTier, setOpenTier] = useState<PackageTier | null | undefined>(undefined);
   // What the sponsor already has active here (cart item key → its stores).
   // What the sponsor already has here: active, and still being paid (which holds a package too).
   const [activeLoaded, setActiveLoaded] = useState<{
@@ -192,14 +195,14 @@ export default function PackagesPanel({
 
   // A package's part as an activation choice, its name and price.
   const partChoice = (p: SponsorPackage, split: PackageSplit | null) => {
-    const part = split ? partLabel(split.number, p.splits.length) : "";
+    const games = split ? splitSummary(split) : "";
     return {
       choice: { tier: p.tier, ...(split?.splitKey && { splitKey: split.splitKey }) },
       name: p.name,
-      // "the Community Partner package (part 2 of 3)", for the confirm.
-      label: `the ${p.name} package${part ? ` (${part.toLowerCase()})` : ""}`,
+      // "the Community Partner package (2 games · Nov 26 – Nov 27, 2026)", for the confirm.
+      label: `the ${p.name} package${games ? ` (${games})` : ""}`,
       totalCents: split?.totalCents ?? p.totalCents,
-      split: split ? cartSplitOf(p, split) : undefined,
+      split: split ? cartSplitOf(split) : undefined,
     };
   };
 
@@ -351,26 +354,33 @@ export default function PackagesPanel({
               {budgetCents ? "No packages within your sponsor budget." : "Packages are not available yet."}
             </p>
           ) : (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(min(250px,100%),1fr))] gap-3">
-              {view.packages.map((p) => (
+            // The packages as pods; the opened one's parts each get a whole card under them.
+            <PackagePods
+              packages={view.packages}
+              openTier={openTier}
+              onOpenTierChange={setOpenTier}
+              own={ownOf}
+              basisCount={basisCount(view.priceBasis)}
+              podsClassName="grid-cols-[repeat(auto-fit,minmax(min(200px,100%),1fr))]"
+              cardsClassName="grid-cols-[repeat(auto-fill,minmax(min(250px,100%),1fr))]"
+              renderCard={(p, split) => (
                 <PackageCard
-                  // Keyed by its parts too: new parts (a changed max, games added) start on the first open one.
-                  key={`${p.tier}|${(p.splits ?? []).map((s) => s.splitKey ?? "-").join(",")}`}
                   pkg={p}
-                  onActivate={(split) => {
-                    const part = partChoice(p, split);
+                  split={split}
+                  onActivate={(s) => {
+                    const part = partChoice(p, s);
                     ask(part.label, part.totalCents, p.currency, part.choice);
                   }}
-                  onAddToCart={(split) => {
-                    const part = partChoice(p, split);
+                  onAddToCart={(s) => {
+                    const part = partChoice(p, s);
                     addToCart("PACKAGE", part.name, part.totalCents, p.currency, part.choice, part.split);
                   }}
                   isInCart={(splitKey) => cart.has(target({ tier: p.tier, ...(splitKey && { splitKey }) }, 0))}
                   own={ownOf(p.tier)}
                   basisCount={basisCount(view.priceBasis)}
                 />
-              ))}
-            </div>
+              )}
+            />
           )}
           <PhysicalAddOns
             orgName={org.name ?? "Organization"}

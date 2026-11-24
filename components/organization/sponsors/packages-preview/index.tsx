@@ -8,6 +8,7 @@ import { CalendarDays } from "lucide-react";
 import { orgKindOf, useAuth } from "@/context/auth";
 import GamesBreakdown, { basisCount, priceBasisText } from "@/components/sponsor/find-organizations/games-breakdown";
 import PackageCard from "@/components/sponsor/find-organizations/package-card";
+import PackagePods from "@/components/sponsor/find-organizations/package-pods";
 import PhysicalAddOns from "@/components/sponsor/find-organizations/physical-add-ons";
 import MaxPriceField from "@/components/organization/sponsors/package-splits/max-price-field";
 import { maxPricesSchema } from "@/components/organization/sponsors/package-splits/schema";
@@ -204,19 +205,19 @@ export default function PackagesPreview() {
           {view.packages.length === 0 ? (
             <p className="py-8 text-center text-sm text-white/60">Packages are not available yet.</p>
           ) : (
-            // The three packages share the full width.
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 text-white">
-              {view.packages.map((p) => {
-                const setting = splits.view?.packages.find((s) => s.tier === p.tier);
-                return (
-                  <PackageCard
-                    key={p.tier}
-                    pkg={p}
-                    showPlacementValues
-                    placementsInColumns
-                    basisCount={basisCount(view.priceBasis)}
-                  >
-                    {setting && splits.view && (
+            // The packages as pods across the full width, each with its max price; the opened one's parts each get
+            // a whole card under them, as sponsors see them, with each placement's value.
+            <div className="text-white">
+              <PackagePods
+                packages={view.packages}
+                basisCount={basisCount(view.priceBasis)}
+                podsClassName="grid-cols-1 md:grid-cols-3 gap-4"
+                cardsClassName="grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+                podExtra={(p) => {
+                  const setting = splits.view?.packages.find((s) => s.tier === p.tier);
+                  return (
+                    setting &&
+                    splits.view && (
                       <MaxPriceField
                         setting={setting}
                         currency={splits.view.currency}
@@ -225,10 +226,19 @@ export default function PackagesPreview() {
                         error={errors[p.tier]}
                         disabled={splits.saving}
                       />
-                    )}
-                  </PackageCard>
-                );
-              })}
+                    )
+                  );
+                }}
+                renderCard={(p, split) => (
+                  <PackageCard
+                    pkg={p}
+                    split={split}
+                    showPlacementValues
+                    placementsInColumns
+                    basisCount={basisCount(view.priceBasis)}
+                  />
+                )}
+              />
             </div>
           )}
           <div className="text-white">

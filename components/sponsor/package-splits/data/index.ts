@@ -31,9 +31,6 @@ export function gamesSummary(games: SplitGame[] | undefined) {
   return splitSummary({ gameCount: games.length, firstGameAt: times[0] ?? null, lastGameAt: times[times.length - 1] ?? null });
 }
 
-// "Part 2 of 3"; empty for a package that is one part.
-export const partLabel = (number: number, of: number) => (of > 1 ? `Part ${number} of ${of}` : "");
-
 // "Sat, Nov 28, 7:00 PM": a game's day and time in the viewer's time zone; "Time to be set" without one.
 export const gameTime = (game: SplitGame) =>
   game.startsAt
@@ -64,14 +61,26 @@ export function previewParts(games: number, perGameCents: number, maxPriceCents:
 export const unsoldGames = (splits: PackageSplit[]) =>
   splits.filter((s) => s.status === "AVAILABLE").reduce((n, s) => n + s.gameCount, 0);
 
-// The package part a cart line is, as the cart shows it.
-export const cartSplitOf = (pkg: SponsorPackage, split: PackageSplit): CartSplit => ({
-  number: split.number,
-  of: pkg.splits.length,
+// The package part a cart line is, as the cart shows it: its games and dates (parts aren't named or numbered).
+export const cartSplitOf = (split: PackageSplit): CartSplit => ({
   gameCount: split.gameCount,
   firstGameAt: split.firstGameAt,
   lastGameAt: split.lastGameAt,
 });
+
+// The parts of a package a sponsor can buy now, in date order (an API from before parts sends none).
+export const openSplits = (pkg: SponsorPackage) =>
+  (pkg.splits ?? []).filter((s) => s.status === "AVAILABLE" && s.splitKey !== null);
+
+// What a package pod shows as its price: the one price of its open parts, or the lowest with `from` when they differ;
+// the whole package's price when it has no parts; null when every part is taken.
+export function podPrice(pkg: SponsorPackage): { cents: number; from: boolean } | null {
+  if ((pkg.splits ?? []).length === 0) return pkg.isAvailable ? { cents: pkg.totalCents, from: false } : null;
+  const prices = openSplits(pkg).flatMap((s) => (s.totalCents === null ? [] : [s.totalCents]));
+  if (prices.length === 0) return null;
+  const lowest = Math.min(...prices);
+  return { cents: lowest, from: prices.some((p) => p !== lowest) };
+}
 
 // The game ids of the sponsor's own package activations (active, or still being paid), and whether any of them is
 // from before parts (no games: it holds the whole package until the backend fills its games in).
