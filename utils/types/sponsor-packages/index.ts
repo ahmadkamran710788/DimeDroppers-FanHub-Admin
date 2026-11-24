@@ -98,7 +98,11 @@ export interface NearStores {
 export interface SponsorOrganizationListItem extends SponsorOrganization, NearStores {
   initials: string;
   priceBasis: PriceBasis;
+  // A tournament's events in the search's scope, open or not.
   eventCount: number;
+  // Those of them a sponsor can pick (isOffered on GET /organizations/:id/events). Optional until the backend
+  // sends it (docs/SPONSOR_OPEN_EVENT_COUNT_BACKEND_REQUEST.md).
+  offeredEventCount?: number;
   sports: string[];
   // To the nearest selected store; null without a search near stores.
   distanceMiles: number | null;
