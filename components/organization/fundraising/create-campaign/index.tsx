@@ -40,7 +40,6 @@ const INITIAL_FORM = {
   goal: "",
   startDate: "",
   endDate: "",
-  sponsorName: "",
   description: "",
   impact: [] as CampaignImpact[],
 };
@@ -61,15 +60,13 @@ const formFor = (c: Campaign): Form => ({
   // The API has no start date; a campaign starts when it is created.
   startDate: datePart(c.createdAt),
   endDate: datePart(c.endDate),
-  sponsorName: c.sponsorName ?? "",
   description: c.description ?? "",
   impact: [],
 });
 
-// Only what changed; a cleared description or sponsor is sent as null.
+// Only what changed; a cleared description is sent as null.
 const changesFrom = (before: Form, form: Form): UpdateCampaignPayload => {
   const description = form.description.trim();
-  const sponsorName = form.sponsorName.trim();
   return {
     ...(form.name.trim() !== before.name && { title: form.name.trim() }),
     // A tournament campaign's game and team are fixed once created (its teamId stays "").
@@ -77,7 +74,6 @@ const changesFrom = (before: Form, form: Form): UpdateCampaignPayload => {
     ...(Number(form.goal) !== Number(before.goal) && { goalAmount: Number(form.goal) }),
     ...(form.endDate !== before.endDate && { endDate: endOfDay(form.endDate) }),
     ...(description !== before.description && { description: description || null }),
-    ...(sponsorName !== before.sponsorName && { sponsorName: sponsorName || null }),
   };
 };
 
@@ -169,7 +165,6 @@ export default function CreateCampaignPage({ campaignId, initialTeamId }: Campai
       ...(isTournament ? { eventId: event?.id, fanHubTeamId: form.fanHubTeamId } : { teamId: form.teamId }),
       status,
       ...(form.description.trim() && { description: form.description.trim() }),
-      ...(form.sponsorName.trim() && { sponsorName: form.sponsorName.trim() }),
     };
 
     setSubmitting(status);
@@ -239,6 +234,7 @@ export default function CreateCampaignPage({ campaignId, initialTeamId }: Campai
               placeholder={isTournament ? "Ballhawks game-day fund" : "Twin Lakes Boys Basketball: new uniforms"}
               maxLength={NAME_MAX}
               error={errors.name}
+              hintClassName="text-white/60"
               labelClassName={LABEL}
               inputClassName={FIELD}
             />
@@ -318,7 +314,8 @@ export default function CreateCampaignPage({ campaignId, initialTeamId }: Campai
               icon={<span className="text-base font-medium">$</span>}
               error={errors.goal}
               labelClassName={LABEL}
-              inputClassName={`${FIELD} text-right`}
+              inputMode="decimal"
+              inputClassName={FIELD}
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <DateField
@@ -339,16 +336,6 @@ export default function CreateCampaignPage({ campaignId, initialTeamId }: Campai
                 error={errors.endDate}
               />
             </div>
-            <Input
-              label="Sponsor Name (Optional)"
-              name="sponsorName"
-              value={form.sponsorName}
-              onChange={(e) => update("sponsorName", e.target.value)}
-              placeholder="Local Sponsor Inc"
-              error={errors.sponsorName}
-              labelClassName={LABEL}
-              inputClassName={FIELD}
-            />
             {!editing && (
               <CheckboxGroup
                 label="Purpose"
