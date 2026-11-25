@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { Ellipsis } from "lucide-react";
+import { Ellipsis, Pencil } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { formatFileSize } from "@/utils/helper";
 import Button from "@/components/common/button";
@@ -12,7 +12,7 @@ import { isSquareLogo } from "@/components/sponsor/data";
 import { OUTLINE_BUTTON } from "@/components/sponsor/styles";
 import type { BrandAsset } from "@/utils/types/sponsor-brand-assets";
 
-// The outlined look of the card's Replace and "More actions" buttons, as on the asset cards.
+// The outlined look of the card's Edit, Replace and "More actions" buttons, as on the asset cards.
 const CARD_BUTTON = cn(OUTLINE_BUTTON, "h-11 rounded-[10px]");
 const BADGE = "text-[11px] font-bold rounded-full px-2 py-0.5 whitespace-nowrap";
 
@@ -41,8 +41,12 @@ interface LogoCardProps {
   brandName: string;
   // A change to this logo is being saved; its buttons wait.
   busy: boolean;
+  // Its file is loading for the editor; its buttons wait.
+  opening: boolean;
   // The file picker filter for its kind.
   accept: string;
+  // Opens the editor on this logo (drag, stretch, resize); the edited one replaces its file.
+  onEdit: () => void;
   onReplace: (file: File) => void;
   onMakeDefault: () => void;
   onRename: () => void;
@@ -60,7 +64,9 @@ export default function LogoCard({
   asset,
   brandName,
   busy,
+  opening,
   accept,
+  onEdit,
   onReplace,
   onMakeDefault,
   onRename,
@@ -71,6 +77,7 @@ export default function LogoCard({
   const replaceRef = useRef<HTMLInputElement>(null);
   const generation = showVersions ? asset.generation : null;
   const notMade = generation?.results.filter((r) => r.state === "NEEDS_UPLOAD" && r.reason) ?? [];
+  const waiting = busy || opening;
 
   const actions: RowAction[] = [
     ...(asset.isDefault ? [] : [{ label: "Make default", onSelect: onMakeDefault }]),
@@ -117,12 +124,20 @@ export default function LogoCard({
         {/* mt-auto pins the actions to the card bottom, so every card in a row lines up. */}
         <div className="flex gap-2 mt-auto pt-[6px]">
           <Button
+            label={opening ? "Opening…" : "Edit"}
+            icon={<Pencil className="size-[15px]" strokeWidth={2} />}
+            aria-label={`Edit ${asset.name}`}
+            disabled={waiting}
+            onClick={onEdit}
+            className={cn(CARD_BUTTON, "flex-1 px-3 gap-1.5 text-sm font-semibold")}
+          />
+          <Button
             label={busy ? "Saving…" : "Replace"}
-            disabled={busy}
+            disabled={waiting}
             onClick={() => replaceRef.current?.click()}
             className={cn(CARD_BUTTON, "flex-1 px-3 text-sm font-semibold")}
           />
-          {!busy && (
+          {!waiting && (
             <RowActionsMenu
               ariaLabel={`More actions for ${asset.name}`}
               className={cn(CARD_BUTTON, "size-11 px-0 outline-0 hover:bg-white/5")}
