@@ -45,8 +45,9 @@ interface LogoCardProps {
   opening: boolean;
   // The file picker filter for its kind.
   accept: string;
-  // Opens the editor on this logo (drag, stretch, resize); the edited one replaces its file.
-  onEdit: () => void;
+  // Opens the editor on this logo (drag, stretch, resize); the edited one replaces its file. Only on logos the
+  // sponsor uploaded: an auto-made white logo or icon has Replace only.
+  onEdit?: () => void;
   onReplace: (file: File) => void;
   onMakeDefault: () => void;
   onRename: () => void;
@@ -123,14 +124,16 @@ export default function LogoCard({
 
         {/* mt-auto pins the actions to the card bottom, so every card in a row lines up. */}
         <div className="flex gap-2 mt-auto pt-[6px]">
-          <Button
-            label={opening ? "Opening…" : "Edit"}
-            icon={<Pencil className="size-[15px]" strokeWidth={2} />}
-            aria-label={`Edit ${asset.name}`}
-            disabled={waiting}
-            onClick={onEdit}
-            className={cn(CARD_BUTTON, "flex-1 px-3 gap-1.5 text-sm font-semibold")}
-          />
+          {onEdit && (
+            <Button
+              label={opening ? "Opening…" : "Edit"}
+              icon={<Pencil className="size-[15px]" strokeWidth={2} />}
+              aria-label={`Edit ${asset.name}`}
+              disabled={waiting}
+              onClick={onEdit}
+              className={cn(CARD_BUTTON, "flex-1 px-3 gap-1.5 text-sm font-semibold")}
+            />
+          )}
           <Button
             label={busy ? "Saving…" : "Replace"}
             disabled={waiting}

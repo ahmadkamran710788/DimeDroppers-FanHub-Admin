@@ -122,7 +122,6 @@ function LogoFitEditor({ editing, remakesVersions, onSave, onCancel }: LogoFitEd
   // What saving does besides changing this logo.
   const notes = [
     remakesVersions && "Saving also makes your auto-made white logo and icon again from it. Ones you uploaded yourself stay as they are.",
-    asset.source === "GENERATED" && `Saving makes this your own ${label}, so it's no longer remade from your landscape logo.`,
     image.vector && "Your SVG is saved as a PNG.",
   ].filter((note): note is string => Boolean(note));
 

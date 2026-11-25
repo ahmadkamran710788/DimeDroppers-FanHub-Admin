@@ -22,7 +22,7 @@ interface RadioCardsProps<T extends string> {
 }
 
 // One choice as cards with a radio ring (title, ring and description): one row of equal cards, as many as there
-// are options, stacked on phones. For dark cards (sponsor sign-up and Brand Assets).
+// are options, stacked on phones. For dark cards (sponsor sign-up).
 export default function RadioCards<T extends string>({
   options,
   value,
