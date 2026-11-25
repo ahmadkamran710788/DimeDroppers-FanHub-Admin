@@ -91,7 +91,9 @@ export default function LogoLibrary({ logos }: LogoLibraryProps) {
           busy={logos.busy === asset.id}
           opening={logos.busy === `edit:${asset.id}`}
           accept={logoAccept(spec)}
-          onEdit={() => logos.edit(asset)}
+          // The sponsor's own logos only (landscape, circular, and a white logo or icon they uploaded); an
+          // auto-made one is replaced, not edited.
+          onEdit={asset.source === "GENERATED" ? undefined : () => logos.edit(asset)}
           onReplace={(file) => logos.replace(asset, file)}
           onMakeDefault={() => logos.makeDefault(asset)}
           onRename={() => setRenaming(asset)}
@@ -108,7 +110,7 @@ export default function LogoLibrary({ logos }: LogoLibraryProps) {
 
   return (
     <section aria-label="Library" className="flex-[2_1_520px] min-w-0 flex flex-col gap-[18px]">
-      <MainLogoChoice logos={logos} />
+      <MainLogoChoice logos={logos} brandName={brandName} />
       <div className="flex flex-wrap gap-3 items-baseline justify-between">
         <h3 className={SECTION_TITLE}>Library</h3>
         {/* An empty library says it all in its message. */}
