@@ -89,7 +89,9 @@ export default function LogoLibrary({ logos }: LogoLibraryProps) {
           asset={asset}
           brandName={brandName}
           busy={logos.busy === asset.id}
+          opening={logos.busy === `edit:${asset.id}`}
           accept={logoAccept(spec)}
+          onEdit={() => logos.edit(asset)}
           onReplace={(file) => logos.replace(asset, file)}
           onMakeDefault={() => logos.makeDefault(asset)}
           onRename={() => setRenaming(asset)}

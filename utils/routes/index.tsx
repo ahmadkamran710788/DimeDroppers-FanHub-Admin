@@ -473,6 +473,11 @@ export const routes = {
     sponsorBrandAssetFile: (id: string) => `fanhub/sponsor-profile/brand-assets/${id}/file`,
     // POST, no body: makes the white logo and icon again from a landscape logo (400 while the main logo is circular); answers the list.
     sponsorBrandAssetGenerate: (id: string) => `fanhub/sponsor-profile/brand-assets/${id}/generate`,
+    // A logo's public link (no token): a redirect to its file on S3. `proxySponsorLogo` is our own Next route that
+    // fetches it on the server and answers the image same-origin, so the logo editor can draw it on a canvas
+    // (S3 doesn't let the browser read it there).
+    sponsorLogoLink: (assetId: string) => `fanhub/sponsor-logos/${assetId}`,
+    proxySponsorLogo: (assetId: string) => `/api/sponsor-logos/${assetId}`,
     // Finding the brand's other stores on request (FANHUB_SPONSOR_LOCATION_FETCH_FRONTEND.md): POST starts one
     // (202), the list is the 20 latest (directly in `data`), and one fetch comes with its locations per area.
     sponsorLocationsFetch: "fanhub/sponsor-profile/locations/fetch",

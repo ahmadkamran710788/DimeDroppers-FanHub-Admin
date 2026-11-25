@@ -1,6 +1,7 @@
 "use client";
 
 import { useBrandLogos } from "@/components/sponsor/use-brand-logos";
+import LogoFitModal from "@/components/sponsor/logo-fit";
 import BrandProfile from "@/components/sponsor/brand-assets/brand-profile";
 import LogoLibrary from "@/components/sponsor/brand-assets/logo-library";
 import LogoUploadButtons from "@/components/sponsor/brand-assets/logo-upload-buttons";
@@ -32,6 +33,9 @@ export default function BrandAssets() {
       </div>
 
       <PlacementSpecs />
+
+      {/* Edit on a logo card opens its logo here (drag, stretch, resize); the edited one replaces the file. */}
+      <LogoFitModal logos={logos} />
     </div>
   );
 }

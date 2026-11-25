@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { sponsorRequest, type SponsorApiResult } from "@/components/sponsor/sponsor-api";
 import { checkBrandLogo } from "@/components/sponsor/data";
+import { loadLogoImage, type LogoImage } from "@/components/sponsor/logo-fit/render";
 import { routes } from "@/utils/routes";
 import type {
   BrandAsset,
@@ -11,7 +12,20 @@ import type {
   BrandAssetOptions,
   LogoVariant,
   MainLogo,
+  VariantSpec,
 } from "@/utils/types/sponsor-brand-assets";
+
+// An uploaded logo open in the editor (LogoFitModal, from Edit on its card), with its file decoded.
+export interface LogoEditing {
+  id: number;
+  asset: BrandAsset;
+  spec: VariantSpec;
+  image: LogoImage;
+  maxBytes: number;
+}
+
+// The extension of a logo's type, for the file the editor opens ("image/svg+xml" → "svg").
+const EXTENSIONS: Record<string, string> = { "image/svg+xml": "svg", "image/png": "png", "image/jpeg": "jpg" };
 
 // The rules and the logos, with the load they answer, so an older one never shows after Retry.
 interface Loaded {
@@ -37,6 +51,9 @@ export function useBrandLogos() {
   const [busy, setBusy] = useState<string | null>(null);
   // Bumped after every change, so the slots showing these logos load again.
   const [version, setVersion] = useState(0);
+  // The logo in the editor, and a count that keys each edit.
+  const [editing, setEditing] = useState<LogoEditing | null>(null);
+  const edits = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,16 +134,42 @@ export function useBrandLogos() {
     );
   }
 
-  // A new image for a logo, the picked file as it is; every slot using it shows the new one.
-  async function replace(asset: BrandAsset, file: File) {
+  // A new image for a logo (a picked file as it is, or an edited one); every slot using it shows the new one.
+  // Replacing the default landscape logo makes the auto-made white logo and icon again (backend).
+  async function replace(asset: BrandAsset, file: File, done = `${asset.name} replaced`) {
     if (await rejected(file, asset.variant)) return false;
     const body = new FormData();
     body.append("file", file);
-    return run(
-      asset.id,
-      () => sponsorRequest<BrandAsset>("PUT", routes.api.sponsorBrandAssetFile(asset.id), { body }),
-      `${asset.name} replaced`
-    );
+    return run(asset.id, () => sponsorRequest<BrandAsset>("PUT", routes.api.sponsorBrandAssetFile(asset.id), { body }), done);
+  }
+
+  // Opens the editor on an uploaded logo. Its file comes through our own route (proxySponsorLogo), as the
+  // browser can't draw the logo's S3 link on a canvas. `edit:<id>` waits meanwhile.
+  async function edit(asset: BrandAsset) {
+    const spec = specOf(asset.variant);
+    if (!spec || !options) return;
+    setBusy(`edit:${asset.id}`);
+    const image = await logoImage(asset);
+    setBusy(null);
+    if (!image) {
+      toast.error("Couldn't open this logo for editing, please try again.");
+      return;
+    }
+    edits.current += 1;
+    setEditing({ id: edits.current, asset, spec, image, maxBytes: options.limits.maxBytes });
+  }
+
+  function closeEdit() {
+    if (editing) URL.revokeObjectURL(editing.image.url);
+    setEditing(null);
+  }
+
+  // Saves the edited logo over the uploaded one: true once it's saved (the editor closes); false keeps it open.
+  async function saveEdit(file: File) {
+    if (!editing) return false;
+    const saved = await replace(editing.asset, file, `${editing.asset.name} updated`);
+    if (saved) closeEdit();
+    return saved;
   }
 
   const rename = (asset: BrandAsset, name: string) =>
@@ -181,6 +224,10 @@ export function useBrandLogos() {
     specOf,
     upload,
     replace,
+    editing,
+    edit,
+    saveEdit,
+    cancelEdit: closeEdit,
     rename,
     makeDefault,
     remove,
@@ -189,6 +236,19 @@ export function useBrandLogos() {
     canRegenerate,
     setMainLogo,
   };
+}
+
+// A logo's file, decoded for the editor; null when it can't be loaded or read.
+async function logoImage(asset: BrandAsset): Promise<LogoImage | null> {
+  try {
+    const res = await fetch(routes.api.proxySponsorLogo(asset.id), { cache: "no-store" });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const type = blob.type || asset.mimeType;
+    return await loadLogoImage(new File([blob], `${asset.name}.${EXTENSIONS[type] ?? "png"}`, { type }));
+  } catch {
+    return null;
+  }
 }
 
 // "White logo" from "white logo".
